@@ -2945,6 +2945,165 @@ class PlanExercisesCompanion extends UpdateCompanion<PlanExercise> {
   }
 }
 
+class $MetadataTable extends Metadata
+    with TableInfo<$MetadataTable, MetadataData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MetadataTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _buildNumberMeta =
+      const VerificationMeta('buildNumber');
+  @override
+  late final GeneratedColumn<int> buildNumber = GeneratedColumn<int>(
+      'build_number', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [buildNumber];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'metadata';
+  @override
+  VerificationContext validateIntegrity(Insertable<MetadataData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('build_number')) {
+      context.handle(
+          _buildNumberMeta,
+          buildNumber.isAcceptableOrUnknown(
+              data['build_number']!, _buildNumberMeta));
+    } else if (isInserting) {
+      context.missing(_buildNumberMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => const {};
+  @override
+  MetadataData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MetadataData(
+      buildNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}build_number'])!,
+    );
+  }
+
+  @override
+  $MetadataTable createAlias(String alias) {
+    return $MetadataTable(attachedDatabase, alias);
+  }
+}
+
+class MetadataData extends DataClass implements Insertable<MetadataData> {
+  final int buildNumber;
+  const MetadataData({required this.buildNumber});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['build_number'] = Variable<int>(buildNumber);
+    return map;
+  }
+
+  MetadataCompanion toCompanion(bool nullToAbsent) {
+    return MetadataCompanion(
+      buildNumber: Value(buildNumber),
+    );
+  }
+
+  factory MetadataData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MetadataData(
+      buildNumber: serializer.fromJson<int>(json['buildNumber']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'buildNumber': serializer.toJson<int>(buildNumber),
+    };
+  }
+
+  MetadataData copyWith({int? buildNumber}) => MetadataData(
+        buildNumber: buildNumber ?? this.buildNumber,
+      );
+  MetadataData copyWithCompanion(MetadataCompanion data) {
+    return MetadataData(
+      buildNumber:
+          data.buildNumber.present ? data.buildNumber.value : this.buildNumber,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MetadataData(')
+          ..write('buildNumber: $buildNumber')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => buildNumber.hashCode;
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MetadataData && other.buildNumber == this.buildNumber);
+}
+
+class MetadataCompanion extends UpdateCompanion<MetadataData> {
+  final Value<int> buildNumber;
+  final Value<int> rowid;
+  const MetadataCompanion({
+    this.buildNumber = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MetadataCompanion.insert({
+    required int buildNumber,
+    this.rowid = const Value.absent(),
+  }) : buildNumber = Value(buildNumber);
+  static Insertable<MetadataData> custom({
+    Expression<int>? buildNumber,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (buildNumber != null) 'build_number': buildNumber,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MetadataCompanion copyWith({Value<int>? buildNumber, Value<int>? rowid}) {
+    return MetadataCompanion(
+      buildNumber: buildNumber ?? this.buildNumber,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (buildNumber.present) {
+      map['build_number'] = Variable<int>(buildNumber.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MetadataCompanion(')
+          ..write('buildNumber: $buildNumber, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2952,12 +3111,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GymSetsTable gymSets = $GymSetsTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
   late final $PlanExercisesTable planExercises = $PlanExercisesTable(this);
+  late final $MetadataTable metadata = $MetadataTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [plans, gymSets, settings, planExercises];
+      [plans, gymSets, settings, planExercises, metadata];
 }
 
 typedef $$PlansTableCreateCompanionBuilder = PlansCompanion Function({
@@ -4597,6 +4757,111 @@ typedef $$PlanExercisesTableProcessedTableManager = ProcessedTableManager<
     (PlanExercise, $$PlanExercisesTableReferences),
     PlanExercise,
     PrefetchHooks Function({bool exercise, bool planId})>;
+typedef $$MetadataTableCreateCompanionBuilder = MetadataCompanion Function({
+  required int buildNumber,
+  Value<int> rowid,
+});
+typedef $$MetadataTableUpdateCompanionBuilder = MetadataCompanion Function({
+  Value<int> buildNumber,
+  Value<int> rowid,
+});
+
+class $$MetadataTableFilterComposer
+    extends Composer<_$AppDatabase, $MetadataTable> {
+  $$MetadataTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get buildNumber => $composableBuilder(
+      column: $table.buildNumber, builder: (column) => ColumnFilters(column));
+}
+
+class $$MetadataTableOrderingComposer
+    extends Composer<_$AppDatabase, $MetadataTable> {
+  $$MetadataTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get buildNumber => $composableBuilder(
+      column: $table.buildNumber, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MetadataTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MetadataTable> {
+  $$MetadataTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get buildNumber => $composableBuilder(
+      column: $table.buildNumber, builder: (column) => column);
+}
+
+class $$MetadataTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $MetadataTable,
+    MetadataData,
+    $$MetadataTableFilterComposer,
+    $$MetadataTableOrderingComposer,
+    $$MetadataTableAnnotationComposer,
+    $$MetadataTableCreateCompanionBuilder,
+    $$MetadataTableUpdateCompanionBuilder,
+    (MetadataData, BaseReferences<_$AppDatabase, $MetadataTable, MetadataData>),
+    MetadataData,
+    PrefetchHooks Function()> {
+  $$MetadataTableTableManager(_$AppDatabase db, $MetadataTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MetadataTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MetadataTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MetadataTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> buildNumber = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MetadataCompanion(
+            buildNumber: buildNumber,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required int buildNumber,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MetadataCompanion.insert(
+            buildNumber: buildNumber,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MetadataTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $MetadataTable,
+    MetadataData,
+    $$MetadataTableFilterComposer,
+    $$MetadataTableOrderingComposer,
+    $$MetadataTableAnnotationComposer,
+    $$MetadataTableCreateCompanionBuilder,
+    $$MetadataTableUpdateCompanionBuilder,
+    (MetadataData, BaseReferences<_$AppDatabase, $MetadataTable, MetadataData>),
+    MetadataData,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4609,4 +4874,6 @@ class $AppDatabaseManager {
       $$SettingsTableTableManager(_db, _db.settings);
   $$PlanExercisesTableTableManager get planExercises =>
       $$PlanExercisesTableTableManager(_db, _db.planExercises);
+  $$MetadataTableTableManager get metadata =>
+      $$MetadataTableTableManager(_db, _db.metadata);
 }
