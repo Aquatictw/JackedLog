@@ -1,0 +1,4 @@
+• Fix flutter linting
+• Fix share deprecations
+• Format dart
+• Use checkboxes for selected
