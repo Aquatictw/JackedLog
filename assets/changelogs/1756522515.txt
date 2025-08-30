@@ -1,0 +1,3 @@
+• Change edit set page & history page
+• Fix deployments
+• Fix unit tests
