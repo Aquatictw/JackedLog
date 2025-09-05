@@ -1336,6 +1336,16 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
   late final GeneratedColumn<int> warmupSets = GeneratedColumn<int>(
       'warmup_sets', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _scrollableTabsMeta =
+      const VerificationMeta('scrollableTabs');
+  @override
+  late final GeneratedColumn<bool> scrollableTabs = GeneratedColumn<bool>(
+      'scrollable_tabs', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("scrollable_tabs" IN (0, 1))'),
+      defaultValue: const Constant(true));
   @override
   List<GeneratedColumn> get $columns => [
         alarmSound,
@@ -1369,7 +1379,8 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         themeMode,
         timerDuration,
         vibrate,
-        warmupSets
+        warmupSets,
+        scrollableTabs
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1588,6 +1599,12 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           warmupSets.isAcceptableOrUnknown(
               data['warmup_sets']!, _warmupSetsMeta));
     }
+    if (data.containsKey('scrollable_tabs')) {
+      context.handle(
+          _scrollableTabsMeta,
+          scrollableTabs.isAcceptableOrUnknown(
+              data['scrollable_tabs']!, _scrollableTabsMeta));
+    }
     return context;
   }
 
@@ -1661,6 +1678,8 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           .read(DriftSqlType.bool, data['${effectivePrefix}vibrate'])!,
       warmupSets: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}warmup_sets']),
+      scrollableTabs: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}scrollable_tabs'])!,
     );
   }
 
@@ -1703,6 +1722,7 @@ class Setting extends DataClass implements Insertable<Setting> {
   final int timerDuration;
   final bool vibrate;
   final int? warmupSets;
+  final bool scrollableTabs;
   const Setting(
       {required this.alarmSound,
       required this.automaticBackups,
@@ -1735,7 +1755,8 @@ class Setting extends DataClass implements Insertable<Setting> {
       required this.themeMode,
       required this.timerDuration,
       required this.vibrate,
-      this.warmupSets});
+      this.warmupSets,
+      required this.scrollableTabs});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1777,6 +1798,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     if (!nullToAbsent || warmupSets != null) {
       map['warmup_sets'] = Variable<int>(warmupSets);
     }
+    map['scrollable_tabs'] = Variable<bool>(scrollableTabs);
     return map;
   }
 
@@ -1820,6 +1842,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       warmupSets: warmupSets == null && nullToAbsent
           ? const Value.absent()
           : Value(warmupSets),
+      scrollableTabs: Value(scrollableTabs),
     );
   }
 
@@ -1860,6 +1883,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       timerDuration: serializer.fromJson<int>(json['timerDuration']),
       vibrate: serializer.fromJson<bool>(json['vibrate']),
       warmupSets: serializer.fromJson<int?>(json['warmupSets']),
+      scrollableTabs: serializer.fromJson<bool>(json['scrollableTabs']),
     );
   }
   @override
@@ -1898,6 +1922,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       'timerDuration': serializer.toJson<int>(timerDuration),
       'vibrate': serializer.toJson<bool>(vibrate),
       'warmupSets': serializer.toJson<int?>(warmupSets),
+      'scrollableTabs': serializer.toJson<bool>(scrollableTabs),
     };
   }
 
@@ -1933,7 +1958,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           String? themeMode,
           int? timerDuration,
           bool? vibrate,
-          Value<int?> warmupSets = const Value.absent()}) =>
+          Value<int?> warmupSets = const Value.absent(),
+          bool? scrollableTabs}) =>
       Setting(
         alarmSound: alarmSound ?? this.alarmSound,
         automaticBackups: automaticBackups ?? this.automaticBackups,
@@ -1969,6 +1995,7 @@ class Setting extends DataClass implements Insertable<Setting> {
         timerDuration: timerDuration ?? this.timerDuration,
         vibrate: vibrate ?? this.vibrate,
         warmupSets: warmupSets.present ? warmupSets.value : this.warmupSets,
+        scrollableTabs: scrollableTabs ?? this.scrollableTabs,
       );
   Setting copyWithCompanion(SettingsCompanion data) {
     return Setting(
@@ -2044,6 +2071,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       vibrate: data.vibrate.present ? data.vibrate.value : this.vibrate,
       warmupSets:
           data.warmupSets.present ? data.warmupSets.value : this.warmupSets,
+      scrollableTabs: data.scrollableTabs.present
+          ? data.scrollableTabs.value
+          : this.scrollableTabs,
     );
   }
 
@@ -2081,7 +2111,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('themeMode: $themeMode, ')
           ..write('timerDuration: $timerDuration, ')
           ..write('vibrate: $vibrate, ')
-          ..write('warmupSets: $warmupSets')
+          ..write('warmupSets: $warmupSets, ')
+          ..write('scrollableTabs: $scrollableTabs')
           ..write(')'))
         .toString();
   }
@@ -2119,7 +2150,8 @@ class Setting extends DataClass implements Insertable<Setting> {
         themeMode,
         timerDuration,
         vibrate,
-        warmupSets
+        warmupSets,
+        scrollableTabs
       ]);
   @override
   bool operator ==(Object other) =>
@@ -2156,7 +2188,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.themeMode == this.themeMode &&
           other.timerDuration == this.timerDuration &&
           other.vibrate == this.vibrate &&
-          other.warmupSets == this.warmupSets);
+          other.warmupSets == this.warmupSets &&
+          other.scrollableTabs == this.scrollableTabs);
 }
 
 class SettingsCompanion extends UpdateCompanion<Setting> {
@@ -2192,6 +2225,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<int> timerDuration;
   final Value<bool> vibrate;
   final Value<int?> warmupSets;
+  final Value<bool> scrollableTabs;
   const SettingsCompanion({
     this.alarmSound = const Value.absent(),
     this.automaticBackups = const Value.absent(),
@@ -2225,6 +2259,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.timerDuration = const Value.absent(),
     this.vibrate = const Value.absent(),
     this.warmupSets = const Value.absent(),
+    this.scrollableTabs = const Value.absent(),
   });
   SettingsCompanion.insert({
     required String alarmSound,
@@ -2259,6 +2294,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     required int timerDuration,
     required bool vibrate,
     this.warmupSets = const Value.absent(),
+    this.scrollableTabs = const Value.absent(),
   })  : alarmSound = Value(alarmSound),
         cardioUnit = Value(cardioUnit),
         curveLines = Value(curveLines),
@@ -2308,6 +2344,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<int>? timerDuration,
     Expression<bool>? vibrate,
     Expression<int>? warmupSets,
+    Expression<bool>? scrollableTabs,
   }) {
     return RawValuesInsertable({
       if (alarmSound != null) 'alarm_sound': alarmSound,
@@ -2344,6 +2381,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       if (timerDuration != null) 'timer_duration': timerDuration,
       if (vibrate != null) 'vibrate': vibrate,
       if (warmupSets != null) 'warmup_sets': warmupSets,
+      if (scrollableTabs != null) 'scrollable_tabs': scrollableTabs,
     });
   }
 
@@ -2379,7 +2417,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       Value<String>? themeMode,
       Value<int>? timerDuration,
       Value<bool>? vibrate,
-      Value<int?>? warmupSets}) {
+      Value<int?>? warmupSets,
+      Value<bool>? scrollableTabs}) {
     return SettingsCompanion(
       alarmSound: alarmSound ?? this.alarmSound,
       automaticBackups: automaticBackups ?? this.automaticBackups,
@@ -2413,6 +2452,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       timerDuration: timerDuration ?? this.timerDuration,
       vibrate: vibrate ?? this.vibrate,
       warmupSets: warmupSets ?? this.warmupSets,
+      scrollableTabs: scrollableTabs ?? this.scrollableTabs,
     );
   }
 
@@ -2515,6 +2555,9 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     if (warmupSets.present) {
       map['warmup_sets'] = Variable<int>(warmupSets.value);
     }
+    if (scrollableTabs.present) {
+      map['scrollable_tabs'] = Variable<bool>(scrollableTabs.value);
+    }
     return map;
   }
 
@@ -2552,7 +2595,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('themeMode: $themeMode, ')
           ..write('timerDuration: $timerDuration, ')
           ..write('vibrate: $vibrate, ')
-          ..write('warmupSets: $warmupSets')
+          ..write('warmupSets: $warmupSets, ')
+          ..write('scrollableTabs: $scrollableTabs')
           ..write(')'))
         .toString();
   }
@@ -3826,6 +3870,7 @@ typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
   required int timerDuration,
   required bool vibrate,
   Value<int?> warmupSets,
+  Value<bool> scrollableTabs,
 });
 typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
   Value<String> alarmSound,
@@ -3860,6 +3905,7 @@ typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
   Value<int> timerDuration,
   Value<bool> vibrate,
   Value<int?> warmupSets,
+  Value<bool> scrollableTabs,
 });
 
 class $$SettingsTableFilterComposer
@@ -3975,6 +4021,10 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<int> get warmupSets => $composableBuilder(
       column: $table.warmupSets, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get scrollableTabs => $composableBuilder(
+      column: $table.scrollableTabs,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$SettingsTableOrderingComposer
@@ -4097,6 +4147,10 @@ class $$SettingsTableOrderingComposer
 
   ColumnOrderings<int> get warmupSets => $composableBuilder(
       column: $table.warmupSets, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get scrollableTabs => $composableBuilder(
+      column: $table.scrollableTabs,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$SettingsTableAnnotationComposer
@@ -4203,6 +4257,9 @@ class $$SettingsTableAnnotationComposer
 
   GeneratedColumn<int> get warmupSets => $composableBuilder(
       column: $table.warmupSets, builder: (column) => column);
+
+  GeneratedColumn<bool> get scrollableTabs => $composableBuilder(
+      column: $table.scrollableTabs, builder: (column) => column);
 }
 
 class $$SettingsTableTableManager extends RootTableManager<
@@ -4260,6 +4317,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             Value<int> timerDuration = const Value.absent(),
             Value<bool> vibrate = const Value.absent(),
             Value<int?> warmupSets = const Value.absent(),
+            Value<bool> scrollableTabs = const Value.absent(),
           }) =>
               SettingsCompanion(
             alarmSound: alarmSound,
@@ -4294,6 +4352,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             timerDuration: timerDuration,
             vibrate: vibrate,
             warmupSets: warmupSets,
+            scrollableTabs: scrollableTabs,
           ),
           createCompanionCallback: ({
             required String alarmSound,
@@ -4328,6 +4387,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             required int timerDuration,
             required bool vibrate,
             Value<int?> warmupSets = const Value.absent(),
+            Value<bool> scrollableTabs = const Value.absent(),
           }) =>
               SettingsCompanion.insert(
             alarmSound: alarmSound,
@@ -4362,6 +4422,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             timerDuration: timerDuration,
             vibrate: vibrate,
             warmupSets: warmupSets,
+            scrollableTabs: scrollableTabs,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
