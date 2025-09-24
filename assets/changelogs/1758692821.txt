@@ -1,0 +1,2 @@
+• Always rollout 100% on the msstore
+• Stop app resizing for virtual keyboard
