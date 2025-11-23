@@ -13,12 +13,6 @@ class $PlansTable extends Plans with TableInfo<$PlansTable, Plan> {
   late final GeneratedColumn<String> days = GeneratedColumn<String>(
       'days', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _exercisesMeta =
-      const VerificationMeta('exercises');
-  @override
-  late final GeneratedColumn<String> exercises = GeneratedColumn<String>(
-      'exercises', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -40,7 +34,7 @@ class $PlansTable extends Plans with TableInfo<$PlansTable, Plan> {
       'title', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
   @override
-  List<GeneratedColumn> get $columns => [days, exercises, id, sequence, title];
+  List<GeneratedColumn> get $columns => [days, id, sequence, title];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -56,12 +50,6 @@ class $PlansTable extends Plans with TableInfo<$PlansTable, Plan> {
           _daysMeta, days.isAcceptableOrUnknown(data['days']!, _daysMeta));
     } else if (isInserting) {
       context.missing(_daysMeta);
-    }
-    if (data.containsKey('exercises')) {
-      context.handle(_exercisesMeta,
-          exercises.isAcceptableOrUnknown(data['exercises']!, _exercisesMeta));
-    } else if (isInserting) {
-      context.missing(_exercisesMeta);
     }
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
@@ -85,8 +73,6 @@ class $PlansTable extends Plans with TableInfo<$PlansTable, Plan> {
     return Plan(
       days: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}days'])!,
-      exercises: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}exercises'])!,
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       sequence: attachedDatabase.typeMapping
@@ -104,21 +90,14 @@ class $PlansTable extends Plans with TableInfo<$PlansTable, Plan> {
 
 class Plan extends DataClass implements Insertable<Plan> {
   final String days;
-  final String exercises;
   final int id;
   final int? sequence;
   final String? title;
-  const Plan(
-      {required this.days,
-      required this.exercises,
-      required this.id,
-      this.sequence,
-      this.title});
+  const Plan({required this.days, required this.id, this.sequence, this.title});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['days'] = Variable<String>(days);
-    map['exercises'] = Variable<String>(exercises);
     map['id'] = Variable<int>(id);
     if (!nullToAbsent || sequence != null) {
       map['sequence'] = Variable<int>(sequence);
@@ -132,7 +111,6 @@ class Plan extends DataClass implements Insertable<Plan> {
   PlansCompanion toCompanion(bool nullToAbsent) {
     return PlansCompanion(
       days: Value(days),
-      exercises: Value(exercises),
       id: Value(id),
       sequence: sequence == null && nullToAbsent
           ? const Value.absent()
@@ -147,7 +125,6 @@ class Plan extends DataClass implements Insertable<Plan> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Plan(
       days: serializer.fromJson<String>(json['days']),
-      exercises: serializer.fromJson<String>(json['exercises']),
       id: serializer.fromJson<int>(json['id']),
       sequence: serializer.fromJson<int?>(json['sequence']),
       title: serializer.fromJson<String?>(json['title']),
@@ -158,7 +135,6 @@ class Plan extends DataClass implements Insertable<Plan> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'days': serializer.toJson<String>(days),
-      'exercises': serializer.toJson<String>(exercises),
       'id': serializer.toJson<int>(id),
       'sequence': serializer.toJson<int?>(sequence),
       'title': serializer.toJson<String?>(title),
@@ -167,13 +143,11 @@ class Plan extends DataClass implements Insertable<Plan> {
 
   Plan copyWith(
           {String? days,
-          String? exercises,
           int? id,
           Value<int?> sequence = const Value.absent(),
           Value<String?> title = const Value.absent()}) =>
       Plan(
         days: days ?? this.days,
-        exercises: exercises ?? this.exercises,
         id: id ?? this.id,
         sequence: sequence.present ? sequence.value : this.sequence,
         title: title.present ? title.value : this.title,
@@ -181,7 +155,6 @@ class Plan extends DataClass implements Insertable<Plan> {
   Plan copyWithCompanion(PlansCompanion data) {
     return Plan(
       days: data.days.present ? data.days.value : this.days,
-      exercises: data.exercises.present ? data.exercises.value : this.exercises,
       id: data.id.present ? data.id.value : this.id,
       sequence: data.sequence.present ? data.sequence.value : this.sequence,
       title: data.title.present ? data.title.value : this.title,
@@ -192,7 +165,6 @@ class Plan extends DataClass implements Insertable<Plan> {
   String toString() {
     return (StringBuffer('Plan(')
           ..write('days: $days, ')
-          ..write('exercises: $exercises, ')
           ..write('id: $id, ')
           ..write('sequence: $sequence, ')
           ..write('title: $title')
@@ -201,13 +173,12 @@ class Plan extends DataClass implements Insertable<Plan> {
   }
 
   @override
-  int get hashCode => Object.hash(days, exercises, id, sequence, title);
+  int get hashCode => Object.hash(days, id, sequence, title);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Plan &&
           other.days == this.days &&
-          other.exercises == this.exercises &&
           other.id == this.id &&
           other.sequence == this.sequence &&
           other.title == this.title);
@@ -215,35 +186,29 @@ class Plan extends DataClass implements Insertable<Plan> {
 
 class PlansCompanion extends UpdateCompanion<Plan> {
   final Value<String> days;
-  final Value<String> exercises;
   final Value<int> id;
   final Value<int?> sequence;
   final Value<String?> title;
   const PlansCompanion({
     this.days = const Value.absent(),
-    this.exercises = const Value.absent(),
     this.id = const Value.absent(),
     this.sequence = const Value.absent(),
     this.title = const Value.absent(),
   });
   PlansCompanion.insert({
     required String days,
-    required String exercises,
     this.id = const Value.absent(),
     this.sequence = const Value.absent(),
     this.title = const Value.absent(),
-  })  : days = Value(days),
-        exercises = Value(exercises);
+  }) : days = Value(days);
   static Insertable<Plan> custom({
     Expression<String>? days,
-    Expression<String>? exercises,
     Expression<int>? id,
     Expression<int>? sequence,
     Expression<String>? title,
   }) {
     return RawValuesInsertable({
       if (days != null) 'days': days,
-      if (exercises != null) 'exercises': exercises,
       if (id != null) 'id': id,
       if (sequence != null) 'sequence': sequence,
       if (title != null) 'title': title,
@@ -252,13 +217,11 @@ class PlansCompanion extends UpdateCompanion<Plan> {
 
   PlansCompanion copyWith(
       {Value<String>? days,
-      Value<String>? exercises,
       Value<int>? id,
       Value<int?>? sequence,
       Value<String?>? title}) {
     return PlansCompanion(
       days: days ?? this.days,
-      exercises: exercises ?? this.exercises,
       id: id ?? this.id,
       sequence: sequence ?? this.sequence,
       title: title ?? this.title,
@@ -270,9 +233,6 @@ class PlansCompanion extends UpdateCompanion<Plan> {
     final map = <String, Expression>{};
     if (days.present) {
       map['days'] = Variable<String>(days.value);
-    }
-    if (exercises.present) {
-      map['exercises'] = Variable<String>(exercises.value);
     }
     if (id.present) {
       map['id'] = Variable<int>(id.value);
@@ -290,7 +250,6 @@ class PlansCompanion extends UpdateCompanion<Plan> {
   String toString() {
     return (StringBuffer('PlansCompanion(')
           ..write('days: $days, ')
-          ..write('exercises: $exercises, ')
           ..write('id: $id, ')
           ..write('sequence: $sequence, ')
           ..write('title: $title')
@@ -3166,14 +3125,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 
 typedef $$PlansTableCreateCompanionBuilder = PlansCompanion Function({
   required String days,
-  required String exercises,
   Value<int> id,
   Value<int?> sequence,
   Value<String?> title,
 });
 typedef $$PlansTableUpdateCompanionBuilder = PlansCompanion Function({
   Value<String> days,
-  Value<String> exercises,
   Value<int> id,
   Value<int?> sequence,
   Value<String?> title,
@@ -3209,9 +3166,6 @@ class $$PlansTableFilterComposer extends Composer<_$AppDatabase, $PlansTable> {
   });
   ColumnFilters<String> get days => $composableBuilder(
       column: $table.days, builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<String> get exercises => $composableBuilder(
-      column: $table.exercises, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
@@ -3256,9 +3210,6 @@ class $$PlansTableOrderingComposer
   ColumnOrderings<String> get days => $composableBuilder(
       column: $table.days, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get exercises => $composableBuilder(
-      column: $table.exercises, builder: (column) => ColumnOrderings(column));
-
   ColumnOrderings<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
@@ -3280,9 +3231,6 @@ class $$PlansTableAnnotationComposer
   });
   GeneratedColumn<String> get days =>
       $composableBuilder(column: $table.days, builder: (column) => column);
-
-  GeneratedColumn<String> get exercises =>
-      $composableBuilder(column: $table.exercises, builder: (column) => column);
 
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
@@ -3339,28 +3287,24 @@ class $$PlansTableTableManager extends RootTableManager<
               $$PlansTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> days = const Value.absent(),
-            Value<String> exercises = const Value.absent(),
             Value<int> id = const Value.absent(),
             Value<int?> sequence = const Value.absent(),
             Value<String?> title = const Value.absent(),
           }) =>
               PlansCompanion(
             days: days,
-            exercises: exercises,
             id: id,
             sequence: sequence,
             title: title,
           ),
           createCompanionCallback: ({
             required String days,
-            required String exercises,
             Value<int> id = const Value.absent(),
             Value<int?> sequence = const Value.absent(),
             Value<String?> title = const Value.absent(),
           }) =>
               PlansCompanion.insert(
             days: days,
-            exercises: exercises,
             id: id,
             sequence: sequence,
             title: title,
