@@ -2623,9 +2623,17 @@ class $PlanExercisesTable extends PlanExercises
   late final GeneratedColumn<int> warmupSets = GeneratedColumn<int>(
       'warmup_sets', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _sequenceMeta =
+      const VerificationMeta('sequence');
+  @override
+  late final GeneratedColumn<int> sequence = GeneratedColumn<int>(
+      'sequence', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   @override
   List<GeneratedColumn> get $columns =>
-      [enabled, timers, exercise, id, maxSets, planId, warmupSets];
+      [enabled, timers, exercise, id, maxSets, planId, warmupSets, sequence];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2671,6 +2679,10 @@ class $PlanExercisesTable extends PlanExercises
           warmupSets.isAcceptableOrUnknown(
               data['warmup_sets']!, _warmupSetsMeta));
     }
+    if (data.containsKey('sequence')) {
+      context.handle(_sequenceMeta,
+          sequence.isAcceptableOrUnknown(data['sequence']!, _sequenceMeta));
+    }
     return context;
   }
 
@@ -2694,6 +2706,8 @@ class $PlanExercisesTable extends PlanExercises
           .read(DriftSqlType.int, data['${effectivePrefix}plan_id'])!,
       warmupSets: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}warmup_sets']),
+      sequence: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sequence'])!,
     );
   }
 
@@ -2711,6 +2725,7 @@ class PlanExercise extends DataClass implements Insertable<PlanExercise> {
   final int? maxSets;
   final int planId;
   final int? warmupSets;
+  final int sequence;
   const PlanExercise(
       {required this.enabled,
       required this.timers,
@@ -2718,7 +2733,8 @@ class PlanExercise extends DataClass implements Insertable<PlanExercise> {
       required this.id,
       this.maxSets,
       required this.planId,
-      this.warmupSets});
+      this.warmupSets,
+      required this.sequence});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2733,6 +2749,7 @@ class PlanExercise extends DataClass implements Insertable<PlanExercise> {
     if (!nullToAbsent || warmupSets != null) {
       map['warmup_sets'] = Variable<int>(warmupSets);
     }
+    map['sequence'] = Variable<int>(sequence);
     return map;
   }
 
@@ -2749,6 +2766,7 @@ class PlanExercise extends DataClass implements Insertable<PlanExercise> {
       warmupSets: warmupSets == null && nullToAbsent
           ? const Value.absent()
           : Value(warmupSets),
+      sequence: Value(sequence),
     );
   }
 
@@ -2763,6 +2781,7 @@ class PlanExercise extends DataClass implements Insertable<PlanExercise> {
       maxSets: serializer.fromJson<int?>(json['maxSets']),
       planId: serializer.fromJson<int>(json['planId']),
       warmupSets: serializer.fromJson<int?>(json['warmupSets']),
+      sequence: serializer.fromJson<int>(json['sequence']),
     );
   }
   @override
@@ -2776,6 +2795,7 @@ class PlanExercise extends DataClass implements Insertable<PlanExercise> {
       'maxSets': serializer.toJson<int?>(maxSets),
       'planId': serializer.toJson<int>(planId),
       'warmupSets': serializer.toJson<int?>(warmupSets),
+      'sequence': serializer.toJson<int>(sequence),
     };
   }
 
@@ -2786,7 +2806,8 @@ class PlanExercise extends DataClass implements Insertable<PlanExercise> {
           int? id,
           Value<int?> maxSets = const Value.absent(),
           int? planId,
-          Value<int?> warmupSets = const Value.absent()}) =>
+          Value<int?> warmupSets = const Value.absent(),
+          int? sequence}) =>
       PlanExercise(
         enabled: enabled ?? this.enabled,
         timers: timers ?? this.timers,
@@ -2795,6 +2816,7 @@ class PlanExercise extends DataClass implements Insertable<PlanExercise> {
         maxSets: maxSets.present ? maxSets.value : this.maxSets,
         planId: planId ?? this.planId,
         warmupSets: warmupSets.present ? warmupSets.value : this.warmupSets,
+        sequence: sequence ?? this.sequence,
       );
   PlanExercise copyWithCompanion(PlanExercisesCompanion data) {
     return PlanExercise(
@@ -2806,6 +2828,7 @@ class PlanExercise extends DataClass implements Insertable<PlanExercise> {
       planId: data.planId.present ? data.planId.value : this.planId,
       warmupSets:
           data.warmupSets.present ? data.warmupSets.value : this.warmupSets,
+      sequence: data.sequence.present ? data.sequence.value : this.sequence,
     );
   }
 
@@ -2818,14 +2841,15 @@ class PlanExercise extends DataClass implements Insertable<PlanExercise> {
           ..write('id: $id, ')
           ..write('maxSets: $maxSets, ')
           ..write('planId: $planId, ')
-          ..write('warmupSets: $warmupSets')
+          ..write('warmupSets: $warmupSets, ')
+          ..write('sequence: $sequence')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(enabled, timers, exercise, id, maxSets, planId, warmupSets);
+  int get hashCode => Object.hash(
+      enabled, timers, exercise, id, maxSets, planId, warmupSets, sequence);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2836,7 +2860,8 @@ class PlanExercise extends DataClass implements Insertable<PlanExercise> {
           other.id == this.id &&
           other.maxSets == this.maxSets &&
           other.planId == this.planId &&
-          other.warmupSets == this.warmupSets);
+          other.warmupSets == this.warmupSets &&
+          other.sequence == this.sequence);
 }
 
 class PlanExercisesCompanion extends UpdateCompanion<PlanExercise> {
@@ -2847,6 +2872,7 @@ class PlanExercisesCompanion extends UpdateCompanion<PlanExercise> {
   final Value<int?> maxSets;
   final Value<int> planId;
   final Value<int?> warmupSets;
+  final Value<int> sequence;
   const PlanExercisesCompanion({
     this.enabled = const Value.absent(),
     this.timers = const Value.absent(),
@@ -2855,6 +2881,7 @@ class PlanExercisesCompanion extends UpdateCompanion<PlanExercise> {
     this.maxSets = const Value.absent(),
     this.planId = const Value.absent(),
     this.warmupSets = const Value.absent(),
+    this.sequence = const Value.absent(),
   });
   PlanExercisesCompanion.insert({
     required bool enabled,
@@ -2864,6 +2891,7 @@ class PlanExercisesCompanion extends UpdateCompanion<PlanExercise> {
     this.maxSets = const Value.absent(),
     required int planId,
     this.warmupSets = const Value.absent(),
+    this.sequence = const Value.absent(),
   })  : enabled = Value(enabled),
         exercise = Value(exercise),
         planId = Value(planId);
@@ -2875,6 +2903,7 @@ class PlanExercisesCompanion extends UpdateCompanion<PlanExercise> {
     Expression<int>? maxSets,
     Expression<int>? planId,
     Expression<int>? warmupSets,
+    Expression<int>? sequence,
   }) {
     return RawValuesInsertable({
       if (enabled != null) 'enabled': enabled,
@@ -2884,6 +2913,7 @@ class PlanExercisesCompanion extends UpdateCompanion<PlanExercise> {
       if (maxSets != null) 'max_sets': maxSets,
       if (planId != null) 'plan_id': planId,
       if (warmupSets != null) 'warmup_sets': warmupSets,
+      if (sequence != null) 'sequence': sequence,
     });
   }
 
@@ -2894,7 +2924,8 @@ class PlanExercisesCompanion extends UpdateCompanion<PlanExercise> {
       Value<int>? id,
       Value<int?>? maxSets,
       Value<int>? planId,
-      Value<int?>? warmupSets}) {
+      Value<int?>? warmupSets,
+      Value<int>? sequence}) {
     return PlanExercisesCompanion(
       enabled: enabled ?? this.enabled,
       timers: timers ?? this.timers,
@@ -2903,6 +2934,7 @@ class PlanExercisesCompanion extends UpdateCompanion<PlanExercise> {
       maxSets: maxSets ?? this.maxSets,
       planId: planId ?? this.planId,
       warmupSets: warmupSets ?? this.warmupSets,
+      sequence: sequence ?? this.sequence,
     );
   }
 
@@ -2930,6 +2962,9 @@ class PlanExercisesCompanion extends UpdateCompanion<PlanExercise> {
     if (warmupSets.present) {
       map['warmup_sets'] = Variable<int>(warmupSets.value);
     }
+    if (sequence.present) {
+      map['sequence'] = Variable<int>(sequence.value);
+    }
     return map;
   }
 
@@ -2942,7 +2977,8 @@ class PlanExercisesCompanion extends UpdateCompanion<PlanExercise> {
           ..write('id: $id, ')
           ..write('maxSets: $maxSets, ')
           ..write('planId: $planId, ')
-          ..write('warmupSets: $warmupSets')
+          ..write('warmupSets: $warmupSets, ')
+          ..write('sequence: $sequence')
           ..write(')'))
         .toString();
   }
@@ -4396,6 +4432,7 @@ typedef $$PlanExercisesTableCreateCompanionBuilder = PlanExercisesCompanion
   Value<int?> maxSets,
   required int planId,
   Value<int?> warmupSets,
+  Value<int> sequence,
 });
 typedef $$PlanExercisesTableUpdateCompanionBuilder = PlanExercisesCompanion
     Function({
@@ -4406,6 +4443,7 @@ typedef $$PlanExercisesTableUpdateCompanionBuilder = PlanExercisesCompanion
   Value<int?> maxSets,
   Value<int> planId,
   Value<int?> warmupSets,
+  Value<int> sequence,
 });
 
 final class $$PlanExercisesTableReferences
@@ -4466,6 +4504,9 @@ class $$PlanExercisesTableFilterComposer
 
   ColumnFilters<int> get warmupSets => $composableBuilder(
       column: $table.warmupSets, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sequence => $composableBuilder(
+      column: $table.sequence, builder: (column) => ColumnFilters(column));
 
   $$GymSetsTableFilterComposer get exercise {
     final $$GymSetsTableFilterComposer composer = $composerBuilder(
@@ -4532,6 +4573,9 @@ class $$PlanExercisesTableOrderingComposer
   ColumnOrderings<int> get warmupSets => $composableBuilder(
       column: $table.warmupSets, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get sequence => $composableBuilder(
+      column: $table.sequence, builder: (column) => ColumnOrderings(column));
+
   $$GymSetsTableOrderingComposer get exercise {
     final $$GymSetsTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -4596,6 +4640,9 @@ class $$PlanExercisesTableAnnotationComposer
 
   GeneratedColumn<int> get warmupSets => $composableBuilder(
       column: $table.warmupSets, builder: (column) => column);
+
+  GeneratedColumn<int> get sequence =>
+      $composableBuilder(column: $table.sequence, builder: (column) => column);
 
   $$GymSetsTableAnnotationComposer get exercise {
     final $$GymSetsTableAnnotationComposer composer = $composerBuilder(
@@ -4668,6 +4715,7 @@ class $$PlanExercisesTableTableManager extends RootTableManager<
             Value<int?> maxSets = const Value.absent(),
             Value<int> planId = const Value.absent(),
             Value<int?> warmupSets = const Value.absent(),
+            Value<int> sequence = const Value.absent(),
           }) =>
               PlanExercisesCompanion(
             enabled: enabled,
@@ -4677,6 +4725,7 @@ class $$PlanExercisesTableTableManager extends RootTableManager<
             maxSets: maxSets,
             planId: planId,
             warmupSets: warmupSets,
+            sequence: sequence,
           ),
           createCompanionCallback: ({
             required bool enabled,
@@ -4686,6 +4735,7 @@ class $$PlanExercisesTableTableManager extends RootTableManager<
             Value<int?> maxSets = const Value.absent(),
             required int planId,
             Value<int?> warmupSets = const Value.absent(),
+            Value<int> sequence = const Value.absent(),
           }) =>
               PlanExercisesCompanion.insert(
             enabled: enabled,
@@ -4695,6 +4745,7 @@ class $$PlanExercisesTableTableManager extends RootTableManager<
             maxSets: maxSets,
             planId: planId,
             warmupSets: warmupSets,
+            sequence: sequence,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (
