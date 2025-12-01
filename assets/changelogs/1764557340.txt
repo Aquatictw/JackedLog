@@ -1,0 +1,2 @@
+• Allow scrolling past the end of edit plans page
+• Fix swapping workouts
