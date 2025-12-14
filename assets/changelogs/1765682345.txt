@@ -1,0 +1,4 @@
+• Fix padding on graph pages
+• Fix toasts never dismissing
+• Fix tooltips on graphs
+• Maintain order when swapping an exercise
