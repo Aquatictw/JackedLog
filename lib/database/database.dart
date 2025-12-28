@@ -418,19 +418,29 @@ class AppDatabase extends _$AppDatabase {
             schema.planExercises.sequence,
           );
           await schema.database.customStatement('''
-            UPDATE plan_exercises 
+            UPDATE plan_exercises
             SET sequence = (
-              SELECT COUNT(*) 
-              FROM plan_exercises pe2 
-              WHERE pe2.plan_id = plan_exercises.plan_id 
+              SELECT COUNT(*)
+              FROM plan_exercises pe2
+              WHERE pe2.plan_id = plan_exercises.plan_id
                 AND pe2.id < plan_exercises.id
             )
           ''');
+        },
+        from46To47: (Migrator m, schema) async {
+          await schema.settings.update().write(
+                const RawValuesInsertable({
+                  'group_history': Variable(true),
+                  'show_units': Variable(false),
+                  'show_body_weight': Variable(false),
+                  'rep_estimation': Variable(true),
+                }),
+              );
         },
       ),
     );
   }
 
   @override
-  int get schemaVersion => 46;
+  int get schemaVersion => 47;
 }
