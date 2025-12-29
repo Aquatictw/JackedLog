@@ -7,6 +7,7 @@ import 'package:flexify/database/metadata.dart';
 import 'package:flexify/database/plan_exercises.dart';
 import 'package:flexify/database/plans.dart';
 import 'package:flexify/database/settings.dart';
+import 'package:flexify/database/workouts.dart';
 import 'database_connection_native.dart';
 
 part 'database.g.dart';
@@ -15,7 +16,7 @@ LazyDatabase openConnection() {
   return createNativeConnection();
 }
 
-@DriftDatabase(tables: [Plans, GymSets, Settings, PlanExercises, Metadata])
+@DriftDatabase(tables: [Plans, GymSets, Settings, PlanExercises, Metadata, Workouts])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
 
@@ -28,6 +29,12 @@ class AppDatabase extends _$AppDatabase {
           Index(
             'GymSets',
             "CREATE INDEX IF NOT EXISTS gym_sets_name_created ON gym_sets(name, created);",
+          ),
+        );
+        await m.createIndex(
+          Index(
+            'gym_sets',
+            'CREATE INDEX IF NOT EXISTS gym_sets_workout_id ON gym_sets(workout_id)',
           ),
         );
 
@@ -428,10 +435,20 @@ class AppDatabase extends _$AppDatabase {
                 }),
               );
         },
+        from47To48: (Migrator m, Schema48 schema) async {
+          await m.createTable(schema.workouts);
+          await m.addColumn(schema.gymSets, schema.gymSets.workoutId);
+          await m.createIndex(
+            Index(
+              'gym_sets',
+              'CREATE INDEX IF NOT EXISTS gym_sets_workout_id ON gym_sets(workout_id)',
+            ),
+          );
+        },
       ),
     );
   }
 
   @override
-  int get schemaVersion => 47;
+  int get schemaVersion => 48;
 }

@@ -452,6 +452,7 @@ class GymSets extends Table {
   IntColumn get restMs => integer().nullable()();
   TextColumn get unit => text()();
   RealColumn get weight => real()();
+  IntColumn get workoutId => integer().nullable()();
 }
 
 final categoriesStream = (db.gymSets.selectOnly(distinct: true)

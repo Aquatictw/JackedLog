@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Runner",
+      "type": "shell",
+      "command": "dart run build_runner build --delete-conflicting-outputs",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Flutter Run",
+      "type": "shell",
+      "command": "flutter run -v",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Build APK Release",
+      "type": "shell",
+      "command": "flutter build apk --release",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}
