@@ -35,36 +35,23 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = context.select<SettingsState, String>(
-      (settings) => settings.value.longDateFormat,
-    );
     final showImages = context.select<SettingsState, bool>(
       (settings) => settings.value.showImages,
     );
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.workout.name ?? 'Workout'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () => _deleteWorkout(context),
-          ),
-        ],
-      ),
       body: StreamBuilder<List<GymSet>>(
         stream: setsStream,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return Scaffold(
+              appBar: AppBar(title: Text(widget.workout.name ?? 'Workout')),
+              body: const Center(child: CircularProgressIndicator()),
+            );
           }
 
           final sets = snapshot.data!;
-          if (sets.isEmpty) {
-            return const Center(
-              child: Text('No exercises in this workout'),
-            );
-          }
 
           // Group sets by exercise name
           final exerciseGroups = <String, List<GymSet>>{};
@@ -72,18 +59,101 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             exerciseGroups.putIfAbsent(set.name, () => []).add(set);
           }
 
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 16),
-            children: [
-              _buildWorkoutHeader(dateFormat, sets),
-              const Divider(),
-              ...exerciseGroups.entries.map(
-                (entry) => _buildExerciseGroup(
-                  entry.key,
-                  entry.value,
-                  showImages,
+          final totalVolume = sets.fold<double>(
+            0,
+            (sum, s) => sum + (s.weight * s.reps),
+          );
+
+          return CustomScrollView(
+            slivers: [
+              // Stylish App Bar Header
+              SliverAppBar(
+                expandedHeight: 200,
+                pinned: true,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => _deleteWorkout(context),
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          colorScheme.primaryContainer,
+                          colorScheme.primaryContainer.withValues(alpha: 0.6),
+                          colorScheme.surface,
+                        ],
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Date badge
+                            _buildDateBadge(),
+                            const SizedBox(height: 12),
+                            // Workout title
+                            Text(
+                              widget.workout.name ?? 'Workout',
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            // Time (24h format)
+                            Text(
+                              DateFormat('HH:mm').format(widget.workout.startTime),
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
+              // Stats section
+              SliverToBoxAdapter(
+                child: _buildStatsSection(sets, totalVolume),
+              ),
+              // Notes section
+              if (widget.workout.notes?.isNotEmpty == true)
+                SliverToBoxAdapter(
+                  child: _buildNotesSection(),
+                ),
+              // Empty state
+              if (sets.isEmpty)
+                const SliverFillRemaining(
+                  child: Center(
+                    child: Text('No exercises in this workout'),
+                  ),
+                ),
+              // Exercise groups
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final entry = exerciseGroups.entries.elementAt(index);
+                    return _buildExerciseGroup(
+                      entry.key,
+                      entry.value,
+                      showImages,
+                    );
+                  },
+                  childCount: exerciseGroups.length,
+                ),
+              ),
+              // Bottom padding
+              const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
             ],
           );
         },
@@ -91,60 +161,171 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
   }
 
-  Widget _buildWorkoutHeader(String dateFormat, List<GymSet> sets) {
-    final duration = widget.workout.endTime != null
-        ? widget.workout.endTime!.difference(widget.workout.startTime)
-        : DateTime.now().difference(widget.workout.startTime);
+  Widget _buildDateBadge() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final workout = widget.workout;
 
-    final formattedDate = dateFormat == 'timeago'
-        ? DateFormat('MMM d, yyyy h:mm a').format(widget.workout.startTime)
-        : DateFormat(dateFormat).format(widget.workout.startTime);
-
-    final exerciseCount =
-        sets.map((s) => s.name).toSet().length;
-    final totalSets = sets.length;
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            formattedDate,
-            style: Theme.of(context).textTheme.bodyLarge,
+          Icon(
+            Icons.calendar_today,
+            size: 16,
+            color: colorScheme.primary,
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _buildStatChip(
-                Icons.fitness_center,
-                '$exerciseCount exercises',
-              ),
-              const SizedBox(width: 12),
-              _buildStatChip(
-                Icons.repeat,
-                '$totalSets sets',
-              ),
-              const SizedBox(width: 12),
-              _buildStatChip(
-                Icons.timer,
-                _formatDuration(duration),
-              ),
-            ],
+          const SizedBox(width: 8),
+          Text(
+            DateFormat('yyyy MMMM d').format(workout.startTime),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.primary,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatChip(IconData icon, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+  Widget _buildStatsSection(List<GymSet> sets, double totalVolume) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final duration = widget.workout.endTime != null
+        ? widget.workout.endTime!.difference(widget.workout.startTime)
+        : DateTime.now().difference(widget.workout.startTime);
+
+    final exerciseCount = sets.map((s) => s.name).toSet().length;
+    final totalSets = sets.length;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              Icons.fitness_center,
+              '$exerciseCount',
+              'exercises',
+            ),
+            _buildStatDivider(),
+            _buildStatItem(
+              Icons.repeat,
+              '$totalSets',
+              'sets',
+            ),
+            _buildStatDivider(),
+            _buildStatItem(
+              Icons.timer,
+              _formatDuration(duration),
+              'duration',
+            ),
+            if (totalVolume > 0) ...[
+              _buildStatDivider(),
+              _buildStatItem(
+                Icons.show_chart,
+                _formatVolume(totalVolume),
+                'volume',
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String value, String label) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
       children: [
-        Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 4),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Icon(icon, size: 20, color: colorScheme.primary),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(
+      height: 40,
+      width: 1,
+      color: Theme.of(context).colorScheme.outlineVariant,
+    );
+  }
+
+  Widget _buildNotesSection() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: colorScheme.primary.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.notes,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Workout Notes',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              widget.workout.notes!,
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurface,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -153,6 +334,13 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       return '${duration.inHours}h ${duration.inMinutes % 60}m';
     }
     return '${duration.inMinutes}m';
+  }
+
+  String _formatVolume(double volume) {
+    if (volume >= 1000) {
+      return '${(volume / 1000).toStringAsFixed(1)}k';
+    }
+    return volume.toStringAsFixed(0);
   }
 
   Widget _buildExerciseGroup(

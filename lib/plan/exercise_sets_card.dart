@@ -13,12 +13,14 @@ class SetData {
   int reps;
   bool completed;
   int? savedSetId;
+  bool isWarmup;
 
   SetData({
     required this.weight,
     required this.reps,
     this.completed = false,
     this.savedSetId,
+    this.isWarmup = false,
   });
 }
 
@@ -211,15 +213,47 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     await planState.updateGymCounts(widget.planId, widget.workoutId);
   }
 
-  void _addSet() {
+  void _addSet({bool isWarmup = false}) {
     HapticFeedback.selectionClick();
+
+    // Find where to insert the set
+    int insertIndex;
+    if (isWarmup) {
+      // Add warmup at the beginning, after existing warmups
+      insertIndex = sets.where((s) => s.isWarmup).length;
+    } else {
+      insertIndex = sets.length;
+    }
+
+    // Get weight - warmups typically use less weight
+    final baseWeight = sets.isNotEmpty ? sets.last.weight : _defaultWeight;
+    final weight = isWarmup ? (baseWeight * 0.5).roundToDouble() : baseWeight;
+
     setState(() {
-      sets.add(SetData(
-        weight: sets.isNotEmpty ? sets.last.weight : _defaultWeight,
+      sets.insert(insertIndex, SetData(
+        weight: weight,
         reps: sets.isNotEmpty ? sets.last.reps : _defaultReps,
         completed: false,
+        isWarmup: isWarmup,
       ));
     });
+  }
+
+  Future<void> _updateCompletedSet(int index) async {
+    final setData = sets[index];
+    if (!setData.completed || setData.savedSetId == null) return;
+
+    // Update the set in database
+    await (db.gymSets.update()
+          ..where((tbl) => tbl.id.equals(setData.savedSetId!)))
+        .write(GymSetsCompanion(
+          weight: Value(setData.weight),
+          reps: Value(setData.reps.toDouble()),
+        ));
+
+    // Update plan state
+    final planState = context.read<PlanState>();
+    await planState.updateGymCounts(widget.planId, widget.workoutId);
   }
 
   Future<void> _deleteSet(int index) async {
@@ -373,57 +407,115 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                     child: Column(
                       children: [
                         ...List.generate(sets.length, (index) {
+                          // Calculate display index (exclude warmups from numbering)
+                          final warmupCount = sets.take(index).where((s) => s.isWarmup).length;
+                          final displayIndex = sets[index].isWarmup
+                              ? index + 1
+                              : index - warmupCount + 1;
+
                           return _SetRow(
-                            key: ValueKey('set_$index'),
-                            index: index,
+                            key: ValueKey('set_${sets[index].isWarmup ? "w" : ""}$index'),
+                            index: displayIndex,
                             setData: sets[index],
                             unit: unit,
                             onWeightChanged: (value) {
                               setState(() => sets[index].weight = value);
+                              if (sets[index].completed) {
+                                _updateCompletedSet(index);
+                              }
                             },
                             onRepsChanged: (value) {
                               setState(() => sets[index].reps = value);
+                              if (sets[index].completed) {
+                                _updateCompletedSet(index);
+                              }
                             },
                             onToggle: () => _toggleSet(index),
                             onDelete: () => _deleteSet(index),
                           );
                         }),
-                        // Add set button
+                        // Add set buttons row
                         Padding(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 4),
-                          child: InkWell(
-                            onTap: _addSet,
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: colorScheme.outlineVariant,
-                                  width: 1,
-                                  style: BorderStyle.solid,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.add,
-                                    size: 20,
-                                    color: colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Add Set',
-                                    style: TextStyle(
-                                      color: colorScheme.primary,
-                                      fontWeight: FontWeight.w500,
+                          child: Row(
+                            children: [
+                              // Add Warmup button
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => _addSet(isWarmup: true),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: colorScheme.tertiary.withValues(alpha: 0.5),
+                                        width: 1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: colorScheme.tertiaryContainer.withValues(alpha: 0.2),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.whatshot_outlined,
+                                          size: 18,
+                                          color: colorScheme.tertiary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Warmup',
+                                          style: TextStyle(
+                                            color: colorScheme.tertiary,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              // Add Working Set button
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => _addSet(isWarmup: false),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: colorScheme.primary.withValues(alpha: 0.5),
+                                        width: 1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: colorScheme.primaryContainer.withValues(alpha: 0.2),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.add,
+                                          size: 18,
+                                          color: colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Working Set',
+                                          style: TextStyle(
+                                            color: colorScheme.primary,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -475,9 +567,37 @@ class _SetRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final completed = setData.completed;
+    final isWarmup = setData.isWarmup;
+
+    // Choose colors based on warmup/completed state
+    final Color bgColor;
+    final Color borderColor;
+    final Color accentColor;
+
+    if (isWarmup) {
+      if (completed) {
+        bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.4);
+        borderColor = colorScheme.tertiary.withValues(alpha: 0.5);
+        accentColor = colorScheme.tertiary;
+      } else {
+        bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.2);
+        borderColor = colorScheme.tertiary.withValues(alpha: 0.3);
+        accentColor = colorScheme.tertiary;
+      }
+    } else {
+      if (completed) {
+        bgColor = colorScheme.primaryContainer.withValues(alpha: 0.4);
+        borderColor = colorScheme.primary.withValues(alpha: 0.5);
+        accentColor = colorScheme.primary;
+      } else {
+        bgColor = colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
+        borderColor = colorScheme.outlineVariant.withValues(alpha: 0.5);
+        accentColor = colorScheme.primary;
+      }
+    }
 
     return Dismissible(
-      key: Key('dismissible_set_$index'),
+      key: Key('dismissible_set_${isWarmup ? "w" : ""}$index'),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
         onDelete();
@@ -500,59 +620,70 @@ class _SetRow extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: completed
-              ? colorScheme.primaryContainer.withValues(alpha: 0.4)
-              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          color: bgColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: completed
-                ? colorScheme.primary.withValues(alpha: 0.5)
-                : colorScheme.outlineVariant.withValues(alpha: 0.5),
+            color: borderColor,
             width: 1,
           ),
         ),
         child: Row(
           children: [
-            // Set number badge
+            // Set number badge with warmup indicator
             Container(
               width: 44,
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
               decoration: BoxDecoration(
                 color: completed
-                    ? colorScheme.primary.withValues(alpha: 0.2)
+                    ? accentColor.withValues(alpha: 0.2)
                     : colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(
-                '${index + 1}',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: completed
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
-                  fontSize: 14,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isWarmup)
+                    Icon(
+                      Icons.whatshot,
+                      size: 12,
+                      color: accentColor,
+                    ),
+                  Text(
+                    isWarmup ? 'W$index' : '$index',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: completed
+                          ? accentColor
+                          : colorScheme.onSurfaceVariant,
+                      fontSize: isWarmup ? 11 : 14,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 10),
-            // Weight input
+            // Weight input - always editable
             Expanded(
               flex: 3,
               child: _WeightInput(
                 value: setData.weight,
                 unit: unit,
-                enabled: !completed,
+                enabled: true,
+                completed: completed,
+                accentColor: accentColor,
                 onChanged: onWeightChanged,
               ),
             ),
             const SizedBox(width: 8),
-            // Reps input with +/- buttons
+            // Reps input with +/- buttons - always editable
             Expanded(
               flex: 4,
               child: _RepsInput(
                 value: setData.reps,
-                enabled: !completed,
+                enabled: true,
+                completed: completed,
+                accentColor: accentColor,
                 onChanged: onRepsChanged,
               ),
             ),
@@ -560,6 +691,7 @@ class _SetRow extends StatelessWidget {
             // Complete/Toggle button
             _CompleteButton(
               completed: completed,
+              isWarmup: isWarmup,
               onPressed: onToggle,
             ),
           ],
@@ -573,12 +705,16 @@ class _WeightInput extends StatefulWidget {
   final double value;
   final String unit;
   final bool enabled;
+  final bool completed;
+  final Color accentColor;
   final ValueChanged<double> onChanged;
 
   const _WeightInput({
     required this.value,
     required this.unit,
     required this.enabled,
+    required this.completed,
+    required this.accentColor,
     required this.onChanged,
   });
 
@@ -631,7 +767,7 @@ class _WeightInputState extends State<_WeightInput> {
         style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
-          color: widget.enabled ? colorScheme.onSurface : colorScheme.primary,
+          color: widget.completed ? widget.accentColor : colorScheme.onSurface,
         ),
         decoration: InputDecoration(
           isDense: true,
@@ -643,12 +779,24 @@ class _WeightInputState extends State<_WeightInput> {
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
+            borderSide: widget.completed
+                ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+                : BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: widget.completed
+                ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+                : BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: widget.accentColor, width: 2),
           ),
           filled: true,
-          fillColor: widget.enabled
-              ? colorScheme.surface
-              : Colors.transparent,
+          fillColor: widget.completed
+              ? widget.accentColor.withValues(alpha: 0.1)
+              : colorScheme.surface,
         ),
         onChanged: (value) {
           final parsed = double.tryParse(value);
@@ -670,11 +818,15 @@ class _WeightInputState extends State<_WeightInput> {
 class _RepsInput extends StatefulWidget {
   final int value;
   final bool enabled;
+  final bool completed;
+  final Color accentColor;
   final ValueChanged<int> onChanged;
 
   const _RepsInput({
     required this.value,
     required this.enabled,
+    required this.completed,
+    required this.accentColor,
     required this.onChanged,
   });
 
@@ -712,21 +864,26 @@ class _RepsInputState extends State<_RepsInput> {
 
     return Container(
       decoration: BoxDecoration(
-        color: widget.enabled ? colorScheme.surface : Colors.transparent,
+        color: widget.completed
+            ? widget.accentColor.withValues(alpha: 0.1)
+            : colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
+        border: widget.completed
+            ? Border.all(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+            : null,
       ),
       child: Row(
         children: [
-          if (widget.enabled)
-            _RepsButton(
-              icon: Icons.remove,
-              onPressed: widget.value > 1
-                  ? () {
-                      HapticFeedback.selectionClick();
-                      widget.onChanged(widget.value - 1);
-                    }
-                  : null,
-            ),
+          _RepsButton(
+            icon: Icons.remove,
+            accentColor: widget.accentColor,
+            onPressed: widget.value > 1
+                ? () {
+                    HapticFeedback.selectionClick();
+                    widget.onChanged(widget.value - 1);
+                  }
+                : null,
+          ),
           Expanded(
             child: Focus(
               onFocusChange: (hasFocus) => _hasFocus = hasFocus,
@@ -738,9 +895,9 @@ class _RepsInputState extends State<_RepsInput> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: widget.enabled
-                      ? colorScheme.onSurface
-                      : colorScheme.primary,
+                  color: widget.completed
+                      ? widget.accentColor
+                      : colorScheme.onSurface,
                 ),
                 decoration: InputDecoration(
                   isDense: true,
@@ -770,16 +927,16 @@ class _RepsInputState extends State<_RepsInput> {
               ),
             ),
           ),
-          if (widget.enabled)
-            _RepsButton(
-              icon: Icons.add,
-              onPressed: widget.value < 99
-                  ? () {
-                      HapticFeedback.selectionClick();
-                      widget.onChanged(widget.value + 1);
-                    }
-                  : null,
-            ),
+          _RepsButton(
+            icon: Icons.add,
+            accentColor: widget.accentColor,
+            onPressed: widget.value < 99
+                ? () {
+                    HapticFeedback.selectionClick();
+                    widget.onChanged(widget.value + 1);
+                  }
+                : null,
+          ),
         ],
       ),
     );
@@ -788,10 +945,12 @@ class _RepsInputState extends State<_RepsInput> {
 
 class _RepsButton extends StatelessWidget {
   final IconData icon;
+  final Color accentColor;
   final VoidCallback? onPressed;
 
   const _RepsButton({
     required this.icon,
+    required this.accentColor,
     this.onPressed,
   });
 
@@ -809,7 +968,7 @@ class _RepsButton extends StatelessWidget {
         icon: Icon(
           icon,
           color: onPressed != null
-              ? colorScheme.primary
+              ? accentColor
               : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
         ),
       ),
@@ -819,16 +978,20 @@ class _RepsButton extends StatelessWidget {
 
 class _CompleteButton extends StatelessWidget {
   final bool completed;
+  final bool isWarmup;
   final VoidCallback onPressed;
 
   const _CompleteButton({
     required this.completed,
+    required this.isWarmup,
     required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final accentColor = isWarmup ? colorScheme.tertiary : colorScheme.primary;
+    final onAccentColor = isWarmup ? colorScheme.onTertiary : colorScheme.onPrimary;
 
     return SizedBox(
       width: 44,
@@ -837,7 +1000,7 @@ class _CompleteButton extends StatelessWidget {
         onPressed: onPressed,
         style: IconButton.styleFrom(
           backgroundColor: completed
-              ? colorScheme.primary
+              ? accentColor
               : colorScheme.surfaceContainerHighest,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -849,7 +1012,7 @@ class _CompleteButton extends StatelessWidget {
             completed ? Icons.check : Icons.check,
             key: ValueKey(completed),
             color: completed
-                ? colorScheme.onPrimary
+                ? onAccentColor
                 : colorScheme.onSurfaceVariant,
             size: 22,
           ),

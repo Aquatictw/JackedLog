@@ -13,12 +13,14 @@ class WorkoutWithSets {
   final int setCount;
   final int exerciseCount;
   final List<String> exerciseNames;
+  final double totalVolume;
 
   WorkoutWithSets({
     required this.workout,
     required this.setCount,
     required this.exerciseCount,
     required this.exerciseNames,
+    this.totalVolume = 0,
   });
 }
 
@@ -121,12 +123,17 @@ class _WorkoutsListState extends State<WorkoutsList> {
             .get();
 
         final exerciseNames = sets.map((s) => s.name).toSet().toList();
+        final totalVolume = sets.fold<double>(
+          0,
+          (sum, s) => sum + (s.weight * s.reps),
+        );
 
         result.add(WorkoutWithSets(
           workout: workout,
           setCount: sets.length,
           exerciseCount: exerciseNames.length,
           exerciseNames: exerciseNames,
+          totalVolume: totalVolume,
         ));
       }
 
@@ -176,23 +183,23 @@ class _WorkoutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final workout = workoutWithSets.workout;
-    final dateFormat = context.select<SettingsState, String>(
-      (settings) => settings.value.longDateFormat,
-    );
+    final colorScheme = Theme.of(context).colorScheme;
 
     final duration = workout.endTime != null
         ? workout.endTime!.difference(workout.startTime)
         : null;
 
-    final formattedDate = dateFormat == 'timeago'
-        ? timeago.format(workout.startTime)
-        : DateFormat(dateFormat).format(workout.startTime);
+    // Format date as Year Month Day
+    final formattedDate = DateFormat('yyyy MMM d').format(workout.startTime);
 
     final exercisePreview = workoutWithSets.exerciseNames.take(3).join(', ');
     final moreCount = workoutWithSets.exerciseNames.length - 3;
+    final hasNotes = workout.notes?.isNotEmpty == true;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      elevation: 1,
+      shadowColor: colorScheme.shadow.withValues(alpha: 0.2),
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -208,36 +215,146 @@ class _WorkoutCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Date badge and workout name
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      workout.name ?? 'Workout',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  // Date badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          DateFormat('d').format(workout.startTime),
+                          style: TextStyle(
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: colorScheme.onPrimaryContainer,
+                            height: 1,
                           ),
+                        ),
+                        Text(
+                          DateFormat('MMM').format(workout.startTime),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Text(
-                    formattedDate,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  const SizedBox(width: 12),
+                  // Title and year
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          workout.name ?? 'Workout',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
+                        const SizedBox(height: 2),
+                        Text(
+                          DateFormat('yyyy').format(workout.startTime),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
+                  // Duration badge
+                  if (duration != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.timer_outlined,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatDuration(duration),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
+              // Exercise preview
               Text(
                 moreCount > 0
                     ? '$exercisePreview +$moreCount more'
                     : exercisePreview,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+              // Notes preview
+              if (hasNotes) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.notes,
+                        size: 14,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          workout.notes!,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface,
+                                fontStyle: FontStyle.italic,
+                              ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
+              // Stats row
               Row(
                 children: [
                   _buildChip(
@@ -245,18 +362,18 @@ class _WorkoutCard extends StatelessWidget {
                     Icons.fitness_center,
                     '${workoutWithSets.exerciseCount} exercises',
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   _buildChip(
                     context,
                     Icons.repeat,
                     '${workoutWithSets.setCount} sets',
                   ),
-                  if (duration != null) ...[
-                    const SizedBox(width: 16),
+                  if (workoutWithSets.totalVolume > 0) ...[
+                    const SizedBox(width: 12),
                     _buildChip(
                       context,
-                      Icons.timer,
-                      _formatDuration(duration),
+                      Icons.show_chart,
+                      _formatVolume(workoutWithSets.totalVolume),
                     ),
                   ],
                 ],
@@ -291,5 +408,12 @@ class _WorkoutCard extends StatelessWidget {
       return '${duration.inHours}h ${duration.inMinutes % 60}m';
     }
     return '${duration.inMinutes}m';
+  }
+
+  String _formatVolume(double volume) {
+    if (volume >= 1000) {
+      return '${(volume / 1000).toStringAsFixed(1)}k vol';
+    }
+    return '${volume.toStringAsFixed(0)} vol';
   }
 }

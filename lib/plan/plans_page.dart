@@ -7,6 +7,7 @@ import 'package:flexify/plan/edit_plan_page.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/plan/plans_list.dart';
 import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -26,6 +27,15 @@ class PlansPageState extends State<PlansPage>
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Register navigator key with WorkoutState for ActiveWorkoutBar navigation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WorkoutState>().setPlansNavigatorKey(navKey);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

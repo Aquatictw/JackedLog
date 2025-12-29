@@ -85,12 +85,29 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
           borderRadius: BorderRadius.circular(16),
           onTap: () {
             if (plan != null) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StartPlanPage(plan: plan),
-                ),
-              );
+              // Use PlansPage's navigator to keep bar visible
+              final navKey = workoutState.plansNavigatorKey;
+              if (navKey?.currentState != null) {
+                // Check if we're already on StartPlanPage for this plan
+                // by checking if we can pop (meaning we're on a pushed page)
+                if (navKey!.currentState!.canPop()) {
+                  // Already on the workout page, don't push another one
+                  return;
+                }
+                navKey.currentState!.push(
+                  MaterialPageRoute(
+                    builder: (context) => StartPlanPage(plan: plan),
+                  ),
+                );
+              } else {
+                // Fallback to regular navigation
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StartPlanPage(plan: plan),
+                  ),
+                );
+              }
             }
           },
           child: Padding(
