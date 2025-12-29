@@ -35,6 +35,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final tabs = setting.split(',');
     controller = TabController(length: tabs.length, vsync: this);
 
+    // Register TabController with WorkoutState for cross-tab navigation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final plansIndex = tabs.indexOf('PlansPage');
+      context.read<WorkoutState>().setTabController(controller, plansIndex);
+    });
+
     final info = PackageInfo.fromPlatform();
     info.then((pkg) async {
       final meta = await (db.metadata.select()..limit(1)).getSingleOrNull();

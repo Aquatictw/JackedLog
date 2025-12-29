@@ -94,11 +94,14 @@ class _StartPlanPageState extends State<StartPlanPage> {
     final planState = context.read<PlanState>();
     await planState.updateGymCounts(widget.plan.id, workoutId);
 
-    // Expand first exercise by default
+    // Expand ALL exercises by default so all sets are visible
     final exercises = await stream.first;
     if (exercises.isNotEmpty && mounted) {
       setState(() {
-        expandedExercises.add(0);
+        // Add all indices including plan exercises and ad-hoc exercises
+        for (int i = 0; i < exercises.length + _adHocExercises.length; i++) {
+          expandedExercises.add(i);
+        }
       });
     }
   }
@@ -107,6 +110,52 @@ class _StartPlanPageState extends State<StartPlanPage> {
     if (workoutId == null) return;
     await (db.workouts.update()..where((w) => w.id.equals(workoutId!)))
         .write(WorkoutsCompanion(notes: Value(_notesController.text)));
+  }
+
+  Future<void> _editWorkoutTitle() async {
+    final titleController = TextEditingController(text: title);
+    final newTitle = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Workout Title'),
+        content: TextField(
+          controller: titleController,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            labelText: 'Title',
+            border: OutlineInputBorder(),
+            hintText: 'Enter workout title...',
+          ),
+          onSubmitted: (value) => Navigator.pop(context, value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, titleController.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (newTitle != null && newTitle.isNotEmpty && mounted) {
+      setState(() {
+        title = newTitle;
+      });
+      // Update workout name in database
+      if (workoutId != null) {
+        await (db.workouts.update()..where((w) => w.id.equals(workoutId!)))
+            .write(WorkoutsCompanion(name: Value(newTitle)));
+        // Refresh workout state
+        final workoutState = context.read<WorkoutState>();
+        await workoutState.refresh();
+      }
+    }
+    titleController.dispose();
   }
 
   @override
@@ -140,7 +189,26 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(title),
+            title: GestureDetector(
+              onTap: _editWorkoutTitle,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      title,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 18,
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ],
+              ),
+            ),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
@@ -178,9 +246,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.only(top: 8, bottom: 100),
-                  itemCount: totalExercises,
+                  itemCount: totalExercises + 1, // +1 for add exercise button
                   itemBuilder: (context, index) {
-                    // First show plan exercises, then ad-hoc exercises
+                    // First show plan exercises
                     if (index < exercises.length) {
                       final exercise = exercises[index];
                       return ExerciseSetsCard(
@@ -202,8 +270,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
                           _checkAutoExpandNext(exercises, index);
                         },
                       );
-                    } else {
-                      // Ad-hoc exercise
+                    }
+                    // Then ad-hoc exercises
+                    if (index < exercises.length + _adHocExercises.length) {
                       final adHocIndex = index - exercises.length;
                       final exerciseName = _adHocExercises[adHocIndex];
                       return _AdHocExerciseCard(
@@ -227,15 +296,14 @@ class _StartPlanPageState extends State<StartPlanPage> {
                         },
                       );
                     }
+                    // Last item: Add Exercise button
+                    return _AddExerciseCard(
+                      onTap: () => _showAddExerciseModal(context),
+                    );
                   },
                 ),
               ),
             ],
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showAddExerciseModal(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Exercise'),
           ),
         );
       },
@@ -345,6 +413,73 @@ class _NotesSection extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AddExerciseCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddExerciseCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.primary.withValues(alpha: 0.3),
+                width: 2,
+                strokeAlign: BorderSide.strokeAlignInside,
+              ),
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primaryContainer.withValues(alpha: 0.2),
+                  colorScheme.secondaryContainer.withValues(alpha: 0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.add_circle_outline,
+                    color: colorScheme.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Text(
+                  'Add Exercise',
+                  style: TextStyle(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

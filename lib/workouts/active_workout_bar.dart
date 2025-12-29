@@ -55,6 +55,21 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
     }
   }
 
+  void _navigateToWorkout(GlobalKey<NavigatorState>? navKey, Plan plan) {
+    if (navKey?.currentState != null) {
+      // Check if we're already on StartPlanPage for this plan
+      if (navKey!.currentState!.canPop()) {
+        // Already on the workout page, don't push another one
+        return;
+      }
+      navKey.currentState!.push(
+        MaterialPageRoute(
+          builder: (context) => StartPlanPage(plan: plan),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final workoutState = context.watch<WorkoutState>();
@@ -85,29 +100,24 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
           borderRadius: BorderRadius.circular(16),
           onTap: () {
             if (plan != null) {
-              // Use PlansPage's navigator to keep bar visible
               final navKey = workoutState.plansNavigatorKey;
-              if (navKey?.currentState != null) {
-                // Check if we're already on StartPlanPage for this plan
-                // by checking if we can pop (meaning we're on a pushed page)
-                if (navKey!.currentState!.canPop()) {
-                  // Already on the workout page, don't push another one
+              final tabController = workoutState.tabController;
+              final plansIndex = workoutState.plansTabIndex;
+
+              // First, switch to Plans tab if not already there
+              if (tabController != null && plansIndex >= 0) {
+                if (tabController.index != plansIndex) {
+                  tabController.animateTo(plansIndex);
+                  // Wait for tab switch animation, then navigate
+                  Future.delayed(const Duration(milliseconds: 300), () {
+                    _navigateToWorkout(navKey, plan);
+                  });
                   return;
                 }
-                navKey.currentState!.push(
-                  MaterialPageRoute(
-                    builder: (context) => StartPlanPage(plan: plan),
-                  ),
-                );
-              } else {
-                // Fallback to regular navigation
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StartPlanPage(plan: plan),
-                  ),
-                );
               }
+
+              // Already on Plans tab, navigate directly
+              _navigateToWorkout(navKey, plan);
             }
           },
           child: Padding(

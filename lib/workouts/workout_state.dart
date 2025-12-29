@@ -2,20 +2,29 @@ import 'package:drift/drift.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 class WorkoutState extends ChangeNotifier {
   Workout? _activeWorkout;
   Plan? _activePlan;
   GlobalKey<NavigatorState>? _plansNavigatorKey;
+  TabController? _tabController;
+  int _plansTabIndex = 0;
 
   Workout? get activeWorkout => _activeWorkout;
   Plan? get activePlan => _activePlan;
   bool get hasActiveWorkout => _activeWorkout != null;
   GlobalKey<NavigatorState>? get plansNavigatorKey => _plansNavigatorKey;
+  TabController? get tabController => _tabController;
+  int get plansTabIndex => _plansTabIndex;
 
   void setPlansNavigatorKey(GlobalKey<NavigatorState> key) {
     _plansNavigatorKey = key;
+  }
+
+  void setTabController(TabController controller, int plansIndex) {
+    _tabController = controller;
+    _plansTabIndex = plansIndex;
   }
 
   WorkoutState() {
