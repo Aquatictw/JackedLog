@@ -6,6 +6,7 @@ import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class StartPlanPage extends StatefulWidget {
@@ -245,7 +246,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
               // Exercises list
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.only(top: 8, bottom: 100),
+                  padding: const EdgeInsets.only(top: 8, bottom: 200),
                   itemCount: totalExercises + 1, // +1 for add exercise button
                   itemBuilder: (context, index) {
                     // First show plan exercises
@@ -682,6 +683,8 @@ class _AdHocExerciseCard extends StatefulWidget {
   final bool isExpanded;
   final VoidCallback onToggleExpand;
   final VoidCallback onRemove;
+  final String? exerciseNotes;
+  final ValueChanged<String>? onNotesChanged;
 
   const _AdHocExerciseCard({
     super.key,
@@ -690,6 +693,8 @@ class _AdHocExerciseCard extends StatefulWidget {
     required this.isExpanded,
     required this.onToggleExpand,
     required this.onRemove,
+    this.exerciseNotes,
+    this.onNotesChanged,
   });
 
   @override
@@ -766,6 +771,146 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
   }
 
   int get completedCount => sets.where((s) => s.completed).length;
+
+  Future<void> _showExerciseMenu(BuildContext context) async {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.fitness_center, color: colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.exerciseName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: Icon(Icons.note_add_outlined, color: colorScheme.primary),
+              title: const Text('Add Notes'),
+              subtitle: widget.exerciseNotes?.isNotEmpty == true
+                  ? Text(
+                      widget.exerciseNotes!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  : null,
+              onTap: () {
+                Navigator.pop(context);
+                _showNotesDialog(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_sweep_outlined, color: colorScheme.error),
+              title: Text('Delete All Sets', style: TextStyle(color: colorScheme.error)),
+              subtitle: Text('Remove ${sets.length} sets from this exercise'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _deleteAllSets();
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
+              title: Text('Remove Exercise', style: TextStyle(color: colorScheme.error)),
+              subtitle: const Text('Remove this exercise from workout'),
+              onTap: () {
+                Navigator.pop(context);
+                widget.onRemove();
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showNotesDialog(BuildContext context) async {
+    final controller = TextEditingController(text: widget.exerciseNotes ?? '');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Notes for ${widget.exerciseName}'),
+        content: TextField(
+          controller: controller,
+          maxLines: 4,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(
+            hintText: 'Add notes for this exercise...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result != null && widget.onNotesChanged != null) {
+      widget.onNotesChanged!(result);
+    }
+  }
+
+  Future<void> _deleteAllSets() async {
+    HapticFeedback.mediumImpact();
+
+    for (final set in sets) {
+      if (set.completed && set.savedSetId != null) {
+        await (db.gymSets.delete()
+              ..where((tbl) => tbl.id.equals(set.savedSetId!)))
+            .go();
+      }
+    }
+
+    setState(() {
+      sets = List.generate(3, (index) => SetData(
+        weight: _defaultWeight,
+        reps: _defaultReps,
+        completed: false,
+      ));
+    });
+  }
+
+  String _getTotalVolume() {
+    final total = sets
+        .where((s) => s.completed)
+        .fold<double>(0, (sum, s) => sum + (s.weight * s.reps));
+    if (total >= 1000) {
+      return '${(total / 1000).toStringAsFixed(1)}k';
+    }
+    return total.toStringAsFixed(0);
+  }
 
   Future<void> _toggleSet(int index) async {
     if (sets[index].completed) {
@@ -879,9 +1024,10 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
       shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
       child: Column(
         children: [
-          // Exercise Header
+          // Exercise Header - same styling as ExerciseSetsCard
           InkWell(
             onTap: widget.onToggleExpand,
+            onLongPress: () => _showExerciseMenu(context),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
@@ -895,7 +1041,6 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                         end: Alignment.bottomRight,
                       )
                     : null,
-                color: colorScheme.secondaryContainer.withValues(alpha: 0.3),
               ),
               child: Row(
                 children: [
@@ -904,14 +1049,14 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                     decoration: BoxDecoration(
                       color: allCompleted
                           ? colorScheme.primary
-                          : colorScheme.secondary,
+                          : colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      allCompleted ? Icons.check : Icons.add_circle_outline,
+                      allCompleted ? Icons.check : Icons.fitness_center,
                       color: allCompleted
                           ? colorScheme.onPrimary
-                          : colorScheme.onSecondary,
+                          : colorScheme.primary,
                       size: 20,
                     ),
                   ),
@@ -920,55 +1065,47 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                widget.exerciseName,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                        Text(
+                          widget.exerciseName,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 2),
+                        if (_initialized)
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.repeat,
+                                size: 14,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$completedCount / ${sets.length} sets',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colorScheme.secondary.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'Added',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: colorScheme.secondary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (_initialized)
-                          Text(
-                            '$completedCount / ${sets.length} sets',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              if (completedCount > 0) ...[
+                                const SizedBox(width: 12),
+                                Icon(
+                                  Icons.fitness_center,
+                                  size: 14,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${_getTotalVolume()} $unit',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                            ],
                           ),
                       ],
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline,
-                      color: colorScheme.error,
-                      size: 20,
-                    ),
-                    onPressed: widget.onRemove,
-                    tooltip: 'Remove exercise',
                   ),
                   AnimatedRotation(
                     turns: widget.isExpanded ? 0.5 : 0,
@@ -982,15 +1119,22 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               ),
             ),
           ),
-          // Progress bar
+          // Progress bar - same styling as ExerciseSetsCard
           if (_initialized)
-            LinearProgressIndicator(
-              value: sets.isEmpty ? 0 : completedCount / sets.length,
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              valueColor: AlwaysStoppedAnimation(
-                allCompleted ? colorScheme.primary : colorScheme.secondary,
+            TweenAnimationBuilder<double>(
+              tween: Tween(
+                begin: 0,
+                end: sets.isEmpty ? 0 : completedCount / sets.length,
               ),
-              minHeight: 4,
+              duration: const Duration(milliseconds: 300),
+              builder: (context, value, _) => LinearProgressIndicator(
+                value: value,
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                valueColor: AlwaysStoppedAnimation(
+                  allCompleted ? colorScheme.primary : colorScheme.tertiary,
+                ),
+                minHeight: 4,
+              ),
             ),
           // Set rows (when expanded)
           AnimatedCrossFade(
@@ -1337,7 +1481,7 @@ class _SimpleWeightInput extends StatelessWidget {
   }
 }
 
-class _SimpleRepsInput extends StatelessWidget {
+class _SimpleRepsInput extends StatefulWidget {
   final int value;
   final bool completed;
   final Color accentColor;
@@ -1351,20 +1495,60 @@ class _SimpleRepsInput extends StatelessWidget {
   });
 
   @override
+  State<_SimpleRepsInput> createState() => _SimpleRepsInputState();
+}
+
+class _SimpleRepsInputState extends State<_SimpleRepsInput> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+  bool _hasFocus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value.toString());
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _hasFocus = _focusNode.hasFocus;
+    });
+  }
+
+  @override
+  void didUpdateWidget(_SimpleRepsInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value && !_hasFocus) {
+      _controller.text = widget.value.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       decoration: BoxDecoration(
-        color: completed
-            ? accentColor.withValues(alpha: 0.1)
+        color: widget.completed
+            ? widget.accentColor.withValues(alpha: 0.1)
             : colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: completed
-            ? Border.all(color: accentColor.withValues(alpha: 0.3), width: 1)
+        border: widget.completed
+            ? Border.all(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
             : null,
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
             width: 32,
@@ -1372,43 +1556,55 @@ class _SimpleRepsInput extends StatelessWidget {
             child: IconButton(
               padding: EdgeInsets.zero,
               iconSize: 18,
-              onPressed: value > 1 ? () => onChanged(value - 1) : null,
+              onPressed: widget.value > 1
+                  ? () {
+                      HapticFeedback.selectionClick();
+                      widget.onChanged(widget.value - 1);
+                    }
+                  : null,
               icon: Icon(
                 Icons.remove,
-                color: value > 1
-                    ? accentColor
+                color: widget.value > 1
+                    ? widget.accentColor
                     : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
               ),
             ),
           ),
           Expanded(
             child: TextField(
-              controller: TextEditingController(text: value.toString()),
+              controller: _controller,
+              focusNode: _focusNode,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: completed ? accentColor : colorScheme.onSurface,
+                color: widget.completed ? widget.accentColor : colorScheme.onSurface,
               ),
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 4,
+                  horizontal: 2,
                   vertical: 10,
                 ),
                 border: InputBorder.none,
-                suffixText: 'reps',
-                suffixStyle: TextStyle(
-                  fontSize: 11,
-                  color: colorScheme.onSurfaceVariant,
+                hintText: 'reps',
+                hintStyle: TextStyle(
+                  fontSize: 10,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
               ),
               onChanged: (text) {
                 final parsed = int.tryParse(text);
                 if (parsed != null && parsed > 0 && parsed < 100) {
-                  onChanged(parsed);
+                  widget.onChanged(parsed);
                 }
+              },
+              onTap: () {
+                _controller.selection = TextSelection(
+                  baseOffset: 0,
+                  extentOffset: _controller.text.length,
+                );
               },
             ),
           ),
@@ -1418,11 +1614,16 @@ class _SimpleRepsInput extends StatelessWidget {
             child: IconButton(
               padding: EdgeInsets.zero,
               iconSize: 18,
-              onPressed: value < 99 ? () => onChanged(value + 1) : null,
+              onPressed: widget.value < 99
+                  ? () {
+                      HapticFeedback.selectionClick();
+                      widget.onChanged(widget.value + 1);
+                    }
+                  : null,
               icon: Icon(
                 Icons.add,
-                color: value < 99
-                    ? accentColor
+                color: widget.value < 99
+                    ? widget.accentColor
                     : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
               ),
             ),
