@@ -4,6 +4,7 @@ import 'package:flexify/main.dart';
 import 'package:flexify/plan/exercise_sets_card.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/workouts/active_workout_bar.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -22,6 +23,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
   late Stream<List<PlanExercise>> stream;
   late String title = widget.plan.days.replaceAll(",", ", ");
   Set<int> expandedExercises = {};
+  final TextEditingController _notesController = TextEditingController();
+  bool _showNotes = false;
 
   @override
   void initState() {
@@ -69,6 +72,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
       // Resume existing workout
       setState(() {
         workoutId = workoutState.activeWorkout!.id;
+        _notesController.text = workoutState.activeWorkout!.notes ?? '';
       });
     } else if (workoutState.activeWorkout == null) {
       // Create a new workout session
@@ -82,6 +86,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
       // There's an active workout for a different plan - use its ID
       setState(() {
         workoutId = workoutState.activeWorkout!.id;
+        _notesController.text = workoutState.activeWorkout!.notes ?? '';
       });
     }
 
@@ -98,8 +103,16 @@ class _StartPlanPageState extends State<StartPlanPage> {
     }
   }
 
+  Future<void> _saveNotes() async {
+    if (workoutId == null) return;
+    await (db.workouts.update()..where((w) => w.id.equals(workoutId!)))
+        .write(WorkoutsCompanion(notes: Value(_notesController.text)));
+  }
+
   @override
   void dispose() {
+    _saveNotes();
+    _notesController.dispose();
     final workoutState = context.read<WorkoutState>();
     workoutState.removeListener(_onWorkoutStateChanged);
     super.dispose();
@@ -108,6 +121,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
   @override
   Widget build(BuildContext context) {
     if (widget.plan.title?.isNotEmpty == true) title = widget.plan.title!;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return StreamBuilder(
       stream: stream,
@@ -128,33 +142,67 @@ class _StartPlanPageState extends State<StartPlanPage> {
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
             ),
-          ),
-          body: ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 160),
-            itemCount: exercises.length,
-            itemBuilder: (context, index) {
-              final exercise = exercises[index];
-              return ExerciseSetsCard(
-                key: ValueKey(exercise.id),
-                exercise: exercise,
-                planId: widget.plan.id,
-                workoutId: workoutId,
-                isExpanded: expandedExercises.contains(index),
-                onToggleExpand: () {
+            actions: [
+              IconButton(
+                icon: Icon(
+                  _showNotes ? Icons.note : Icons.note_outlined,
+                  color: _showNotes ? colorScheme.primary : null,
+                ),
+                tooltip: 'Workout notes',
+                onPressed: () {
                   setState(() {
-                    if (expandedExercises.contains(index)) {
-                      expandedExercises.remove(index);
-                    } else {
-                      expandedExercises.add(index);
-                    }
+                    _showNotes = !_showNotes;
                   });
                 },
-                onSetCompleted: () {
-                  // Optionally auto-expand next exercise when current is complete
-                  _checkAutoExpandNext(exercises, index);
-                },
-              );
-            },
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              // Notes section
+              AnimatedCrossFade(
+                firstChild: const SizedBox(width: double.infinity),
+                secondChild: _NotesSection(
+                  controller: _notesController,
+                  onChanged: _saveNotes,
+                ),
+                crossFadeState: _showNotes
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 200),
+              ),
+              // Exercises list
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(top: 8, bottom: 100),
+                  itemCount: exercises.length,
+                  itemBuilder: (context, index) {
+                    final exercise = exercises[index];
+                    return ExerciseSetsCard(
+                      key: ValueKey(exercise.id),
+                      exercise: exercise,
+                      planId: widget.plan.id,
+                      workoutId: workoutId,
+                      isExpanded: expandedExercises.contains(index),
+                      onToggleExpand: () {
+                        setState(() {
+                          if (expandedExercises.contains(index)) {
+                            expandedExercises.remove(index);
+                          } else {
+                            expandedExercises.add(index);
+                          }
+                        });
+                      },
+                      onSetCompleted: () {
+                        _checkAutoExpandNext(exercises, index);
+                      },
+                    );
+                  },
+                ),
+              ),
+              // Active workout bar at bottom
+              const ActiveWorkoutBar(),
+            ],
           ),
         );
       },
@@ -162,8 +210,84 @@ class _StartPlanPageState extends State<StartPlanPage> {
   }
 
   void _checkAutoExpandNext(List<PlanExercise> exercises, int currentIndex) {
-    // This is called after a set is completed
-    // We could add logic here to auto-expand the next exercise
-    // when the current one is fully complete
+    // Auto-expand next exercise could be implemented here
+    // For now, we just let the user manually expand
+  }
+}
+
+class _NotesSection extends StatelessWidget {
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+
+  const _NotesSection({
+    required this.controller,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.edit_note,
+                  size: 20,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Workout Notes',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+            child: TextField(
+              controller: controller,
+              maxLines: 3,
+              minLines: 2,
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurface,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Add notes about your workout...',
+                hintStyle: TextStyle(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  fontSize: 14,
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
+              ),
+              onChanged: (_) => onChanged(),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
