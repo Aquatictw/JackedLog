@@ -5,6 +5,7 @@ import 'package:flexify/animated_fab.dart';
 import 'package:flexify/constants.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/database/gym_sets.dart';
+import 'package:flexify/database/workouts.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/permissions_page.dart';
 import 'package:flexify/plan/edit_plan_page.dart';
@@ -44,6 +45,7 @@ class _StartPlanPageState extends State<StartPlanPage>
   List<Rpm>? rpms;
   String? category;
   String? image;
+  int? workoutId;
 
   late Stream<List<PlanExercise>> stream;
   late PlanState planState = context.read<PlanState>();
@@ -384,6 +386,12 @@ class _StartPlanPageState extends State<StartPlanPage>
     notes.dispose();
     seconds.dispose();
 
+    // Update workout end time when leaving
+    if (workoutId != null) {
+      (db.workouts.update()..where((w) => w.id.equals(workoutId!)))
+          .write(WorkoutsCompanion(endTime: Value(DateTime.now().toLocal())));
+    }
+
     WidgetsBinding.instance.removeObserver(this);
     planState.removeListener(planChanged);
 
@@ -433,6 +441,21 @@ class _StartPlanPageState extends State<StartPlanPage>
               ],
             ))
           .watch();
+    });
+
+    // Create a new workout session
+    final workoutName = widget.plan.title?.isNotEmpty == true
+        ? widget.plan.title!
+        : widget.plan.days.replaceAll(",", ", ");
+    final workout = await db.into(db.workouts).insertReturning(
+          WorkoutsCompanion.insert(
+            startTime: DateTime.now().toLocal(),
+            planId: Value(widget.plan.id),
+            name: Value(workoutName),
+          ),
+        );
+    setState(() {
+      workoutId = workout.id;
     });
 
     select(0);
@@ -531,6 +554,7 @@ class _StartPlanPageState extends State<StartPlanPage>
       bodyWeight: Value.absentIfNull(bodyWeight),
       restMs: Value(restMs?.toInt()),
       planId: Value(widget.plan.id),
+      workoutId: Value(workoutId),
       category: Value(category),
       image: Value(image),
       reps: double.tryParse(reps.text) ?? 0,
