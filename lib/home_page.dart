@@ -11,6 +11,8 @@ import 'package:flexify/settings/whats_new.dart';
 import 'package:flexify/timer/timer_page.dart';
 import 'package:flexify/timer/timer_progress_widgets.dart';
 import 'package:flexify/utils.dart';
+import 'package:flexify/workouts/active_workout_bar.dart';
+import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -151,18 +153,24 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               bottom: 0,
               left: 0,
               right: 0,
-              child: ValueListenableBuilder(
-                valueListenable: controller.animation!,
-                builder: (context, value, child) {
-                  return BottomNav(
-                    tabs: tabs,
-                    currentIndex: value.round(),
-                    onTap: (index) {
-                      controller.animateTo(index);
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const ActiveWorkoutBar(),
+                  ValueListenableBuilder(
+                    valueListenable: controller.animation!,
+                    builder: (context, value, child) {
+                      return BottomNav(
+                        tabs: tabs,
+                        currentIndex: value.round(),
+                        onTap: (index) {
+                          controller.animateTo(index);
+                        },
+                        onLongPress: hideTab,
+                      );
                     },
-                    onLongPress: hideTab,
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           ],

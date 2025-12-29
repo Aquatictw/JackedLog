@@ -5,7 +5,6 @@ import 'package:flexify/animated_fab.dart';
 import 'package:flexify/constants.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/database/gym_sets.dart';
-import 'package:flexify/database/workouts.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/permissions_page.dart';
 import 'package:flexify/plan/edit_plan_page.dart';
@@ -14,6 +13,7 @@ import 'package:flexify/plan/start_list.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
 import 'package:flexify/utils.dart';
+import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
@@ -386,11 +386,8 @@ class _StartPlanPageState extends State<StartPlanPage>
     notes.dispose();
     seconds.dispose();
 
-    // Update workout end time when leaving
-    if (workoutId != null) {
-      (db.workouts.update()..where((w) => w.id.equals(workoutId!)))
-          .write(WorkoutsCompanion(endTime: Value(DateTime.now().toLocal())));
-    }
+    // Note: We no longer auto-end workout here
+    // The workout should persist and can be ended via the ActiveWorkoutBar
 
     WidgetsBinding.instance.removeObserver(this);
     planState.removeListener(planChanged);
@@ -443,20 +440,28 @@ class _StartPlanPageState extends State<StartPlanPage>
           .watch();
     });
 
-    // Create a new workout session
-    final workoutName = widget.plan.title?.isNotEmpty == true
-        ? widget.plan.title!
-        : widget.plan.days.replaceAll(",", ", ");
-    final workout = await db.into(db.workouts).insertReturning(
-          WorkoutsCompanion.insert(
-            startTime: DateTime.now().toLocal(),
-            planId: Value(widget.plan.id),
-            name: Value(workoutName),
-          ),
-        );
-    setState(() {
-      workoutId = workout.id;
-    });
+    // Use WorkoutState to get or create workout session
+    final workoutState = context.read<WorkoutState>();
+    if (workoutState.activeWorkout != null &&
+        workoutState.activePlan?.id == widget.plan.id) {
+      // Resume existing workout
+      setState(() {
+        workoutId = workoutState.activeWorkout!.id;
+      });
+    } else if (workoutState.activeWorkout == null) {
+      // Create a new workout session
+      final workout = await workoutState.startWorkout(widget.plan);
+      if (workout != null) {
+        setState(() {
+          workoutId = workout.id;
+        });
+      }
+    } else {
+      // There's an active workout for a different plan - use its ID
+      setState(() {
+        workoutId = workoutState.activeWorkout!.id;
+      });
+    }
 
     select(0);
     if (!mounted) return;

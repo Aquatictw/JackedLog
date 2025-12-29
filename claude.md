@@ -69,49 +69,66 @@ Workout Session (e.g., "Monday Chest - Dec 29, 5pm")
 | `lib/sets/history_page.dart` | History tab - toggle between Workouts/Sets view |
 | `lib/workouts/workouts_list.dart` | Workout cards list for history |
 | `lib/workouts/workout_detail_page.dart` | View a complete workout session |
+| `lib/workouts/workout_state.dart` | WorkoutState provider - manages single active workout |
+| `lib/workouts/active_workout_bar.dart` | Floating bar showing ongoing workout |
 | `lib/plan/start_plan_page.dart` | Workout execution UI - creates workout sessions |
+| `lib/plan/plan_tile.dart` | Plan list tile - checks for active workout before starting |
 
 ## Workout Session Feature
 
 ### How It Works
 
-1. **Starting a Workout**: When user opens `StartPlanPage`, a new `Workout` record is created with `startTime` set to now.
+1. **Starting a Workout**: When user opens `StartPlanPage`, `WorkoutState` manages workout creation. Only ONE workout can be active at a time.
 
 2. **Logging Sets**: Each set saved gets the current `workoutId` attached, linking it to the workout session.
 
-3. **Ending a Workout**: When user leaves `StartPlanPage` (dispose), the `endTime` is set on the workout record.
+3. **Active Workout Bar**: A floating bar appears above the bottom navigation showing the current workout with:
+   - Workout name and elapsed time
+   - Tap to resume (navigate to StartPlanPage)
+   - "End" button to stop the workout
 
-4. **Viewing History**: The History tab has a toggle between:
+4. **Single Workout Limit**: If a user tries to start a different plan while a workout is active, they see a toast message "Finish your current workout first" with a "Resume" option.
+
+5. **Ending a Workout**: User must explicitly end via the ActiveWorkoutBar dialog. Workout persists even when navigating away from StartPlanPage.
+
+6. **Viewing History**: The History tab has a toggle between:
    - **Workouts view**: Shows workout session cards with exercise count, set count, and duration
    - **Sets view**: Shows individual sets (legacy view)
 
-5. **Workout Details**: Tapping a workout card opens `WorkoutDetailPage` showing all exercises and sets grouped together.
+7. **Workout Details**: Tapping a workout card opens `WorkoutDetailPage` showing all exercises and sets grouped together.
 
 ### Key Code Paths
 
-**Creating a workout session** (`lib/plan/start_plan_page.dart:440-453`):
+**WorkoutState provider** (`lib/workouts/workout_state.dart`):
+- `startWorkout(Plan plan)` - Creates new workout, returns null if one already exists
+- `stopWorkout()` - Sets endTime on active workout and clears state
+- `hasActiveWorkout` - Boolean indicating if a workout is in progress
+
+**Starting a workout via WorkoutState** (`lib/plan/start_plan_page.dart`):
 ```dart
-final workout = await db.into(db.workouts).insertReturning(
-  WorkoutsCompanion.insert(
-    startTime: DateTime.now().toLocal(),
-    planId: Value(widget.plan.id),
-    name: Value(workoutName),
-  ),
-);
-workoutId = workout.id;
+final workoutState = context.read<WorkoutState>();
+if (workoutState.activeWorkout == null) {
+  final workout = await workoutState.startWorkout(widget.plan);
+  workoutId = workout.id;
+}
 ```
 
-**Linking sets to workout** (`lib/plan/start_plan_page.dart:557`):
+**Preventing multiple workouts** (`lib/plan/plan_tile.dart`):
+```dart
+if (workoutState.hasActiveWorkout && workoutState.activePlan?.id != widget.plan.id) {
+  toast('Finish your current workout first');
+  return;
+}
+```
+
+**Linking sets to workout** (`lib/plan/start_plan_page.dart`):
 ```dart
 workoutId: Value(workoutId),
 ```
 
-**Ending workout** (`lib/plan/start_plan_page.dart:389-393`):
+**Ending workout via ActiveWorkoutBar** (`lib/workouts/active_workout_bar.dart`):
 ```dart
-if (workoutId != null) {
-  (db.workouts.update()..where((w) => w.id.equals(workoutId!)))
-      .write(WorkoutsCompanion(endTime: Value(DateTime.now().toLocal())));
-}
+await workoutState.stopWorkout();
 ```
 
 ## Development Commands

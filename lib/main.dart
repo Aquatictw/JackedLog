@@ -6,6 +6,7 @@ import 'package:flexify/home_page.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
+import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +38,7 @@ Widget appProviders(SettingsState state) => MultiProvider(
         ChangeNotifierProvider(create: (context) => state),
         ChangeNotifierProvider(create: (context) => TimerState()),
         ChangeNotifierProvider(create: (context) => PlanState()),
+        ChangeNotifierProvider(create: (context) => WorkoutState()),
       ],
       child: App(),
     );

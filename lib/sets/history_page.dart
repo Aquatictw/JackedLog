@@ -1,10 +1,8 @@
 import 'package:drift/drift.dart';
-import 'package:flexify/animated_fab.dart';
 import 'package:flexify/app_search.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/filters.dart';
 import 'package:flexify/main.dart';
-import 'package:flexify/sets/edit_set_page.dart';
 import 'package:flexify/sets/edit_sets_page.dart';
 import 'package:flexify/sets/history_collapsed.dart';
 import 'package:flexify/sets/history_list.dart';
@@ -301,12 +299,6 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
             ),
         ],
       ),
-      floatingActionButton: AnimatedFab(
-        onPressed: onAdd,
-        label: Text('Add'),
-        icon: Icon(Icons.add),
-        scroll: scroll,
-      ),
     );
   }
 
@@ -333,54 +325,6 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
             limit = 100;
           });
         },
-      ),
-    );
-  }
-
-  void onAdd() async {
-    final settings = context.read<SettingsState>().value;
-    final gymSets = await stream.first;
-    var bodyWeight = 0.0;
-    if (settings.showBodyWeight)
-      bodyWeight = (await getBodyWeight())?.weight ?? 0.0;
-
-    GymSet gymSet = gymSets.firstOrNull ??
-        GymSet(
-          id: 0,
-          bodyWeight: bodyWeight,
-          restMs: const Duration(minutes: 3, seconds: 30).inMilliseconds,
-          name: '',
-          reps: 0,
-          created: DateTime.now().toLocal(),
-          unit: 'kg',
-          weight: 0,
-          cardio: false,
-          duration: 0,
-          distance: 0,
-          hidden: false,
-        );
-    gymSet = gymSet.copyWith(
-      id: 0,
-      bodyWeight: bodyWeight,
-      created: DateTime.now().toLocal(),
-    );
-
-    if (settings.strengthUnit != 'last-entry' && !gymSet.cardio)
-      gymSet = gymSet.copyWith(
-        unit: settings.strengthUnit,
-      );
-    else if (settings.cardioUnit != 'last-entry' && gymSet.cardio)
-      gymSet = gymSet.copyWith(
-        unit: settings.cardioUnit,
-      );
-
-    if (!mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditSetPage(
-          gymSet: gymSet,
-        ),
       ),
     );
   }

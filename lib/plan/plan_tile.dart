@@ -5,6 +5,8 @@ import 'package:flexify/main.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/plan/start_plan_page.dart';
 import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/utils.dart';
+import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -188,6 +190,32 @@ class _PlanTileState extends State<PlanTile> {
         onTap: () async {
           if (widget.selected.isNotEmpty)
             return widget.onSelect(widget.plan.id);
+
+          final workoutState = context.read<WorkoutState>();
+
+          // Check if there's an active workout for a different plan
+          if (workoutState.hasActiveWorkout &&
+              workoutState.activePlan?.id != widget.plan.id) {
+            toast(
+              'Finish your current workout first',
+              action: SnackBarAction(
+                label: 'Resume',
+                onPressed: () {
+                  if (workoutState.activePlan != null) {
+                    widget.navigatorKey.currentState!.push(
+                      MaterialPageRoute(
+                        builder: (context) => StartPlanPage(
+                          plan: workoutState.activePlan!,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            );
+            return;
+          }
+
           final state = context.read<PlanState>();
           await state.updateGymCounts(widget.plan.id);
 
