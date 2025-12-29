@@ -40,16 +40,17 @@ final defaultSettings = SettingsCompanion.insert(
   maxSets: 3,
   vibrate: true,
   restTimers: false,
-  showUnits: true,
+  showUnits: false,
   alarmSound: '',
   cardioUnit: 'km',
   curveLines: true,
   explainedPermissions: false,
-  groupHistory: false,
-  showBodyWeight: const Value(true),
+  groupHistory: true,
+  showBodyWeight: const Value(false),
   strengthUnit: 'kg',
   systemColors: false,
   showCategories: const Value(true),
+  repEstimation: const Value(true),
 );
 
 const positiveReinforcement = [
