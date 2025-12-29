@@ -49,3 +49,4 @@ android/fastlane/report.xml
 .fvm/
 
 coverage/
+flexify-release-key.keystore
