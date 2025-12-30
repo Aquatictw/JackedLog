@@ -128,7 +128,7 @@ class _RestTimerBarState extends State<RestTimerBar>
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOutCubic,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isUrgent
@@ -143,7 +143,7 @@ class _RestTimerBarState extends State<RestTimerBar>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: (isUrgent
@@ -157,7 +157,7 @@ class _RestTimerBarState extends State<RestTimerBar>
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 child: Stack(
                   children: [
                     // Background progress indicator
@@ -183,8 +183,8 @@ class _RestTimerBarState extends State<RestTimerBar>
                     // Content
                     Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: _isExpanded ? 16 : 12,
+                        horizontal: 12,
+                        vertical: _isExpanded ? 12 : 10,
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -196,52 +196,21 @@ class _RestTimerBarState extends State<RestTimerBar>
                                 progress: progress,
                                 isUrgent: isUrgent,
                               ),
-                              const SizedBox(width: 14),
+                              const SizedBox(width: 12),
                               // Timer display
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.timer_outlined,
-                                          size: 16,
-                                          color: isUrgent
-                                              ? colorScheme.onErrorContainer
-                                              : colorScheme.onTertiaryContainer,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Rest Timer',
-                                          style: TextStyle(
-                                            color: isUrgent
-                                                ? colorScheme.onErrorContainer
-                                                    .withValues(alpha: 0.7)
-                                                : colorScheme.onTertiaryContainer
-                                                    .withValues(alpha: 0.7),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _formatDuration(remaining),
-                                      style: TextStyle(
-                                        color: isUrgent
-                                            ? colorScheme.onErrorContainer
-                                            : colorScheme.onTertiaryContainer,
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        fontFeatures: const [
-                                          FontFeature.tabularFigures()
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  _formatDuration(remaining),
+                                  style: TextStyle(
+                                    color: isUrgent
+                                        ? colorScheme.onErrorContainer
+                                        : colorScheme.onTertiaryContainer,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures()
+                                    ],
+                                  ),
                                 ),
                               ),
                               // Time adjustment buttons (always visible)
@@ -332,18 +301,18 @@ class _MiniCircularProgress extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return SizedBox(
-      width: 48,
-      height: 48,
+      width: 36,
+      height: 36,
       child: Stack(
         alignment: Alignment.center,
         children: [
           // Background circle
           SizedBox(
-            width: 48,
-            height: 48,
+            width: 36,
+            height: 36,
             child: CircularProgressIndicator(
               value: 1.0,
-              strokeWidth: 4,
+              strokeWidth: 3,
               backgroundColor: Colors.transparent,
               valueColor: AlwaysStoppedAnimation(
                 (isUrgent ? colorScheme.error : colorScheme.tertiary)
@@ -353,15 +322,15 @@ class _MiniCircularProgress extends StatelessWidget {
           ),
           // Progress circle
           SizedBox(
-            width: 48,
-            height: 48,
+            width: 36,
+            height: 36,
             child: TweenAnimationBuilder<double>(
               tween: Tween(begin: progress, end: progress),
               duration: const Duration(milliseconds: 100),
               builder: (context, value, child) {
                 return CircularProgressIndicator(
                   value: value,
-                  strokeWidth: 4,
+                  strokeWidth: 3,
                   strokeCap: StrokeCap.round,
                   backgroundColor: Colors.transparent,
                   valueColor: AlwaysStoppedAnimation(
@@ -371,16 +340,13 @@ class _MiniCircularProgress extends StatelessWidget {
               },
             ),
           ),
-          // Percentage text
-          Text(
-            '${(progress * 100).round()}%',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: isUrgent
-                  ? colorScheme.onErrorContainer
-                  : colorScheme.onTertiaryContainer,
-            ),
+          // Timer icon instead of percentage
+          Icon(
+            Icons.timer,
+            size: 16,
+            color: isUrgent
+                ? colorScheme.onErrorContainer
+                : colorScheme.onTertiaryContainer,
           ),
         ],
       ),
@@ -409,13 +375,13 @@ class _TimeAdjustButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: (isUrgent ? colorScheme.error : colorScheme.tertiary)
                 .withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: (isUrgent ? colorScheme.error : colorScheme.tertiary)
                   .withValues(alpha: 0.3),
@@ -428,7 +394,7 @@ class _TimeAdjustButton extends StatelessWidget {
                   ? colorScheme.onErrorContainer
                   : colorScheme.onTertiaryContainer,
               fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: 13,
             ),
           ),
         ),
