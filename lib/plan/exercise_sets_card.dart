@@ -108,41 +108,67 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
 
     if (!mounted) return;
 
-    setState(() {
-      unit = defaultUnit;
+    if (existingSets.isNotEmpty) {
+      // Load existing sets from database
+      final loadedSets = existingSets.map((set) {
+        return SetData(
+          weight: set.weight,
+          reps: set.reps.toInt(),
+          completed: !set.hidden, // hidden=false means completed
+          savedSetId: set.id,
+        );
+      }).toList();
 
-      if (existingSets.isNotEmpty) {
-        // Load existing sets from database
-        sets = existingSets.map((set) {
-          return SetData(
-            weight: set.weight,
-            reps: set.reps.toInt(),
-            completed: !set.hidden, // hidden=false means completed
-            savedSetId: set.id,
-            isWarmup: set.reps < 0, // Warmup sets have negative reps (if we want to preserve this)
+      setState(() {
+        unit = defaultUnit;
+        sets = loadedSets;
+        _initialized = true;
+      });
+    } else {
+      // No existing sets - create and persist them immediately
+      if (widget.workoutId != null) {
+        final newSets = <SetData>[];
+        for (int i = 0; i < maxSets; i++) {
+          final gymSet = await db.into(db.gymSets).insertReturning(
+            GymSetsCompanion.insert(
+              name: widget.exercise.exercise,
+              reps: _defaultReps.toDouble(),
+              weight: _defaultWeight,
+              unit: defaultUnit,
+              created: DateTime.now().toLocal(),
+              planId: Value(widget.planId),
+              workoutId: Value(widget.workoutId),
+              sequence: Value(widget.sequence),
+              hidden: const Value(true), // Uncompleted
+            ),
           );
-        }).toList();
-
-        // Add empty slots up to maxSets if needed
-        while (sets.length < maxSets) {
-          sets.add(SetData(
+          newSets.add(SetData(
+            weight: _defaultWeight,
+            reps: _defaultReps,
+            completed: false,
+            savedSetId: gymSet.id,
+          ));
+        }
+        if (mounted) {
+          setState(() {
+            unit = defaultUnit;
+            sets = newSets;
+            _initialized = true;
+          });
+        }
+      } else {
+        // No workout ID - memory only (shouldn't happen normally)
+        setState(() {
+          unit = defaultUnit;
+          sets = List.generate(maxSets, (_) => SetData(
             weight: _defaultWeight,
             reps: _defaultReps,
             completed: false,
           ));
-        }
-      } else {
-        // No existing sets - create empty ones
-        sets = List.generate(maxSets, (index) {
-          return SetData(
-            weight: _defaultWeight,
-            reps: _defaultReps,
-            completed: false,
-          );
+          _initialized = true;
         });
       }
-      _initialized = true;
-    });
+    }
   }
 
   int get completedCount => sets.where((s) => s.completed).length;
@@ -266,7 +292,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
 
     final settings = context.read<SettingsState>().value;
 
-    // Haptic feedback
     HapticFeedback.mediumImpact();
 
     if (sets[index].savedSetId != null) {
@@ -284,19 +309,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       // Fallback: Insert new record (shouldn't happen with auto-save)
       final setData = sets[index];
 
-      double? bodyWeight;
-      if (settings.showBodyWeight) {
-        final weightSet = await (db.gymSets.select()
-              ..where((tbl) => tbl.name.equals('Weight'))
-              ..orderBy([
-                (u) =>
-                    OrderingTerm(expression: u.created, mode: OrderingMode.desc),
-              ])
-              ..limit(1))
-            .getSingleOrNull();
-        bodyWeight = weightSet?.weight;
-      }
-
       final gymSet = await db.into(db.gymSets).insertReturning(
             GymSetsCompanion.insert(
               name: widget.exercise.exercise,
@@ -306,7 +318,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               created: DateTime.now().toLocal(),
               planId: Value(widget.planId),
               workoutId: Value(widget.workoutId),
-              bodyWeight: Value.absentIfNull(bodyWeight),
               sequence: Value(widget.sequence),
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(false),
@@ -364,35 +375,18 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
   Future<void> _addSet({bool isWarmup = false}) async {
     HapticFeedback.selectionClick();
 
-    // Find where to insert the set
     int insertIndex;
     if (isWarmup) {
-      // Add warmup at the beginning, after existing warmups
       insertIndex = sets.where((s) => s.isWarmup).length;
     } else {
       insertIndex = sets.length;
     }
 
-    // Get weight - warmups typically use less weight
     final baseWeight = sets.isNotEmpty ? sets.last.weight : _defaultWeight;
     final weight = isWarmup ? (baseWeight * 0.5).roundToDouble() : baseWeight;
     final reps = sets.isNotEmpty ? sets.last.reps : _defaultReps;
 
-    // Insert to database immediately with hidden=true
     if (widget.workoutId != null) {
-      final settings = context.read<SettingsState>().value;
-      double? bodyWeight;
-      if (settings.showBodyWeight) {
-        final weightSet = await (db.gymSets.select()
-              ..where((tbl) => tbl.name.equals('Weight'))
-              ..orderBy([
-                (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
-              ])
-              ..limit(1))
-            .getSingleOrNull();
-        bodyWeight = weightSet?.weight;
-      }
-
       final gymSet = await db.into(db.gymSets).insertReturning(
         GymSetsCompanion.insert(
           name: widget.exercise.exercise,
@@ -402,10 +396,9 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           created: DateTime.now().toLocal(),
           planId: Value(widget.planId),
           workoutId: Value(widget.workoutId),
-          bodyWeight: Value.absentIfNull(bodyWeight),
           sequence: Value(widget.sequence),
           notes: Value(widget.exerciseNotes ?? ''),
-          hidden: const Value(true), // Uncompleted by default
+          hidden: const Value(true),
         ),
       );
 
@@ -415,11 +408,10 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           reps: reps,
           completed: false,
           isWarmup: isWarmup,
-          savedSetId: gymSet.id, // Save the ID
+          savedSetId: gymSet.id,
         ));
       });
     } else {
-      // No workout ID - fallback to in-memory only
       setState(() {
         sets.insert(insertIndex, SetData(
           weight: weight,
