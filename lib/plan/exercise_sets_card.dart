@@ -34,6 +34,7 @@ class ExerciseSetsCard extends StatefulWidget {
   final VoidCallback? onDeleteExercise;
   final String? exerciseNotes;
   final ValueChanged<String>? onNotesChanged;
+  final int sequence; // Exercise order within workout
 
   const ExerciseSetsCard({
     super.key,
@@ -45,6 +46,7 @@ class ExerciseSetsCard extends StatefulWidget {
     required this.onSetCompleted,
     this.onDeleteExercise,
     this.exerciseNotes,
+    this.sequence = 0,
     this.onNotesChanged,
   });
 
@@ -130,11 +132,12 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
 
   int get completedCount => sets.where((s) => s.completed).length;
 
-  Future<void> _showExerciseMenu(BuildContext context) async {
-    final colorScheme = Theme.of(context).colorScheme;
+  Future<void> _showExerciseMenu(BuildContext parentContext) async {
+    final colorScheme = Theme.of(parentContext).colorScheme;
 
     await showModalBottomSheet(
-      context: context,
+      context: parentContext,
+      useRootNavigator: true,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -178,34 +181,21 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                   : null,
               onTap: () {
                 Navigator.pop(context);
-                _showNotesDialog(context);
+                _showNotesDialog(parentContext);
               },
             ),
             ListTile(
-              leading: Icon(Icons.delete_sweep_outlined, color: colorScheme.error),
+              leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
               title: Text(
-                'Delete All Sets',
+                'Remove Exercise',
                 style: TextStyle(color: colorScheme.error),
               ),
-              subtitle: Text('Remove ${sets.length} sets from this exercise'),
-              onTap: () async {
+              subtitle: const Text('Remove this exercise from workout'),
+              onTap: () {
                 Navigator.pop(context);
-                await _deleteAllSets();
+                widget.onDeleteExercise?.call();
               },
             ),
-            if (widget.onDeleteExercise != null)
-              ListTile(
-                leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
-                title: Text(
-                  'Remove Exercise',
-                  style: TextStyle(color: colorScheme.error),
-                ),
-                subtitle: const Text('Remove this exercise from workout'),
-                onTap: () {
-                  Navigator.pop(context);
-                  widget.onDeleteExercise!();
-                },
-              ),
             const SizedBox(height: 8),
           ],
         ),
@@ -213,11 +203,12 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     );
   }
 
-  Future<void> _showNotesDialog(BuildContext context) async {
+  Future<void> _showNotesDialog(BuildContext parentContext) async {
     final controller = TextEditingController(text: widget.exerciseNotes ?? '');
     final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
+      context: parentContext,
+      useRootNavigator: true,
+      builder: (dialogContext) => AlertDialog(
         title: Text('Notes for ${widget.exercise.exercise}'),
         content: TextField(
           controller: controller,
@@ -231,49 +222,20 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
             child: const Text('Save'),
           ),
         ],
       ),
     );
-    controller.dispose();
+    // Don't dispose controller here - let the dialog handle its own lifecycle
     if (result != null && widget.onNotesChanged != null) {
       widget.onNotesChanged!(result);
     }
-  }
-
-  Future<void> _deleteAllSets() async {
-    HapticFeedback.mediumImpact();
-
-    // Delete all completed sets from database
-    for (final set in sets) {
-      if (set.completed && set.savedSetId != null) {
-        await (db.gymSets.delete()
-              ..where((tbl) => tbl.id.equals(set.savedSetId!)))
-            .go();
-      }
-    }
-
-    // Reset sets to empty uncompleted state
-    setState(() {
-      sets = List.generate(
-        widget.exercise.maxSets ?? 3,
-        (index) => SetData(
-          weight: _defaultWeight,
-          reps: _defaultReps,
-          completed: false,
-        ),
-      );
-    });
-
-    // Update plan state
-    final planState = context.read<PlanState>();
-    await planState.updateGymCounts(widget.planId, widget.workoutId);
   }
 
   Future<void> _toggleSet(int index) async {
@@ -316,6 +278,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
             planId: Value(widget.planId),
             workoutId: Value(widget.workoutId),
             bodyWeight: Value.absentIfNull(bodyWeight),
+            sequence: Value(widget.sequence),
           ),
         );
 
@@ -486,6 +449,31 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
+                        // Exercise notes preview
+                        if (widget.exerciseNotes?.isNotEmpty == true) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.sticky_note_2_outlined,
+                                size: 12,
+                                color: colorScheme.tertiary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  widget.exerciseNotes!,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: colorScheme.tertiary,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 2),
                         if (_initialized)
                           Row(

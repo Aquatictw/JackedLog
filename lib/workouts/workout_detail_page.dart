@@ -59,6 +59,22 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             exerciseGroups.putIfAbsent(set.name, () => []).add(set);
           }
 
+          // Sort exercise groups by stored sequence (from first set of each exercise)
+          final sortedExerciseNames = exerciseGroups.keys.toList()
+            ..sort((a, b) {
+              // Use the sequence stored in each set (from the first set of each exercise)
+              final seqA = exerciseGroups[a]!.first.sequence;
+              final seqB = exerciseGroups[b]!.first.sequence;
+
+              // If sequences are different, use them
+              if (seqA != seqB) return seqA.compareTo(seqB);
+
+              // If sequences are the same (both 0 for old data), fall back to creation time
+              final timeA = exerciseGroups[a]!.first.created;
+              final timeB = exerciseGroups[b]!.first.created;
+              return timeA.compareTo(timeB);
+            });
+
           final totalVolume = sets.fold<double>(
             0,
             (sum, s) => sum + (s.weight * s.reps),
@@ -138,18 +154,18 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                     child: Text('No exercises in this workout'),
                   ),
                 ),
-              // Exercise groups
+              // Exercise groups (sorted by plan sequence)
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final entry = exerciseGroups.entries.elementAt(index);
+                    final exerciseName = sortedExerciseNames[index];
                     return _buildExerciseGroup(
-                      entry.key,
-                      entry.value,
+                      exerciseName,
+                      exerciseGroups[exerciseName]!,
                       showImages,
                     );
                   },
-                  childCount: exerciseGroups.length,
+                  childCount: sortedExerciseNames.length,
                 ),
               ),
               // Bottom padding
