@@ -147,14 +147,14 @@ class _StartPlanPageState extends State<StartPlanPage> {
       // Resuming workout - only load exercises that have sets
       final exerciseNames = existingSets.map((s) => s.name).toSet().toList();
 
+      // Load plan exercises (if not freeform)
+      List<PlanExercise> exercises = [];
+      if (widget.plan.id != -1) {
+        exercises = await stream.first;
+      }
+
       if (mounted) {
         setState(() {
-          // Load plan exercises (if not freeform)
-          List<PlanExercise> exercises = [];
-          if (widget.plan.id != -1) {
-            exercises = stream.value ?? [];
-          }
-
           // Build map from plan exercises
           _planExercisesMap = {for (var e in exercises) e.id: e};
 
@@ -167,7 +167,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
               _exerciseOrder.add(_ExerciseItem.plan(planExercise));
             } else {
               // Custom exercise not in plan (or freeform workout)
-              _exerciseOrder.add(_ExerciseItem.custom(name));
+              _exerciseOrder.add(_ExerciseItem.adHoc(name));
             }
           }
 
@@ -177,9 +177,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
             if (firstSet.notes?.isNotEmpty == true) {
               final key = _exerciseOrder
                   .firstWhere((item) =>
-                    item.isPlan
+                    item.isPlanExercise
                       ? _planExercisesMap[item.planExerciseId]?.exercise == name
-                      : item.exerciseName == name)
+                      : item.adHocName == name)
                   .key;
               _exerciseNotes[key] = firstSet.notes!;
             }
