@@ -44,6 +44,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
   Set<String> expandedExercises = {}; // Now uses string keys
   final TextEditingController _notesController = TextEditingController();
   bool _showNotes = false;
+  bool _isReorderMode = false; // Reorder mode toggle
   List<_ExerciseItem> _exerciseOrder = []; // Unified ordered list
   Map<int, PlanExercise> _planExercisesMap = {}; // Cache of plan exercises
 
@@ -225,43 +226,66 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
         return Scaffold(
           appBar: AppBar(
-            title: GestureDetector(
-              onTap: _editWorkoutTitle,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      title,
-                      overflow: TextOverflow.ellipsis,
+            title: _isReorderMode
+                ? const Text('Reorder Exercises')
+                : GestureDetector(
+                    onTap: _editWorkoutTitle,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 18,
+                          color: colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Icon(
-                    Icons.edit_outlined,
-                    size: 18,
-                    color: colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ],
-              ),
-            ),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.pop(context),
+              icon: Icon(_isReorderMode ? Icons.close : Icons.arrow_back),
+              onPressed: () {
+                if (_isReorderMode) {
+                  setState(() => _isReorderMode = false);
+                } else {
+                  Navigator.pop(context);
+                }
+              },
             ),
             actions: [
-              IconButton(
-                icon: Icon(
-                  _showNotes ? Icons.note : Icons.note_outlined,
-                  color: _showNotes ? colorScheme.primary : null,
+              if (_isReorderMode)
+                TextButton.icon(
+                  onPressed: () => setState(() => _isReorderMode = false),
+                  icon: const Icon(Icons.check),
+                  label: const Text('Done'),
+                )
+              else ...[
+                IconButton(
+                  icon: const Icon(Icons.swap_vert),
+                  tooltip: 'Reorder exercises',
+                  onPressed: _exerciseOrder.length > 1
+                      ? () => setState(() => _isReorderMode = true)
+                      : null,
                 ),
-                tooltip: 'Workout notes',
-                onPressed: () {
-                  setState(() {
-                    _showNotes = !_showNotes;
-                  });
-                },
-              ),
+                IconButton(
+                  icon: Icon(
+                    _showNotes ? Icons.note : Icons.note_outlined,
+                    color: _showNotes ? colorScheme.primary : null,
+                  ),
+                  tooltip: 'Workout notes',
+                  onPressed: () {
+                    setState(() {
+                      _showNotes = !_showNotes;
+                    });
+                  },
+                ),
+              ],
             ],
           ),
           body: Column(
@@ -278,90 +302,109 @@ class _StartPlanPageState extends State<StartPlanPage> {
                     : CrossFadeState.showFirst,
                 duration: const Duration(milliseconds: 200),
               ),
-              // Exercises list with reordering
+              // Exercises list
               Expanded(
-                child: ReorderableListView.builder(
-                  padding: const EdgeInsets.only(top: 8, bottom: 200),
-                  buildDefaultDragHandles: false,
-                  onReorder: _onReorder,
-                  itemCount: _exerciseOrder.length + 1, // +1 for add exercise button
-                  proxyDecorator: (child, index, animation) {
-                    return AnimatedBuilder(
-                      animation: animation,
-                      builder: (context, child) => Material(
-                        elevation: 4,
-                        borderRadius: BorderRadius.circular(16),
-                        child: child,
-                      ),
-                      child: child,
-                    );
-                  },
-                  itemBuilder: (context, index) {
-                    // Last item: Add Exercise button (not draggable)
-                    if (index >= _exerciseOrder.length) {
-                      return _AddExerciseCard(
-                        key: const ValueKey('add_exercise'),
-                        onTap: () => _showAddExerciseModal(context),
-                      );
-                    }
-
-                    final item = _exerciseOrder[index];
-
-                    if (item.isPlanExercise) {
-                      final exercise = _planExercisesMap[item.planExerciseId];
-                      if (exercise == null) return const SizedBox.shrink();
-
-                      return _ReorderableExerciseWrapper(
-                        key: ValueKey(item.key),
-                        index: index,
-                        child: ExerciseSetsCard(
-                          exercise: exercise,
-                          planId: widget.plan.id,
-                          workoutId: workoutId,
-                          isExpanded: expandedExercises.contains(item.key),
-                          onToggleExpand: () {
-                            setState(() {
-                              if (expandedExercises.contains(item.key)) {
-                                expandedExercises.remove(item.key);
-                              } else {
-                                expandedExercises.add(item.key);
-                              }
-                            });
-                          },
-                          onSetCompleted: () {},
-                        ),
-                      );
-                    } else {
-                      // Ad-hoc exercise
-                      return _ReorderableExerciseWrapper(
-                        key: ValueKey(item.key),
-                        index: index,
-                        child: _AdHocExerciseCard(
-                          exerciseName: item.adHocName!,
-                          workoutId: workoutId,
-                          isExpanded: expandedExercises.contains(item.key),
-                          onToggleExpand: () {
-                            setState(() {
-                              if (expandedExercises.contains(item.key)) {
-                                expandedExercises.remove(item.key);
-                              } else {
-                                expandedExercises.add(item.key);
-                              }
-                            });
-                          },
-                          onRemove: () {
-                            setState(() {
-                              _exerciseOrder.removeAt(index);
-                            });
-                          },
-                        ),
-                      );
-                    }
-                  },
-                ),
+                child: _isReorderMode
+                    ? _buildReorderableList(colorScheme)
+                    : _buildExerciseList(colorScheme),
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildExerciseList(ColorScheme colorScheme) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 8, bottom: 200),
+      itemCount: _exerciseOrder.length + 1,
+      itemBuilder: (context, index) {
+        if (index >= _exerciseOrder.length) {
+          return _AddExerciseCard(
+            key: const ValueKey('add_exercise'),
+            onTap: () => _showAddExerciseModal(context),
+          );
+        }
+
+        final item = _exerciseOrder[index];
+
+        if (item.isPlanExercise) {
+          final exercise = _planExercisesMap[item.planExerciseId];
+          if (exercise == null) return const SizedBox.shrink();
+
+          return ExerciseSetsCard(
+            key: ValueKey(item.key),
+            exercise: exercise,
+            planId: widget.plan.id,
+            workoutId: workoutId,
+            isExpanded: expandedExercises.contains(item.key),
+            onToggleExpand: () {
+              setState(() {
+                if (expandedExercises.contains(item.key)) {
+                  expandedExercises.remove(item.key);
+                } else {
+                  expandedExercises.add(item.key);
+                }
+              });
+            },
+            onSetCompleted: () {},
+          );
+        } else {
+          return _AdHocExerciseCard(
+            key: ValueKey(item.key),
+            exerciseName: item.adHocName!,
+            workoutId: workoutId,
+            isExpanded: expandedExercises.contains(item.key),
+            onToggleExpand: () {
+              setState(() {
+                if (expandedExercises.contains(item.key)) {
+                  expandedExercises.remove(item.key);
+                } else {
+                  expandedExercises.add(item.key);
+                }
+              });
+            },
+            onRemove: () {
+              setState(() {
+                _exerciseOrder.removeAt(index);
+              });
+            },
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildReorderableList(ColorScheme colorScheme) {
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.only(top: 8, bottom: 100),
+      onReorder: _onReorder,
+      proxyDecorator: (child, index, animation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) => Material(
+            elevation: 8,
+            shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            child: child,
+          ),
+          child: child,
+        );
+      },
+      itemCount: _exerciseOrder.length,
+      itemBuilder: (context, index) {
+        final item = _exerciseOrder[index];
+        final exerciseName = item.isPlanExercise
+            ? _planExercisesMap[item.planExerciseId]?.exercise ?? 'Unknown'
+            : item.adHocName ?? 'Unknown';
+
+        return _ReorderableExerciseTile(
+          key: ValueKey(item.key),
+          index: index,
+          exerciseName: exerciseName,
+          isAdHoc: !item.isPlanExercise,
+          colorScheme: colorScheme,
         );
       },
     );
@@ -393,43 +436,72 @@ class _StartPlanPageState extends State<StartPlanPage> {
   }
 }
 
-// Wrapper widget that adds drag handle to exercises
-class _ReorderableExerciseWrapper extends StatelessWidget {
+// Clean reorderable tile for exercise reorder mode
+class _ReorderableExerciseTile extends StatelessWidget {
   final int index;
-  final Widget child;
+  final String exerciseName;
+  final bool isAdHoc;
+  final ColorScheme colorScheme;
 
-  const _ReorderableExerciseWrapper({
+  const _ReorderableExerciseTile({
     super.key,
     required this.index,
-    required this.child,
+    required this.exerciseName,
+    required this.isAdHoc,
+    required this.colorScheme,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Stack(
-      children: [
-        child,
-        Positioned(
-          top: 0,
-          bottom: 0,
-          right: 8,
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      elevation: 1,
+      child: ListTile(
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Center(
-            child: ReorderableDragStartListener(
-              index: index,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                child: Icon(
-                  Icons.drag_handle,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                  size: 24,
-                ),
+            child: Text(
+              '${index + 1}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onPrimaryContainer,
               ),
             ),
           ),
         ),
-      ],
+        title: Text(
+          exerciseName,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: isAdHoc
+            ? Text(
+                'Added exercise',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.tertiary,
+                ),
+              )
+            : null,
+        trailing: ReorderableDragStartListener(
+          index: index,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.drag_handle,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -941,11 +1013,12 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     );
   }
 
-  Future<void> _showNotesDialog(BuildContext context) async {
+  Future<void> _showNotesDialog(BuildContext parentContext) async {
     final controller = TextEditingController(text: widget.exerciseNotes ?? '');
     final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
+      context: parentContext,
+      useRootNavigator: true,
+      builder: (dialogContext) => AlertDialog(
         title: Text('Notes for ${widget.exerciseName}'),
         content: TextField(
           controller: controller,
@@ -959,11 +1032,11 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
             child: const Text('Save'),
           ),
         ],

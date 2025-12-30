@@ -214,11 +214,12 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     );
   }
 
-  Future<void> _showNotesDialog(BuildContext context) async {
+  Future<void> _showNotesDialog(BuildContext parentContext) async {
     final controller = TextEditingController(text: widget.exerciseNotes ?? '');
     final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
+      context: parentContext,
+      useRootNavigator: true,
+      builder: (dialogContext) => AlertDialog(
         title: Text('Notes for ${widget.exercise.exercise}'),
         content: TextField(
           controller: controller,
@@ -232,11 +233,11 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
             child: const Text('Save'),
           ),
         ],
