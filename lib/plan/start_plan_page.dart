@@ -514,7 +514,7 @@ class _NotesSection extends StatelessWidget {
 class _AddExerciseCard extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _AddExerciseCard({required this.onTap});
+  const _AddExerciseCard({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
