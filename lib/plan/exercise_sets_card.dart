@@ -31,6 +31,9 @@ class ExerciseSetsCard extends StatefulWidget {
   final bool isExpanded;
   final VoidCallback onToggleExpand;
   final VoidCallback onSetCompleted;
+  final VoidCallback? onDeleteExercise;
+  final String? exerciseNotes;
+  final ValueChanged<String>? onNotesChanged;
 
   const ExerciseSetsCard({
     super.key,
@@ -40,6 +43,9 @@ class ExerciseSetsCard extends StatefulWidget {
     required this.isExpanded,
     required this.onToggleExpand,
     required this.onSetCompleted,
+    this.onDeleteExercise,
+    this.exerciseNotes,
+    this.onNotesChanged,
   });
 
   @override
@@ -123,6 +129,152 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
   }
 
   int get completedCount => sets.where((s) => s.completed).length;
+
+  Future<void> _showExerciseMenu(BuildContext context) async {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.fitness_center, color: colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.exercise.exercise,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: Icon(Icons.note_add_outlined, color: colorScheme.primary),
+              title: const Text('Add Notes'),
+              subtitle: widget.exerciseNotes?.isNotEmpty == true
+                  ? Text(
+                      widget.exerciseNotes!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  : null,
+              onTap: () {
+                Navigator.pop(context);
+                _showNotesDialog(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_sweep_outlined, color: colorScheme.error),
+              title: Text(
+                'Delete All Sets',
+                style: TextStyle(color: colorScheme.error),
+              ),
+              subtitle: Text('Remove ${sets.length} sets from this exercise'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _deleteAllSets();
+              },
+            ),
+            if (widget.onDeleteExercise != null)
+              ListTile(
+                leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
+                title: Text(
+                  'Remove Exercise',
+                  style: TextStyle(color: colorScheme.error),
+                ),
+                subtitle: const Text('Remove this exercise from workout'),
+                onTap: () {
+                  Navigator.pop(context);
+                  widget.onDeleteExercise!();
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showNotesDialog(BuildContext context) async {
+    final controller = TextEditingController(text: widget.exerciseNotes ?? '');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Notes for ${widget.exercise.exercise}'),
+        content: TextField(
+          controller: controller,
+          maxLines: 4,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(
+            hintText: 'Add notes for this exercise...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result != null && widget.onNotesChanged != null) {
+      widget.onNotesChanged!(result);
+    }
+  }
+
+  Future<void> _deleteAllSets() async {
+    HapticFeedback.mediumImpact();
+
+    // Delete all completed sets from database
+    for (final set in sets) {
+      if (set.completed && set.savedSetId != null) {
+        await (db.gymSets.delete()
+              ..where((tbl) => tbl.id.equals(set.savedSetId!)))
+            .go();
+      }
+    }
+
+    // Reset sets to empty uncompleted state
+    setState(() {
+      sets = List.generate(
+        widget.exercise.maxSets ?? 3,
+        (index) => SetData(
+          weight: _defaultWeight,
+          reps: _defaultReps,
+          completed: false,
+        ),
+      );
+    });
+
+    // Update plan state
+    final planState = context.read<PlanState>();
+    await planState.updateGymCounts(widget.planId, widget.workoutId);
+  }
 
   Future<void> _toggleSet(int index) async {
     if (sets[index].completed) {
@@ -290,6 +442,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           // Exercise Header
           InkWell(
             onTap: widget.onToggleExpand,
+            onLongPress: () => _showExerciseMenu(context),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
@@ -836,12 +989,21 @@ class _RepsInput extends StatefulWidget {
 
 class _RepsInputState extends State<_RepsInput> {
   late TextEditingController _controller;
+  late FocusNode _focusNode;
   bool _hasFocus = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.value.toString());
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _hasFocus = _focusNode.hasFocus;
+    });
   }
 
   @override
@@ -854,6 +1016,8 @@ class _RepsInputState extends State<_RepsInput> {
 
   @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -873,6 +1037,7 @@ class _RepsInputState extends State<_RepsInput> {
             : null,
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           _RepsButton(
             icon: Icons.remove,
@@ -885,46 +1050,44 @@ class _RepsInputState extends State<_RepsInput> {
                 : null,
           ),
           Expanded(
-            child: Focus(
-              onFocusChange: (hasFocus) => _hasFocus = hasFocus,
-              child: TextField(
-                controller: _controller,
-                enabled: widget.enabled,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: widget.completed
-                      ? widget.accentColor
-                      : colorScheme.onSurface,
-                ),
-                decoration: InputDecoration(
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 10,
-                  ),
-                  border: InputBorder.none,
-                  suffixText: 'reps',
-                  suffixStyle: TextStyle(
-                    fontSize: 11,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                onChanged: (value) {
-                  final parsed = int.tryParse(value);
-                  if (parsed != null && parsed > 0 && parsed < 100) {
-                    widget.onChanged(parsed);
-                  }
-                },
-                onTap: () {
-                  _controller.selection = TextSelection(
-                    baseOffset: 0,
-                    extentOffset: _controller.text.length,
-                  );
-                },
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              enabled: widget.enabled,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: widget.completed
+                    ? widget.accentColor
+                    : colorScheme.onSurface,
               ),
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 2,
+                  vertical: 10,
+                ),
+                border: InputBorder.none,
+                hintText: 'reps',
+                hintStyle: TextStyle(
+                  fontSize: 10,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              onChanged: (value) {
+                final parsed = int.tryParse(value);
+                if (parsed != null && parsed > 0 && parsed < 100) {
+                  widget.onChanged(parsed);
+                }
+              },
+              onTap: () {
+                _controller.selection = TextSelection(
+                  baseOffset: 0,
+                  extentOffset: _controller.text.length,
+                );
+              },
             ),
           ),
           _RepsButton(
