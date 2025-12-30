@@ -1116,6 +1116,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
             workoutId: Value(widget.workoutId),
             bodyWeight: Value.absentIfNull(bodyWeight),
             sequence: Value(widget.sequence),
+            notes: Value(widget.exerciseNotes ?? ''),
           ),
         );
 

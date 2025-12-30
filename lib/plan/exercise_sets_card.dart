@@ -279,6 +279,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
             workoutId: Value(widget.workoutId),
             bodyWeight: Value.absentIfNull(bodyWeight),
             sequence: Value(widget.sequence),
+            notes: Value(widget.exerciseNotes ?? ''),
           ),
         );
 
