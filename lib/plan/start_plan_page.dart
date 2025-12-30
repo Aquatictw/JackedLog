@@ -4,6 +4,7 @@ import 'package:flexify/main.dart';
 import 'package:flexify/plan/exercise_sets_card.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/timer/rest_timer_bar.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -349,25 +350,38 @@ class _StartPlanPageState extends State<StartPlanPage> {
               ],
             ],
           ),
-          body: Column(
+          body: Stack(
             children: [
-              // Notes section
-              AnimatedCrossFade(
-                firstChild: const SizedBox(width: double.infinity),
-                secondChild: _NotesSection(
-                  controller: _notesController,
-                  onChanged: _saveNotes,
-                ),
-                crossFadeState: _showNotes
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 200),
+              Column(
+                children: [
+                  // Notes section
+                  AnimatedCrossFade(
+                    firstChild: const SizedBox(width: double.infinity),
+                    secondChild: _NotesSection(
+                      controller: _notesController,
+                      onChanged: _saveNotes,
+                    ),
+                    crossFadeState: _showNotes
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                    duration: const Duration(milliseconds: 200),
+                  ),
+                  // Exercises list
+                  Expanded(
+                    child: _isReorderMode
+                        ? _buildReorderableList(colorScheme)
+                        : _buildExerciseList(colorScheme),
+                  ),
+                ],
               ),
-              // Exercises list
-              Expanded(
-                child: _isReorderMode
-                    ? _buildReorderableList(colorScheme)
-                    : _buildExerciseList(colorScheme),
+              // Floating rest timer at bottom
+              const Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  child: RestTimerBar(),
+                ),
               ),
             ],
           ),
