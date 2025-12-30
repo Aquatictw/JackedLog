@@ -162,6 +162,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
           for (final planEx in planExercises) {
             if (!removedExercises.contains(planEx.exercise)) {
               _exerciseOrder.add(_ExerciseItem.plan(planEx));
+
+              // Insert placeholder marker so exercise persists even without completed sets
+              await _ensureExercisePlaceholder(planEx.exercise, workoutId!);
             }
           }
         } else {
@@ -169,7 +172,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
           final seenExercises = <String>{};
           final orderedExercises = <String>[];
 
-          // Only process sets that aren't tombstones
+          // Only process sets that aren't tombstones (includes placeholders with sequence=-2)
           for (final set in existingSets.where((s) => s.sequence != -1)) {
             if (!seenExercises.contains(set.name)) {
               seenExercises.add(set.name);
@@ -188,17 +191,18 @@ class _StartPlanPageState extends State<StartPlanPage> {
             }
           }
 
-          // Restore notes from first non-tombstone set of each exercise
+          // Restore notes from first non-tombstone, non-placeholder set
           for (final name in orderedExercises) {
-            final firstSet = existingSets.firstWhere(
-              (s) => s.name == name && s.sequence != -1,
-            );
-            if (firstSet.notes?.isNotEmpty == true) {
+            final realSet = existingSets.where(
+              (s) => s.name == name && s.sequence >= 0, // Real sets have sequence >= 0
+            ).firstOrNull;
+
+            if (realSet?.notes?.isNotEmpty == true) {
               final item = _exerciseOrder.firstWhere((item) =>
                 item.isPlanExercise
                   ? _planExercisesMap[item.planExerciseId]?.exercise == name
                   : item.adHocName == name);
-              _exerciseNotes[item.key] = firstSet.notes!;
+              _exerciseNotes[item.key] = realSet!.notes!;
             }
           }
         }
@@ -221,6 +225,34 @@ class _StartPlanPageState extends State<StartPlanPage> {
     });
 
     HapticFeedback.mediumImpact();
+  }
+
+  /// Ensures an exercise has a placeholder marker in the database so it persists
+  /// even without completed sets. Placeholder has sequence=-2 and hidden=true.
+  Future<void> _ensureExercisePlaceholder(String exerciseName, int workoutId) async {
+    // Check if exercise already has any sets (including placeholders)
+    final existingCount = await (db.gymSets.select()
+          ..where((s) =>
+            s.workoutId.equals(workoutId) &
+            s.name.equals(exerciseName)))
+        .get()
+        .then((sets) => sets.length);
+
+    // Only insert placeholder if exercise has no sets at all
+    if (existingCount == 0) {
+      await db.gymSets.insertOne(
+        GymSetsCompanion.insert(
+          name: exerciseName,
+          reps: 0,
+          weight: 0,
+          unit: 'kg',
+          created: DateTime.now(),
+          workoutId: Value(workoutId),
+          hidden: const Value(true), // Hide from history
+          sequence: const Value(-2), // Placeholder marker (different from tombstone -1)
+        ),
+      );
+    }
   }
 
   Future<void> _saveNotes() async {
