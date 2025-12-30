@@ -26,7 +26,10 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   void initState() {
     super.initState();
     setsStream = (db.gymSets.select()
-          ..where((s) => s.workoutId.equals(widget.workout.id))
+          ..where((s) =>
+              s.workoutId.equals(widget.workout.id) &
+              s.hidden.equals(false) &
+              s.sequence.isBiggerOrEqualValue(0))
           ..orderBy([
             (s) => OrderingTerm(expression: s.created, mode: OrderingMode.asc)
           ]))
@@ -168,8 +171,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                   childCount: sortedExerciseNames.length,
                 ),
               ),
-              // Bottom padding
-              const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+              // Bottom padding for navigation bar
+              const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
             ],
           );
         },

@@ -119,7 +119,10 @@ class _WorkoutsListState extends State<WorkoutsList> {
         }
 
         final sets = await (db.gymSets.select()
-              ..where((s) => s.workoutId.equals(workout.id)))
+              ..where((s) =>
+                  s.workoutId.equals(workout.id) &
+                  s.hidden.equals(false) &
+                  s.sequence.isBiggerOrEqualValue(0)))
             .get();
 
         final exerciseNames = sets.map((s) => s.name).toSet().toList();
