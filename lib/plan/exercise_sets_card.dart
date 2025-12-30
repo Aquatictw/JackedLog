@@ -183,30 +183,17 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.delete_sweep_outlined, color: colorScheme.error),
+              leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
               title: Text(
-                'Delete All Sets',
+                'Remove Exercise',
                 style: TextStyle(color: colorScheme.error),
               ),
-              subtitle: Text('Remove ${sets.length} sets from this exercise'),
-              onTap: () async {
+              subtitle: const Text('Remove this exercise from workout'),
+              onTap: () {
                 Navigator.pop(context);
-                await _deleteAllSets();
+                widget.onDeleteExercise?.call();
               },
             ),
-            if (widget.onDeleteExercise != null)
-              ListTile(
-                leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
-                title: Text(
-                  'Remove Exercise',
-                  style: TextStyle(color: colorScheme.error),
-                ),
-                subtitle: const Text('Remove this exercise from workout'),
-                onTap: () {
-                  Navigator.pop(context);
-                  widget.onDeleteExercise!();
-                },
-              ),
             const SizedBox(height: 8),
           ],
         ),
@@ -243,39 +230,10 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         ],
       ),
     );
-    controller.dispose();
+    // Don't dispose controller here - let the dialog handle its own lifecycle
     if (result != null && widget.onNotesChanged != null) {
       widget.onNotesChanged!(result);
     }
-  }
-
-  Future<void> _deleteAllSets() async {
-    HapticFeedback.mediumImpact();
-
-    // Delete all completed sets from database
-    for (final set in sets) {
-      if (set.completed && set.savedSetId != null) {
-        await (db.gymSets.delete()
-              ..where((tbl) => tbl.id.equals(set.savedSetId!)))
-            .go();
-      }
-    }
-
-    // Reset sets to empty uncompleted state
-    setState(() {
-      sets = List.generate(
-        widget.exercise.maxSets ?? 3,
-        (index) => SetData(
-          weight: _defaultWeight,
-          reps: _defaultReps,
-          completed: false,
-        ),
-      );
-    });
-
-    // Update plan state
-    final planState = context.read<PlanState>();
-    await planState.updateGymCounts(widget.planId, widget.workoutId);
   }
 
   Future<void> _toggleSet(int index) async {

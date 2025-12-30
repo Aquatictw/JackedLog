@@ -349,6 +349,11 @@ class _StartPlanPageState extends State<StartPlanPage> {
               });
             },
             onSetCompleted: () {},
+            onDeleteExercise: () {
+              setState(() {
+                _exerciseOrder.removeAt(index);
+              });
+            },
           );
         } else {
           return _AdHocExerciseCard(
@@ -989,15 +994,6 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.delete_sweep_outlined, color: colorScheme.error),
-              title: Text('Delete All Sets', style: TextStyle(color: colorScheme.error)),
-              subtitle: Text('Remove ${sets.length} sets from this exercise'),
-              onTap: () async {
-                Navigator.pop(context);
-                await _deleteAllSets();
-              },
-            ),
-            ListTile(
               leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
               title: Text('Remove Exercise', style: TextStyle(color: colorScheme.error)),
               subtitle: const Text('Remove this exercise from workout'),
@@ -1042,30 +1038,10 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
         ],
       ),
     );
-    controller.dispose();
+    // Don't dispose controller here - let the dialog handle its own lifecycle
     if (result != null && widget.onNotesChanged != null) {
       widget.onNotesChanged!(result);
     }
-  }
-
-  Future<void> _deleteAllSets() async {
-    HapticFeedback.mediumImpact();
-
-    for (final set in sets) {
-      if (set.completed && set.savedSetId != null) {
-        await (db.gymSets.delete()
-              ..where((tbl) => tbl.id.equals(set.savedSetId!)))
-            .go();
-      }
-    }
-
-    setState(() {
-      sets = List.generate(3, (index) => SetData(
-        weight: _defaultWeight,
-        reps: _defaultReps,
-        completed: false,
-      ));
-    });
   }
 
   String _getTotalVolume() {
