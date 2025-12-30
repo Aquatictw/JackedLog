@@ -18,14 +18,36 @@ class StartPlanPage extends StatefulWidget {
   createState() => _StartPlanPageState();
 }
 
+// Represents an exercise item in the workout (either from plan or ad-hoc)
+class _ExerciseItem {
+  final bool isPlanExercise;
+  final int? planExerciseId;
+  final String? adHocName;
+
+  _ExerciseItem.plan(PlanExercise exercise)
+      : isPlanExercise = true,
+        planExerciseId = exercise.id,
+        adHocName = null;
+
+  _ExerciseItem.adHoc(String name)
+      : isPlanExercise = false,
+        planExerciseId = null,
+        adHocName = name;
+
+  String get key => isPlanExercise ? 'plan_$planExerciseId' : 'adhoc_$adHocName';
+}
+
 class _StartPlanPageState extends State<StartPlanPage> {
   int? workoutId;
   late Stream<List<PlanExercise>> stream;
   late String title = widget.plan.days.replaceAll(",", ", ");
-  Set<int> expandedExercises = {};
+  Set<String> expandedExercises = {}; // Now uses string keys
   final TextEditingController _notesController = TextEditingController();
   bool _showNotes = false;
-  List<String> _adHocExercises = []; // Exercises added during this workout
+  bool _isReorderMode = false; // Reorder mode toggle
+  List<_ExerciseItem> _exerciseOrder = []; // Unified ordered list
+  Map<int, PlanExercise> _planExercisesMap = {}; // Cache of plan exercises
+  Map<String, String> _exerciseNotes = {}; // Track notes per exercise (key -> notes)
 
   @override
   void initState() {
@@ -95,16 +117,32 @@ class _StartPlanPageState extends State<StartPlanPage> {
     final planState = context.read<PlanState>();
     await planState.updateGymCounts(widget.plan.id, workoutId);
 
-    // Expand ALL exercises by default so all sets are visible
+    // Initialize exercise order with plan exercises
     final exercises = await stream.first;
     if (exercises.isNotEmpty && mounted) {
       setState(() {
-        // Add all indices including plan exercises and ad-hoc exercises
-        for (int i = 0; i < exercises.length + _adHocExercises.length; i++) {
-          expandedExercises.add(i);
+        // Build map and ordered list from plan exercises
+        _planExercisesMap = {for (var e in exercises) e.id: e};
+        _exerciseOrder = exercises.map((e) => _ExerciseItem.plan(e)).toList();
+
+        // Expand ALL exercises by default so all sets are visible
+        for (final item in _exerciseOrder) {
+          expandedExercises.add(item.key);
         }
       });
     }
+  }
+
+  void _onReorder(int oldIndex, int newIndex) {
+    // Adjust newIndex if moving down the list
+    if (newIndex > oldIndex) newIndex--;
+
+    setState(() {
+      final item = _exerciseOrder.removeAt(oldIndex);
+      _exerciseOrder.insert(newIndex, item);
+    });
+
+    HapticFeedback.mediumImpact();
   }
 
   Future<void> _saveNotes() async {
@@ -184,49 +222,71 @@ class _StartPlanPageState extends State<StartPlanPage> {
         }
 
         final exercises = snapshot.data!;
-
-        // Combine plan exercises with ad-hoc exercises
-        final totalExercises = exercises.length + _adHocExercises.length;
+        // Update plan exercises map with latest data
+        _planExercisesMap = {for (var e in exercises) e.id: e};
 
         return Scaffold(
           appBar: AppBar(
-            title: GestureDetector(
-              onTap: _editWorkoutTitle,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      title,
-                      overflow: TextOverflow.ellipsis,
+            title: _isReorderMode
+                ? const Text('Reorder Exercises')
+                : GestureDetector(
+                    onTap: _editWorkoutTitle,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 18,
+                          color: colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Icon(
-                    Icons.edit_outlined,
-                    size: 18,
-                    color: colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ],
-              ),
-            ),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.pop(context),
+              icon: Icon(_isReorderMode ? Icons.close : Icons.arrow_back),
+              onPressed: () {
+                if (_isReorderMode) {
+                  setState(() => _isReorderMode = false);
+                } else {
+                  Navigator.pop(context);
+                }
+              },
             ),
             actions: [
-              IconButton(
-                icon: Icon(
-                  _showNotes ? Icons.note : Icons.note_outlined,
-                  color: _showNotes ? colorScheme.primary : null,
+              if (_isReorderMode)
+                TextButton.icon(
+                  onPressed: () => setState(() => _isReorderMode = false),
+                  icon: const Icon(Icons.check),
+                  label: const Text('Done'),
+                )
+              else ...[
+                IconButton(
+                  icon: const Icon(Icons.swap_vert),
+                  tooltip: 'Reorder exercises',
+                  onPressed: _exerciseOrder.length > 1
+                      ? () => setState(() => _isReorderMode = true)
+                      : null,
                 ),
-                tooltip: 'Workout notes',
-                onPressed: () {
-                  setState(() {
-                    _showNotes = !_showNotes;
-                  });
-                },
-              ),
+                IconButton(
+                  icon: Icon(
+                    _showNotes ? Icons.note : Icons.note_outlined,
+                    color: _showNotes ? colorScheme.primary : null,
+                  ),
+                  tooltip: 'Workout notes',
+                  onPressed: () {
+                    setState(() {
+                      _showNotes = !_showNotes;
+                    });
+                  },
+                ),
+              ],
             ],
           ),
           body: Column(
@@ -245,64 +305,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
               ),
               // Exercises list
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(top: 8, bottom: 200),
-                  itemCount: totalExercises + 1, // +1 for add exercise button
-                  itemBuilder: (context, index) {
-                    // First show plan exercises
-                    if (index < exercises.length) {
-                      final exercise = exercises[index];
-                      return ExerciseSetsCard(
-                        key: ValueKey(exercise.id),
-                        exercise: exercise,
-                        planId: widget.plan.id,
-                        workoutId: workoutId,
-                        isExpanded: expandedExercises.contains(index),
-                        onToggleExpand: () {
-                          setState(() {
-                            if (expandedExercises.contains(index)) {
-                              expandedExercises.remove(index);
-                            } else {
-                              expandedExercises.add(index);
-                            }
-                          });
-                        },
-                        onSetCompleted: () {
-                          _checkAutoExpandNext(exercises, index);
-                        },
-                      );
-                    }
-                    // Then ad-hoc exercises
-                    if (index < exercises.length + _adHocExercises.length) {
-                      final adHocIndex = index - exercises.length;
-                      final exerciseName = _adHocExercises[adHocIndex];
-                      return _AdHocExerciseCard(
-                        key: ValueKey('adhoc_$exerciseName'),
-                        exerciseName: exerciseName,
-                        workoutId: workoutId,
-                        isExpanded: expandedExercises.contains(index),
-                        onToggleExpand: () {
-                          setState(() {
-                            if (expandedExercises.contains(index)) {
-                              expandedExercises.remove(index);
-                            } else {
-                              expandedExercises.add(index);
-                            }
-                          });
-                        },
-                        onRemove: () {
-                          setState(() {
-                            _adHocExercises.removeAt(adHocIndex);
-                          });
-                        },
-                      );
-                    }
-                    // Last item: Add Exercise button
-                    return _AddExerciseCard(
-                      onTap: () => _showAddExerciseModal(context),
-                    );
-                  },
-                ),
+                child: _isReorderMode
+                    ? _buildReorderableList(colorScheme)
+                    : _buildExerciseList(colorScheme),
               ),
             ],
           ),
@@ -311,34 +316,221 @@ class _StartPlanPageState extends State<StartPlanPage> {
     );
   }
 
-  void _checkAutoExpandNext(List<PlanExercise> exercises, int currentIndex) {
-    // Auto-expand next exercise could be implemented here
-    // For now, we just let the user manually expand
+  Widget _buildExerciseList(ColorScheme colorScheme) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 8, bottom: 200),
+      itemCount: _exerciseOrder.length + 1,
+      itemBuilder: (context, index) {
+        if (index >= _exerciseOrder.length) {
+          return _AddExerciseCard(
+            key: const ValueKey('add_exercise'),
+            onTap: () => _showAddExerciseModal(context),
+          );
+        }
+
+        final item = _exerciseOrder[index];
+
+        if (item.isPlanExercise) {
+          final exercise = _planExercisesMap[item.planExerciseId];
+          if (exercise == null) return const SizedBox.shrink();
+
+          return ExerciseSetsCard(
+            key: ValueKey(item.key),
+            exercise: exercise,
+            planId: widget.plan.id,
+            workoutId: workoutId,
+            isExpanded: expandedExercises.contains(item.key),
+            exerciseNotes: _exerciseNotes[item.key],
+            sequence: index, // Pass the visual order
+            onNotesChanged: (notes) {
+              setState(() {
+                if (notes.isEmpty) {
+                  _exerciseNotes.remove(item.key);
+                } else {
+                  _exerciseNotes[item.key] = notes;
+                }
+              });
+            },
+            onToggleExpand: () {
+              setState(() {
+                if (expandedExercises.contains(item.key)) {
+                  expandedExercises.remove(item.key);
+                } else {
+                  expandedExercises.add(item.key);
+                }
+              });
+            },
+            onSetCompleted: () {},
+            onDeleteExercise: () {
+              setState(() {
+                _exerciseOrder.removeAt(index);
+              });
+            },
+          );
+        } else {
+          return _AdHocExerciseCard(
+            key: ValueKey(item.key),
+            exerciseName: item.adHocName!,
+            workoutId: workoutId,
+            isExpanded: expandedExercises.contains(item.key),
+            exerciseNotes: _exerciseNotes[item.key],
+            sequence: index, // Pass the visual order
+            onNotesChanged: (notes) {
+              setState(() {
+                if (notes.isEmpty) {
+                  _exerciseNotes.remove(item.key);
+                } else {
+                  _exerciseNotes[item.key] = notes;
+                }
+              });
+            },
+            onToggleExpand: () {
+              setState(() {
+                if (expandedExercises.contains(item.key)) {
+                  expandedExercises.remove(item.key);
+                } else {
+                  expandedExercises.add(item.key);
+                }
+              });
+            },
+            onRemove: () {
+              setState(() {
+                _exerciseOrder.removeAt(index);
+              });
+            },
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildReorderableList(ColorScheme colorScheme) {
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.only(top: 8, bottom: 100),
+      onReorder: _onReorder,
+      proxyDecorator: (child, index, animation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) => Material(
+            elevation: 8,
+            shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            child: child,
+          ),
+          child: child,
+        );
+      },
+      itemCount: _exerciseOrder.length,
+      itemBuilder: (context, index) {
+        final item = _exerciseOrder[index];
+        final exerciseName = item.isPlanExercise
+            ? _planExercisesMap[item.planExerciseId]?.exercise ?? 'Unknown'
+            : item.adHocName ?? 'Unknown';
+
+        return _ReorderableExerciseTile(
+          key: ValueKey(item.key),
+          index: index,
+          exerciseName: exerciseName,
+          isAdHoc: !item.isPlanExercise,
+          colorScheme: colorScheme,
+        );
+      },
+    );
   }
 
   Future<void> _showAddExerciseModal(BuildContext context) async {
+    final existingAdHocNames = _exerciseOrder
+        .where((item) => !item.isPlanExercise)
+        .map((item) => item.adHocName!)
+        .toList();
+
     final result = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      useRootNavigator: true,
       builder: (context) => _ExercisePickerModal(
-        existingExercises: _adHocExercises,
+        existingExercises: existingAdHocNames,
       ),
     );
 
     if (result != null && mounted) {
+      final newItem = _ExerciseItem.adHoc(result);
       setState(() {
-        _adHocExercises.add(result);
-        // Expand the new exercise
-        expandedExercises.add(
-          (stream as Stream<List<PlanExercise>>)
-                  .toString()
-                  .hashCode + // Placeholder for plan exercises count
-              _adHocExercises.length -
-              1,
-        );
+        _exerciseOrder.add(newItem);
+        expandedExercises.add(newItem.key);
       });
     }
+  }
+}
+
+// Clean reorderable tile for exercise reorder mode
+class _ReorderableExerciseTile extends StatelessWidget {
+  final int index;
+  final String exerciseName;
+  final bool isAdHoc;
+  final ColorScheme colorScheme;
+
+  const _ReorderableExerciseTile({
+    super.key,
+    required this.index,
+    required this.exerciseName,
+    required this.isAdHoc,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      elevation: 1,
+      child: ListTile(
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              '${index + 1}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          exerciseName,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: isAdHoc
+            ? Text(
+                'Added exercise',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.tertiary,
+                ),
+              )
+            : null,
+        trailing: ReorderableDragStartListener(
+          index: index,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.drag_handle,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -422,7 +614,7 @@ class _NotesSection extends StatelessWidget {
 class _AddExerciseCard extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _AddExerciseCard({required this.onTap});
+  const _AddExerciseCard({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -685,6 +877,7 @@ class _AdHocExerciseCard extends StatefulWidget {
   final VoidCallback onRemove;
   final String? exerciseNotes;
   final ValueChanged<String>? onNotesChanged;
+  final int sequence; // Exercise order within workout
 
   const _AdHocExerciseCard({
     super.key,
@@ -695,6 +888,7 @@ class _AdHocExerciseCard extends StatefulWidget {
     required this.onRemove,
     this.exerciseNotes,
     this.onNotesChanged,
+    this.sequence = 0,
   });
 
   @override
@@ -772,11 +966,12 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
   int get completedCount => sets.where((s) => s.completed).length;
 
-  Future<void> _showExerciseMenu(BuildContext context) async {
-    final colorScheme = Theme.of(context).colorScheme;
+  Future<void> _showExerciseMenu(BuildContext parentContext) async {
+    final colorScheme = Theme.of(parentContext).colorScheme;
 
     await showModalBottomSheet(
-      context: context,
+      context: parentContext,
+      useRootNavigator: true,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -820,16 +1015,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                   : null,
               onTap: () {
                 Navigator.pop(context);
-                _showNotesDialog(context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.delete_sweep_outlined, color: colorScheme.error),
-              title: Text('Delete All Sets', style: TextStyle(color: colorScheme.error)),
-              subtitle: Text('Remove ${sets.length} sets from this exercise'),
-              onTap: () async {
-                Navigator.pop(context);
-                await _deleteAllSets();
+                _showNotesDialog(parentContext);
               },
             ),
             ListTile(
@@ -848,11 +1034,12 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     );
   }
 
-  Future<void> _showNotesDialog(BuildContext context) async {
+  Future<void> _showNotesDialog(BuildContext parentContext) async {
     final controller = TextEditingController(text: widget.exerciseNotes ?? '');
     final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
+      context: parentContext,
+      useRootNavigator: true,
+      builder: (dialogContext) => AlertDialog(
         title: Text('Notes for ${widget.exerciseName}'),
         content: TextField(
           controller: controller,
@@ -866,40 +1053,20 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
             child: const Text('Save'),
           ),
         ],
       ),
     );
-    controller.dispose();
+    // Don't dispose controller here - let the dialog handle its own lifecycle
     if (result != null && widget.onNotesChanged != null) {
       widget.onNotesChanged!(result);
     }
-  }
-
-  Future<void> _deleteAllSets() async {
-    HapticFeedback.mediumImpact();
-
-    for (final set in sets) {
-      if (set.completed && set.savedSetId != null) {
-        await (db.gymSets.delete()
-              ..where((tbl) => tbl.id.equals(set.savedSetId!)))
-            .go();
-      }
-    }
-
-    setState(() {
-      sets = List.generate(3, (index) => SetData(
-        weight: _defaultWeight,
-        reps: _defaultReps,
-        completed: false,
-      ));
-    });
   }
 
   String _getTotalVolume() {
@@ -948,6 +1115,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
             created: DateTime.now().toLocal(),
             workoutId: Value(widget.workoutId),
             bodyWeight: Value.absentIfNull(bodyWeight),
+            sequence: Value(widget.sequence),
           ),
         );
 
@@ -1071,6 +1239,31 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
+                        // Exercise notes preview
+                        if (widget.exerciseNotes?.isNotEmpty == true) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.sticky_note_2_outlined,
+                                size: 12,
+                                color: colorScheme.tertiary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  widget.exerciseNotes!,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: colorScheme.tertiary,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 2),
                         if (_initialized)
                           Row(
@@ -1510,7 +1703,6 @@ class _SimpleRepsInputState extends State<_SimpleRepsInput> {
     _focusNode = FocusNode();
     _focusNode.addListener(_onFocusChange);
   }
-}
 
   void _onFocusChange() {
     setState(() {
