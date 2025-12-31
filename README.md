@@ -17,19 +17,6 @@ Flex on people with this swanky, lightning-quick gym tracker!
 
 This fork includes various enhancements and customizations to the original Flexify app. For the official release version, visit the [original Flexify repository](https://github.com/brandonp2412/Flexify).
 
-## Screenshots
-
-<p float="left">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png" height="600">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_en-US.png" height="600">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.png" height="600">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_en-US.png" height="600">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5_en-US.png" height="600">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6_en-US.png" height="600">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7_en-US.png" height="600">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/8_en-US.png" height="600">
-</p>
-
 ## Getting Started
 
 To get started with Flexify, follow these steps:
