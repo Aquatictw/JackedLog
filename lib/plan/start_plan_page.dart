@@ -4,7 +4,6 @@ import 'package:flexify/main.dart';
 import 'package:flexify/plan/exercise_sets_card.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/timer/rest_timer_bar.dart';
 import 'package:flexify/timer/timer_state.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
@@ -375,15 +374,6 @@ class _StartPlanPageState extends State<StartPlanPage> {
                   ),
                 ],
               ),
-              // Floating rest timer at bottom
-              const Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: SafeArea(
-                  child: RestTimerBar(),
-                ),
-              ),
             ],
           ),
         );
@@ -393,7 +383,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
   Widget _buildExerciseList(ColorScheme colorScheme) {
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 100),
+      padding: const EdgeInsets.only(top: 8, bottom: 200),
       itemCount: _exerciseOrder.length + 1,
       itemBuilder: (context, index) {
         if (index >= _exerciseOrder.length) {
