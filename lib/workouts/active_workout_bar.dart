@@ -83,7 +83,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 4),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
