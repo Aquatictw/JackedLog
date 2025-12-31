@@ -167,6 +167,7 @@ Future<List<Rpm>> getRpms() async {
 }
 
 Stream<List<GymSetsCompanion>> watchGraphs() {
+  final countCol = db.gymSets.name.count();
   return (db.gymSets.selectOnly()
         ..addColumns([
           db.gymSets.name,
@@ -179,11 +180,12 @@ Stream<List<GymSetsCompanion>> watchGraphs() {
           db.gymSets.created.max(),
           db.gymSets.image,
           db.gymSets.category,
+          countCol,
         ])
         ..where(db.gymSets.hidden.equals(false))
         ..orderBy([
           OrderingTerm(
-            expression: db.gymSets.created.max(),
+            expression: countCol,
             mode: OrderingMode.desc,
           ),
         ])

@@ -39,8 +39,6 @@ class _CardioPageState extends State<CardioPage> {
   late String target = widget.unit;
   CardioMetric metric = CardioMetric.pace;
   Period period = Period.day;
-  DateTime? start;
-  DateTime? end;
   TabController? ctrl;
   DateTime lastTap = DateTime(0);
   bool useTimeBasedXAxis = false;
@@ -319,53 +317,6 @@ class _CardioPageState extends State<CardioPage> {
                       ),
                     ),
                   ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ListTile(
-                        title: const Text('Start date'),
-                        subtitle: Selector<SettingsState, String>(
-                          selector: (p0, settings) =>
-                              settings.value.shortDateFormat,
-                          builder: (context, value, child) {
-                            if (start == null) return Text(value);
-
-                            return Text(
-                              DateFormat(value).format(start!),
-                            );
-                          },
-                        ),
-                        onLongPress: () => setState(() {
-                          start = null;
-                        }),
-                        trailing: const Icon(Icons.calendar_today),
-                        onTap: () => _selectStart(),
-                      ),
-                    ),
-                    Expanded(
-                      child: ListTile(
-                        title: const Text('Stop date'),
-                        subtitle: Selector<SettingsState, String>(
-                          selector: (context, settings) =>
-                              settings.value.shortDateFormat,
-                          builder: (context, value, child) {
-                            if (end == null) return Text(value);
-
-                            return Text(
-                              DateFormat(value).format(end!),
-                            );
-                          },
-                        ),
-                        onLongPress: () => setState(() {
-                          end = null;
-                        }),
-                        trailing: const Icon(Icons.calendar_today),
-                        onTap: () => _selectEnd(),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
                 SwitchListTile(
                   title: const Text('Use time-based X axis'),
                   value: useTimeBasedXAxis,
@@ -406,11 +357,11 @@ class _CardioPageState extends State<CardioPage> {
 
   void setData() async {
     final cardio = await getCardioData(
-      end: end,
+      end: null,
       period: period,
       metric: metric,
       name: widget.name,
-      start: start,
+      start: null,
       target: target,
     );
 
@@ -418,35 +369,5 @@ class _CardioPageState extends State<CardioPage> {
     setState(() {
       data = cardio;
     });
-  }
-
-  Future<void> _selectEnd() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: end,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (picked == null) return;
-    setState(() {
-      end = picked;
-    });
-    setData();
-  }
-
-  Future<void> _selectStart() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: start,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (picked == null) return;
-    setState(() {
-      start = picked;
-    });
-    setData();
   }
 }

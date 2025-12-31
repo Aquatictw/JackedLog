@@ -44,8 +44,6 @@ class _StrengthPageState extends State<StrengthPage> {
   int limit = 20;
   StrengthMetric metric = StrengthMetric.bestWeight;
   Period period = Period.day;
-  DateTime? start;
-  DateTime? end;
   DateTime lastTap = DateTime.fromMicrosecondsSinceEpoch(0);
 
   @override
@@ -170,10 +168,6 @@ class _StrengthPageState extends State<StrengthPage> {
                         value: StrengthMetric.oneRepMax,
                         child: Text("One rep max"),
                       ),
-                      const DropdownMenuItem(
-                        value: StrengthMetric.volume,
-                        child: Text("Volume"),
-                      ),
                       if (settings.showBodyWeight)
                         const DropdownMenuItem(
                           value: StrengthMetric.relativeStrength,
@@ -243,56 +237,6 @@ class _StrengthPageState extends State<StrengthPage> {
                     },
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ListTile(
-                          title: const Text('Start date'),
-                          subtitle: start == null
-                              ? Text(settings.shortDateFormat)
-                              : Text(
-                                  DateFormat(settings.shortDateFormat)
-                                      .format(start!),
-                                ),
-                          onLongPress: () {
-                            setState(() {
-                              start = null;
-                            });
-                            setData();
-                          },
-                          trailing: const Icon(Icons.calendar_today),
-                          onTap: () => _selectStart(),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListTile(
-                          title: const Text('Stop date'),
-                          subtitle: Selector<SettingsState, String>(
-                            selector: (p0, settings) =>
-                                settings.value.shortDateFormat,
-                            builder: (context, value, child) {
-                              if (end == null) return Text(value);
-
-                              return Text(
-                                DateFormat(value).format(end!),
-                              );
-                            },
-                          ),
-                          onLongPress: () {
-                            setState(() {
-                              end = null;
-                            });
-                            setData();
-                          },
-                          trailing: const Icon(Icons.calendar_today),
-                          onTap: () => _selectEnd(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 SwitchListTile(
                   title: const Text('Use time-based X axis'),
                   value: useTimeBasedXAxis,
@@ -359,8 +303,8 @@ class _StrengthPageState extends State<StrengthPage> {
       name: widget.name,
       metric: metric,
       period: period,
-      start: start,
-      end: end,
+      start: null,
+      end: null,
       limit: limit,
     );
     setState(() {
@@ -384,11 +328,11 @@ class _StrengthPageState extends State<StrengthPage> {
           case StrengthMetric.relativeStrength:
             text = "${row.value.toStringAsFixed(2)} $created";
             break;
-          case StrengthMetric.volume:
           case StrengthMetric.oneRepMax:
             text = "${formatter.format(row.value)}$target $created";
             break;
           case StrengthMetric.bestWeight:
+          case StrengthMetric.volume:
             break;
         }
 
@@ -489,37 +433,5 @@ class _StrengthPageState extends State<StrengthPage> {
       ),
     );
     Timer(kThemeAnimationDuration, setData);
-  }
-
-  Future<void> _selectEnd() async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: end,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate == null) return;
-
-    setState(() {
-      end = pickedDate;
-    });
-    setData();
-  }
-
-  Future<void> _selectStart() async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: start,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate == null) return;
-
-    setState(() {
-      start = pickedDate;
-    });
-    setData();
   }
 }
