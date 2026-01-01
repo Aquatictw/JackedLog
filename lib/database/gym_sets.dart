@@ -33,44 +33,42 @@ double getCardio(TypedResult row, CardioMetric metric) {
 }
 
 Future<List<CardioData>> getCardioData({
-  Period period = Period.day,
+  Period period = Period.days30,
   String name = "",
   CardioMetric metric = CardioMetric.pace,
   String target = "km",
-  DateTime? start,
-  DateTime? end,
 }) async {
   Expression<String> col = getCreated(period);
+  final periodStart = getPeriodStart(period);
 
-  final results = await (db.selectOnly(db.gymSets)
-        ..addColumns([
-          db.gymSets.duration.sum(),
-          db.gymSets.distance.sum(),
-          db.gymSets.distance.sum() / db.gymSets.duration.sum(),
-          db.gymSets.incline.avg(),
-          inclineAdjustedPace,
-          db.gymSets.created,
-          db.gymSets.unit,
-        ])
-        ..where(db.gymSets.name.equals(name))
-        ..where(db.gymSets.hidden.equals(false))
-        ..where(
-          db.gymSets.created.isBiggerOrEqualValue(start ?? DateTime(0)),
-        )
-        ..where(
-          db.gymSets.created.isSmallerThanValue(
-            end ?? DateTime.now().toLocal().add(const Duration(days: 1)),
-          ),
-        )
-        ..orderBy([
-          OrderingTerm(
-            expression: col,
-            mode: OrderingMode.desc,
-          ),
-        ])
-        ..limit(11)
-        ..groupBy([col]))
-      .get();
+  var query = db.selectOnly(db.gymSets)
+    ..addColumns([
+      db.gymSets.duration.sum(),
+      db.gymSets.distance.sum(),
+      db.gymSets.distance.sum() / db.gymSets.duration.sum(),
+      db.gymSets.incline.avg(),
+      inclineAdjustedPace,
+      db.gymSets.created,
+      db.gymSets.unit,
+    ])
+    ..where(db.gymSets.name.equals(name))
+    ..where(db.gymSets.hidden.equals(false))
+    ..orderBy([
+      OrderingTerm(
+        expression: col,
+        mode: OrderingMode.desc,
+      ),
+    ])
+    ..groupBy([col]);
+
+  if (periodStart != null) {
+    query = query
+      ..where(
+        db.gymSets.created.isBiggerOrEqualValue(periodStart),
+      );
+  }
+
+  final results = await query.get();
 
   List<CardioData> list = [];
 
@@ -105,23 +103,25 @@ Future<List<CardioData>> getCardioData({
 }
 
 Expression<String> getCreated(Period groupBy) {
-  switch (groupBy) {
-    case Period.day:
-      return const CustomExpression<String>(
-        "STRFTIME('%Y-%m-%d', DATE(created, 'unixepoch', 'localtime'))",
-      );
-    case Period.week:
-      return const CustomExpression<String>(
-        "STRFTIME('%Y-%m-%W', DATE(created, 'unixepoch', 'localtime'))",
-      );
-    case Period.month:
-      return const CustomExpression<String>(
-        "STRFTIME('%Y-%m', DATE(created, 'unixepoch', 'localtime'))",
-      );
+  // For all new period types, group by day to show individual data points
+  return const CustomExpression<String>(
+    "STRFTIME('%Y-%m-%d', DATE(created, 'unixepoch', 'localtime'))",
+  );
+}
+
+DateTime? getPeriodStart(Period period) {
+  final now = DateTime.now();
+  switch (period) {
+    case Period.days30:
+      return now.subtract(const Duration(days: 30));
+    case Period.months3:
+      return DateTime(now.year, now.month - 3, now.day);
+    case Period.months6:
+      return DateTime(now.year, now.month - 6, now.day);
     case Period.year:
-      return const CustomExpression<String>(
-        "STRFTIME('%Y', DATE(created, 'unixepoch', 'localtime'))",
-      );
+      return DateTime(now.year - 1, now.month, now.day);
+    case Period.allTime:
+      return null;
   }
 }
 
@@ -167,6 +167,7 @@ Future<List<Rpm>> getRpms() async {
 }
 
 Stream<List<GymSetsCompanion>> watchGraphs() {
+  final countCol = db.gymSets.name.count();
   return (db.gymSets.selectOnly()
         ..addColumns([
           db.gymSets.name,
@@ -179,11 +180,12 @@ Stream<List<GymSetsCompanion>> watchGraphs() {
           db.gymSets.created.max(),
           db.gymSets.image,
           db.gymSets.category,
+          countCol,
         ])
         ..where(db.gymSets.hidden.equals(false))
         ..orderBy([
           OrderingTerm(
-            expression: db.gymSets.created.max(),
+            expression: countCol,
             mode: OrderingMode.desc,
           ),
         ])
@@ -233,11 +235,9 @@ Future<List<StrengthData>> getStrengthData({
   required String name,
   required StrengthMetric metric,
   required Period period,
-  required DateTime? start,
-  required DateTime? end,
-  required int limit,
 }) async {
   Expression<String> col = getCreated(period);
+  final periodStart = getPeriodStart(period);
 
   var query = (db.selectOnly(db.gymSets)
     ..addColumns([
@@ -258,19 +258,14 @@ Future<List<StrengthData>> getStrengthData({
         mode: OrderingMode.desc,
       ),
     ])
-    ..limit(limit)
     ..groupBy([col]));
 
-  if (start != null)
+  if (periodStart != null) {
     query = query
       ..where(
-        db.gymSets.created.isBiggerOrEqualValue(start),
+        db.gymSets.created.isBiggerOrEqualValue(periodStart),
       );
-  if (end != null)
-    query = query
-      ..where(
-        db.gymSets.created.isSmallerThanValue(end),
-      );
+  }
 
   final results = await query.get();
 
@@ -316,11 +311,9 @@ Future<List<StrengthData>> getGlobalData({
   required String target,
   required StrengthMetric metric,
   required Period period,
-  required DateTime? start,
-  required DateTime? end,
-  required int limit,
 }) async {
   Expression<String> col = getCreated(period);
+  final periodStart = getPeriodStart(period);
 
   var query = (db.selectOnly(db.gymSets)
     ..addColumns([
@@ -341,19 +334,14 @@ Future<List<StrengthData>> getGlobalData({
         mode: OrderingMode.desc,
       ),
     ])
-    ..limit(limit)
     ..groupBy([db.gymSets.category, col]));
 
-  if (start != null)
+  if (periodStart != null) {
     query = query
       ..where(
-        db.gymSets.created.isBiggerOrEqualValue(start),
+        db.gymSets.created.isBiggerOrEqualValue(periodStart),
       );
-  if (end != null)
-    query = query
-      ..where(
-        db.gymSets.created.isSmallerThanValue(end),
-      );
+  }
 
   final results = await query.get();
 
@@ -453,6 +441,7 @@ class GymSets extends Table {
   IntColumn get restMs => integer().nullable()();
   IntColumn get sequence => integer().withDefault(const Constant(0))(); // Exercise order within workout
   TextColumn get unit => text()();
+  BoolColumn get warmup => boolean().withDefault(const Constant(false))();
   RealColumn get weight => real()();
   IntColumn get workoutId => integer().nullable()();
 }
