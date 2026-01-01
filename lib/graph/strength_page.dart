@@ -673,7 +673,7 @@ class _StrengthPageState extends State<StrengthPage> {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 50,
+              reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 if (value == meta.min || value == meta.max) {
                   return const SizedBox();
@@ -804,74 +804,16 @@ class _StrengthPageState extends State<StrengthPage> {
   Future<void> _editSet(int index) async {
     if (index >= data.length) return;
     final row = data[index];
-    GymSet? gymSet;
 
-    switch (metric) {
-      case StrengthMetric.oneRepMax:
-        final ormExpression = db.gymSets.weight /
-            (const drift.CustomExpression<double>('1.0278 - 0.0278 * reps'));
-        gymSet = await (db.gymSets.select()
-              ..where(
-                (tbl) =>
-                    tbl.created.equals(row.created) &
-                    ormExpression.equals(row.value) &
-                    tbl.name.equals(widget.name),
-              )
-              ..limit(1))
-            .getSingleOrNull();
-        break;
-      case StrengthMetric.volume:
-        gymSet = await (db.gymSets.select()
-              ..where(
-                (tbl) =>
-                    tbl.created.equals(row.created) &
-                    tbl.name.equals(widget.name),
-              )
-              ..limit(1))
-            .getSingleOrNull();
-        break;
-      case StrengthMetric.bestWeight:
-        gymSet = await (db.gymSets.select()
-              ..where(
-                (tbl) =>
-                    tbl.created.equals(row.created) &
-                    tbl.weight.equals(row.value) &
-                    tbl.name.equals(widget.name),
-              )
-              ..limit(1))
-            .getSingleOrNull();
-        break;
-      case StrengthMetric.relativeStrength:
-        gymSet = await (db.gymSets.select()
-              ..where(
-                (tbl) =>
-                    tbl.created.equals(row.created) &
-                    ((tbl.weight / tbl.bodyWeight).equals(row.value) |
-                        (tbl.weight / tbl.bodyWeight).isNull()) &
-                    tbl.name.equals(widget.name),
-              )
-              ..limit(1))
-            .getSingleOrNull();
-        break;
-      case StrengthMetric.bestVolume:
-        gymSet = await (db.gymSets.select()
-              ..where(
-                (tbl) =>
-                    tbl.created.equals(row.created) &
-                    tbl.name.equals(widget.name),
-              )
-              ..limit(1))
-            .getSingleOrNull();
-        break;
-    }
-
-    if (!mounted || gymSet == null || gymSet.workoutId == null) return;
+    // Use the workout ID directly from the StrengthData
+    if (row.workoutId == null) return;
 
     final workout = await (db.workouts.select()
-          ..where((w) => w.id.equals(gymSet!.workoutId!)))
+          ..where((w) => w.id.equals(row.workoutId!)))
         .getSingleOrNull();
 
     if (!mounted || workout == null) return;
+
     await Navigator.push(
       context,
       MaterialPageRoute(

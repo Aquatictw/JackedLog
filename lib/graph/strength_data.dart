@@ -4,6 +4,7 @@ class StrengthData {
   final String unit;
   final double value;
   final String? category;
+  final int? workoutId;
 
   StrengthData({
     required this.created,
@@ -11,5 +12,6 @@ class StrengthData {
     required this.unit,
     required this.value,
     this.category,
+    this.workoutId,
   });
 }

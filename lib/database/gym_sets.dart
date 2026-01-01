@@ -234,43 +234,65 @@ Future<List<StrengthData>> getStrengthData({
   required StrengthMetric metric,
   required Period period,
 }) async {
-  Expression<String> col = getCreated(period);
   final periodStart = getPeriodStart(period);
 
-  var query = (db.selectOnly(db.gymSets)
-    ..addColumns([
-      db.gymSets.weight.max(),
-      volumeCol,
-      ormCol,
-      bestVolumeCol,
-      db.gymSets.created,
-      db.gymSets.reps,
-      db.gymSets.unit,
-      relativeCol,
-    ])
-    ..where(db.gymSets.name.equals(name))
-    ..where(db.gymSets.hidden.equals(false))
-    ..orderBy([
-      OrderingTerm(
-        expression: col,
-        mode: OrderingMode.desc,
-      ),
-    ])
-    ..groupBy([col]));
-
-  if (periodStart != null) {
-    query = query
-      ..where(
-        db.gymSets.created.isBiggerOrEqualValue(periodStart),
-      );
+  // Build the metric-specific SQL expression and ordering
+  String metricExpression;
+  String orderColumn;
+  switch (metric) {
+    case StrengthMetric.bestWeight:
+      metricExpression = 'weight';
+      orderColumn = 'weight';
+      break;
+    case StrengthMetric.oneRepMax:
+      metricExpression = 'CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.volume:
+      metricExpression = 'weight * reps';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.relativeStrength:
+      metricExpression = 'weight / NULLIF(body_weight, 0)';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.bestVolume:
+      metricExpression = 'weight * reps';
+      orderColumn = metricExpression;
+      break;
   }
 
-  final results = await query.get();
+  // Use a custom SQL query to get the best set for each day along with its workout_id
+  final whereClause = periodStart != null
+      ? 'AND created >= ${periodStart.millisecondsSinceEpoch ~/ 1000}'
+      : '';
+
+  final sql = '''
+    SELECT
+      created,
+      weight,
+      reps,
+      unit,
+      workout_id,
+      $metricExpression as metric_value
+    FROM gym_sets
+    WHERE name = ?
+      AND hidden = 0
+      $whereClause
+    GROUP BY STRFTIME('%Y-%m-%d', DATE(created, 'unixepoch', 'localtime'))
+    HAVING $metricExpression = MAX($orderColumn)
+    ORDER BY created DESC
+  ''';
+
+  final results = await db.customSelect(
+    sql,
+    variables: [Variable.withString(name)],
+  ).get();
 
   List<StrengthData> list = [];
   for (final result in results.reversed) {
-    final unit = result.read(db.gymSets.unit)!;
-    var value = getStrength(result, metric);
+    final unit = result.read<String>('unit');
+    var value = result.read<double>('metric_value');
 
     if (unit == 'lb' && target == 'kg') {
       value *= 0.45359237;
@@ -278,17 +300,19 @@ Future<List<StrengthData>> getStrengthData({
       value *= 2.20462262;
     }
 
-    double reps = 0.0;
-    try {
-      reps = result.read(db.gymSets.reps)!;
-    } catch (_) {}
+    final reps = result.read<double>('reps');
+    final created = DateTime.fromMillisecondsSinceEpoch(
+      result.read<int>('created') * 1000,
+    ).toLocal();
+    final workoutId = result.read<int?>('workout_id');
 
     list.add(
       StrengthData(
-        created: result.read(db.gymSets.created)!.toLocal(),
+        created: created,
         value: value,
         unit: unit,
         reps: reps,
+        workoutId: workoutId,
       ),
     );
   }
@@ -310,43 +334,62 @@ Future<List<StrengthData>> getGlobalData({
   required StrengthMetric metric,
   required Period period,
 }) async {
-  Expression<String> col = getCreated(period);
   final periodStart = getPeriodStart(period);
 
-  var query = (db.selectOnly(db.gymSets)
-    ..addColumns([
-      db.gymSets.weight.max(),
-      volumeCol,
-      ormCol,
-      bestVolumeCol,
-      db.gymSets.created,
-      db.gymSets.reps,
-      db.gymSets.unit,
-      relativeCol,
-      db.gymSets.category,
-    ])
-    ..where(db.gymSets.hidden.equals(false) & db.gymSets.category.isNotNull())
-    ..orderBy([
-      OrderingTerm(
-        expression: col,
-        mode: OrderingMode.desc,
-      ),
-    ])
-    ..groupBy([db.gymSets.category, col]));
-
-  if (periodStart != null) {
-    query = query
-      ..where(
-        db.gymSets.created.isBiggerOrEqualValue(periodStart),
-      );
+  // Build the metric-specific SQL expression and ordering
+  String metricExpression;
+  String orderColumn;
+  switch (metric) {
+    case StrengthMetric.bestWeight:
+      metricExpression = 'weight';
+      orderColumn = 'weight';
+      break;
+    case StrengthMetric.oneRepMax:
+      metricExpression = 'CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.volume:
+      metricExpression = 'weight * reps';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.relativeStrength:
+      metricExpression = 'weight / NULLIF(body_weight, 0)';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.bestVolume:
+      metricExpression = 'weight * reps';
+      orderColumn = metricExpression;
+      break;
   }
 
-  final results = await query.get();
+  final whereClause = periodStart != null
+      ? 'AND created >= ${periodStart.millisecondsSinceEpoch ~/ 1000}'
+      : '';
+
+  final sql = '''
+    SELECT
+      created,
+      weight,
+      reps,
+      unit,
+      category,
+      workout_id,
+      $metricExpression as metric_value
+    FROM gym_sets
+    WHERE hidden = 0
+      AND category IS NOT NULL
+      $whereClause
+    GROUP BY category, STRFTIME('%Y-%m-%d', DATE(created, 'unixepoch', 'localtime'))
+    HAVING $metricExpression = MAX($orderColumn)
+    ORDER BY created DESC
+  ''';
+
+  final results = await db.customSelect(sql).get();
 
   List<StrengthData> list = [];
   for (final result in results.reversed) {
-    final unit = result.read(db.gymSets.unit)!;
-    var value = getStrength(result, metric);
+    final unit = result.read<String>('unit');
+    var value = result.read<double>('metric_value');
 
     if (unit == 'lb' && target == 'kg') {
       value *= 0.45359237;
@@ -354,18 +397,21 @@ Future<List<StrengthData>> getGlobalData({
       value *= 2.20462262;
     }
 
-    double reps = 0.0;
-    try {
-      reps = result.read(db.gymSets.reps)!;
-    } catch (_) {}
+    final reps = result.read<double>('reps');
+    final created = DateTime.fromMillisecondsSinceEpoch(
+      result.read<int>('created') * 1000,
+    ).toLocal();
+    final category = result.read<String?>('category');
+    final workoutId = result.read<int?>('workout_id');
 
     list.add(
       StrengthData(
-        created: result.read(db.gymSets.created)!.toLocal(),
+        created: created,
         value: value,
         unit: unit,
         reps: reps,
-        category: result.read(db.gymSets.category),
+        category: category,
+        workoutId: workoutId,
       ),
     );
   }
