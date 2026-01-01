@@ -261,12 +261,13 @@ class _StrengthPageState extends State<StrengthPage> {
                   : Stack(
                       children: [
                         _buildChart(settings, colorScheme),
-                        // Selected value overlay (top left, ignores pointer)
+                        // Selected value overlay (top left, clickable)
                         if (selectedIndex != null && selectedIndex! < data.length)
                           Positioned(
                             top: 8,
-                            left: 56,
-                            child: IgnorePointer(
+                            left: 8,
+                            child: GestureDetector(
+                              onTap: () => _editSet(selectedIndex!),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 6),
@@ -739,11 +740,6 @@ class _StrengthPageState extends State<StrengthPage> {
                 response!.lineBarSpots!.isNotEmpty) {
               final spot = response.lineBarSpots!.first;
               setState(() => selectedIndex = spot.spotIndex);
-
-              // Handle single tap to navigate to workout
-              if (event is FlTapUpEvent) {
-                _editSet(spot.spotIndex);
-              }
             }
           },
           getTouchedSpotIndicator: (barData, spotIndexes) {
