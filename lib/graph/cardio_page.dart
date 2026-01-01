@@ -216,45 +216,47 @@ class _CardioPageState extends State<CardioPage> {
                   : Stack(
                       children: [
                         _buildChart(settings, colorScheme),
-                        // Selected value overlay (top right)
+                        // Selected value overlay (top left, ignores pointer)
                         if (selectedIndex != null && selectedIndex! < data.length)
                           Positioned(
                             top: 8,
-                            right: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primaryContainer.withOpacity(0.95),
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _formatValue(data[selectedIndex!]),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: colorScheme.onPrimaryContainer,
+                            left: 56,
+                            child: IgnorePointer(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primaryContainer.withOpacity(0.95),
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
                                     ),
-                                  ),
-                                  Text(
-                                    DateFormat(settings.shortDateFormat)
-                                        .format(data[selectedIndex!].created),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _formatValue(data[selectedIndex!]),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: colorScheme.onPrimaryContainer,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    Text(
+                                      DateFormat(settings.shortDateFormat)
+                                          .format(data[selectedIndex!].created),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
