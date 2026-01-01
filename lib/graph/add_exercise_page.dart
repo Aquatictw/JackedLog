@@ -21,14 +21,18 @@ class AddExercisePage extends StatefulWidget {
 
 class _AddExercisePageState extends State<AddExercisePage> {
   final TextEditingController nameCtrl = TextEditingController();
-  bool cardio = false;
+  final TextEditingController notesCtrl = TextEditingController();
+  final TextEditingController brandNameCtrl = TextEditingController();
 
-  late var settings = context.watch<SettingsState>();
-  late String unit = settings.value.strengthUnit == 'last-entry'
-      ? 'kg'
-      : settings.value.strengthUnit;
+  String? exerciseType;
   String? image;
   final key = GlobalKey<FormState>();
+
+  final List<({String value, String label, IconData icon})> exerciseTypes = [
+    (value: 'free_weight', label: 'Free Weight', icon: Icons.fitness_center),
+    (value: 'machine', label: 'Machine', icon: Icons.settings),
+    (value: 'cable', label: 'Cable', icon: Icons.cable),
+  ];
 
   @override
   void initState() {
@@ -38,125 +42,318 @@ class _AddExercisePageState extends State<AddExercisePage> {
 
   @override
   Widget build(BuildContext context) {
-    settings = context.watch<SettingsState>();
+    final settings = context.watch<SettingsState>();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('Add exercise'),
+        title: const Text('Add Exercise'),
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: key,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name'),
-                textCapitalization: TextCapitalization.sentences,
-                autofocus: true,
-                validator: (value) =>
-                    value?.isNotEmpty == true ? null : 'Required',
-              ),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Unit'),
-                initialValue: unit,
-                items: const [
-                  DropdownMenuItem(
-                    value: 'kg',
-                    child: Text("Kilograms (kg)"),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colorScheme.surface,
+              colorScheme.surface.withOpacity(0.95),
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Form(
+            key: key,
+            child: ListView(
+              children: [
+                // Exercise Name
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  DropdownMenuItem(
-                    value: 'lb',
-                    child: Text("Pounds (lb)"),
-                  ),
-                  DropdownMenuItem(
-                    value: 'stone',
-                    child: Text("Stone"),
-                  ),
-                  DropdownMenuItem(
-                    value: 'km',
-                    child: Text("Kilometers (km)"),
-                  ),
-                  DropdownMenuItem(
-                    value: 'mi',
-                    child: Text("Miles (mi)"),
-                  ),
-                ],
-                onChanged: (String? newValue) {
-                  setState(() {
-                    unit = newValue!;
-                  });
-                },
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                title: cardio ? const Text('Cardio') : const Text('Strength'),
-                leading: cardio
-                    ? const Icon(Icons.sports_gymnastics)
-                    : const Icon(Icons.fitness_center),
-                onTap: () {
-                  setState(() {
-                    if (cardio)
-                      unit = 'kg';
-                    else
-                      unit = 'km';
-                    cardio = !cardio;
-                  });
-                },
-                trailing: Switch(
-                  value: cardio,
-                  onChanged: (value) => setState(() {
-                    cardio = value;
-                  }),
-                ),
-              ),
-              Visibility(
-                visible: settings.value.showImages,
-                child: material.Column(
-                  children: [
-                    material.Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TextButton.icon(
-                          onPressed: pick,
-                          label: const Text('Image'),
-                          icon: const Icon(Icons.image),
-                        ),
-                        if (image != null)
-                          TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                image = null;
-                              });
-                            },
-                            label: const Text("Delete"),
-                            icon: const Icon(Icons.delete),
-                          ),
-                      ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: TextFormField(
+                      controller: nameCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Exercise Name',
+                        border: InputBorder.none,
+                        icon: Icon(Icons.label_outline, color: colorScheme.primary),
+                      ),
+                      textCapitalization: TextCapitalization.sentences,
+                      autofocus: true,
+                      validator: (value) =>
+                          value?.isNotEmpty == true ? null : 'Required',
                     ),
-                    if (image != null) ...[
-                      const SizedBox(height: 8),
-                      Image.file(
-                        File(image!),
-                        errorBuilder: (context, error, stackTrace) =>
-                            TextButton.icon(
-                          label: const Text('Image error'),
-                          icon: const Icon(Icons.error),
-                          onPressed: () => pick(),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Exercise Type Section
+                Text(
+                  'Exercise Type',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Exercise Type Cards
+                ...exerciseTypes.map((type) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        exerciseType = type.value;
+                      });
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: exerciseType == type.value
+                            ? LinearGradient(
+                                colors: [
+                                  colorScheme.primaryContainer,
+                                  colorScheme.primaryContainer.withOpacity(0.7),
+                                ],
+                              )
+                            : null,
+                        color: exerciseType != type.value
+                            ? colorScheme.surface
+                            : null,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: exerciseType == type.value
+                              ? colorScheme.primary
+                              : colorScheme.outline.withOpacity(0.3),
+                          width: exerciseType == type.value ? 2 : 1,
+                        ),
+                        boxShadow: exerciseType == type.value
+                            ? [
+                                BoxShadow(
+                                  color: colorScheme.primary.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: exerciseType == type.value
+                                    ? colorScheme.primary.withOpacity(0.2)
+                                    : colorScheme.surfaceVariant,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                type.icon,
+                                color: exerciseType == type.value
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Text(
+                              type.label,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: exerciseType == type.value
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: exerciseType == type.value
+                                    ? colorScheme.onPrimaryContainer
+                                    : colorScheme.onSurface,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (exerciseType == type.value)
+                              Icon(
+                                Icons.check_circle,
+                                color: colorScheme.primary,
+                                size: 28,
+                              ),
+                          ],
                         ),
                       ),
-                    ],
-                  ],
+                    ),
+                  ),
+                )).toList(),
+
+                // Brand Name (only for machines)
+                if (exerciseType == 'machine') ...[
+                  const SizedBox(height: 20),
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: TextField(
+                        controller: brandNameCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Brand Name (Optional)',
+                          hintText: 'e.g., Hammer Strength, Life Fitness',
+                          border: InputBorder.none,
+                          icon: Icon(Icons.business, color: colorScheme.primary),
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 20),
+
+                // Notes
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: TextField(
+                      controller: notesCtrl,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: 'Notes (Optional)',
+                        hintText: 'Add any notes about this exercise...',
+                        border: InputBorder.none,
+                        icon: Icon(Icons.note_outlined, color: colorScheme.primary),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 20),
+
+                // Image Section
+                if (settings.value.showImages) ...[
+                  Text(
+                    'Exercise Image',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  if (image == null)
+                    InkWell(
+                      onTap: pick,
+                      child: Container(
+                        height: 180,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceVariant.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: colorScheme.outline.withOpacity(0.3),
+                            width: 2,
+                            style: BorderStyle.solid,
+                          ),
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_photo_alternate_outlined,
+                                size: 48,
+                                color: colorScheme.primary,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Add Image',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.file(
+                            File(image!),
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                              height: 200,
+                              decoration: BoxDecoration(
+                                color: colorScheme.errorContainer,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: pick,
+                                style: IconButton.styleFrom(
+                                  backgroundColor: colorScheme.surface,
+                                  foregroundColor: colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                onPressed: () {
+                                  setState(() {
+                                    image = null;
+                                  });
+                                },
+                                style: IconButton.styleFrom(
+                                  backgroundColor: colorScheme.surface,
+                                  foregroundColor: colorScheme.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+
+                const SizedBox(height: 100), // Space for FAB
+              ],
+            ),
           ),
         ),
       ),
       floatingActionButton: AnimatedFab(
-        onPressed: () => save(unit),
+        onPressed: save,
         label: const Text('Save'),
         icon: const Icon(Icons.save),
       ),
@@ -166,11 +363,15 @@ class _AddExercisePageState extends State<AddExercisePage> {
   @override
   void dispose() {
     nameCtrl.dispose();
+    notesCtrl.dispose();
+    brandNameCtrl.dispose();
     super.dispose();
   }
 
   void pick() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+    );
     if (result?.files.single == null) return;
 
     setState(() {
@@ -178,23 +379,21 @@ class _AddExercisePageState extends State<AddExercisePage> {
     });
   }
 
-  Future<void> save(String unit) async {
+  Future<void> save() async {
     if (!key.currentState!.validate()) return;
-
-    if (settings.value.strengthUnit != 'last-entry' && !cardio)
-      unit = settings.value.strengthUnit;
-    else if (settings.value.cardioUnit != 'last-entry' && cardio)
-      unit = settings.value.cardioUnit;
 
     final insert = GymSetsCompanion.insert(
       created: DateTime.now().toLocal(),
       reps: 0,
       weight: 0,
       name: nameCtrl.text,
-      unit: unit,
-      cardio: Value(cardio),
+      unit: 'kg', // Hardcoded to kg
+      cardio: const Value(false), // Always strength
       hidden: const Value(true),
       image: Value(image),
+      exerciseType: Value(exerciseType),
+      brandName: Value(brandNameCtrl.text.isEmpty ? null : brandNameCtrl.text),
+      notes: Value(notesCtrl.text.isEmpty ? null : notesCtrl.text),
     );
     await db.gymSets.insertOne(insert);
     if (!mounted) return;

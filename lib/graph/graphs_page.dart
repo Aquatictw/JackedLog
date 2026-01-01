@@ -7,7 +7,6 @@ import 'package:flexify/database/database.dart';
 import 'package:flexify/database/gym_sets.dart';
 import 'package:flexify/graph/add_exercise_page.dart';
 import 'package:flexify/graph/cardio_data.dart';
-import 'package:flexify/graph/edit_graph_page.dart';
 import 'package:flexify/graph/flex_line.dart';
 import 'package:flexify/graphs_filters.dart';
 import 'package:flexify/main.dart';
@@ -20,7 +19,6 @@ import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import 'graph_tile.dart';
 
@@ -197,23 +195,6 @@ class GraphsPageState extends State<GraphsPage>
                   },
                 );
               },
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit),
-              tooltip: "Edit",
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditGraphPage(
-                    name: selected.first,
-                  ),
-                ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.share),
-              tooltip: "Share",
-              onPressed: onShare,
             ),
           ],
           PopupMenuButton<String>(
@@ -506,24 +487,6 @@ class GraphsPageState extends State<GraphsPage>
     }
   }
 
-  Future<void> onShare() async {
-    final copy = selected.toList();
-    setState(() {
-      selected.clear();
-    });
-    final sets = (await stream.first)
-        .where(
-          (gymSet) => copy.contains(gymSet.name),
-        )
-        .toList();
-    final text = sets
-        .map(
-          (gymSet) =>
-              "${toString(gymSet.reps)}x${toString(gymSet.weight)}${gymSet.unit} ${gymSet.name}",
-        )
-        .join(', ');
-    await SharePlus.instance.share(ShareParams(text: "I just did $text"));
-  }
 
   material.ListView graphList(List<GraphExercise> gymSets) {
     var itemCount = gymSets.length + 1;

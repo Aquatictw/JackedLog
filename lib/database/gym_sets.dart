@@ -666,6 +666,8 @@ class GymSets extends Table {
   BoolColumn get warmup => boolean().withDefault(const Constant(false))();
   RealColumn get weight => real()();
   IntColumn get workoutId => integer().nullable()();
+  TextColumn get exerciseType => text().nullable()(); // free weight, machine, cable
+  TextColumn get brandName => text().nullable()(); // brand for machine
 }
 
 final categoriesStream = (db.gymSets.selectOnly(distinct: true)
