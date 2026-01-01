@@ -184,9 +184,14 @@ class _StrengthPageState extends State<StrengthPage> {
                 children: Period.values.map((p) {
                   final isSelected = period == p;
                   return Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.only(right: 6),
                     child: ChoiceChip(
-                      label: Text(_getPeriodLabel(p)),
+                      label: Text(
+                        _getPeriodLabel(p),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                      visualDensity: VisualDensity.compact,
                       selected: isSelected,
                       onSelected: (selected) {
                         if (selected) {
@@ -202,7 +207,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // Metric selector chips
             if (name != 'Weight')
@@ -217,9 +222,14 @@ class _StrengthPageState extends State<StrengthPage> {
                   ].map((m) {
                     final isSelected = metric == m;
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.only(right: 6),
                       child: ChoiceChip(
-                        label: Text(_getMetricLabel(m)),
+                        label: Text(
+                          _getMetricLabel(m),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                        visualDensity: VisualDensity.compact,
                         selected: isSelected,
                         onSelected: (selected) {
                           if (selected) {
@@ -236,7 +246,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 ),
               ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Chart with overlay label
             SizedBox(
@@ -673,7 +683,7 @@ class _StrengthPageState extends State<StrengthPage> {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 40,
+              reservedSize: 32,
               getTitlesWidget: (value, meta) {
                 if (value == meta.min || value == meta.max) {
                   return const SizedBox();
@@ -681,7 +691,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 return Text(
                   NumberFormat.compact().format(value),
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 );

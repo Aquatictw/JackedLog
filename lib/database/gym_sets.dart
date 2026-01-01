@@ -166,8 +166,28 @@ Future<List<Rpm>> getRpms() async {
       .toList();
 }
 
-Stream<List<GymSetsCompanion>> watchGraphs() {
-  final countCol = db.gymSets.name.count();
+// Typedef for graph list items with workout count
+typedef GraphExercise = ({
+  String name,
+  String unit,
+  double weight,
+  double reps,
+  bool cardio,
+  double duration,
+  double distance,
+  DateTime created,
+  String? image,
+  String? category,
+  int setCount,
+  int workoutCount,
+});
+
+Stream<List<GraphExercise>> watchGraphs() {
+  final setCountCol = db.gymSets.name.count();
+  final workoutCountCol = const CustomExpression<int>(
+    'COUNT(DISTINCT workout_id)',
+  );
+
   return (db.gymSets.selectOnly()
         ..addColumns([
           db.gymSets.name,
@@ -180,12 +200,13 @@ Stream<List<GymSetsCompanion>> watchGraphs() {
           db.gymSets.created.max(),
           db.gymSets.image,
           db.gymSets.category,
-          countCol,
+          setCountCol,
+          workoutCountCol,
         ])
         ..where(db.gymSets.hidden.equals(false))
         ..orderBy([
           OrderingTerm(
-            expression: countCol,
+            expression: workoutCountCol,
             mode: OrderingMode.desc,
           ),
         ])
@@ -194,17 +215,19 @@ Stream<List<GymSetsCompanion>> watchGraphs() {
       .map(
         (results) => results
             .map(
-              (result) => GymSetsCompanion(
-                name: Value(result.read(db.gymSets.name)!),
-                weight: Value(result.read(db.gymSets.weight)!),
-                unit: Value(result.read(db.gymSets.unit)!),
-                reps: Value(result.read(db.gymSets.reps)!),
-                cardio: Value(result.read(db.gymSets.cardio)!),
-                duration: Value(result.read(db.gymSets.duration)!),
-                distance: Value(result.read(db.gymSets.distance)!),
-                created: Value(result.read(db.gymSets.created.max())!),
-                image: Value(result.read(db.gymSets.image)),
-                category: Value(result.read(db.gymSets.category)),
+              (result) => (
+                name: result.read(db.gymSets.name)!,
+                weight: result.read(db.gymSets.weight)!,
+                unit: result.read(db.gymSets.unit)!,
+                reps: result.read(db.gymSets.reps)!,
+                cardio: result.read(db.gymSets.cardio)!,
+                duration: result.read(db.gymSets.duration)!,
+                distance: result.read(db.gymSets.distance)!,
+                created: result.read(db.gymSets.created.max())!,
+                image: result.read(db.gymSets.image),
+                category: result.read(db.gymSets.category),
+                setCount: result.read(setCountCol)!,
+                workoutCount: result.read(workoutCountCol)!,
               ),
             )
             .toList(),

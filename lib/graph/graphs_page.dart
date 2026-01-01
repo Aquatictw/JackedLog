@@ -35,7 +35,7 @@ class GraphsPage extends StatefulWidget {
 
 class GraphsPageState extends State<GraphsPage>
     with AutomaticKeepAliveClientMixin {
-  late final Stream<List<GymSetsCompanion>> stream = watchGraphs();
+  late final Stream<List<GraphExercise>> stream = watchGraphs();
 
   final Set<String> selected = {};
   final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -122,7 +122,7 @@ class GraphsPageState extends State<GraphsPage>
     );
   }
 
-  Widget getPeek(GymSetsCompanion gymSet, List<dynamic> data, String format) {
+  Widget getPeek(GraphExercise gymSet, List<dynamic> data, String format) {
     List<FlSpot> spots = [];
     for (var index = 0; index < data.length; index++) {
       spots.add(FlSpot(index.toDouble(), data[index].value));
@@ -137,7 +137,7 @@ class GraphsPageState extends State<GraphsPage>
           spots: spots,
           tooltipData: () => tooltipData(
             data,
-            gymSet.unit.value,
+            gymSet.unit,
             format,
           ),
           hideBottom: true,
@@ -224,7 +224,7 @@ class GraphsPageState extends State<GraphsPage>
                 case 'select_all':
                   final gymSets = await stream.first;
                   setState(() {
-                    selected.addAll(gymSets.map((g) => g.name.value));
+                    selected.addAll(gymSets.map((g) => g.name));
                   });
                   break;
                 case 'weight':
@@ -291,12 +291,12 @@ class GraphsPageState extends State<GraphsPage>
           final searchTerms = search.toLowerCase().split(' ').where((t) => t.isNotEmpty);
           var filteredStream = snapshot.data!.where((gymSet) {
             // Filter by category
-            if (category != null && gymSet.category.value != category) {
+            if (category != null && gymSet.category != category) {
               return false;
             }
             // Filter by search
             for (final term in searchTerms) {
-              if (!gymSet.name.value.toLowerCase().contains(term)) {
+              if (!gymSet.name.toLowerCase().contains(term)) {
                 return false;
               }
             }
@@ -513,19 +513,19 @@ class GraphsPageState extends State<GraphsPage>
     });
     final sets = (await stream.first)
         .where(
-          (gymSet) => copy.contains(gymSet.name.value),
+          (gymSet) => copy.contains(gymSet.name),
         )
         .toList();
     final text = sets
         .map(
           (gymSet) =>
-              "${toString(gymSet.reps.value)}x${toString(gymSet.weight.value)}${gymSet.unit.value} ${gymSet.name.value}",
+              "${toString(gymSet.reps)}x${toString(gymSet.weight)}${gymSet.unit} ${gymSet.name}",
         )
         .join(', ');
     await SharePlus.instance.share(ShareParams(text: "I just did $text"));
   }
 
-  material.ListView graphList(List<GymSetsCompanion> gymSets) {
+  material.ListView graphList(List<GraphExercise> gymSets) {
     var itemCount = gymSets.length + 1;
 
     final settings = context.read<SettingsState>().value;
@@ -557,11 +557,11 @@ class GraphsPageState extends State<GraphsPage>
                         settings.value.shortDateFormat,
                       )
                     : const SizedBox(),
-                future: gymSets.first.cardio.value
-                    ? getCardioData(name: gymSets.first.name.value)
+                future: gymSets.first.cardio
+                    ? getCardioData(name: gymSets.first.name)
                     : getStrengthData(
-                        target: gymSets.first.unit.value,
-                        name: gymSets.first.name.value,
+                        target: gymSets.first.unit,
+                        name: gymSets.first.name,
                         metric: StrengthMetric.bestWeight,
                         period: Period.months3,
                       ),
@@ -581,7 +581,7 @@ class GraphsPageState extends State<GraphsPage>
 
         return GraphTile(
           selected: selected,
-          gymSet: set,
+          exercise: set,
           onSelect: (name) async {
             if (selected.contains(name))
               setState(() {
