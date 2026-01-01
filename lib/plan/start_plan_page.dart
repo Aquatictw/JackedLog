@@ -24,18 +24,21 @@ class _ExerciseItem {
   final bool isPlanExercise;
   final int? planExerciseId;
   final String? adHocName;
+  final String uniqueId;
 
   _ExerciseItem.plan(PlanExercise exercise)
       : isPlanExercise = true,
         planExerciseId = exercise.id,
-        adHocName = null;
+        adHocName = null,
+        uniqueId = 'plan_${exercise.id}_${DateTime.now().microsecondsSinceEpoch}';
 
   _ExerciseItem.adHoc(String name)
       : isPlanExercise = false,
         planExerciseId = null,
-        adHocName = name;
+        adHocName = name,
+        uniqueId = 'adhoc_${name}_${DateTime.now().microsecondsSinceEpoch}';
 
-  String get key => isPlanExercise ? 'plan_$planExerciseId' : 'adhoc_$adHocName';
+  String get key => uniqueId;
 }
 
 class _StartPlanPageState extends State<StartPlanPage> {
@@ -152,37 +155,63 @@ class _StartPlanPageState extends State<StartPlanPage> {
           }
         } else {
           // Resuming - rebuild exercise list from sets (preserves order)
-          final seenExercises = <String>{};
-          final orderedExercises = <String>[];
+          // Group sets by exercise, but detect sequence gaps to identify separate instances
+          final List<({String name, int minSeq, int maxSeq})> exerciseGroups = [];
+
+          String? currentExercise;
+          int? currentMinSeq;
+          int? currentMaxSeq;
 
           for (final set in existingSets) {
-            if (!seenExercises.contains(set.name)) {
-              seenExercises.add(set.name);
-              orderedExercises.add(set.name);
+            if (currentExercise == null ||
+                set.name != currentExercise ||
+                (currentMaxSeq != null && set.sequence > currentMaxSeq + 1)) {
+              // New exercise or gap detected - save previous group
+              if (currentExercise != null) {
+                exerciseGroups.add((
+                  name: currentExercise,
+                  minSeq: currentMinSeq!,
+                  maxSeq: currentMaxSeq!,
+                ));
+              }
+              // Start new group
+              currentExercise = set.name;
+              currentMinSeq = set.sequence;
+              currentMaxSeq = set.sequence;
+            } else {
+              // Continue current group
+              currentMaxSeq = set.sequence;
             }
           }
 
-          for (final name in orderedExercises) {
-            final planExercise = planExercises.where((e) => e.exercise == name).firstOrNull;
+          // Add last group
+          if (currentExercise != null) {
+            exerciseGroups.add((
+              name: currentExercise,
+              minSeq: currentMinSeq!,
+              maxSeq: currentMaxSeq!,
+            ));
+          }
+
+          // Create exercise items for each group
+          for (final group in exerciseGroups) {
+            final planExercise = planExercises.where((e) => e.exercise == group.name).firstOrNull;
             if (planExercise != null) {
               _exerciseOrder.add(_ExerciseItem.plan(planExercise));
             } else {
-              _exerciseOrder.add(_ExerciseItem.adHoc(name));
+              _exerciseOrder.add(_ExerciseItem.adHoc(group.name));
             }
-          }
 
-          // Restore notes from first set of each exercise
-          for (final name in orderedExercises) {
+            // Restore notes from first set of this group
             final setWithNotes = existingSets.where(
-              (s) => s.name == name && s.notes?.isNotEmpty == true,
+              (s) => s.name == group.name &&
+                     s.sequence >= group.minSeq &&
+                     s.sequence <= group.maxSeq &&
+                     s.notes?.isNotEmpty == true,
             ).firstOrNull;
 
             if (setWithNotes != null) {
-              final item = _exerciseOrder.firstWhere((item) =>
-                item.isPlanExercise
-                  ? _planExercisesMap[item.planExerciseId]?.exercise == name
-                  : item.adHocName == name);
-              _exerciseNotes[item.key] = setWithNotes.notes!;
+              _exerciseNotes[_exerciseOrder.last.key] = setWithNotes.notes!;
             }
           }
         }
@@ -551,19 +580,12 @@ class _StartPlanPageState extends State<StartPlanPage> {
   }
 
   Future<void> _showAddExerciseModal(BuildContext context) async {
-    final existingAdHocNames = _exerciseOrder
-        .where((item) => !item.isPlanExercise)
-        .map((item) => item.adHocName!)
-        .toList();
-
     final result = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       useRootNavigator: true,
-      builder: (context) => _ExercisePickerModal(
-        existingExercises: existingAdHocNames,
-      ),
+      builder: (context) => const _ExercisePickerModal(),
     );
 
     if (result != null && mounted) {
@@ -791,9 +813,7 @@ class _AddExerciseCard extends StatelessWidget {
 }
 
 class _ExercisePickerModal extends StatefulWidget {
-  final List<String> existingExercises;
-
-  const _ExercisePickerModal({required this.existingExercises});
+  const _ExercisePickerModal();
 
   @override
   State<_ExercisePickerModal> createState() => _ExercisePickerModalState();
@@ -929,48 +949,31 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                         itemCount: _filteredExercises.length,
                         itemBuilder: (context, index) {
                           final exercise = _filteredExercises[index];
-                          final alreadyAdded =
-                              widget.existingExercises.contains(exercise);
 
                           return ListTile(
                             leading: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: alreadyAdded
-                                    ? colorScheme.surfaceContainerHighest
-                                    : colorScheme.primaryContainer,
+                                color: colorScheme.primaryContainer,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
                                 Icons.fitness_center,
                                 size: 20,
-                                color: alreadyAdded
-                                    ? colorScheme.onSurfaceVariant
-                                    : colorScheme.primary,
+                                color: colorScheme.primary,
                               ),
                             ),
                             title: Text(
                               exercise,
-                              style: TextStyle(
-                                color: alreadyAdded
-                                    ? colorScheme.onSurfaceVariant
-                                    : null,
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            trailing: alreadyAdded
-                                ? Icon(
-                                    Icons.check_circle,
-                                    color: colorScheme.primary,
-                                  )
-                                : Icon(
-                                    Icons.add_circle_outline,
-                                    color: colorScheme.primary,
-                                  ),
-                            enabled: !alreadyAdded,
-                            onTap: alreadyAdded
-                                ? null
-                                : () => Navigator.pop(context, exercise),
+                            trailing: Icon(
+                              Icons.add_circle_outline,
+                              color: colorScheme.primary,
+                            ),
+                            onTap: () => Navigator.pop(context, exercise),
                           );
                         },
                       ),
@@ -1036,14 +1039,14 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     _defaultReps = lastSet?.reps.toInt() ?? 8;
     final defaultUnit = lastSet?.unit ?? settings.strengthUnit;
 
-    // Get ALL sets (including uncompleted/hidden ones) in this workout for this exercise
+    // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
     List<GymSet> existingSets = [];
     if (widget.workoutId != null) {
       existingSets = await (db.gymSets.select()
             ..where((tbl) =>
                 tbl.name.equals(widget.exerciseName) &
                 tbl.workoutId.equals(widget.workoutId!) &
-                tbl.sequence.isBiggerOrEqualValue(0)) // Exclude tombstones and placeholders
+                tbl.sequence.equals(widget.sequence)) // Filter by sequence to get only this instance
             ..orderBy([
               (u) => OrderingTerm(expression: u.created, mode: OrderingMode.asc),
             ]))
