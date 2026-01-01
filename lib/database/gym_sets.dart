@@ -417,11 +417,14 @@ Future<List<StrengthData>> getGlobalData({
   for (final result in results.reversed) {
     final unit = result.read<String>('unit');
     var value = result.read<double>('metric_value');
+    var weight = result.read<double>('weight');
 
     if (unit == 'lb' && target == 'kg') {
       value *= 0.45359237;
+      weight *= 0.45359237;
     } else if (unit == 'kg' && target == 'lb') {
       value *= 2.20462262;
+      weight *= 2.20462262;
     }
 
     final reps = result.read<double>('reps');
@@ -439,6 +442,7 @@ Future<List<StrengthData>> getGlobalData({
         reps: reps,
         category: category,
         workoutId: workoutId,
+        weight: weight,
       ),
     );
   }
