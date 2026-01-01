@@ -391,8 +391,9 @@ class _StrengthPageState extends State<StrengthPage> {
                 date: records!.best1RMDate,
                 color: colorScheme.tertiary,
                 workoutId: records!.best1RMWorkoutId,
-                subtitle: records!.best1RMReps != null
-                    ? '${records!.best1RMReps!.toInt()} reps'
+                subtitle: records!.best1RMReps != null &&
+                        records!.best1RMWeight != null
+                    ? '${records!.best1RMReps!.toInt()} × ${formatter.format(records!.best1RMWeight!)} $target'
                     : null,
               ),
             ),
@@ -791,6 +792,7 @@ class _StrengthPageState extends State<StrengthPage> {
         ),
         lineTouchData: LineTouchData(
           enabled: true,
+          touchSpotThreshold: 50,
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (_) => Colors.transparent,
             getTooltipItems: (_) => [],

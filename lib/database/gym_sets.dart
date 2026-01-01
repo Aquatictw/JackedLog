@@ -558,6 +558,7 @@ typedef ExerciseRecords = ({
   int? bestVolumeWorkoutId,
   double? bestWeightReps,
   double? best1RMReps,
+  double? best1RMWeight,
   double? bestVolumeReps,
   double? bestVolumeWeight,
 });
@@ -589,6 +590,7 @@ Future<ExerciseRecords> getExerciseRecords({
       bestVolumeWorkoutId: null,
       bestWeightReps: null,
       best1RMReps: null,
+      best1RMWeight: null,
       bestVolumeReps: null,
       bestVolumeWeight: null,
     );
@@ -606,7 +608,7 @@ Future<ExerciseRecords> getExerciseRecords({
   """, variables: [Variable.withString(name), Variable.withString(name)]).getSingleOrNull();
 
   final ormDate = await db.customSelect("""
-    SELECT created, workout_id, reps FROM gym_sets
+    SELECT created, workout_id, reps, weight FROM gym_sets
     WHERE name = ? AND hidden = 0
     ORDER BY CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END DESC
     LIMIT 1
@@ -637,6 +639,7 @@ Future<ExerciseRecords> getExerciseRecords({
     bestVolumeWorkoutId: volumeDate?.read<int?>('workout_id'),
     bestWeightReps: weightDate?.read<double?>('reps'),
     best1RMReps: ormDate?.read<double?>('reps'),
+    best1RMWeight: ormDate?.read<double?>('weight'),
     bestVolumeReps: volumeDate?.read<double?>('reps'),
     bestVolumeWeight: volumeDate?.read<double?>('weight'),
   );
