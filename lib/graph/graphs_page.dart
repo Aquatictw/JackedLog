@@ -2,7 +2,6 @@ import 'package:drift/drift.dart' as drift;
 import 'package:drift/drift.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flexify/animated_fab.dart';
-import 'package:flexify/app_search.dart';
 import 'package:flexify/constants.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/database/gym_sets.dart';
@@ -10,12 +9,13 @@ import 'package:flexify/graph/add_exercise_page.dart';
 import 'package:flexify/graph/cardio_data.dart';
 import 'package:flexify/graph/edit_graph_page.dart';
 import 'package:flexify/graph/flex_line.dart';
-import 'package:flexify/graph/global_progress_page.dart';
 import 'package:flexify/graphs_filters.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/plan/plan_state.dart';
+import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/utils.dart';
+import 'package:flexify/weight_page.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -42,11 +42,18 @@ class GraphsPageState extends State<GraphsPage>
   String search = '';
   String? category;
   final scroll = ScrollController();
+  final searchController = TextEditingController();
   bool extendFab = true;
   int total = 0;
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,92 +148,211 @@ class GraphsPageState extends State<GraphsPage>
   }
 
   Scaffold graphsPage() {
+    final settings = context.watch<SettingsState>().value;
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        title: selected.isEmpty
+            ? const Text('Graphs')
+            : Text('${selected.length} selected'),
+        leading: selected.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() {
+                  selected.clear();
+                }),
+              ),
+        actions: [
+          if (selected.isNotEmpty) ...[
+            IconButton(
+              icon: const Icon(Icons.delete),
+              tooltip: "Delete selected",
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext dialogContext) {
+                    return AlertDialog(
+                      title: const Text('Confirm Delete'),
+                      content: Text(
+                        'This will delete $total records. Are you sure?',
+                      ),
+                      actions: <Widget>[
+                        TextButton.icon(
+                          label: const Text('Cancel'),
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(dialogContext),
+                        ),
+                        TextButton.icon(
+                          label: const Text('Delete'),
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            Navigator.pop(dialogContext);
+                            onDelete();
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit),
+              tooltip: "Edit",
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditGraphPage(
+                    name: selected.first,
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: "Share",
+              onPressed: onShare,
+            ),
+          ],
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: "More options",
+            onSelected: (value) async {
+              switch (value) {
+                case 'select_all':
+                  final gymSets = await stream.first;
+                  setState(() {
+                    selected.addAll(gymSets.map((g) => g.name.value));
+                  });
+                  break;
+                case 'weight':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const WeightPage(),
+                    ),
+                  );
+                  break;
+                case 'settings':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsPage(),
+                    ),
+                  );
+                  break;
+                case 'debug':
+                  await _addDebugWorkouts();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'select_all',
+                child: ListTile(
+                  leading: Icon(Icons.done_all),
+                  title: Text('Select all'),
+                ),
+              ),
+              if (settings.showBodyWeight)
+                const PopupMenuItem(
+                  value: 'weight',
+                  child: ListTile(
+                    leading: Icon(Icons.scale),
+                    title: Text('Weight'),
+                  ),
+                ),
+              const PopupMenuItem(
+                value: 'settings',
+                child: ListTile(
+                  leading: Icon(Icons.settings),
+                  title: Text('Settings'),
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'debug',
+                child: ListTile(
+                  leading: Icon(Icons.bug_report),
+                  title: Text('Add test data'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
       body: StreamBuilder(
         stream: stream,
         builder: (context, snapshot) {
           if (snapshot.hasError) return ErrorWidget(snapshot.error.toString());
           if (!snapshot.hasData) return const SizedBox();
 
-          final terms =
-              search.toLowerCase().split(" ").where((term) => term.isNotEmpty);
-          var stream = snapshot.data!.where((gymSet) {
-            if (category != null) {
-              return gymSet.category.value == category;
+          final searchTerms = search.toLowerCase().split(' ').where((t) => t.isNotEmpty);
+          var filteredStream = snapshot.data!.where((gymSet) {
+            // Filter by category
+            if (category != null && gymSet.category.value != category) {
+              return false;
+            }
+            // Filter by search
+            for (final term in searchTerms) {
+              if (!gymSet.name.value.toLowerCase().contains(term)) {
+                return false;
+              }
             }
             return true;
           });
 
-          for (final term in terms) {
-            stream = stream.where(
-              (gymSet) => gymSet.name.value.toLowerCase().contains(term),
-            );
-          }
-
-          final gymSets = stream.toList();
+          final gymSets = filteredStream.toList();
 
           return material.Column(
             children: [
-              AppSearch(
-                filter: GraphsFilters(
-                  category: category,
-                  setCategory: (value) {
-                    setState(() {
-                      category = value;
-                    });
-                  },
-                ),
-                onShare: onShare,
-                onChange: (value) {
-                  setState(() {
-                    search = value;
-                  });
-                },
-                onClear: () => setState(() {
-                  selected.clear();
-                }),
-                onDelete: onDelete,
-                onSelect: () => setState(() {
-                  selected.addAll(
-                    gymSets.map((gymSet) => gymSet.name.value),
-                  );
-                }),
-                selected: selected,
-                onEdit: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditGraphPage(
-                      name: selected.first,
-                    ),
-                  ),
-                ),
-                confirmText: "This will delete $total records. Are you sure?",
-              ),
-              if (gymSets.isEmpty &&
-                  !'global progress'.contains(search.toLowerCase()))
-                ListTile(
-                  title: const Text("No graphs found"),
-                  subtitle: Text(
-                    "Tap to create an exercise called $search",
-                  ),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => AddExercisePage(
-                          name: search,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search exercises...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (search.isNotEmpty)
+                          IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              searchController.clear();
+                              setState(() => search = '');
+                            },
+                          ),
+                        GraphsFilters(
+                          category: category,
+                          setCategory: (value) {
+                            setState(() {
+                              category = value;
+                            });
+                          },
                         ),
-                      ),
-                    );
-                  },
-                ),
-              Selector<SettingsState, bool>(
-                selector: (p0, settingsState) =>
-                    settingsState.value.showGlobalProgress,
-                builder: (context, showGlobal, child) => Expanded(
-                  child: graphList(gymSets, showGlobal),
+                      ],
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  onChanged: (value) => setState(() => search = value),
                 ),
               ),
+              if (gymSets.isEmpty)
+                const Expanded(
+                  child: Center(
+                    child: Text("No exercises found"),
+                  ),
+                ),
+              if (gymSets.isNotEmpty)
+                Expanded(
+                  child: graphList(gymSets),
+                ),
             ],
           );
         },
@@ -237,11 +363,64 @@ class GraphsPageState extends State<GraphsPage>
             builder: (context) => const AddExercisePage(),
           ),
         ),
-        label: Text('Add'),
+        label: const Text('Add'),
         scroll: scroll,
-        icon: Icon(Icons.add),
+        icon: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<void> _addDebugWorkouts() async {
+    final exercises = ['Bench Press', 'Squat', 'Deadlift'];
+    final now = DateTime.now();
+    int workoutCount = 0;
+
+    // Create workouts spread across the last 4 months
+    // 2-3 workouts per month on different days
+    for (var monthOffset = 0; monthOffset < 4; monthOffset++) {
+      final daysInMonth = [5, 12, 20, 27];
+      for (var dayIndex = 0; dayIndex < 3; dayIndex++) {
+        final day = daysInMonth[dayIndex];
+        final workoutDate = DateTime(now.year, now.month - monthOffset, day, 10);
+
+        // Skip dates in the future
+        if (workoutDate.isAfter(now)) continue;
+
+        // Create a workout
+        final workoutId = await db.workouts.insertOne(
+          WorkoutsCompanion.insert(
+            startTime: workoutDate,
+            endTime: Value(workoutDate.add(const Duration(hours: 1))),
+            name: Value('Workout ${workoutDate.month}/${workoutDate.day}'),
+          ),
+        );
+
+        // Add sets for each exercise with progressive weights
+        final progressMultiplier = (4 - monthOffset) * 3 + dayIndex;
+        for (var i = 0; i < exercises.length; i++) {
+          for (var setNum = 0; setNum < 3; setNum++) {
+            await db.gymSets.insertOne(
+              GymSetsCompanion.insert(
+                name: exercises[i],
+                reps: (10 - setNum).toDouble(),
+                weight: 40.0 + (progressMultiplier * 2.5) + (setNum * 2.5),
+                unit: 'kg',
+                created: workoutDate.add(Duration(minutes: i * 10 + setNum * 2)),
+                workoutId: Value(workoutId),
+                category: Value(i == 2 ? 'Back' : 'Chest'),
+              ),
+            );
+          }
+        }
+        workoutCount++;
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Added $workoutCount debug workouts')),
+      );
+    }
   }
 
   Future<void> onShare() async {
@@ -263,49 +442,8 @@ class GraphsPageState extends State<GraphsPage>
     await SharePlus.instance.share(ShareParams(text: "I just did $text"));
   }
 
-  void longPressGlobal() {
-    showModalBottomSheet(
-      useRootNavigator: true,
-      context: context,
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: Wrap(
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.visibility_off),
-                title: const Text('Hide global progress'),
-                onTap: () {
-                  db.settings.update().write(
-                        const SettingsCompanion(
-                          showGlobalProgress: Value(false),
-                        ),
-                      );
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.clear),
-                title: const Text('Cancel'),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  material.ListView graphList(
-    List<GymSetsCompanion> gymSets,
-    bool showGlobalProgress,
-  ) {
+  material.ListView graphList(List<GymSetsCompanion> gymSets) {
     var itemCount = gymSets.length + 1;
-    final showGlobal = 'global graphs'.contains(search.toLowerCase()) &&
-        category == null &&
-        showGlobalProgress;
-    if (showGlobal) itemCount++;
 
     final settings = context.read<SettingsState>().value;
     final showPeekGraph = settings.peekGraph && gymSets.firstOrNull != null;
@@ -318,27 +456,7 @@ class GraphsPageState extends State<GraphsPage>
       itemBuilder: (context, index) {
         int currentIdx = index;
 
-        if (showGlobal) {
-          if (index == 0) {
-            return material.Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2),
-              child: ListTile(
-                leading: const Icon(Icons.language),
-                title: const Text("Global progress"),
-                subtitle: const Text("A chart grouped by category"),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const GlobalProgressPage(),
-                  ),
-                ),
-                onLongPress: longPressGlobal,
-              ),
-            );
-          }
-          currentIdx--;
-        }
-
-        if (showPeekGraph && currentIdx == 1) {
+        if (showPeekGraph && currentIdx == 0) {
           return Consumer<SettingsState>(
             builder: (
               BuildContext context,
@@ -362,10 +480,7 @@ class GraphsPageState extends State<GraphsPage>
                         target: gymSets.first.unit.value,
                         name: gymSets.first.name.value,
                         metric: StrengthMetric.bestWeight,
-                        period: Period.day,
-                        start: null,
-                        end: null,
-                        limit: 20,
+                        period: Period.months3,
                       ),
               );
             },
@@ -374,60 +489,34 @@ class GraphsPageState extends State<GraphsPage>
 
         if (index == itemCount - 1) return const SizedBox(height: 96);
 
-        if (showPeekGraph && currentIdx > 1) {
+        if (showPeekGraph && currentIdx > 0) {
           currentIdx--;
         }
 
         final set = gymSets.elementAtOrNull(currentIdx);
         if (set == null) return const SizedBox();
 
-        final prev = currentIdx > 0 ? gymSets[currentIdx - 1] : null;
-
-        final created = prev?.created.value.toLocal();
-
-        final divider =
-            created != null && !isSameDay(created, set.created.value);
-
-        return material.Column(
-          children: [
-            if (divider)
-              material.Row(
-                children: [
-                  const material.Expanded(child: Divider()),
-                  const Icon(Icons.today),
-                  const SizedBox(width: 4),
-                  Selector<SettingsState, String>(
-                    selector: (p0, p1) => p1.value.shortDateFormat,
-                    builder: (context, format, child) =>
-                        Text(DateFormat(format).format(created)),
-                  ),
-                  const SizedBox(width: 4),
-                  const material.Expanded(child: Divider()),
-                ],
-              ),
-            GraphTile(
-              selected: selected,
-              gymSet: set,
-              onSelect: (name) async {
-                if (selected.contains(name))
-                  setState(() {
-                    selected.remove(name);
-                  });
-                else
-                  setState(() {
-                    selected.add(name);
-                  });
-                final result = await (db.gymSets.selectOnly()
-                      ..addColumns([db.gymSets.name.count()])
-                      ..where(db.gymSets.name.isIn(selected)))
-                    .getSingle();
-                setState(() {
-                  total = result.read(db.gymSets.name.count()) ?? 0;
-                });
-              },
-              tabCtrl: widget.tabController,
-            ),
-          ],
+        return GraphTile(
+          selected: selected,
+          gymSet: set,
+          onSelect: (name) async {
+            if (selected.contains(name))
+              setState(() {
+                selected.remove(name);
+              });
+            else
+              setState(() {
+                selected.add(name);
+              });
+            final result = await (db.gymSets.selectOnly()
+                  ..addColumns([db.gymSets.name.count()])
+                  ..where(db.gymSets.name.isIn(selected)))
+                .getSingle();
+            setState(() {
+              total = result.read(db.gymSets.name.count()) ?? 0;
+            });
+          },
+          tabCtrl: widget.tabController,
         );
       },
     );
