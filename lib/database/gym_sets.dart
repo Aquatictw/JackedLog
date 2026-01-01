@@ -422,7 +422,7 @@ Future<bool> isBest(GymSet gymSet) async {
 typedef Rpm = ({String name, double rpm, double weight});
 
 /// Rep record: best weight achieved at a specific rep count
-typedef RepRecord = ({int reps, double weight, DateTime created});
+typedef RepRecord = ({int reps, double weight, DateTime created, int? workoutId});
 
 /// Get best weight for each rep count (1-15) for a specific exercise
 Future<List<RepRecord>> getRepRecords({
@@ -434,7 +434,8 @@ Future<List<RepRecord>> getRepRecords({
       CAST(reps AS INTEGER) as rep_count,
       MAX(weight) as max_weight,
       created,
-      unit
+      unit,
+      workout_id
     FROM gym_sets
     WHERE name = ?
       AND hidden = 0
@@ -452,6 +453,7 @@ Future<List<RepRecord>> getRepRecords({
     final created = DateTime.fromMillisecondsSinceEpoch(
       row.read<int>('created') * 1000,
     );
+    final workoutId = row.read<int?>('workout_id');
 
     // Convert units if needed
     if (unit == 'lb' && targetUnit == 'kg') {
@@ -460,7 +462,7 @@ Future<List<RepRecord>> getRepRecords({
       weight *= 2.20462262;
     }
 
-    records.add((reps: reps, weight: weight, created: created));
+    records.add((reps: reps, weight: weight, created: created, workoutId: workoutId));
   }
 
   return records;
@@ -474,6 +476,9 @@ typedef ExerciseRecords = ({
   DateTime? bestWeightDate,
   DateTime? best1RMDate,
   DateTime? bestVolumeDate,
+  int? bestWeightWorkoutId,
+  int? best1RMWorkoutId,
+  int? bestVolumeWorkoutId,
 });
 
 /// Get all-time records for a specific exercise
@@ -498,6 +503,9 @@ Future<ExerciseRecords> getExerciseRecords({
       bestWeightDate: null,
       best1RMDate: null,
       bestVolumeDate: null,
+      bestWeightWorkoutId: null,
+      best1RMWorkoutId: null,
+      bestVolumeWorkoutId: null,
     );
   }
 
@@ -505,22 +513,22 @@ Future<ExerciseRecords> getExerciseRecords({
   var best1RM = result.read<double?>('best_1rm') ?? 0.0;
   var bestVolume = result.read<double?>('best_volume') ?? 0.0;
 
-  // Get dates for each record
+  // Get dates and workout IDs for each record
   final weightDate = await db.customSelect("""
-    SELECT created FROM gym_sets
+    SELECT created, workout_id FROM gym_sets
     WHERE name = ? AND hidden = 0 AND weight = (SELECT MAX(weight) FROM gym_sets WHERE name = ? AND hidden = 0)
     LIMIT 1
   """, variables: [Variable.withString(name), Variable.withString(name)]).getSingleOrNull();
 
   final ormDate = await db.customSelect("""
-    SELECT created FROM gym_sets
+    SELECT created, workout_id FROM gym_sets
     WHERE name = ? AND hidden = 0
     ORDER BY CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END DESC
     LIMIT 1
   """, variables: [Variable.withString(name)]).getSingleOrNull();
 
   final volumeDate = await db.customSelect("""
-    SELECT created FROM gym_sets
+    SELECT created, workout_id FROM gym_sets
     WHERE name = ? AND hidden = 0
     ORDER BY weight * reps DESC
     LIMIT 1
@@ -539,6 +547,9 @@ Future<ExerciseRecords> getExerciseRecords({
     bestVolumeDate: volumeDate != null
         ? DateTime.fromMillisecondsSinceEpoch(volumeDate.read<int>('created') * 1000)
         : null,
+    bestWeightWorkoutId: weightDate?.read<int?>('workout_id'),
+    best1RMWorkoutId: ormDate?.read<int?>('workout_id'),
+    bestVolumeWorkoutId: volumeDate?.read<int?>('workout_id'),
   );
 }
 

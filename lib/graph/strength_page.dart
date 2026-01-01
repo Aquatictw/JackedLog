@@ -40,7 +40,6 @@ class _StrengthPageState extends State<StrengthPage> {
 
   StrengthMetric metric = StrengthMetric.bestWeight;
   Period period = Period.months3;
-  DateTime lastTap = DateTime.fromMicrosecondsSinceEpoch(0);
   int? selectedIndex;
 
   // Records data
@@ -350,6 +349,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 value: '${formatter.format(records!.bestWeight)} $target',
                 date: records!.bestWeightDate,
                 color: colorScheme.primary,
+                workoutId: records!.bestWeightWorkoutId,
               ),
             ),
             const SizedBox(width: 8),
@@ -361,6 +361,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 value: '${formatter.format(records!.best1RM)} $target',
                 date: records!.best1RMDate,
                 color: colorScheme.tertiary,
+                workoutId: records!.best1RMWorkoutId,
               ),
             ),
             const SizedBox(width: 8),
@@ -372,6 +373,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 value: '${formatter.format(records!.bestVolume)}',
                 date: records!.bestVolumeDate,
                 color: colorScheme.secondary,
+                workoutId: records!.bestVolumeWorkoutId,
               ),
             ),
           ],
@@ -387,55 +389,79 @@ class _StrengthPageState extends State<StrengthPage> {
     required String value,
     required DateTime? date,
     required Color color,
+    int? workoutId,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
+    return InkWell(
+      onTap: workoutId != null
+          ? () async {
+              final workout = await (db.workouts.select()
+                    ..where((w) => w.id.equals(workoutId)))
+                  .getSingleOrNull();
+
+              if (workout != null && mounted) {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => WorkoutDetailPage(workout: workout),
                   ),
-                  overflow: TextOverflow.ellipsis,
+                );
+                Timer(kThemeAnimationDuration, () {
+                  setData();
+                  _loadRecords();
+                });
+              }
+            }
+          : null,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 16, color: color),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (date != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                DateFormat('MMM d, yyyy').format(date),
+                style: TextStyle(
+                  fontSize: 9,
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.7),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (date != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              DateFormat('MMM d, yyyy').format(date),
-              style: TextStyle(
-                fontSize: 9,
-                color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-              ),
-            ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -470,7 +496,7 @@ class _StrengthPageState extends State<StrengthPage> {
             children: [
               // Header row
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withOpacity(0.1),
                   borderRadius: const BorderRadius.only(
@@ -481,32 +507,25 @@ class _StrengthPageState extends State<StrengthPage> {
                 child: Row(
                   children: [
                     SizedBox(
-                      width: 50,
+                      width: 60,
                       child: Text(
                         'Reps',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: colorScheme.primary,
                         ),
                       ),
                     ),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         'Weight',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: colorScheme.primary,
                         ),
-                      ),
-                    ),
-                    Text(
-                      'Date',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
                       ),
                     ),
                   ],
@@ -520,71 +539,85 @@ class _StrengthPageState extends State<StrengthPage> {
                 final isEven = index % 2 == 0;
                 final hasRecord = record != null;
 
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isEven
-                        ? Colors.transparent
-                        : colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                    borderRadius: index == 14
-                        ? const BorderRadius.only(
-                            bottomLeft: Radius.circular(16),
-                            bottomRight: Radius.circular(16),
-                          )
-                        : null,
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 50,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: hasRecord
-                                ? colorScheme.primary.withOpacity(0.15)
-                                : colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '$repCount',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
+                return InkWell(
+                  onTap: hasRecord && record.workoutId != null
+                      ? () async {
+                          final workout = await (db.workouts.select()
+                                ..where((w) => w.id.equals(record.workoutId!)))
+                              .getSingleOrNull();
+
+                          if (workout != null && mounted) {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => WorkoutDetailPage(workout: workout),
+                              ),
+                            );
+                          }
+                        }
+                      : null,
+                  borderRadius: index == 14
+                      ? const BorderRadius.only(
+                          bottomLeft: Radius.circular(16),
+                          bottomRight: Radius.circular(16),
+                        )
+                      : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isEven
+                          ? Colors.transparent
+                          : colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      borderRadius: index == 14
+                          ? const BorderRadius.only(
+                              bottomLeft: Radius.circular(16),
+                              bottomRight: Radius.circular(16),
+                            )
+                          : null,
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 60,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
                               color: hasRecord
-                                  ? colorScheme.primary
+                                  ? colorScheme.primary.withOpacity(0.15)
+                                  : colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '$repCount',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: hasRecord
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant.withOpacity(0.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            hasRecord
+                                ? '${formatter.format(record.weight)} $target'
+                                : '-',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: hasRecord ? FontWeight.w600 : FontWeight.normal,
+                              color: hasRecord
+                                  ? colorScheme.onSurface
                                   : colorScheme.onSurfaceVariant.withOpacity(0.5),
                             ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          hasRecord
-                              ? '${formatter.format(record.weight)} $target'
-                              : '-',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: hasRecord ? FontWeight.w600 : FontWeight.normal,
-                            color: hasRecord
-                                ? colorScheme.onSurface
-                                : colorScheme.onSurfaceVariant.withOpacity(0.5),
-                          ),
-                        ),
-                      ),
-                      Text(
-                        hasRecord
-                            ? DateFormat('M/d/yy').format(record.created)
-                            : '-',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: hasRecord
-                              ? colorScheme.onSurfaceVariant
-                              : colorScheme.onSurfaceVariant.withOpacity(0.5),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               }),
@@ -697,13 +730,9 @@ class _StrengthPageState extends State<StrengthPage> {
               final spot = response.lineBarSpots!.first;
               setState(() => selectedIndex = spot.spotIndex);
 
-              // Handle double tap to edit
+              // Handle single tap to navigate to workout
               if (event is FlTapUpEvent) {
-                if (DateTime.now().difference(lastTap) <
-                    const Duration(milliseconds: 300)) {
-                  _editSet(spot.spotIndex);
-                }
-                lastTap = DateTime.now();
+                _editSet(spot.spotIndex);
               }
             }
           },

@@ -371,17 +371,54 @@ class GraphsPageState extends State<GraphsPage>
   }
 
   Future<void> _addDebugWorkouts() async {
-    final exercises = ['Bench Press', 'Squat', 'Deadlift'];
+    // Diverse exercises with different categories and rep ranges
+    final exerciseGroups = [
+      // Strength exercises (lower reps, higher weight)
+      {
+        'exercises': ['Bench Press', 'Squat', 'Deadlift'],
+        'category': 'Strength',
+        'repRanges': [3, 4, 5],
+        'baseWeight': 100.0,
+        'weightIncrement': 5.0,
+      },
+      // Hypertrophy exercises (moderate reps, moderate weight)
+      {
+        'exercises': ['Dumbbell Press', 'Leg Press', 'Romanian Deadlift'],
+        'category': 'Hypertrophy',
+        'repRanges': [8, 10, 12],
+        'baseWeight': 40.0,
+        'weightIncrement': 2.5,
+      },
+      // Endurance exercises (higher reps, lower weight)
+      {
+        'exercises': ['Push-ups', 'Lunges', 'Face Pulls'],
+        'category': 'Endurance',
+        'repRanges': [12, 15, 20],
+        'baseWeight': 15.0,
+        'weightIncrement': 1.25,
+      },
+      // Accessory exercises (varied reps)
+      {
+        'exercises': ['Bicep Curls', 'Tricep Extensions', 'Lateral Raises'],
+        'category': 'Accessories',
+        'repRanges': [10, 12, 15],
+        'baseWeight': 10.0,
+        'weightIncrement': 1.0,
+      },
+    ];
+
     final now = DateTime.now();
     int workoutCount = 0;
+    int totalSets = 0;
 
-    // Create workouts spread across the last 4 months
-    // 2-3 workouts per month on different days
-    for (var monthOffset = 0; monthOffset < 4; monthOffset++) {
-      final daysInMonth = [5, 12, 20, 27];
-      for (var dayIndex = 0; dayIndex < 3; dayIndex++) {
+    // Create workouts spread across the last 6 months
+    // 3-4 workouts per month on different days
+    for (var monthOffset = 0; monthOffset < 6; monthOffset++) {
+      final daysInMonth = [3, 10, 17, 24];
+      for (var dayIndex = 0; dayIndex < 4; dayIndex++) {
         final day = daysInMonth[dayIndex];
-        final workoutDate = DateTime(now.year, now.month - monthOffset, day, 10);
+        final workoutDate = DateTime(now.year, now.month - monthOffset, day,
+            9 + (dayIndex * 3)); // Vary workout times
 
         // Skip dates in the future
         if (workoutDate.isAfter(now)) continue;
@@ -390,35 +427,81 @@ class GraphsPageState extends State<GraphsPage>
         final workoutId = await db.workouts.insertOne(
           WorkoutsCompanion.insert(
             startTime: workoutDate,
-            endTime: Value(workoutDate.add(const Duration(hours: 1))),
-            name: Value('Workout ${workoutDate.month}/${workoutDate.day}'),
+            endTime: Value(workoutDate.add(const Duration(hours: 1, minutes: 30))),
+            name: Value('Test Workout ${workoutDate.month}/${workoutDate.day}'),
           ),
         );
 
-        // Add sets for each exercise with progressive weights
-        final progressMultiplier = (4 - monthOffset) * 3 + dayIndex;
-        for (var i = 0; i < exercises.length; i++) {
-          for (var setNum = 0; setNum < 3; setNum++) {
+        // Add sets from different exercise groups
+        final progressMultiplier = (6 - monthOffset) * 4 + dayIndex;
+
+        // Cycle through exercise groups
+        final groupIndex = (workoutCount % exerciseGroups.length);
+        final group = exerciseGroups[groupIndex];
+
+        for (var exerciseIndex = 0; exerciseIndex < (group['exercises'] as List).length; exerciseIndex++) {
+          final exerciseName = (group['exercises'] as List)[exerciseIndex];
+          final repRanges = group['repRanges'] as List<int>;
+          final baseWeight = group['baseWeight'] as double;
+          final weightIncrement = group['weightIncrement'] as double;
+
+          // Vary number of sets (3-5 sets per exercise)
+          final numSets = 3 + (exerciseIndex % 3);
+
+          for (var setNum = 0; setNum < numSets; setNum++) {
+            // Use different rep ranges from the group
+            final reps = repRanges[setNum % repRanges.length].toDouble();
+
+            // Progressive overload: weight increases over time
+            final weight = baseWeight + (progressMultiplier * weightIncrement) - (setNum * weightIncrement * 0.5);
+
             await db.gymSets.insertOne(
               GymSetsCompanion.insert(
-                name: exercises[i],
-                reps: (10 - setNum).toDouble(),
-                weight: 40.0 + (progressMultiplier * 2.5) + (setNum * 2.5),
+                name: exerciseName,
+                reps: reps,
+                weight: weight > 0 ? weight : baseWeight,
                 unit: 'kg',
-                created: workoutDate.add(Duration(minutes: i * 10 + setNum * 2)),
+                created: workoutDate.add(Duration(
+                  minutes: exerciseIndex * 15 + setNum * 3,
+                  seconds: setNum * 10,
+                )),
                 workoutId: Value(workoutId),
-                category: Value(i == 2 ? 'Back' : 'Chest'),
+                category: Value(group['category'] as String),
               ),
             );
+            totalSets++;
           }
         }
+
+        // Add some one-rep max attempts occasionally
+        if (workoutCount % 5 == 0 && monthOffset < 3) {
+          final heavyExercises = ['Bench Press', 'Squat', 'Deadlift'];
+          for (var i = 0; i < heavyExercises.length; i++) {
+            await db.gymSets.insertOne(
+              GymSetsCompanion.insert(
+                name: heavyExercises[i],
+                reps: 1.0,
+                weight: 120.0 + (progressMultiplier * 5.0) + (i * 10.0),
+                unit: 'kg',
+                created: workoutDate.add(Duration(minutes: 60 + i * 10)),
+                workoutId: Value(workoutId),
+                category: Value('Strength'),
+              ),
+            );
+            totalSets++;
+          }
+        }
+
         workoutCount++;
       }
     }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Added $workoutCount debug workouts')),
+        SnackBar(
+          content: Text('Added $workoutCount workouts with $totalSets sets across ${exerciseGroups.length * 3} exercises'),
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   }
