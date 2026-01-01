@@ -43,6 +43,7 @@ class GraphsPageState extends State<GraphsPage>
   final searchController = TextEditingController();
   bool extendFab = true;
   int total = 0;
+  bool showEmptyExercises = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -208,6 +209,11 @@ class GraphsPageState extends State<GraphsPage>
                     selected.addAll(gymSets.map((g) => g.name));
                   });
                   break;
+                case 'toggle_empty':
+                  setState(() {
+                    showEmptyExercises = !showEmptyExercises;
+                  });
+                  break;
                 case 'weight':
                   Navigator.push(
                     context,
@@ -235,6 +241,13 @@ class GraphsPageState extends State<GraphsPage>
                 child: ListTile(
                   leading: Icon(Icons.done_all),
                   title: Text('Select all'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'toggle_empty',
+                child: ListTile(
+                  leading: Icon(showEmptyExercises ? Icons.visibility_off : Icons.visibility),
+                  title: Text(showEmptyExercises ? 'Hide empty exercises' : 'Show empty exercises'),
                 ),
               ),
               if (settings.showBodyWeight)
@@ -273,6 +286,10 @@ class GraphsPageState extends State<GraphsPage>
           var filteredStream = snapshot.data!.where((gymSet) {
             // Filter by category
             if (category != null && gymSet.category != category) {
+              return false;
+            }
+            // Filter empty exercises
+            if (!showEmptyExercises && gymSet.workoutCount == 0) {
               return false;
             }
             // Filter by search

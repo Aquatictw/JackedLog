@@ -178,6 +178,8 @@ typedef GraphExercise = ({
   DateTime created,
   String? image,
   String? category,
+  String? exerciseType,
+  String? brandName,
   int setCount,
   int workoutCount,
 });
@@ -200,6 +202,8 @@ Stream<List<GraphExercise>> watchGraphs() {
           db.gymSets.created.max(),
           db.gymSets.image,
           db.gymSets.category,
+          db.gymSets.exerciseType,
+          db.gymSets.brandName,
           setCountCol,
           workoutCountCol,
         ])
@@ -226,6 +230,8 @@ Stream<List<GraphExercise>> watchGraphs() {
                 created: result.read(db.gymSets.created.max())!,
                 image: result.read(db.gymSets.image),
                 category: result.read(db.gymSets.category),
+                exerciseType: result.read(db.gymSets.exerciseType),
+                brandName: result.read(db.gymSets.brandName),
                 setCount: result.read(setCountCol)!,
                 workoutCount: result.read(workoutCountCol)!,
               ),
