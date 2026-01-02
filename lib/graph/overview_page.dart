@@ -1,10 +1,11 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flexify/main.dart';
+import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-enum OverviewPeriod { week, month, months3, months6, year }
+enum OverviewPeriod { week, month, months3, months6, year, allTime }
 
 class OverviewPage extends StatefulWidget {
   const OverviewPage({super.key});
@@ -16,6 +17,7 @@ class OverviewPage extends StatefulWidget {
 class _OverviewPageState extends State<OverviewPage> {
   OverviewPeriod period = OverviewPeriod.month;
   Map<String, double> muscleVolumes = {};
+  Map<String, int> muscleSetCounts = {};
   Map<DateTime, int> trainingDays = {};
   int totalWorkouts = 0;
   double totalVolume = 0;
@@ -59,6 +61,32 @@ class _OverviewPageState extends State<OverviewPage> {
       final muscle = row.read<String>('muscle');
       final volume = row.read<double>('total_volume');
       volumes[muscle] = volume;
+    }
+
+    // Load muscle set counts
+    final setCountQuery = await db.customSelect(
+      """
+      SELECT
+        gs.category as muscle,
+        COUNT(*) as total_sets
+      FROM gym_sets gs
+      WHERE gs.created >= ?
+        AND gs.hidden = 0
+        AND gs.category IS NOT NULL
+        AND gs.cardio = 0
+      GROUP BY gs.category
+      ORDER BY total_sets DESC
+    """,
+      variables: [
+        drift.Variable.withInt(startDate.millisecondsSinceEpoch ~/ 1000),
+      ],
+    ).get();
+
+    final setCounts = <String, int>{};
+    for (final row in setCountQuery) {
+      final muscle = row.read<String>('muscle');
+      final count = row.read<int>('total_sets');
+      setCounts[muscle] = count;
     }
 
     // Load training days for heatmap
@@ -117,6 +145,7 @@ class _OverviewPageState extends State<OverviewPage> {
     if (mounted) {
       setState(() {
         muscleVolumes = volumes;
+        muscleSetCounts = setCounts;
         trainingDays = days;
         totalWorkouts = workoutCount;
         totalVolume = totalVol;
@@ -158,25 +187,32 @@ class _OverviewPageState extends State<OverviewPage> {
   }
 
   Future<void> _showDayDetails(DateTime date) async {
+    // Fetch workout for this date
+    final workout = await (db.workouts.select()
+          ..where((w) => db.workouts.startTime.isBetweenValues(
+                date.millisecondsSinceEpoch ~/ 1000,
+                date.add(const Duration(days: 1)).millisecondsSinceEpoch ~/ 1000,
+              ))
+          ..limit(1))
+        .getSingleOrNull();
+
+    if (workout == null || !mounted) return;
+
     final dayData = await db.customSelect(
       """
       SELECT
-        w.name as workout_name,
-        w.start_time,
-        w.end_time,
         gs.name as exercise_name,
         gs.category,
         COUNT(*) as set_count,
         SUM(gs.weight * gs.reps) as volume
-      FROM workouts w
-      INNER JOIN gym_sets gs ON w.id = gs.workout_id
-      WHERE DATE(w.start_time, 'unixepoch') = ?
+      FROM gym_sets gs
+      WHERE gs.workout_id = ?
         AND gs.hidden = 0
-      GROUP BY w.id, gs.name
-      ORDER BY w.start_time, gs.created
+      GROUP BY gs.name
+      ORDER BY gs.created
     """,
       variables: [
-        drift.Variable.withString(DateFormat('yyyy-MM-dd').format(date)),
+        drift.Variable.withInt(workout.id),
       ],
     ).get();
 
@@ -237,32 +273,43 @@ class _OverviewPageState extends State<OverviewPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      Icons.calendar_today,
+                      Icons.fitness_center,
                       color: colorScheme.onPrimary,
                       size: 20,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          DateFormat('EEEE, MMMM d').format(date),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => WorkoutDetailPage(workout: workout),
                           ),
-                        ),
-                        Text(
-                          DateFormat('yyyy').format(date),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: colorScheme.onSurfaceVariant,
+                        );
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            workout.name ?? 'Workout',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
                           ),
-                        ),
-                      ],
+                          Text(
+                            DateFormat('EEEE, MMMM d, yyyy').format(date),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   Container(
@@ -390,6 +437,8 @@ class _OverviewPageState extends State<OverviewPage> {
         return DateTime(now.year, now.month - 6, now.day);
       case OverviewPeriod.year:
         return DateTime(now.year - 1, now.month, now.day);
+      case OverviewPeriod.allTime:
+        return DateTime(1970, 1, 1); // Beginning of time
     }
   }
 
@@ -405,6 +454,8 @@ class _OverviewPageState extends State<OverviewPage> {
         return '6M';
       case OverviewPeriod.year:
         return '1Y';
+      case OverviewPeriod.allTime:
+        return 'All';
     }
   }
 
@@ -461,6 +512,12 @@ class _OverviewPageState extends State<OverviewPage> {
                   // Muscle volume chart
                   if (muscleVolumes.isNotEmpty)
                     _buildMuscleVolumeChart(colorScheme),
+
+                  // Muscle set count chart
+                  if (muscleSetCounts.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildMuscleSetCountChart(colorScheme),
+                  ],
                 ],
               ),
             ),
@@ -656,19 +713,28 @@ class _OverviewPageState extends State<OverviewPage> {
 
   Widget _buildHeatmap(ColorScheme colorScheme) {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final startDate = _getStartDate(now);
 
-    // Calculate weeks to display
-    final days = now.difference(startDate).inDays;
-    final weeks = (days / 7).ceil();
+    // Find the Monday of the week containing startDate
+    final startWeekday = startDate.weekday; // 1 = Monday, 7 = Sunday
+    final mondayOfStartWeek = startDate.subtract(Duration(days: startWeekday - 1));
 
-    // Build month labels
+    // Find the Sunday of the week containing today
+    final todayWeekday = today.weekday;
+    final sundayOfCurrentWeek = today.add(Duration(days: 7 - todayWeekday));
+
+    // Calculate weeks to display
+    final totalDays = sundayOfCurrentWeek.difference(mondayOfStartWeek).inDays + 1;
+    final weeks = (totalDays / 7).ceil();
+
+    // Build month labels (reversed for right-to-left display)
     final monthLabels = <int, String>{};
     int lastMonth = -1;
-    for (int week = 0; week < weeks; week++) {
-      final date = startDate.add(Duration(days: week * 7));
+    for (int week = weeks - 1; week >= 0; week--) {
+      final date = mondayOfStartWeek.add(Duration(days: week * 7));
       if (date.month != lastMonth) {
-        monthLabels[week] = DateFormat('MMM').format(date);
+        monthLabels[weeks - 1 - week] = DateFormat('MMM').format(date);
         lastMonth = date.month;
       }
     }
@@ -691,108 +757,122 @@ class _OverviewPageState extends State<OverviewPage> {
           width: 1,
         ),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Month labels
-            Row(
-              children: [
-                const SizedBox(width: 30),
-                ...List.generate(weeks, (week) {
-                  final label = monthLabels[week];
-                  return SizedBox(
-                    width: 18,
-                    child: label != null
-                        ? Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.primary.withValues(alpha: 0.8),
-                              ),
-                            ),
-                          )
-                        : const SizedBox(),
-                  );
-                }),
-              ],
-            ),
-            // Day rows
-            ...List.generate(7, (dayOfWeek) {
-              return Row(
-                children: [
-                  SizedBox(
-                    width: 30,
-                    child: Text(
-                      ['M', 'T', 'W', 'T', 'F', 'S', 'S'][dayOfWeek],
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                        fontWeight: FontWeight.w600,
-                      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Fixed days of week column
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Empty space for month labels row
+              const SizedBox(height: 25),
+              // Day labels
+              ...List.generate(7, (dayOfWeek) {
+                return SizedBox(
+                  width: 30,
+                  height: 18,
+                  child: Text(
+                    ['M', 'T', 'W', 'T', 'F', 'S', 'S'][dayOfWeek],
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  ...List.generate(weeks, (week) {
-                    final date = startDate.add(
-                      Duration(
-                        days: week * 7 + dayOfWeek,
-                      ),
-                    );
-
-                    if (date.isAfter(now)) {
-                      return const Padding(
-                        padding: EdgeInsets.all(2),
-                        child: SizedBox(width: 14, height: 14),
+                );
+              }),
+            ],
+          ),
+          // Scrollable heatmap grid
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true, // Start scrolled to the right (showing latest)
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Month labels
+                  Row(
+                    children: List.generate(weeks, (weekIndex) {
+                      final label = monthLabels[weekIndex];
+                      return SizedBox(
+                        width: 18,
+                        child: label != null
+                            ? Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(
+                                  label,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.primary.withValues(alpha: 0.8),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox(),
                       );
-                    }
+                    }),
+                  ),
+                  // Day rows (Monday=0 to Sunday=6)
+                  ...List.generate(7, (dayOfWeek) {
+                    return Row(
+                      children: List.generate(weeks, (weekIndex) {
+                        // Reverse week index for right-to-left display
+                        final reversedWeek = weeks - 1 - weekIndex;
+                        final date = mondayOfStartWeek.add(
+                          Duration(days: reversedWeek * 7 + dayOfWeek),
+                        );
 
-                    final normalizedDate =
-                        DateTime(date.year, date.month, date.day);
-                    final count = trainingDays[normalizedDate] ?? 0;
+                        if (date.isBefore(startDate) || date.isAfter(today)) {
+                          return const Padding(
+                            padding: EdgeInsets.all(2),
+                            child: SizedBox(width: 14, height: 14),
+                          );
+                        }
 
-                    return Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: InkWell(
-                        onTap: count > 0
-                            ? () => _showDayDetails(normalizedDate)
-                            : null,
-                        borderRadius: BorderRadius.circular(3),
-                        child: Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: _getHeatmapColor(colorScheme, count),
-                            borderRadius: BorderRadius.circular(3),
-                            border: Border.all(
-                              color: count > 0
-                                  ? colorScheme.primary.withValues(alpha: 0.3)
-                                  : colorScheme.outline.withValues(alpha: 0.2),
-                              width: count > 0 ? 0.8 : 0.5,
-                            ),
-                            boxShadow: count > 10
-                                ? [
-                                    BoxShadow(
-                                      color: colorScheme.primary
-                                          .withValues(alpha: 0.3),
-                                      blurRadius: 2,
-                                      spreadRadius: 0.5,
-                                    ),
-                                  ]
+                        final normalizedDate = DateTime(date.year, date.month, date.day);
+                        final count = trainingDays[normalizedDate] ?? 0;
+
+                        return Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: InkWell(
+                            onTap: count > 0
+                                ? () => _showDayDetails(normalizedDate)
                                 : null,
+                            borderRadius: BorderRadius.circular(3),
+                            child: Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: _getHeatmapColor(colorScheme, count),
+                                borderRadius: BorderRadius.circular(3),
+                                border: Border.all(
+                                  color: count > 0
+                                      ? colorScheme.primary.withValues(alpha: 0.3)
+                                      : colorScheme.outline.withValues(alpha: 0.2),
+                                  width: count > 0 ? 0.8 : 0.5,
+                                ),
+                                boxShadow: count > 10
+                                    ? [
+                                        BoxShadow(
+                                          color: colorScheme.primary.withValues(alpha: 0.3),
+                                          blurRadius: 2,
+                                          spreadRadius: 0.5,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      }),
                     );
                   }),
                 ],
-              );
-            }),
-          ],
-        ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -931,6 +1011,141 @@ class _OverviewPageState extends State<OverviewPage> {
                     BarChartRodData(
                       toY: topMuscles[index].value,
                       color: colorScheme.primary,
+                      width: 20,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMuscleSetCountChart(ColorScheme colorScheme) {
+    final sortedMuscles = muscleSetCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    // Take top 10 muscles
+    final topMuscles = sortedMuscles.take(10).toList();
+
+    final maxSets = topMuscles.isEmpty
+        ? 0
+        : topMuscles.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.format_list_numbered, color: colorScheme.secondary, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Muscle Group Set Count',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 300,
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              maxY: (maxSets * 1.1).toDouble(),
+              barTouchData: BarTouchData(
+                enabled: true,
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipColor: (_) => colorScheme.surface,
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    final muscle = topMuscles[group.x.toInt()].key;
+                    final sets = topMuscles[group.x.toInt()].value;
+                    return BarTooltipItem(
+                      '$muscle\n$sets sets',
+                      TextStyle(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              titlesData: FlTitlesData(
+                show: true,
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 40,
+                    getTitlesWidget: (value, meta) {
+                      if (value.toInt() >= topMuscles.length) {
+                        return const SizedBox();
+                      }
+                      final muscle = topMuscles[value.toInt()].key;
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Transform.rotate(
+                          angle: -0.5,
+                          child: Text(
+                            muscle,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 50,
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        NumberFormat.compact().format(value),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+              ),
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                horizontalInterval: (maxSets / 5).ceilToDouble(),
+                getDrawingHorizontalLine: (value) => FlLine(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  strokeWidth: 1,
+                ),
+              ),
+              borderData: FlBorderData(show: false),
+              barGroups: List.generate(
+                topMuscles.length,
+                (index) => BarChartGroupData(
+                  x: index,
+                  barRods: [
+                    BarChartRodData(
+                      toY: topMuscles[index].value.toDouble(),
+                      color: colorScheme.secondary,
                       width: 20,
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(4),
