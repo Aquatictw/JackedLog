@@ -225,11 +225,11 @@ class _CardioPageState extends State<CardioPage> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.primaryContainer.withOpacity(0.95),
+                                  color: colorScheme.primaryContainer.withValues(alpha: 0.95),
                                   borderRadius: BorderRadius.circular(8),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
+                                      color: Colors.black.withValues(alpha: 0.1),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -252,7 +252,7 @@ class _CardioPageState extends State<CardioPage> {
                                           .format(data[selectedIndex!].created),
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                        color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
                                       ),
                                     ),
                                   ],
@@ -306,7 +306,7 @@ class _CardioPageState extends State<CardioPage> {
           drawVerticalLine: false,
           horizontalInterval: range > 0 ? range / 4 : 1,
           getDrawingHorizontalLine: (value) => FlLine(
-            color: colorScheme.outlineVariant.withOpacity(0.3),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
             strokeWidth: 1,
           ),
         ),
@@ -419,7 +419,7 @@ class _CardioPageState extends State<CardioPage> {
                 final isSelected = index == selectedIndex;
                 return FlDotCirclePainter(
                   radius: isSelected ? 5 : 3,
-                  color: isSelected ? colorScheme.primary : colorScheme.primary.withOpacity(0.7),
+                  color: isSelected ? colorScheme.primary : colorScheme.primary.withValues(alpha: 0.7),
                   strokeWidth: 0,
                 );
               },
@@ -430,8 +430,8 @@ class _CardioPageState extends State<CardioPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  colorScheme.primary.withOpacity(0.3),
-                  colorScheme.primary.withOpacity(0.05),
+                  colorScheme.primary.withValues(alpha: 0.3),
+                  colorScheme.primary.withValues(alpha: 0.05),
                 ],
               ),
             ),
