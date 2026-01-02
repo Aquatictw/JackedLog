@@ -1,3 +1,4 @@
+import 'package:flexify/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -15,7 +16,6 @@ void toast(String message, {SnackBarAction? action, Duration? duration}) {
     ),
   );
 }
-
 
 bool isSameDay(DateTime date1, DateTime date2) {
   return date1.year == date2.year &&
