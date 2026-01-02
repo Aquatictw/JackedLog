@@ -323,7 +323,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         parentContext,
         MaterialPageRoute(
           builder: (context) => CardioPage(
-            tabCtrl: DefaultTabController.of(parentContext),
             name: widget.exercise.exercise,
             unit: exerciseData.unit,
             data: data,
@@ -345,7 +344,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
             name: widget.exercise.exercise,
             unit: exerciseData.unit,
             data: data,
-            tabCtrl: DefaultTabController.of(parentContext),
           ),
         ),
       );

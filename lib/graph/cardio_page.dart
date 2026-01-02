@@ -19,14 +19,14 @@ class CardioPage extends StatefulWidget {
   final String name;
   final String unit;
   final List<CardioData> data;
-  final TabController tabCtrl;
+  final TabController? tabCtrl;
 
   const CardioPage({
     super.key,
     required this.name,
     required this.unit,
     required this.data,
-    required this.tabCtrl,
+    this.tabCtrl,
   });
 
   @override
@@ -46,20 +46,21 @@ class _CardioPageState extends State<CardioPage> {
   @override
   void initState() {
     super.initState();
-    widget.tabCtrl.addListener(_onTabChanged);
+    widget.tabCtrl?.addListener(_onTabChanged);
     setData();
     _loadBrandName();
   }
 
   @override
   void dispose() {
-    widget.tabCtrl.removeListener(_onTabChanged);
+    widget.tabCtrl?.removeListener(_onTabChanged);
     super.dispose();
   }
 
   void _onTabChanged() {
+    if (widget.tabCtrl == null) return;
     final settings = context.read<SettingsState>().value;
-    if (widget.tabCtrl.index == settings.tabs.indexOf('GraphsPage')) {
+    if (widget.tabCtrl!.index == settings.tabs.indexOf('GraphsPage')) {
       setData();
     }
   }
