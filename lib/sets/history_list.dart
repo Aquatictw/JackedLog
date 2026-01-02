@@ -222,7 +222,29 @@ class _HistoryListState extends State<HistoryList> {
           ),
           child: ListTile(
             leading: leading,
-            title: Text(gymSet.name),
+            title: Row(
+              children: [
+                Text(gymSet.name),
+                if (gymSet.brandName != null && gymSet.brandName!.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      gymSet.brandName!,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
             subtitle: Selector<SettingsState, String>(
               selector: (context, settings) => settings.value.longDateFormat,
               builder: (context, dateFormat, child) => Text(

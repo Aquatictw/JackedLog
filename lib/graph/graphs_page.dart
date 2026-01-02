@@ -7,7 +7,6 @@ import 'package:flexify/database/database.dart';
 import 'package:flexify/database/gym_sets.dart';
 import 'package:flexify/graph/add_exercise_page.dart';
 import 'package:flexify/graph/cardio_data.dart';
-import 'package:flexify/graph/edit_graph_page.dart';
 import 'package:flexify/graph/flex_line.dart';
 import 'package:flexify/graphs_filters.dart';
 import 'package:flexify/main.dart';
@@ -20,7 +19,6 @@ import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import 'graph_tile.dart';
 
@@ -35,7 +33,7 @@ class GraphsPage extends StatefulWidget {
 
 class GraphsPageState extends State<GraphsPage>
     with AutomaticKeepAliveClientMixin {
-  late final Stream<List<GraphExercise>> stream = watchGraphs();
+  Stream<List<GraphExercise>> stream = watchGraphs();
 
   final Set<String> selected = {};
   final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -45,6 +43,13 @@ class GraphsPageState extends State<GraphsPage>
   final searchController = TextEditingController();
   bool extendFab = true;
   int total = 0;
+  bool _showEmptyExercises = false;
+
+  bool get showEmptyExercises => _showEmptyExercises;
+  set showEmptyExercises(bool value) {
+    _showEmptyExercises = value;
+    stream = watchGraphs(showHidden: value);
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -198,23 +203,6 @@ class GraphsPageState extends State<GraphsPage>
                 );
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.edit),
-              tooltip: "Edit",
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditGraphPage(
-                    name: selected.first,
-                  ),
-                ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.share),
-              tooltip: "Share",
-              onPressed: onShare,
-            ),
           ],
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -225,6 +213,11 @@ class GraphsPageState extends State<GraphsPage>
                   final gymSets = await stream.first;
                   setState(() {
                     selected.addAll(gymSets.map((g) => g.name));
+                  });
+                  break;
+                case 'toggle_empty':
+                  setState(() {
+                    showEmptyExercises = !showEmptyExercises;
                   });
                   break;
                 case 'weight':
@@ -254,6 +247,13 @@ class GraphsPageState extends State<GraphsPage>
                 child: ListTile(
                   leading: Icon(Icons.done_all),
                   title: Text('Select all'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'toggle_empty',
+                child: ListTile(
+                  leading: Icon(showEmptyExercises ? Icons.visibility_off : Icons.visibility),
+                  title: Text(showEmptyExercises ? 'Hide empty exercises' : 'Show empty exercises'),
                 ),
               ),
               if (settings.showBodyWeight)
@@ -292,6 +292,10 @@ class GraphsPageState extends State<GraphsPage>
           var filteredStream = snapshot.data!.where((gymSet) {
             // Filter by category
             if (category != null && gymSet.category != category) {
+              return false;
+            }
+            // Filter empty exercises
+            if (!showEmptyExercises && gymSet.workoutCount == 0) {
               return false;
             }
             // Filter by search
@@ -506,24 +510,6 @@ class GraphsPageState extends State<GraphsPage>
     }
   }
 
-  Future<void> onShare() async {
-    final copy = selected.toList();
-    setState(() {
-      selected.clear();
-    });
-    final sets = (await stream.first)
-        .where(
-          (gymSet) => copy.contains(gymSet.name),
-        )
-        .toList();
-    final text = sets
-        .map(
-          (gymSet) =>
-              "${toString(gymSet.reps)}x${toString(gymSet.weight)}${gymSet.unit} ${gymSet.name}",
-        )
-        .join(', ');
-    await SharePlus.instance.share(ShareParams(text: "I just did $text"));
-  }
 
   material.ListView graphList(List<GraphExercise> gymSets) {
     var itemCount = gymSets.length + 1;

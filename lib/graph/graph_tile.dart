@@ -95,9 +95,31 @@ class GraphTile extends StatelessWidget {
       ),
       child: ListTile(
         leading: leading,
-        title: Text(
-          exercise.name,
-          style: const TextStyle(fontWeight: FontWeight.w500),
+        title: Row(
+          children: [
+            Text(
+              exercise.name,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            if (exercise.brandName != null && exercise.brandName!.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  exercise.brandName!,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
         subtitle: Selector<SettingsState, String>(
           selector: (context, settings) => settings.value.longDateFormat,

@@ -1,5 +1,9 @@
 import 'package:drift/drift.dart' hide Column;
+import 'package:flexify/constants.dart';
 import 'package:flexify/database/database.dart';
+import 'package:flexify/database/gym_sets.dart';
+import 'package:flexify/graph/cardio_page.dart';
+import 'package:flexify/graph/strength_page.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_state.dart';
@@ -60,6 +64,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
   String unit = 'kg';
   double _defaultWeight = 0.0;
   int _defaultReps = 8;
+  String? _brandName;
 
   @override
   void initState() {
@@ -91,6 +96,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     _defaultWeight = lastSet?.weight ?? 0.0;
     _defaultReps = lastSet?.reps.toInt() ?? 8;
     final defaultUnit = lastSet?.unit ?? settings.strengthUnit;
+    _brandName = lastSet?.brandName;
 
     // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
     List<GymSet> existingSets = [];
@@ -227,6 +233,15 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               },
             ),
             ListTile(
+              leading: Icon(Icons.show_chart, color: colorScheme.primary),
+              title: const Text('View Graph'),
+              subtitle: const Text('Jump to graph page for this exercise'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _jumpToGraph(parentContext);
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
               title: Text(
                 'Remove Exercise',
@@ -277,6 +292,59 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     // Don't dispose controller here - let the dialog handle its own lifecycle
     if (result != null && widget.onNotesChanged != null) {
       widget.onNotesChanged!(result);
+    }
+  }
+
+  Future<void> _jumpToGraph(BuildContext parentContext) async {
+    // Get the exercise data to determine if it's cardio or strength
+    final exerciseData = await (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(widget.exercise.exercise))
+          ..orderBy([
+            (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+
+    if (exerciseData == null || !parentContext.mounted) return;
+
+    if (exerciseData.cardio) {
+      final data = await getCardioData(
+        target: exerciseData.unit,
+        name: widget.exercise.exercise,
+        metric: CardioMetric.pace,
+        period: Period.months3,
+      );
+      if (!parentContext.mounted) return;
+      Navigator.push(
+        parentContext,
+        MaterialPageRoute(
+          builder: (context) => CardioPage(
+            tabCtrl: DefaultTabController.of(parentContext),
+            name: widget.exercise.exercise,
+            unit: exerciseData.unit,
+            data: data,
+          ),
+        ),
+      );
+    } else {
+      final data = await getStrengthData(
+        target: exerciseData.unit,
+        name: widget.exercise.exercise,
+        metric: StrengthMetric.bestWeight,
+        period: Period.months3,
+      );
+      if (!parentContext.mounted) return;
+      Navigator.push(
+        parentContext,
+        MaterialPageRoute(
+          builder: (context) => StrengthPage(
+            name: widget.exercise.exercise,
+            unit: exerciseData.unit,
+            data: data,
+            tabCtrl: DefaultTabController.of(parentContext),
+          ),
+        ),
+      );
     }
   }
 
@@ -516,11 +584,35 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.exercise.exercise,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                widget.exercise.exercise,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
+                            ),
+                            if (_brandName != null && _brandName!.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  _brandName!,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: colorScheme.onSecondaryContainer,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         // Exercise notes preview
                         if (widget.exerciseNotes?.isNotEmpty == true) ...[
@@ -563,6 +655,24 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                               ),
+                              if (_brandName != null && _brandName!.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    _brandName!,
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w500,
+                                      color: colorScheme.onSecondaryContainer,
+                                    ),
+                                  ),
+                                ),
+                              ],
                               if (completedCount > 0) ...[
                                 const SizedBox(width: 12),
                                 Icon(
