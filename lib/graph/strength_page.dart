@@ -277,11 +277,11 @@ class _StrengthPageState extends State<StrengthPage> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.primaryContainer
-                                      .withOpacity(0.95),
+                                      .withValues(alpha: 0.95),
                                   borderRadius: BorderRadius.circular(8),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
+                                      color: Colors.black.withValues(alpha: 0.1),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -306,7 +306,7 @@ class _StrengthPageState extends State<StrengthPage> {
                                         style: TextStyle(
                                           fontSize: 10,
                                           color: colorScheme.onPrimaryContainer
-                                              .withOpacity(0.8),
+                                              .withValues(alpha: 0.8),
                                         ),
                                       ),
                                     Text(
@@ -315,7 +315,7 @@ class _StrengthPageState extends State<StrengthPage> {
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: colorScheme.onPrimaryContainer
-                                            .withOpacity(0.7),
+                                            .withValues(alpha: 0.7),
                                       ),
                                     ),
                                   ],
@@ -454,9 +454,9 @@ class _StrengthPageState extends State<StrengthPage> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,7 +494,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 subtitle,
                 style: TextStyle(
                   fontSize: 10,
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                 ),
               ),
             ],
@@ -504,7 +504,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 DateFormat('MMM d, yyyy').format(date),
                 style: TextStyle(
                   fontSize: 9,
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -541,7 +541,7 @@ class _StrengthPageState extends State<StrengthPage> {
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -551,7 +551,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.1),
+                  color: colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
@@ -626,7 +626,7 @@ class _StrengthPageState extends State<StrengthPage> {
                       color: isEven
                           ? Colors.transparent
                           : colorScheme.surfaceContainerHighest
-                              .withOpacity(0.3),
+                              .withValues(alpha: 0.3),
                       borderRadius: index == 14
                           ? const BorderRadius.only(
                               bottomLeft: Radius.circular(16),
@@ -645,7 +645,7 @@ class _StrengthPageState extends State<StrengthPage> {
                             ),
                             decoration: BoxDecoration(
                               color: hasRecord
-                                  ? colorScheme.primary.withOpacity(0.15)
+                                  ? colorScheme.primary.withValues(alpha: 0.15)
                                   : colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -658,7 +658,7 @@ class _StrengthPageState extends State<StrengthPage> {
                                 color: hasRecord
                                     ? colorScheme.primary
                                     : colorScheme.onSurfaceVariant
-                                        .withOpacity(0.5),
+                                        .withValues(alpha: 0.5),
                               ),
                             ),
                           ),
@@ -677,7 +677,7 @@ class _StrengthPageState extends State<StrengthPage> {
                               color: hasRecord
                                   ? colorScheme.onSurface
                                   : colorScheme.onSurfaceVariant
-                                      .withOpacity(0.5),
+                                      .withValues(alpha: 0.5),
                             ),
                           ),
                         ),
@@ -733,7 +733,7 @@ class _StrengthPageState extends State<StrengthPage> {
           drawVerticalLine: false,
           horizontalInterval: range > 0 ? range / 4 : 1,
           getDrawingHorizontalLine: (value) => FlLine(
-            color: colorScheme.outlineVariant.withOpacity(0.3),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
             strokeWidth: 1,
           ),
         ),
@@ -842,7 +842,7 @@ class _StrengthPageState extends State<StrengthPage> {
                   radius: isSelected ? 5 : 3,
                   color: isSelected
                       ? colorScheme.primary
-                      : colorScheme.primary.withOpacity(0.7),
+                      : colorScheme.primary.withValues(alpha: 0.7),
                   strokeWidth: 0,
                 );
               },
@@ -853,8 +853,8 @@ class _StrengthPageState extends State<StrengthPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  colorScheme.primary.withOpacity(0.3),
-                  colorScheme.primary.withOpacity(0.05),
+                  colorScheme.primary.withValues(alpha: 0.3),
+                  colorScheme.primary.withValues(alpha: 0.05),
                 ],
               ),
             ),

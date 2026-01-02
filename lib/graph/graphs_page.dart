@@ -21,6 +21,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'graph_tile.dart';
+import 'overview_page.dart';
 
 class GraphsPage extends StatefulWidget {
   final TabController tabController;
@@ -170,6 +171,19 @@ class GraphsPageState extends State<GraphsPage>
                 }),
               ),
         actions: [
+          if (selected.isEmpty)
+            IconButton(
+              icon: const Icon(Icons.dashboard),
+              tooltip: "Overview",
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const OverviewPage(),
+                  ),
+                );
+              },
+            ),
           if (selected.isNotEmpty) ...[
             IconButton(
               icon: const Icon(Icons.delete),

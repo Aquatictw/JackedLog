@@ -76,7 +76,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
             end: Alignment.bottomCenter,
             colors: [
               colorScheme.surface,
-              colorScheme.surface.withOpacity(0.95),
+              colorScheme.surface.withValues(alpha: 0.95),
             ],
           ),
         ),
@@ -116,7 +116,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface.withOpacity(0.7),
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -178,7 +178,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface.withOpacity(0.7),
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -202,12 +202,12 @@ class _AddExercisePageState extends State<AddExercisePage> {
                                 ? LinearGradient(
                                     colors: [
                                       colorScheme.primaryContainer,
-                                      colorScheme.primaryContainer.withOpacity(0.7),
+                                      colorScheme.primaryContainer.withValues(alpha: 0.7),
                                     ],
                                   )
                                 : null,
                             color: exerciseType != type.value
-                                ? colorScheme.surfaceVariant.withOpacity(0.5)
+                                ? colorScheme.surfaceVariant.withValues(alpha: 0.5)
                                 : null,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
@@ -288,7 +288,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface.withOpacity(0.7),
+                            color: colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -358,7 +358,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface.withOpacity(0.7),
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -369,10 +369,10 @@ class _AddExercisePageState extends State<AddExercisePage> {
                       child: Container(
                         height: 180,
                         decoration: BoxDecoration(
-                          color: colorScheme.surfaceVariant.withOpacity(0.5),
+                          color: colorScheme.surfaceVariant.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: colorScheme.outline.withOpacity(0.3),
+                            color: colorScheme.outline.withValues(alpha: 0.3),
                             width: 2,
                             style: BorderStyle.solid,
                           ),
