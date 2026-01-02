@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flutter/material.dart';
