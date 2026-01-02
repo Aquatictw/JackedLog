@@ -1,12 +1,9 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
-import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import 'package:timeago/timeago.dart' as timeago;
 
 class WorkoutWithSets {
   final Workout workout;
@@ -80,7 +77,7 @@ class _WorkoutsListState extends State<WorkoutsList> {
   Stream<List<WorkoutWithSets>> _getWorkoutsStream() {
     var query = db.workouts.select()
       ..orderBy([
-        (w) => OrderingTerm(expression: w.startTime, mode: OrderingMode.desc)
+        (w) => OrderingTerm(expression: w.startTime, mode: OrderingMode.desc),
       ])
       ..limit(widget.limit);
 
@@ -119,10 +116,12 @@ class _WorkoutsListState extends State<WorkoutsList> {
         }
 
         final sets = await (db.gymSets.select()
-              ..where((s) =>
-                  s.workoutId.equals(workout.id) &
-                  s.hidden.equals(false) &
-                  s.sequence.isBiggerOrEqualValue(0)))
+              ..where(
+                (s) =>
+                    s.workoutId.equals(workout.id) &
+                    s.hidden.equals(false) &
+                    s.sequence.isBiggerOrEqualValue(0),
+              ))
             .get();
 
         final exerciseNames = sets.map((s) => s.name).toSet().toList();
@@ -131,13 +130,15 @@ class _WorkoutsListState extends State<WorkoutsList> {
           (sum, s) => sum + (s.weight * s.reps),
         );
 
-        result.add(WorkoutWithSets(
-          workout: workout,
-          setCount: sets.length,
-          exerciseCount: exerciseNames.length,
-          exerciseNames: exerciseNames,
-          totalVolume: totalVolume,
-        ));
+        result.add(
+          WorkoutWithSets(
+            workout: workout,
+            setCount: sets.length,
+            exerciseCount: exerciseNames.length,
+            exerciseNames: exerciseNames,
+            totalVolume: totalVolume,
+          ),
+        );
       }
 
       return result;
@@ -188,12 +189,7 @@ class _WorkoutCard extends StatelessWidget {
     final workout = workoutWithSets.workout;
     final colorScheme = Theme.of(context).colorScheme;
 
-    final duration = workout.endTime != null
-        ? workout.endTime!.difference(workout.startTime)
-        : null;
-
-    // Format date as Year Month Day
-    final formattedDate = DateFormat('yyyy MMM d').format(workout.startTime);
+    final duration = workout.endTime?.difference(workout.startTime);
 
     final exercisePreview = workoutWithSets.exerciseNames.take(3).join(', ');
     final moreCount = workoutWithSets.exerciseNames.length - 3;
@@ -248,7 +244,8 @@ class _WorkoutCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                            color: colorScheme.onPrimaryContainer
+                                .withValues(alpha: 0.8),
                           ),
                         ),
                       ],
@@ -262,16 +259,18 @@ class _WorkoutCard extends StatelessWidget {
                       children: [
                         Text(
                           workout.name ?? 'Workout',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           DateFormat('yyyy').format(workout.startTime),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                         ),
                       ],
                     ),
@@ -327,7 +326,8 @@ class _WorkoutCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    color: colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: colorScheme.outlineVariant.withValues(alpha: 0.3),
@@ -344,10 +344,11 @@ class _WorkoutCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           workout.notes!,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurface,
-                                fontStyle: FontStyle.italic,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurface,
+                                    fontStyle: FontStyle.italic,
+                                  ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),

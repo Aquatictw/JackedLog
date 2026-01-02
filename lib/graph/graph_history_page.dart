@@ -55,7 +55,7 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
                     Icon(
                       Icons.fitness_center,
                       size: 64,
-                      color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -130,10 +130,10 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: colorScheme.outline.withOpacity(0.2),
+                color: colorScheme.outline.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -145,7 +145,7 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withOpacity(0.5),
+                        color: colorScheme.primaryContainer.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -187,7 +187,7 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
+                Divider(height: 1, color: colorScheme.outline.withValues(alpha: 0.2)),
                 const SizedBox(height: 12),
                 Row(
                   children: [

@@ -13,7 +13,6 @@ import 'package:flexify/main.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/utils.dart';
 import 'package:flexify/weight_page.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
@@ -21,6 +20,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'graph_tile.dart';
+import 'overview_page.dart';
 
 class GraphsPage extends StatefulWidget {
   final TabController tabController;
@@ -170,6 +170,19 @@ class GraphsPageState extends State<GraphsPage>
                 }),
               ),
         actions: [
+          if (selected.isEmpty)
+            IconButton(
+              icon: const Icon(Icons.dashboard),
+              tooltip: "Overview",
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const OverviewPage(),
+                  ),
+                );
+              },
+            ),
           if (selected.isNotEmpty) ...[
             IconButton(
               icon: const Icon(Icons.delete),
@@ -252,8 +265,12 @@ class GraphsPageState extends State<GraphsPage>
               PopupMenuItem(
                 value: 'toggle_empty',
                 child: ListTile(
-                  leading: Icon(showEmptyExercises ? Icons.visibility_off : Icons.visibility),
-                  title: Text(showEmptyExercises ? 'Hide empty exercises' : 'Show empty exercises'),
+                  leading: Icon(showEmptyExercises
+                      ? Icons.visibility_off
+                      : Icons.visibility),
+                  title: Text(showEmptyExercises
+                      ? 'Hide empty exercises'
+                      : 'Show empty exercises'),
                 ),
               ),
               if (settings.showBodyWeight)
@@ -288,7 +305,8 @@ class GraphsPageState extends State<GraphsPage>
           if (snapshot.hasError) return ErrorWidget(snapshot.error.toString());
           if (!snapshot.hasData) return const SizedBox();
 
-          final searchTerms = search.toLowerCase().split(' ').where((t) => t.isNotEmpty);
+          final searchTerms =
+              search.toLowerCase().split(' ').where((t) => t.isNotEmpty);
           var filteredStream = snapshot.data!.where((gymSet) {
             // Filter by category
             if (category != null && gymSet.category != category) {
@@ -342,7 +360,8 @@ class GraphsPageState extends State<GraphsPage>
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                   onChanged: (value) => setState(() => search = value),
                 ),
@@ -375,39 +394,47 @@ class GraphsPageState extends State<GraphsPage>
   }
 
   Future<void> _addDebugWorkouts() async {
-    // Diverse exercises with different categories and rep ranges
+    // Diverse exercises with proper muscle group categories
     final exerciseGroups = [
-      // Strength exercises (lower reps, higher weight)
+      // Chest exercises
       {
-        'exercises': ['Bench Press', 'Squat', 'Deadlift'],
-        'category': 'Strength',
-        'repRanges': [3, 4, 5],
+        'exercises': ['Bench Press', 'Incline Dumbbell Press', 'Cable Flyes'],
+        'categories': ['Chest', 'Chest', 'Chest'],
+        'repRanges': [5, 8, 12],
         'baseWeight': 100.0,
         'weightIncrement': 5.0,
       },
-      // Hypertrophy exercises (moderate reps, moderate weight)
+      // Back exercises
       {
-        'exercises': ['Dumbbell Press', 'Leg Press', 'Romanian Deadlift'],
-        'category': 'Hypertrophy',
-        'repRanges': [8, 10, 12],
-        'baseWeight': 40.0,
+        'exercises': ['Deadlift', 'Pull-ups', 'Barbell Row'],
+        'categories': ['Back', 'Back', 'Back'],
+        'repRanges': [5, 8, 10],
+        'baseWeight': 80.0,
+        'weightIncrement': 5.0,
+      },
+      // Leg exercises
+      {
+        'exercises': ['Squat', 'Leg Press', 'Romanian Deadlift'],
+        'categories': ['Quads', 'Quads', 'Hamstrings'],
+        'repRanges': [5, 10, 10],
+        'baseWeight': 100.0,
+        'weightIncrement': 5.0,
+      },
+      // Shoulder exercises
+      {
+        'exercises': ['Overhead Press', 'Lateral Raises', 'Face Pulls'],
+        'categories': ['Shoulders', 'Shoulders', 'Shoulders'],
+        'repRanges': [6, 12, 15],
+        'baseWeight': 50.0,
         'weightIncrement': 2.5,
       },
-      // Endurance exercises (higher reps, lower weight)
+      // Arm exercises
       {
-        'exercises': ['Push-ups', 'Lunges', 'Face Pulls'],
-        'category': 'Endurance',
-        'repRanges': [12, 15, 20],
+        'exercises': ['Bicep Curls', 'Tricep Extensions', 'Hammer Curls'],
+        'categories': ['Biceps', 'Triceps', 'Biceps'],
+        'repRanges': [10, 12, 10],
         'baseWeight': 15.0,
         'weightIncrement': 1.25,
-      },
-      // Accessory exercises (varied reps)
-      {
-        'exercises': ['Bicep Curls', 'Tricep Extensions', 'Lateral Raises'],
-        'category': 'Accessories',
-        'repRanges': [10, 12, 15],
-        'baseWeight': 10.0,
-        'weightIncrement': 1.0,
       },
     ];
 
@@ -431,7 +458,8 @@ class GraphsPageState extends State<GraphsPage>
         final workoutId = await db.workouts.insertOne(
           WorkoutsCompanion.insert(
             startTime: workoutDate,
-            endTime: Value(workoutDate.add(const Duration(hours: 1, minutes: 30))),
+            endTime:
+                Value(workoutDate.add(const Duration(hours: 1, minutes: 30))),
             name: Value('Test Workout ${workoutDate.month}/${workoutDate.day}'),
           ),
         );
@@ -443,8 +471,11 @@ class GraphsPageState extends State<GraphsPage>
         final groupIndex = (workoutCount % exerciseGroups.length);
         final group = exerciseGroups[groupIndex];
 
-        for (var exerciseIndex = 0; exerciseIndex < (group['exercises'] as List).length; exerciseIndex++) {
+        for (var exerciseIndex = 0;
+            exerciseIndex < (group['exercises'] as List).length;
+            exerciseIndex++) {
           final exerciseName = (group['exercises'] as List)[exerciseIndex];
+          final exerciseCategory = (group['categories'] as List)[exerciseIndex];
           final repRanges = group['repRanges'] as List<int>;
           final baseWeight = group['baseWeight'] as double;
           final weightIncrement = group['weightIncrement'] as double;
@@ -457,7 +488,9 @@ class GraphsPageState extends State<GraphsPage>
             final reps = repRanges[setNum % repRanges.length].toDouble();
 
             // Progressive overload: weight increases over time
-            final weight = baseWeight + (progressMultiplier * weightIncrement) - (setNum * weightIncrement * 0.5);
+            final weight = baseWeight +
+                (progressMultiplier * weightIncrement) -
+                (setNum * weightIncrement * 0.5);
 
             await db.gymSets.insertOne(
               GymSetsCompanion.insert(
@@ -470,7 +503,7 @@ class GraphsPageState extends State<GraphsPage>
                   seconds: setNum * 10,
                 )),
                 workoutId: Value(workoutId),
-                category: Value(group['category'] as String),
+                category: Value(exerciseCategory),
               ),
             );
             totalSets++;
@@ -479,17 +512,21 @@ class GraphsPageState extends State<GraphsPage>
 
         // Add some one-rep max attempts occasionally
         if (workoutCount % 5 == 0 && monthOffset < 3) {
-          final heavyExercises = ['Bench Press', 'Squat', 'Deadlift'];
+          final heavyExercises = [
+            {'name': 'Bench Press', 'category': 'Chest'},
+            {'name': 'Squat', 'category': 'Quads'},
+            {'name': 'Deadlift', 'category': 'Back'},
+          ];
           for (var i = 0; i < heavyExercises.length; i++) {
             await db.gymSets.insertOne(
               GymSetsCompanion.insert(
-                name: heavyExercises[i],
+                name: heavyExercises[i]['name']!,
                 reps: 1.0,
                 weight: 120.0 + (progressMultiplier * 5.0) + (i * 10.0),
                 unit: 'kg',
                 created: workoutDate.add(Duration(minutes: 60 + i * 10)),
                 workoutId: Value(workoutId),
-                category: Value('Strength'),
+                category: Value(heavyExercises[i]['category']!),
               ),
             );
             totalSets++;
@@ -503,13 +540,13 @@ class GraphsPageState extends State<GraphsPage>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Added $workoutCount workouts with $totalSets sets across ${exerciseGroups.length * 3} exercises'),
+          content: Text(
+              'Added $workoutCount workouts with $totalSets sets across 15 exercises with proper muscle groups'),
           duration: const Duration(seconds: 3),
         ),
       );
     }
   }
-
 
   material.ListView graphList(List<GraphExercise> gymSets) {
     var itemCount = gymSets.length + 1;
