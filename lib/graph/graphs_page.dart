@@ -33,7 +33,7 @@ class GraphsPage extends StatefulWidget {
 
 class GraphsPageState extends State<GraphsPage>
     with AutomaticKeepAliveClientMixin {
-  late final Stream<List<GraphExercise>> stream = watchGraphs();
+  Stream<List<GraphExercise>> stream = watchGraphs();
 
   final Set<String> selected = {};
   final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -43,7 +43,13 @@ class GraphsPageState extends State<GraphsPage>
   final searchController = TextEditingController();
   bool extendFab = true;
   int total = 0;
-  bool showEmptyExercises = false;
+  bool _showEmptyExercises = false;
+
+  bool get showEmptyExercises => _showEmptyExercises;
+  set showEmptyExercises(bool value) {
+    _showEmptyExercises = value;
+    stream = watchGraphs(showHidden: value);
+  }
 
   @override
   bool get wantKeepAlive => true;

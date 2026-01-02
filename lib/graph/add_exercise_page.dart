@@ -23,15 +23,33 @@ class _AddExercisePageState extends State<AddExercisePage> {
   final TextEditingController nameCtrl = TextEditingController();
   final TextEditingController notesCtrl = TextEditingController();
   final TextEditingController brandNameCtrl = TextEditingController();
+  final TextEditingController minutes = TextEditingController();
+  final TextEditingController seconds = TextEditingController();
 
   String? exerciseType;
   String? image;
+  String? category;
   final key = GlobalKey<FormState>();
 
   final List<({String value, String label, IconData icon})> exerciseTypes = [
     (value: 'free_weight', label: 'Free Weight', icon: Icons.fitness_center),
     (value: 'machine', label: 'Machine', icon: Icons.settings),
     (value: 'cable', label: 'Cable', icon: Icons.cable),
+  ];
+
+  final List<String> bodyparts = [
+    'Chest',
+    'Back',
+    'Shoulders',
+    'Biceps',
+    'Triceps',
+    'Forearms',
+    'Abs',
+    'Quads',
+    'Hamstrings',
+    'Glutes',
+    'Calves',
+    'Full Body',
   ];
 
   @override
@@ -87,6 +105,68 @@ class _AddExercisePageState extends State<AddExercisePage> {
                       autofocus: true,
                       validator: (value) =>
                           value?.isNotEmpty == true ? null : 'Required',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Rest Timer
+                Text(
+                  'Rest Timer',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: Row(
+                      children: [
+                        Icon(Icons.timer_outlined, color: colorScheme.primary),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: minutes,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: "Minutes",
+                              border: InputBorder.none,
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return null;
+                              if (int.tryParse(value) == null)
+                                return 'Invalid number';
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: seconds,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: "Seconds",
+                              border: InputBorder.none,
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return null;
+                              if (int.tryParse(value) == null)
+                                return 'Invalid number';
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -194,6 +274,59 @@ class _AddExercisePageState extends State<AddExercisePage> {
                 ],
 
                 const SizedBox(height: 20),
+
+                // Bodypart
+                Selector<SettingsState, bool>(
+                  selector: (p0, settings) => settings.value.showCategories,
+                  builder: (context, showCategories, child) {
+                    if (!showCategories) return const SizedBox();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Bodypart',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                            child: DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                labelText: 'Bodypart',
+                                border: InputBorder.none,
+                                icon: Icon(Icons.accessibility_new, color: colorScheme.primary),
+                              ),
+                              value: category != null && bodyparts.contains(category) ? category : null,
+                              items: bodyparts
+                                  .map(
+                                    (bodypart) => DropdownMenuItem(
+                                      value: bodypart,
+                                      child: Text(bodypart),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  category = value;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    );
+                  },
+                ),
 
                 // Notes
                 Card(
@@ -345,6 +478,8 @@ class _AddExercisePageState extends State<AddExercisePage> {
     nameCtrl.dispose();
     notesCtrl.dispose();
     brandNameCtrl.dispose();
+    minutes.dispose();
+    seconds.dispose();
     super.dispose();
   }
 
@@ -362,6 +497,15 @@ class _AddExercisePageState extends State<AddExercisePage> {
   Future<void> save() async {
     if (!key.currentState!.validate()) return;
 
+    // Calculate rest duration in milliseconds
+    Duration? duration;
+    if (minutes.text.isNotEmpty || seconds.text.isNotEmpty) {
+      duration = Duration(
+        minutes: int.tryParse(minutes.text) ?? 0,
+        seconds: int.tryParse(seconds.text) ?? 0,
+      );
+    }
+
     final insert = GymSetsCompanion.insert(
       created: DateTime.now().toLocal(),
       reps: 0,
@@ -374,6 +518,8 @@ class _AddExercisePageState extends State<AddExercisePage> {
       exerciseType: Value(exerciseType),
       brandName: Value(brandNameCtrl.text.isEmpty ? null : brandNameCtrl.text),
       notes: Value(notesCtrl.text.isEmpty ? null : notesCtrl.text),
+      restMs: Value(duration?.inMilliseconds),
+      category: Value.absentIfNull(category),
     );
     await db.gymSets.insertOne(insert);
     if (!mounted) return;

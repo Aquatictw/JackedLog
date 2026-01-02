@@ -184,13 +184,13 @@ typedef GraphExercise = ({
   int workoutCount,
 });
 
-Stream<List<GraphExercise>> watchGraphs() {
+Stream<List<GraphExercise>> watchGraphs({bool showHidden = false}) {
   final setCountCol = db.gymSets.name.count();
   final workoutCountCol = const CustomExpression<int>(
     'COUNT(DISTINCT workout_id)',
   );
 
-  return (db.gymSets.selectOnly()
+  var query = db.gymSets.selectOnly()
         ..addColumns([
           db.gymSets.name,
           db.gymSets.unit,
@@ -207,14 +207,19 @@ Stream<List<GraphExercise>> watchGraphs() {
           setCountCol,
           workoutCountCol,
         ])
-        ..where(db.gymSets.hidden.equals(false))
         ..orderBy([
           OrderingTerm(
             expression: workoutCountCol,
             mode: OrderingMode.desc,
           ),
         ])
-        ..groupBy([db.gymSets.name]))
+        ..groupBy([db.gymSets.name]);
+
+  if (!showHidden) {
+    query = query..where(db.gymSets.hidden.equals(false));
+  }
+
+  return query
       .watch()
       .map(
         (results) => results

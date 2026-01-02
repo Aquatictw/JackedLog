@@ -64,6 +64,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
   String unit = 'kg';
   double _defaultWeight = 0.0;
   int _defaultReps = 8;
+  String? _brandName;
 
   @override
   void initState() {
@@ -95,6 +96,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     _defaultWeight = lastSet?.weight ?? 0.0;
     _defaultReps = lastSet?.reps.toInt() ?? 8;
     final defaultUnit = lastSet?.unit ?? settings.strengthUnit;
+    _brandName = lastSet?.brandName;
 
     // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
     List<GymSet> existingSets = [];
@@ -582,11 +584,35 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.exercise.exercise,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                widget.exercise.exercise,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
+                            ),
+                            if (_brandName != null && _brandName!.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  _brandName!,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: colorScheme.onSecondaryContainer,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         // Exercise notes preview
                         if (widget.exerciseNotes?.isNotEmpty == true) ...[
