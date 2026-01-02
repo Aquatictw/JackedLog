@@ -59,14 +59,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
 
   void _navigateToWorkout(GlobalKey<NavigatorState>? navKey, Plan plan) {
     if (navKey?.currentState != null) {
-      // Only navigate if we're not already on a workout page
-      // If canPop() returns true, we have routes on the stack (likely already on workout page)
-      if (navKey!.currentState!.canPop()) {
-        // Already on a page (probably the workout page), don't navigate
-        return;
-      }
-
-      // We're on the base route, push the workout page
+      navKey!.currentState!.popUntil((route) => route.isFirst);
       navKey.currentState!.push(
         MaterialPageRoute(
           builder: (context) => StartPlanPage(plan: plan),
