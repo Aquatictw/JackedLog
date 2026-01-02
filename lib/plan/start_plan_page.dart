@@ -52,6 +52,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
   List<_ExerciseItem> _exerciseOrder = []; // Unified ordered list
   Map<int, PlanExercise> _planExercisesMap = {}; // Cache of plan exercises
   Map<String, String> _exerciseNotes = {}; // Track notes per exercise (key -> notes)
+  late WorkoutState _workoutState; // Store reference for dispose()
 
   @override
   void initState() {
@@ -61,16 +62,15 @@ class _StartPlanPageState extends State<StartPlanPage> {
         : widget.plan.days.replaceAll(",", ", ");
 
     // Listen for workout state changes to pop when workout ends
-    final workoutState = context.read<WorkoutState>();
-    workoutState.addListener(_onWorkoutStateChanged);
+    _workoutState = context.read<WorkoutState>();
+    _workoutState.addListener(_onWorkoutStateChanged);
 
     _loadExercises();
   }
 
   void _onWorkoutStateChanged() {
-    final workoutState = context.read<WorkoutState>();
     // If workout was ended (no active workout), pop this page
-    if (!workoutState.hasActiveWorkout && mounted) {
+    if (!_workoutState.hasActiveWorkout && mounted) {
       Navigator.of(context).pop();
     }
   }
@@ -291,8 +291,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
   void dispose() {
     _saveNotes();
     _notesController.dispose();
-    final workoutState = context.read<WorkoutState>();
-    workoutState.removeListener(_onWorkoutStateChanged);
+    _workoutState.removeListener(_onWorkoutStateChanged);
     super.dispose();
   }
 
@@ -1918,7 +1917,7 @@ class _SimpleRepsInputState extends State<_SimpleRepsInput> {
   @override
   void didUpdateWidget(_SimpleRepsInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value && !_hasFocus) {
+    if (oldWidget.value != widget.value) {
       _controller.text = widget.value.toString();
     }
   }
