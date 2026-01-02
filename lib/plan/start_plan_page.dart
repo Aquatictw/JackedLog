@@ -1208,6 +1208,15 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               },
             ),
             ListTile(
+              leading: Icon(Icons.show_chart, color: colorScheme.primary),
+              title: const Text('View Graph'),
+              subtitle: const Text('Jump to graph page for this exercise'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _jumpToGraph(parentContext);
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
               title: Text('Remove Exercise', style: TextStyle(color: colorScheme.error)),
               subtitle: const Text('Remove this exercise from workout'),
@@ -1255,6 +1264,57 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     // Don't dispose controller here - let the dialog handle its own lifecycle
     if (result != null && widget.onNotesChanged != null) {
       widget.onNotesChanged!(result);
+    }
+  }
+
+  Future<void> _jumpToGraph(BuildContext parentContext) async {
+    // Get the exercise data to determine if it's cardio or strength
+    final exerciseData = await (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(widget.exerciseName))
+          ..orderBy([
+            (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+
+    if (exerciseData == null || !parentContext.mounted) return;
+
+    if (exerciseData.cardio) {
+      final data = await getCardioData(
+        target: exerciseData.unit,
+        name: widget.exerciseName,
+        metric: CardioMetric.pace,
+        period: Period.months3,
+      );
+      if (!parentContext.mounted) return;
+      Navigator.push(
+        parentContext,
+        MaterialPageRoute(
+          builder: (context) => CardioPage(
+            name: widget.exerciseName,
+            unit: exerciseData.unit,
+            data: data,
+          ),
+        ),
+      );
+    } else {
+      final data = await getStrengthData(
+        target: exerciseData.unit,
+        name: widget.exerciseName,
+        metric: StrengthMetric.bestWeight,
+        period: Period.months3,
+      );
+      if (!parentContext.mounted) return;
+      Navigator.push(
+        parentContext,
+        MaterialPageRoute(
+          builder: (context) => StrengthPage(
+            name: widget.exerciseName,
+            unit: exerciseData.unit,
+            data: data,
+          ),
+        ),
+      );
     }
   }
 
