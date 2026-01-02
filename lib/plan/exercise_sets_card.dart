@@ -655,6 +655,24 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                               ),
+                              if (_brandName != null && _brandName!.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    _brandName!,
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w500,
+                                      color: colorScheme.onSecondaryContainer,
+                                    ),
+                                  ),
+                                ),
+                              ],
                               if (completedCount > 0) ...[
                                 const SizedBox(width: 12),
                                 Icon(

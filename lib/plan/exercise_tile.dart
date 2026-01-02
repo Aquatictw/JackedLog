@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:flexify/database/database.dart';
+import 'package:flexify/main.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/utils.dart';
 import 'package:flutter/material.dart' as material;
@@ -27,6 +28,17 @@ class _ExerciseTileState extends State<ExerciseTile> {
   late final warmup = TextEditingController(
     text: widget.planExercise.warmupSets.value?.toString(),
   );
+
+  Future<String?> _getBrandName() async {
+    final result = await (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(widget.planExercise.exercise.value))
+          ..orderBy([
+            (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+    return result?.brandName;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +142,38 @@ class _ExerciseTileState extends State<ExerciseTile> {
           );
         },
       ),
-      title: Text(widget.planExercise.exercise.value),
+      title: FutureBuilder<String?>(
+        future: _getBrandName(),
+        builder: (context, snapshot) {
+          final brandName = snapshot.data;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(widget.planExercise.exercise.value),
+              ),
+              if (brandName != null && brandName.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    brandName,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
       trailing: Switch(
         value: widget.planExercise.enabled.value,
         onChanged: (value) {
