@@ -29,6 +29,7 @@ class _GraphsFiltersState extends State<GraphsFilters> {
         builder: (context, snapshot) {
           return PopupMenuButton(
             padding: EdgeInsets.zero,
+            offset: const Offset(0, 40),
             itemBuilder: (context) => [
               PopupMenuItem(
                 child: DropdownButtonFormField(

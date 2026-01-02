@@ -178,17 +178,19 @@ typedef GraphExercise = ({
   DateTime created,
   String? image,
   String? category,
+  String? exerciseType,
+  String? brandName,
   int setCount,
   int workoutCount,
 });
 
-Stream<List<GraphExercise>> watchGraphs() {
+Stream<List<GraphExercise>> watchGraphs({bool showHidden = false}) {
   final setCountCol = db.gymSets.name.count();
   final workoutCountCol = const CustomExpression<int>(
     'COUNT(DISTINCT workout_id)',
   );
 
-  return (db.gymSets.selectOnly()
+  var query = db.gymSets.selectOnly()
         ..addColumns([
           db.gymSets.name,
           db.gymSets.unit,
@@ -200,17 +202,24 @@ Stream<List<GraphExercise>> watchGraphs() {
           db.gymSets.created.max(),
           db.gymSets.image,
           db.gymSets.category,
+          db.gymSets.exerciseType,
+          db.gymSets.brandName,
           setCountCol,
           workoutCountCol,
         ])
-        ..where(db.gymSets.hidden.equals(false))
         ..orderBy([
           OrderingTerm(
             expression: workoutCountCol,
             mode: OrderingMode.desc,
           ),
         ])
-        ..groupBy([db.gymSets.name]))
+        ..groupBy([db.gymSets.name]);
+
+  if (!showHidden) {
+    query = query..where(db.gymSets.hidden.equals(false));
+  }
+
+  return query
       .watch()
       .map(
         (results) => results
@@ -226,6 +235,8 @@ Stream<List<GraphExercise>> watchGraphs() {
                 created: result.read(db.gymSets.created.max())!,
                 image: result.read(db.gymSets.image),
                 category: result.read(db.gymSets.category),
+                exerciseType: result.read(db.gymSets.exerciseType),
+                brandName: result.read(db.gymSets.brandName),
                 setCount: result.read(setCountCol)!,
                 workoutCount: result.read(workoutCountCol)!,
               ),
@@ -666,6 +677,8 @@ class GymSets extends Table {
   BoolColumn get warmup => boolean().withDefault(const Constant(false))();
   RealColumn get weight => real()();
   IntColumn get workoutId => integer().nullable()();
+  TextColumn get exerciseType => text().nullable()(); // free weight, machine, cable
+  TextColumn get brandName => text().nullable()(); // brand for machine
 }
 
 final categoriesStream = (db.gymSets.selectOnly(distinct: true)
