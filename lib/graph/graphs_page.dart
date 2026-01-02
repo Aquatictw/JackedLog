@@ -13,7 +13,6 @@ import 'package:flexify/main.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/utils.dart';
 import 'package:flexify/weight_page.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
@@ -266,8 +265,12 @@ class GraphsPageState extends State<GraphsPage>
               PopupMenuItem(
                 value: 'toggle_empty',
                 child: ListTile(
-                  leading: Icon(showEmptyExercises ? Icons.visibility_off : Icons.visibility),
-                  title: Text(showEmptyExercises ? 'Hide empty exercises' : 'Show empty exercises'),
+                  leading: Icon(showEmptyExercises
+                      ? Icons.visibility_off
+                      : Icons.visibility),
+                  title: Text(showEmptyExercises
+                      ? 'Hide empty exercises'
+                      : 'Show empty exercises'),
                 ),
               ),
               if (settings.showBodyWeight)
@@ -302,7 +305,8 @@ class GraphsPageState extends State<GraphsPage>
           if (snapshot.hasError) return ErrorWidget(snapshot.error.toString());
           if (!snapshot.hasData) return const SizedBox();
 
-          final searchTerms = search.toLowerCase().split(' ').where((t) => t.isNotEmpty);
+          final searchTerms =
+              search.toLowerCase().split(' ').where((t) => t.isNotEmpty);
           var filteredStream = snapshot.data!.where((gymSet) {
             // Filter by category
             if (category != null && gymSet.category != category) {
@@ -356,7 +360,8 @@ class GraphsPageState extends State<GraphsPage>
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                   onChanged: (value) => setState(() => search = value),
                 ),
@@ -445,7 +450,8 @@ class GraphsPageState extends State<GraphsPage>
         final workoutId = await db.workouts.insertOne(
           WorkoutsCompanion.insert(
             startTime: workoutDate,
-            endTime: Value(workoutDate.add(const Duration(hours: 1, minutes: 30))),
+            endTime:
+                Value(workoutDate.add(const Duration(hours: 1, minutes: 30))),
             name: Value('Test Workout ${workoutDate.month}/${workoutDate.day}'),
           ),
         );
@@ -457,7 +463,9 @@ class GraphsPageState extends State<GraphsPage>
         final groupIndex = (workoutCount % exerciseGroups.length);
         final group = exerciseGroups[groupIndex];
 
-        for (var exerciseIndex = 0; exerciseIndex < (group['exercises'] as List).length; exerciseIndex++) {
+        for (var exerciseIndex = 0;
+            exerciseIndex < (group['exercises'] as List).length;
+            exerciseIndex++) {
           final exerciseName = (group['exercises'] as List)[exerciseIndex];
           final repRanges = group['repRanges'] as List<int>;
           final baseWeight = group['baseWeight'] as double;
@@ -471,7 +479,9 @@ class GraphsPageState extends State<GraphsPage>
             final reps = repRanges[setNum % repRanges.length].toDouble();
 
             // Progressive overload: weight increases over time
-            final weight = baseWeight + (progressMultiplier * weightIncrement) - (setNum * weightIncrement * 0.5);
+            final weight = baseWeight +
+                (progressMultiplier * weightIncrement) -
+                (setNum * weightIncrement * 0.5);
 
             await db.gymSets.insertOne(
               GymSetsCompanion.insert(
@@ -517,13 +527,13 @@ class GraphsPageState extends State<GraphsPage>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Added $workoutCount workouts with $totalSets sets across ${exerciseGroups.length * 3} exercises'),
+          content: Text(
+              'Added $workoutCount workouts with $totalSets sets across ${exerciseGroups.length * 3} exercises'),
           duration: const Duration(seconds: 3),
         ),
       );
     }
   }
-
 
   material.ListView graphList(List<GraphExercise> gymSets) {
     var itemCount = gymSets.length + 1;

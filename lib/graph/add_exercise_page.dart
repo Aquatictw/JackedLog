@@ -6,7 +6,6 @@ import 'package:flexify/animated_fab.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/settings/settings_state.dart';
-import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -93,13 +92,15 @@ class _AddExercisePageState extends State<AddExercisePage> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
                     child: TextFormField(
                       controller: nameCtrl,
                       decoration: InputDecoration(
                         labelText: 'Exercise Name',
                         border: InputBorder.none,
-                        icon: Icon(Icons.label_outline, color: colorScheme.primary),
+                        icon: Icon(Icons.label_outline,
+                            color: colorScheme.primary),
                       ),
                       textCapitalization: TextCapitalization.sentences,
                       autofocus: true,
@@ -126,7 +127,8 @@ class _AddExercisePageState extends State<AddExercisePage> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
                     child: Row(
                       children: [
                         Icon(Icons.timer_outlined, color: colorScheme.primary),
@@ -185,68 +187,76 @@ class _AddExercisePageState extends State<AddExercisePage> {
 
                 // Compact Exercise Type Selection
                 Row(
-                  children: exerciseTypes.map((type) => Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            exerciseType = type.value;
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          decoration: BoxDecoration(
-                            gradient: exerciseType == type.value
-                                ? LinearGradient(
-                                    colors: [
-                                      colorScheme.primaryContainer,
-                                      colorScheme.primaryContainer.withValues(alpha: 0.7),
-                                    ],
-                                  )
-                                : null,
-                            color: exerciseType != type.value
-                                ? colorScheme.surfaceVariant.withValues(alpha: 0.5)
-                                : null,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: exerciseType == type.value
-                                  ? colorScheme.primary
-                                  : Colors.transparent,
-                              width: 2,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                type.icon,
-                                color: exerciseType == type.value
-                                    ? colorScheme.primary
-                                    : colorScheme.onSurfaceVariant,
-                                size: 32,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                type.label,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: exerciseType == type.value
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
-                                  color: exerciseType == type.value
-                                      ? colorScheme.onPrimaryContainer
-                                      : colorScheme.onSurfaceVariant,
+                  children: exerciseTypes
+                      .map(
+                        (type) => Expanded(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  exerciseType = type.value;
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16.0),
+                                decoration: BoxDecoration(
+                                  gradient: exerciseType == type.value
+                                      ? LinearGradient(
+                                          colors: [
+                                            colorScheme.primaryContainer,
+                                            colorScheme.primaryContainer
+                                                .withValues(alpha: 0.7),
+                                          ],
+                                        )
+                                      : null,
+                                  color: exerciseType != type.value
+                                      ? colorScheme.surfaceContainerHighest
+                                          .withValues(alpha: 0.5)
+                                      : null,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: exerciseType == type.value
+                                        ? colorScheme.primary
+                                        : Colors.transparent,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      type.icon,
+                                      color: exerciseType == type.value
+                                          ? colorScheme.primary
+                                          : colorScheme.onSurfaceVariant,
+                                      size: 32,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      type.label,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: exerciseType == type.value
+                                            ? FontWeight.bold
+                                            : FontWeight.w500,
+                                        color: exerciseType == type.value
+                                            ? colorScheme.onPrimaryContainer
+                                            : colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  )).toList(),
+                      )
+                      .toList(),
                 ),
 
                 // Brand Name (only for machines)
@@ -258,14 +268,16 @@ class _AddExercisePageState extends State<AddExercisePage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
                       child: TextField(
                         controller: brandNameCtrl,
                         decoration: InputDecoration(
                           labelText: 'Brand Name (Optional)',
                           hintText: 'e.g., Hammer Strength, Life Fitness',
                           border: InputBorder.none,
-                          icon: Icon(Icons.business, color: colorScheme.primary),
+                          icon:
+                              Icon(Icons.business, color: colorScheme.primary),
                         ),
                         textCapitalization: TextCapitalization.words,
                       ),
@@ -298,14 +310,19 @@ class _AddExercisePageState extends State<AddExercisePage> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0, vertical: 4.0),
                             child: DropdownButtonFormField<String>(
                               decoration: InputDecoration(
                                 labelText: 'Bodypart',
                                 border: InputBorder.none,
-                                icon: Icon(Icons.accessibility_new, color: colorScheme.primary),
+                                icon: Icon(Icons.accessibility_new,
+                                    color: colorScheme.primary),
                               ),
-                              value: category != null && bodyparts.contains(category) ? category : null,
+                              initialValue: category != null &&
+                                      bodyparts.contains(category)
+                                  ? category
+                                  : null,
                               items: bodyparts
                                   .map(
                                     (bodypart) => DropdownMenuItem(
@@ -335,7 +352,8 @@ class _AddExercisePageState extends State<AddExercisePage> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
                     child: TextField(
                       controller: notesCtrl,
                       maxLines: 3,
@@ -343,7 +361,8 @@ class _AddExercisePageState extends State<AddExercisePage> {
                         labelText: 'Notes (Optional)',
                         hintText: 'Add any notes about this exercise...',
                         border: InputBorder.none,
-                        icon: Icon(Icons.note_outlined, color: colorScheme.primary),
+                        icon: Icon(Icons.note_outlined,
+                            color: colorScheme.primary),
                       ),
                     ),
                   ),
@@ -362,14 +381,14 @@ class _AddExercisePageState extends State<AddExercisePage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-
                   if (image == null)
                     InkWell(
                       onTap: pick,
                       child: Container(
                         height: 180,
                         decoration: BoxDecoration(
-                          color: colorScheme.surfaceVariant.withValues(alpha: 0.5),
+                          color: colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: colorScheme.outline.withValues(alpha: 0.3),

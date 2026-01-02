@@ -1,7 +1,5 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flexify/database/database.dart';
-import 'package:flexify/database/gym_sets.dart';
 import 'package:flexify/main.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -38,7 +36,8 @@ class _OverviewPageState extends State<OverviewPage> {
     final startDate = _getStartDate(now);
 
     // Load muscle volumes
-    final volumeQuery = await db.customSelect("""
+    final volumeQuery = await db.customSelect(
+      """
       SELECT
         gs.category as muscle,
         SUM(gs.weight * gs.reps) as total_volume
@@ -49,9 +48,11 @@ class _OverviewPageState extends State<OverviewPage> {
         AND gs.cardio = 0
       GROUP BY gs.category
       ORDER BY total_volume DESC
-    """, variables: [
-      drift.Variable.withInt(startDate.millisecondsSinceEpoch ~/ 1000),
-    ]).get();
+    """,
+      variables: [
+        drift.Variable.withInt(startDate.millisecondsSinceEpoch ~/ 1000),
+      ],
+    ).get();
 
     final volumes = <String, double>{};
     for (final row in volumeQuery) {
@@ -61,7 +62,8 @@ class _OverviewPageState extends State<OverviewPage> {
     }
 
     // Load training days for heatmap
-    final daysQuery = await db.customSelect("""
+    final daysQuery = await db.customSelect(
+      """
       SELECT DISTINCT
         DATE(w.start_time, 'unixepoch') as workout_date,
         COUNT(DISTINCT gs.id) as set_count
@@ -71,9 +73,11 @@ class _OverviewPageState extends State<OverviewPage> {
         AND gs.hidden = 0
       GROUP BY workout_date
       ORDER BY workout_date DESC
-    """, variables: [
-      drift.Variable.withInt(startDate.millisecondsSinceEpoch ~/ 1000),
-    ]).get();
+    """,
+      variables: [
+        drift.Variable.withInt(startDate.millisecondsSinceEpoch ~/ 1000),
+      ],
+    ).get();
 
     final days = <DateTime, int>{};
     for (final row in daysQuery) {
@@ -84,13 +88,16 @@ class _OverviewPageState extends State<OverviewPage> {
     }
 
     // Calculate total workouts
-    final workoutsQuery = await db.customSelect("""
+    final workoutsQuery = await db.customSelect(
+      """
       SELECT COUNT(DISTINCT w.id) as workout_count
       FROM workouts w
       WHERE w.start_time >= ?
-    """, variables: [
-      drift.Variable.withInt(startDate.millisecondsSinceEpoch ~/ 1000),
-    ]).getSingle();
+    """,
+      variables: [
+        drift.Variable.withInt(startDate.millisecondsSinceEpoch ~/ 1000),
+      ],
+    ).getSingle();
 
     final workoutCount = workoutsQuery.read<int>('workout_count');
 
@@ -103,9 +110,8 @@ class _OverviewPageState extends State<OverviewPage> {
     // Find most trained muscle
     String? topMuscle;
     if (volumes.isNotEmpty) {
-      topMuscle = volumes.entries
-          .reduce((a, b) => a.value > b.value ? a : b)
-          .key;
+      topMuscle =
+          volumes.entries.reduce((a, b) => a.value > b.value ? a : b).key;
     }
 
     if (mounted) {
@@ -129,13 +135,16 @@ class _OverviewPageState extends State<OverviewPage> {
     DateTime checkDate = todayDate;
 
     while (true) {
-      final hasWorkout = await db.customSelect("""
+      final hasWorkout = await db.customSelect(
+        """
         SELECT COUNT(*) as count
         FROM workouts w
         WHERE DATE(w.start_time, 'unixepoch') = ?
-      """, variables: [
-        drift.Variable.withString(DateFormat('yyyy-MM-dd').format(checkDate)),
-      ]).getSingle();
+      """,
+        variables: [
+          drift.Variable.withString(DateFormat('yyyy-MM-dd').format(checkDate)),
+        ],
+      ).getSingle();
 
       if (hasWorkout.read<int>('count') > 0) {
         streak++;
@@ -229,7 +238,8 @@ class _OverviewPageState extends State<OverviewPage> {
                   const SizedBox(height: 24),
 
                   // Muscle volume chart
-                  if (muscleVolumes.isNotEmpty) _buildMuscleVolumeChart(colorScheme),
+                  if (muscleVolumes.isNotEmpty)
+                    _buildMuscleVolumeChart(colorScheme),
                 ],
               ),
             ),
@@ -455,9 +465,11 @@ class _OverviewPageState extends State<OverviewPage> {
                 ),
               ),
               ...List.generate(weeks, (week) {
-                final date = startDate.add(Duration(
-                  days: week * 7 + dayOfWeek,
-                ));
+                final date = startDate.add(
+                  Duration(
+                    days: week * 7 + dayOfWeek,
+                  ),
+                );
 
                 if (date.isAfter(now)) {
                   return const Padding(
@@ -466,7 +478,8 @@ class _OverviewPageState extends State<OverviewPage> {
                   );
                 }
 
-                final normalizedDate = DateTime(date.year, date.month, date.day);
+                final normalizedDate =
+                    DateTime(date.year, date.month, date.day);
                 final count = trainingDays[normalizedDate] ?? 0;
 
                 return Padding(
