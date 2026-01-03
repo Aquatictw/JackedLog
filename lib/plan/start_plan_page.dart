@@ -953,7 +953,7 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: TextField(
-                autofocus: true,
+                autofocus: false,
                 decoration: InputDecoration(
                   hintText: 'Search exercises...',
                   prefixIcon: const Icon(Icons.search, size: 20),
