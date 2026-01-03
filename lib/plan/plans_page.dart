@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart' as drift;
-import 'package:flexify/app_search.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/plan/edit_plan_page.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/plan/plans_list.dart';
 import 'package:flexify/plan/start_plan_page.dart';
+import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
@@ -71,8 +71,7 @@ class _PlansPageWidget extends StatefulWidget {
 
 class _PlansPageWidgetState extends State<_PlansPageWidget> {
   PlanState? state;
-  String search = '';
-  List<Plan>? filtered;
+  List<Plan>? plans;
 
   final Set<int> selected = {};
   final scroll = ScrollController();
@@ -82,7 +81,7 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
     super.initState();
     state = context.read<PlanState>();
     state?.addListener(_onPlansStateChanged);
-    _filterPlans();
+    _updatePlans();
   }
 
   @override
@@ -92,33 +91,13 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
   }
 
   void _onPlansStateChanged() {
-    _filterPlans();
+    _updatePlans();
   }
 
-  Future<void> _filterPlans() async {
+  void _updatePlans() {
     if (state == null) return;
-
-    final allPlans = state!.plans;
-    List<Plan> tempFiltered = [];
-
-    for (final plan in allPlans) {
-      bool matches = plan.days.toLowerCase().contains(search.toLowerCase());
-      if (!matches && search.isNotEmpty) {
-        final planExercises = await (db.planExercises.select()
-              ..where(
-                (tbl) =>
-                    tbl.planId.equals(plan.id) & tbl.exercise.like('%$search%'),
-              ))
-            .get();
-        matches = planExercises.isNotEmpty;
-      }
-      if (matches) {
-        tempFiltered.add(plan);
-      }
-    }
-
     setState(() {
-      filtered = tempFiltered;
+      plans = state!.plans;
     });
   }
 
@@ -234,117 +213,210 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
   @override
   Widget build(BuildContext context) {
     state = context.watch<PlanState>(); // Watch for changes to rebuild
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      body: Column(
-        children: [
-          AppSearch(
-            onAdd: () async {
-              const plan = PlansCompanion(
-                days: drift.Value(''),
-              );
-              await state!.setExercises(plan);
-              if (context.mounted) {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const EditPlanPage(
-                      plan: plan,
-                    ),
-                  ),
-                );
-              }
-            },
-            onShare: () async {
-              final plans = (state?.plans)!
-                  .where(
-                    (plan) => selected.contains(plan.id),
-                  )
-                  .toList();
-
-              final summaries = await Future.wait(
-                plans.map((plan) async {
-                  final days = plan.days.split(',').join(', ');
-                  await state?.setExercises(plan.toCompanion(false));
-                  final exercises = state?.exercises
-                      .where((pe) => pe.enabled.value)
-                      .map((pe) => "- ${pe.exercise.value}")
-                      .join('\n');
-
-                  return "$days:\n$exercises";
+      appBar: AppBar(
+        title: selected.isEmpty
+            ? const Text('Plans')
+            : Text('${selected.length} selected'),
+        leading: selected.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() {
+                  selected.clear();
                 }),
-              );
+              ),
+        actions: [
+          if (selected.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              tooltip: "Delete selected",
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext dialogContext) {
+                    return AlertDialog(
+                      title: const Text('Confirm Delete'),
+                      content: Text(
+                        'Are you sure you want to delete ${selected.length} plan${selected.length == 1 ? '' : 's'}? This action is not reversible.',
+                      ),
+                      actions: <Widget>[
+                        TextButton.icon(
+                          label: const Text('Cancel'),
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(dialogContext),
+                        ),
+                        TextButton.icon(
+                          label: const Text('Delete'),
+                          icon: const Icon(Icons.delete),
+                          onPressed: () async {
+                            Navigator.pop(dialogContext);
+                            final state = context.read<PlanState>();
+                            final copy = selected.toList();
+                            setState(() {
+                              selected.clear();
+                            });
+                            await db.plans.deleteWhere((tbl) => tbl.id.isIn(copy));
+                            state.updatePlans(null);
+                            await db.planExercises
+                                .deleteWhere((tbl) => tbl.planId.isIn(copy));
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          Badge.count(
+            count: selected.length,
+            isLabelVisible: selected.isNotEmpty,
+            backgroundColor: colorScheme.primary,
+            child: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: "Show menu",
+              onSelected: (value) async {
+                switch (value) {
+                  case 'add':
+                    const plan = PlansCompanion(
+                      days: drift.Value(''),
+                    );
+                    await state!.setExercises(plan);
+                    if (context.mounted) {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EditPlanPage(
+                            plan: plan,
+                          ),
+                        ),
+                      );
+                    }
+                    break;
+                  case 'select_all':
+                    setState(() {
+                      selected.addAll(plans?.map((plan) => plan.id) ?? []);
+                    });
+                    break;
+                  case 'edit':
+                    final plan = state!.plans
+                        .firstWhere(
+                          (element) => element.id == selected.first,
+                        )
+                        .toCompanion(false);
+                    await state!.setExercises(plan);
+                    if (context.mounted) {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditPlanPage(
+                            plan: plan,
+                          ),
+                        ),
+                      );
+                    }
+                    break;
+                  case 'share':
+                    final plansList = (state?.plans)!
+                        .where(
+                          (plan) => selected.contains(plan.id),
+                        )
+                        .toList();
 
-              await SharePlus.instance
-                  .share(ShareParams(text: summaries.join('\n\n')));
-              setState(() {
-                selected.clear();
-              });
-            },
-            onChange: (value) {
-              setState(() {
-                search = value;
-                _filterPlans(); // Re-filter when search changes
-              });
-            },
-            onClear: () => setState(() {
-              selected.clear();
-            }),
-            onDelete: () async {
-              final state = context.read<PlanState>();
-              final copy = selected.toList();
-              setState(() {
-                selected.clear();
-              });
-              await db.plans.deleteWhere((tbl) => tbl.id.isIn(copy));
-              state.updatePlans(null);
-              await db.planExercises
-                  .deleteWhere((tbl) => tbl.planId.isIn(copy));
-            },
-            onSelect: () => setState(() {
-              selected.addAll(filtered?.map((plan) => plan.id) ?? []);
-            }),
-            selected: selected,
-            onEdit: () async {
-              final plan = state!.plans
-                  .firstWhere(
-                    (element) => element.id == selected.first,
-                  )
-                  .toCompanion(false);
-              await state!.setExercises(plan);
-              if (context.mounted)
-                return Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditPlanPage(
-                      plan: plan,
+                    final summaries = await Future.wait(
+                      plansList.map((plan) async {
+                        final days = plan.days.split(',').join(', ');
+                        await state?.setExercises(plan.toCompanion(false));
+                        final exercises = state?.exercises
+                            .where((pe) => pe.enabled.value)
+                            .map((pe) => "- ${pe.exercise.value}")
+                            .join('\n');
+
+                        return "$days:\n$exercises";
+                      }),
+                    );
+
+                    await SharePlus.instance
+                        .share(ShareParams(text: summaries.join('\n\n')));
+                    setState(() {
+                      selected.clear();
+                    });
+                    break;
+                  case 'settings':
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsPage(),
+                      ),
+                    );
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                if (selected.isEmpty)
+                  const PopupMenuItem(
+                    value: 'add',
+                    child: ListTile(
+                      leading: Icon(Icons.add),
+                      title: Text('Add'),
                     ),
                   ),
-                );
-            },
-          ),
-          Expanded(
-            child: PlansList(
-              scroll: scroll,
-              plans: filtered,
-              navKey: widget.navKey,
-              selected: selected,
-              search: search,
-              footer: _buildFreeformButton(context),
-              onSelect: (id) {
-                if (selected.contains(id))
-                  setState(() {
-                    selected.remove(id);
-                  });
-                else
-                  setState(() {
-                    selected.add(id);
-                  });
-              },
+                const PopupMenuItem(
+                  value: 'select_all',
+                  child: ListTile(
+                    leading: Icon(Icons.done_all),
+                    title: Text('Select all'),
+                  ),
+                ),
+                if (selected.isNotEmpty) ...[
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                      leading: Icon(Icons.edit),
+                      title: Text('Edit'),
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'share',
+                    child: ListTile(
+                      leading: Icon(Icons.share),
+                      title: Text('Share'),
+                    ),
+                  ),
+                ],
+                if (selected.isEmpty)
+                  const PopupMenuItem(
+                    value: 'settings',
+                    child: ListTile(
+                      leading: Icon(Icons.settings),
+                      title: Text('Settings'),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
+      ),
+      body: PlansList(
+        scroll: scroll,
+        plans: plans,
+        navKey: widget.navKey,
+        selected: selected,
+        search: '',
+        footer: _buildFreeformButton(context),
+        onSelect: (id) {
+          if (selected.contains(id))
+            setState(() {
+              selected.remove(id);
+            });
+          else
+            setState(() {
+              selected.add(id);
+            });
+        },
       ),
     );
   }
