@@ -164,6 +164,105 @@ workoutId: Value(workoutId),
 await workoutState.stopWorkout();
 ```
 
+## Multi-Select Workout Deletion
+
+### Overview
+
+The History tab's Workouts view supports multi-selection for batch deletion of workout sessions, mirroring the UI/UX pattern used in the Plans tab.
+
+### How It Works
+
+1. **Entering Selection Mode**:
+   - Long press any workout card to begin selecting
+   - The card shows a checkbox instead of the date badge
+   - Card gets highlighted with primary color
+
+2. **Selecting Multiple Workouts**:
+   - When in selection mode, tap any workout to toggle its selection
+   - Selected cards show a checked checkbox and highlighted background
+   - Badge in AppSearch menu shows selection count
+
+3. **Batch Operations**:
+   - **Delete**: Removes selected workouts and all associated gym sets
+   - **Select All**: Selects all currently visible workouts (respects limit/filters)
+   - **Clear**: Exit selection mode
+
+4. **Exiting Selection Mode**:
+   - Tap the back arrow in the search bar
+   - Or complete a delete operation
+
+### Implementation Details
+
+**Files Modified:**
+- `lib/workouts/workouts_list.dart` - Added selection UI support
+- `lib/sets/history_page.dart` - Integrated AppSearch with selection handlers
+
+**Key Features:**
+- Cards change appearance when selected (highlighted background, border color)
+- Smooth animations for checkbox transitions (150ms ScaleTransition)
+- Checkboxes conditionally replace date badges during selection
+- More compact vertical spacing (reduced padding from 16 to 12, margins from 6 to 4)
+- Deletion is cascading: removes both workouts and their gym sets
+
+**Selection State Management:**
+```dart
+// In history_page.dart
+Set<int> selectedWorkouts = {};
+
+// Toggle selection
+onSelect: (id) {
+  if (selectedWorkouts.contains(id))
+    setState(() {
+      selectedWorkouts.remove(id);
+    });
+  else
+    setState(() {
+      selectedWorkouts.add(id);
+    });
+}
+
+// Delete operation
+onDelete: () async {
+  final copy = selectedWorkouts.toList();
+  setState(() {
+    selectedWorkouts.clear();
+  });
+  // Delete all gym sets associated with these workouts
+  await db.gymSets.deleteWhere((tbl) => tbl.workoutId.isIn(copy));
+  // Delete the workouts themselves
+  await db.workouts.deleteWhere((tbl) => tbl.id.isIn(copy));
+}
+```
+
+**Card Behavior:**
+```dart
+// In workouts_list.dart
+onTap: () {
+  if (selected.isNotEmpty) {
+    onSelect(workout.id);  // Toggle selection when in selection mode
+  } else {
+    Navigator.push(...);  // Navigate to details when not selecting
+  }
+}
+onLongPress: () {
+  onSelect(workout.id);  // Enter selection mode
+}
+```
+
+**Visual Styling:**
+- Selected: `primary.withValues(alpha: .08)` background, `primary.withValues(alpha: 0.3)` border
+- Unselected: Default card color, `outlineVariant.withValues(alpha: 0.1)` border
+- Checkbox size: 24x24 with AnimatedSwitcher for smooth transitions
+
+### UI/UX Patterns
+
+This implementation follows the same pattern as Plans tab (`lib/plan/plans_page.dart` and `lib/plan/plan_tile.dart`):
+- Uses `Set<int>` for tracking selected IDs
+- AppSearch component handles search, select all, clear, and delete
+- Long press initiates selection mode
+- Visual feedback with color changes and borders
+- Confirmation dialog before deletion
+
 ## Rest Timers & Exercise Data Loading
 
 ### How Rest Timers Work
