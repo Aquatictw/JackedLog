@@ -1695,7 +1695,13 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                 _updateSet(index);
                               }
                             },
-                            onToggle: () => _toggleSet(index),
+                            onToggle: () {
+                              // Unfocus to close keyboard when completing a set
+                              if (!sets[index].completed) {
+                                FocusScope.of(context).unfocus();
+                              }
+                              _toggleSet(index);
+                            },
                             onDelete: () => _deleteSet(index),
                           );
                         }),
@@ -1943,7 +1949,7 @@ class _AdHocSetRow extends StatelessWidget {
   }
 }
 
-class _SimpleWeightInput extends StatelessWidget {
+class _SimpleWeightInput extends StatefulWidget {
   final double value;
   final String unit;
   final bool completed;
@@ -1959,51 +1965,100 @@ class _SimpleWeightInput extends StatelessWidget {
   });
 
   @override
+  State<_SimpleWeightInput> createState() => _SimpleWeightInputState();
+}
+
+class _SimpleWeightInputState extends State<_SimpleWeightInput> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+  bool _hasFocus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: _formatWeight(widget.value));
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _hasFocus = _focusNode.hasFocus;
+    });
+  }
+
+  @override
+  void didUpdateWidget(_SimpleWeightInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value && !_hasFocus) {
+      _controller.text = _formatWeight(widget.value);
+    }
+  }
+
+  String _formatWeight(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return value.toStringAsFixed(1);
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return TextField(
-      controller: TextEditingController(
-        text: value == value.roundToDouble()
-            ? value.toInt().toString()
-            : value.toStringAsFixed(1),
-      ),
+      controller: _controller,
+      focusNode: _focusNode,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       textAlign: TextAlign.center,
       style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w600,
-        color: completed ? accentColor : colorScheme.onSurface,
+        color: widget.completed ? widget.accentColor : colorScheme.onSurface,
       ),
       decoration: InputDecoration(
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        suffixText: unit,
+        suffixText: widget.unit,
         suffixStyle: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: completed
-              ? BorderSide(color: accentColor.withValues(alpha: 0.3), width: 1)
+          borderSide: widget.completed
+              ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
               : BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: completed
-              ? BorderSide(color: accentColor.withValues(alpha: 0.3), width: 1)
+          borderSide: widget.completed
+              ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
               : BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: accentColor, width: 2),
+          borderSide: BorderSide(color: widget.accentColor, width: 2),
         ),
         filled: true,
-        fillColor: completed
-            ? accentColor.withValues(alpha: 0.1)
+        fillColor: widget.completed
+            ? widget.accentColor.withValues(alpha: 0.1)
             : colorScheme.surface,
       ),
       onChanged: (text) {
         final parsed = double.tryParse(text);
-        if (parsed != null) onChanged(parsed);
+        if (parsed != null) widget.onChanged(parsed);
+      },
+      onTap: () {
+        _controller.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _controller.text.length,
+        );
       },
     );
   }

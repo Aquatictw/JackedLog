@@ -763,7 +763,13 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                 _updateSet(index);
                               }
                             },
-                            onToggle: () => _toggleSet(index),
+                            onToggle: () {
+                              // Unfocus to close keyboard when completing a set
+                              if (!sets[index].completed) {
+                                FocusScope.of(context).unfocus();
+                              }
+                              _toggleSet(index);
+                            },
                             onDelete: () => _deleteSet(index),
                           );
                         }),
@@ -1057,12 +1063,21 @@ class _WeightInput extends StatefulWidget {
 
 class _WeightInputState extends State<_WeightInput> {
   late TextEditingController _controller;
+  late FocusNode _focusNode;
   bool _hasFocus = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: _formatWeight(widget.value));
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _hasFocus = _focusNode.hasFocus;
+    });
   }
 
   @override
@@ -1082,6 +1097,8 @@ class _WeightInputState extends State<_WeightInput> {
 
   @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -1090,60 +1107,58 @@ class _WeightInputState extends State<_WeightInput> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Focus(
-      onFocusChange: (hasFocus) => _hasFocus = hasFocus,
-      child: TextField(
-        controller: _controller,
-        enabled: widget.enabled,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: widget.completed ? widget.accentColor : colorScheme.onSurface,
-        ),
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-          suffixText: widget.unit,
-          suffixStyle: TextStyle(
-            fontSize: 12,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: widget.completed
-                ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
-                : BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: widget.completed
-                ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
-                : BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: widget.accentColor, width: 2),
-          ),
-          filled: true,
-          fillColor: widget.completed
-              ? widget.accentColor.withValues(alpha: 0.1)
-              : colorScheme.surface,
-        ),
-        onChanged: (value) {
-          final parsed = double.tryParse(value);
-          if (parsed != null) {
-            widget.onChanged(parsed);
-          }
-        },
-        onTap: () {
-          _controller.selection = TextSelection(
-            baseOffset: 0,
-            extentOffset: _controller.text.length,
-          );
-        },
+    return TextField(
+      controller: _controller,
+      focusNode: _focusNode,
+      enabled: widget.enabled,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: widget.completed ? widget.accentColor : colorScheme.onSurface,
       ),
+      decoration: InputDecoration(
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        suffixText: widget.unit,
+        suffixStyle: TextStyle(
+          fontSize: 12,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: widget.completed
+              ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+              : BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: widget.completed
+              ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+              : BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: widget.accentColor, width: 2),
+        ),
+        filled: true,
+        fillColor: widget.completed
+            ? widget.accentColor.withValues(alpha: 0.1)
+            : colorScheme.surface,
+      ),
+      onChanged: (value) {
+        final parsed = double.tryParse(value);
+        if (parsed != null) {
+          widget.onChanged(parsed);
+        }
+      },
+      onTap: () {
+        _controller.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _controller.text.length,
+        );
+      },
     );
   }
 }
