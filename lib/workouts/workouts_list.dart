@@ -211,7 +211,7 @@ class _WorkoutCard extends StatelessWidget {
     final hasNotes = workout.notes?.isNotEmpty == true;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       elevation: 1,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.2),
       color: isSelected
@@ -244,7 +244,7 @@ class _WorkoutCard extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -362,7 +362,7 @@ class _WorkoutCard extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               // Exercise preview
               Text(
                 moreCount > 0
@@ -376,9 +376,9 @@ class _WorkoutCard extends StatelessWidget {
               ),
               // Notes preview
               if (hasNotes) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHighest
                         .withValues(alpha: 0.5),
@@ -411,7 +411,7 @@ class _WorkoutCard extends StatelessWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               // Stats row
               Row(
                 children: [
@@ -420,14 +420,14 @@ class _WorkoutCard extends StatelessWidget {
                     Icons.fitness_center,
                     '${workoutWithSets.exerciseCount} exercises',
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   _buildChip(
                     context,
                     Icons.repeat,
                     '${workoutWithSets.setCount} sets',
                   ),
                   if (workoutWithSets.totalVolume > 0) ...[
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     _buildChip(
                       context,
                       Icons.show_chart,
