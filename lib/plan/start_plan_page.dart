@@ -1616,6 +1616,33 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     }
   }
 
+  Future<void> _reorderSets(int oldIndex, int newIndex) async {
+    HapticFeedback.mediumImpact();
+
+    // Adjust newIndex if moving down
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    setState(() {
+      final item = sets.removeAt(oldIndex);
+      sets.insert(newIndex, item);
+    });
+
+    // Update sequences in database for all sets
+    if (widget.workoutId != null) {
+      for (int i = 0; i < sets.length; i++) {
+        if (sets[i].savedSetId != null) {
+          await (db.gymSets.update()
+                ..where((tbl) => tbl.id.equals(sets[i].savedSetId!)))
+              .write(GymSetsCompanion(
+                sequence: Value(i),
+              ));
+        }
+      }
+    }
+  }
+
   Future<void> _updateSet(int index) async {
     final setData = sets[index];
     if (setData.savedSetId == null) return;
@@ -1809,43 +1836,57 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                     padding: const EdgeInsets.only(top: 8, bottom: 8),
                     child: Column(
                       children: [
-                        ...List.generate(sets.length, (index) {
-                          final warmupCount = sets.take(index).where((s) => s.isWarmup).length;
-                          final dropSetCount = sets.take(index).where((s) => s.isDropSet).length;
-                          final displayIndex = sets[index].isWarmup
-                              ? index + 1 - dropSetCount
-                              : sets[index].isDropSet
-                                ? index + 1 - warmupCount
-                                : index - warmupCount - dropSetCount + 1;
+                        ReorderableListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: sets.length,
+                          onReorder: _reorderSets,
+                          proxyDecorator: (child, index, animation) {
+                            return Material(
+                              elevation: 6,
+                              shadowColor: colorScheme.shadow,
+                              borderRadius: BorderRadius.circular(12),
+                              child: child,
+                            );
+                          },
+                          itemBuilder: (context, index) {
+                            final warmupCount = sets.take(index).where((s) => s.isWarmup).length;
+                            final dropSetCount = sets.take(index).where((s) => s.isDropSet).length;
+                            final displayIndex = sets[index].isWarmup
+                                ? index + 1 - dropSetCount
+                                : sets[index].isDropSet
+                                  ? index + 1 - warmupCount
+                                  : index - warmupCount - dropSetCount + 1;
 
-                          return _AdHocSetRow(
-                            key: ValueKey('adhoc_set_$index'),
-                            index: displayIndex,
-                            setData: sets[index],
-                            unit: unit,
-                            onWeightChanged: (value) {
-                              setState(() => sets[index].weight = value);
-                              if (sets[index].savedSetId != null) {
-                                _updateSet(index);
-                              }
-                            },
-                            onRepsChanged: (value) {
-                              setState(() => sets[index].reps = value);
-                              if (sets[index].savedSetId != null) {
-                                _updateSet(index);
-                              }
-                            },
-                            onToggle: () {
-                              // Unfocus to close keyboard when completing a set
-                              if (!sets[index].completed) {
-                                FocusScope.of(context).unfocus();
-                              }
-                              _toggleSet(index);
-                            },
-                            onDelete: () => _deleteSet(index),
-                            onTypeChanged: (isWarmup, isDropSet) => _changeSetType(index, isWarmup, isDropSet),
-                          );
-                        }),
+                            return _AdHocSetRow(
+                              key: ValueKey('adhoc_set_${sets[index].savedSetId ?? index}'),
+                              index: displayIndex,
+                              setData: sets[index],
+                              unit: unit,
+                              onWeightChanged: (value) {
+                                setState(() => sets[index].weight = value);
+                                if (sets[index].savedSetId != null) {
+                                  _updateSet(index);
+                                }
+                              },
+                              onRepsChanged: (value) {
+                                setState(() => sets[index].reps = value);
+                                if (sets[index].savedSetId != null) {
+                                  _updateSet(index);
+                                }
+                              },
+                              onToggle: () {
+                                // Unfocus to close keyboard when completing a set
+                                if (!sets[index].completed) {
+                                  FocusScope.of(context).unfocus();
+                                }
+                                _toggleSet(index);
+                              },
+                              onDelete: () => _deleteSet(index),
+                              onTypeChanged: (isWarmup, isDropSet) => _changeSetType(index, isWarmup, isDropSet),
+                            );
+                          },
+                        ),
                         // Add set buttons
                         Padding(
                           padding: const EdgeInsets.symmetric(

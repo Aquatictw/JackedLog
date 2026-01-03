@@ -575,6 +575,33 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     }
   }
 
+  Future<void> _reorderSets(int oldIndex, int newIndex) async {
+    HapticFeedback.mediumImpact();
+
+    // Adjust newIndex if moving down
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    setState(() {
+      final item = sets.removeAt(oldIndex);
+      sets.insert(newIndex, item);
+    });
+
+    // Update sequences in database for all sets
+    if (widget.workoutId != null) {
+      for (int i = 0; i < sets.length; i++) {
+        if (sets[i].savedSetId != null) {
+          await (db.gymSets.update()
+                ..where((tbl) => tbl.id.equals(sets[i].savedSetId!)))
+              .write(GymSetsCompanion(
+                sequence: Value(i),
+              ));
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -774,44 +801,58 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                     padding: const EdgeInsets.only(top: 8, bottom: 8),
                     child: Column(
                       children: [
-                        ...List.generate(sets.length, (index) {
-                          // Calculate display index (exclude warmups and drop sets from numbering)
-                          final warmupCount = sets.take(index).where((s) => s.isWarmup).length;
-                          final dropSetCount = sets.take(index).where((s) => s.isDropSet).length;
-                          final displayIndex = sets[index].isWarmup
-                              ? index + 1 - dropSetCount
-                              : sets[index].isDropSet
-                                ? index + 1 - warmupCount
-                                : index - warmupCount - dropSetCount + 1;
+                        ReorderableListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: sets.length,
+                          onReorder: _reorderSets,
+                          proxyDecorator: (child, index, animation) {
+                            return Material(
+                              elevation: 6,
+                              shadowColor: colorScheme.shadow,
+                              borderRadius: BorderRadius.circular(12),
+                              child: child,
+                            );
+                          },
+                          itemBuilder: (context, index) {
+                            // Calculate display index (exclude warmups and drop sets from numbering)
+                            final warmupCount = sets.take(index).where((s) => s.isWarmup).length;
+                            final dropSetCount = sets.take(index).where((s) => s.isDropSet).length;
+                            final displayIndex = sets[index].isWarmup
+                                ? index + 1 - dropSetCount
+                                : sets[index].isDropSet
+                                  ? index + 1 - warmupCount
+                                  : index - warmupCount - dropSetCount + 1;
 
-                          return _SetRow(
-                            key: ValueKey('set_${sets[index].isWarmup ? "w" : ""}$index'),
-                            index: displayIndex,
-                            setData: sets[index],
-                            unit: unit,
-                            onWeightChanged: (value) {
-                              setState(() => sets[index].weight = value);
-                              if (sets[index].savedSetId != null) {
-                                _updateSet(index);
-                              }
-                            },
-                            onRepsChanged: (value) {
-                              setState(() => sets[index].reps = value);
-                              if (sets[index].savedSetId != null) {
-                                _updateSet(index);
-                              }
-                            },
-                            onToggle: () {
-                              // Unfocus to close keyboard when completing a set
-                              if (!sets[index].completed) {
-                                FocusScope.of(context).unfocus();
-                              }
-                              _toggleSet(index);
-                            },
-                            onDelete: () => _deleteSet(index),
-                            onTypeChanged: (isWarmup, isDropSet) => _changeSetType(index, isWarmup, isDropSet),
-                          );
-                        }),
+                            return _SetRow(
+                              key: ValueKey('set_${sets[index].savedSetId ?? index}'),
+                              index: displayIndex,
+                              setData: sets[index],
+                              unit: unit,
+                              onWeightChanged: (value) {
+                                setState(() => sets[index].weight = value);
+                                if (sets[index].savedSetId != null) {
+                                  _updateSet(index);
+                                }
+                              },
+                              onRepsChanged: (value) {
+                                setState(() => sets[index].reps = value);
+                                if (sets[index].savedSetId != null) {
+                                  _updateSet(index);
+                                }
+                              },
+                              onToggle: () {
+                                // Unfocus to close keyboard when completing a set
+                                if (!sets[index].completed) {
+                                  FocusScope.of(context).unfocus();
+                                }
+                                _toggleSet(index);
+                              },
+                              onDelete: () => _deleteSet(index),
+                              onTypeChanged: (isWarmup, isDropSet) => _changeSetType(index, isWarmup, isDropSet),
+                            );
+                          },
+                        ),
                         // Add set buttons row
                         Padding(
                           padding: const EdgeInsets.symmetric(
