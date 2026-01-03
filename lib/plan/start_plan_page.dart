@@ -1695,7 +1695,13 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                 _updateSet(index);
                               }
                             },
-                            onToggle: () => _toggleSet(index),
+                            onToggle: () {
+                              // Unfocus to close keyboard when completing a set
+                              if (!sets[index].completed) {
+                                FocusScope.of(context).unfocus();
+                              }
+                              _toggleSet(index);
+                            },
                             onDelete: () => _deleteSet(index),
                           );
                         }),
