@@ -12,6 +12,7 @@ import 'package:flexify/records/record_notification.dart';
 import 'package:flexify/records/records_service.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
+import 'package:flexify/widgets/bodypart_tag.dart';
 import 'package:flexify/widgets/five_three_one_calculator.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
@@ -133,9 +134,11 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
     // Query all sets for this workout (excluding tombstones)
     final existingSets = await (db.gymSets.select()
-          ..where((s) =>
-              s.workoutId.equals(workoutId!) &
-              s.sequence.isBiggerOrEqualValue(0))
+          ..where(
+            (s) =>
+                s.workoutId.equals(workoutId!) &
+                s.sequence.isBiggerOrEqualValue(0),
+          )
           ..orderBy([
             (s) => OrderingTerm(expression: s.sequence, mode: OrderingMode.asc),
           ]))
@@ -150,7 +153,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
     // Identify removed exercises (those with tombstone markers)
     final tombstones = await (db.gymSets.select()
           ..where(
-              (s) => s.workoutId.equals(workoutId!) & s.sequence.equals(-1)))
+            (s) => s.workoutId.equals(workoutId!) & s.sequence.equals(-1),
+          ))
         .get();
     final removedExercises = tombstones.map((s) => s.name).toSet();
 
@@ -847,7 +851,7 @@ class _ExercisePickerModal extends StatefulWidget {
 
 class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   String _search = '';
-  List<({String name, String? brandName, int workoutCount})> _allExercises = [];
+  List<({String name, String? brandName, String? category, int workoutCount})> _allExercises = [];
   bool _loading = true;
 
   @override
@@ -869,6 +873,7 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
           ..addColumns([
             db.gymSets.name,
             db.gymSets.brandName,
+            db.gymSets.category,
             workoutCountCol,
           ])
           // Don't filter by hidden - we want to show all exercises including ones
@@ -885,6 +890,7 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
           (r) => (
             name: r.read(db.gymSets.name)!,
             brandName: r.read(db.gymSets.brandName),
+            category: r.read(db.gymSets.category),
             workoutCount: r.read(workoutCountCol) ?? 0,
           ),
         )
@@ -898,7 +904,7 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
     }
   }
 
-  List<({String name, String? brandName, int workoutCount})>
+  List<({String name, String? brandName, String? category, int workoutCount})>
       get _filteredExercises {
     if (_search.isEmpty) return _allExercises;
     return _allExercises
@@ -1016,7 +1022,9 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        vertical: 10, horizontal: 12),
+                      vertical: 10,
+                      horizontal: 12,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
@@ -1128,7 +1136,9 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                             return ListTile(
                               dense: true,
                               contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 2),
+                                horizontal: 16,
+                                vertical: 2,
+                              ),
                               leading: Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
@@ -1154,12 +1164,19 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
+                                  if (exercise.category != null &&
+                                      exercise.category!.isNotEmpty) ...[
+                                    const SizedBox(width: 5),
+                                    BodypartTag(bodypart: exercise.category, fontSize: 9),
+                                  ],
                                   if (exercise.brandName != null &&
                                       exercise.brandName!.isNotEmpty) ...[
                                     const SizedBox(width: 6),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 5, vertical: 2),
+                                        horizontal: 5,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: colorScheme.secondaryContainer
                                             .withValues(alpha: 0.7),
@@ -1240,6 +1257,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
   int _defaultReps = 8;
   String? _brandName;
   String? _exerciseType;
+  String? _category;
   int? _restMs; // Custom rest time for this exercise
 
   // Store previous sets by type for smarter set creation
@@ -1266,7 +1284,9 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
           )
           ..orderBy([
             OrderingTerm(
-                expression: db.gymSets.created, mode: OrderingMode.desc),
+              expression: db.gymSets.created,
+              mode: OrderingMode.desc,
+            ),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -1304,6 +1324,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     final defaultUnit = referenceSet?.unit ?? settings.strengthUnit;
     _brandName = referenceSet?.brandName;
     _exerciseType = referenceSet?.exerciseType;
+    _category = referenceSet?.category;
     _restMs = referenceSet?.restMs; // Load custom rest time
 
     // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
@@ -1379,6 +1400,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                   hidden: const Value(true), // Uncompleted
                   brandName: Value(_brandName),
                   exerciseType: Value(_exerciseType),
+                  category: Value(_category),
                 ),
               );
 
@@ -1515,8 +1537,10 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
             ListTile(
               leading:
                   Icon(Icons.remove_circle_outline, color: colorScheme.error),
-              title: Text('Remove Exercise',
-                  style: TextStyle(color: colorScheme.error)),
+              title: Text(
+                'Remove Exercise',
+                style: TextStyle(color: colorScheme.error),
+              ),
               subtitle: const Text('Remove this exercise from workout'),
               onTap: () {
                 Navigator.pop(context);
@@ -1681,6 +1705,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               dropSet: Value(setData.isDropSet),
               brandName: Value(_brandName),
               exerciseType: Value(_exerciseType),
+              category: Value(_category),
             ),
           );
 
@@ -1840,6 +1865,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               dropSet: Value(isDropSet),
               brandName: Value(_brandName),
               exerciseType: Value(_exerciseType),
+              category: Value(_category),
             ),
           );
 
@@ -2012,12 +2038,18 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                     ),
                               ),
                             ),
+                            if (_category != null && _category!.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              BodypartTag(bodypart: _category),
+                            ],
                             if (_brandName != null &&
                                 _brandName!.isNotEmpty) ...[
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.secondaryContainer
                                       .withValues(alpha: 0.7),
@@ -2172,7 +2204,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
                             return _AdHocSetRow(
                               key: ValueKey(
-                                  'adhoc_set_${sets[index].savedSetId ?? index}'),
+                                'adhoc_set_${sets[index].savedSetId ?? index}',
+                              ),
                               index: displayIndex,
                               setData: sets[index],
                               unit: unit,
@@ -2215,7 +2248,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                   borderRadius: BorderRadius.circular(12),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 10),
+                                      vertical: 10,
+                                    ),
                                     decoration: BoxDecoration(
                                       border: Border.all(
                                         color: colorScheme.tertiary
@@ -2255,7 +2289,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                   borderRadius: BorderRadius.circular(12),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 10),
+                                      vertical: 10,
+                                    ),
                                     decoration: BoxDecoration(
                                       border: Border.all(
                                         color: colorScheme.secondary
@@ -2295,7 +2330,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                   borderRadius: BorderRadius.circular(12),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 10),
+                                      vertical: 10,
+                                    ),
                                     decoration: BoxDecoration(
                                       border: Border.all(
                                         color: colorScheme.primary
@@ -2370,7 +2406,9 @@ class _AdHocSetRow extends StatelessWidget {
   });
 
   Future<void> _showSetTypeMenu(
-      BuildContext context, ColorScheme colorScheme) async {
+    BuildContext context,
+    ColorScheme colorScheme,
+  ) async {
     final result = await showModalBottomSheet<String>(
       context: context,
       useRootNavigator: true,
@@ -2520,7 +2558,9 @@ class _AdHocSetRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: onTypeChanged != null
                       ? Border.all(
-                          color: accentColor.withValues(alpha: 0.3), width: 1)
+                          color: accentColor.withValues(alpha: 0.3),
+                          width: 1,
+                        )
                       : null,
                 ),
                 child: Column(
@@ -2688,14 +2728,18 @@ class _SimpleWeightInputState extends State<_SimpleWeightInput> {
           borderRadius: BorderRadius.circular(8),
           borderSide: widget.completed
               ? BorderSide(
-                  color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+                  color: widget.accentColor.withValues(alpha: 0.3),
+                  width: 1,
+                )
               : BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: widget.completed
               ? BorderSide(
-                  color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+                  color: widget.accentColor.withValues(alpha: 0.3),
+                  width: 1,
+                )
               : BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
@@ -2785,7 +2829,9 @@ class _SimpleRepsInputState extends State<_SimpleRepsInput> {
         borderRadius: BorderRadius.circular(8),
         border: widget.completed
             ? Border.all(
-                color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+                color: widget.accentColor.withValues(alpha: 0.3),
+                width: 1,
+              )
             : null,
       ),
       child: Row(
