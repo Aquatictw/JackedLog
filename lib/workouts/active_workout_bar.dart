@@ -100,129 +100,164 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
     _elapsed = DateTime.now().difference(workout.startTime);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      margin: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 4),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            if (plan != null) {
-              final navKey = workoutState.plansNavigatorKey;
-              final tabController = workoutState.tabController;
-              final plansIndex = workoutState.plansTabIndex;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        if (plan != null) {
+          final navKey = workoutState.plansNavigatorKey;
+          final tabController = workoutState.tabController;
+          final plansIndex = workoutState.plansTabIndex;
 
-              // First, switch to Plans tab if not already there
-              if (tabController != null && plansIndex >= 0) {
-                if (tabController.index != plansIndex) {
-                  tabController.animateTo(plansIndex);
-                  // Wait for tab switch animation, then navigate
-                  Future.delayed(const Duration(milliseconds: 300), () {
-                    _navigateToWorkout(navKey, plan);
-                  });
-                  return;
-                }
-              }
-
-              // Already on Plans tab, navigate directly
-              _navigateToWorkout(navKey, plan);
+          // First, switch to Plans tab if not already there
+          if (tabController != null && plansIndex >= 0) {
+            if (tabController.index != plansIndex) {
+              tabController.animateTo(plansIndex);
+              // Wait for tab switch animation, then navigate
+              Future.delayed(const Duration(milliseconds: 300), () {
+                _navigateToWorkout(navKey, plan);
+              });
+              return;
             }
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.fitness_center,
-                    color: colorScheme.onPrimary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        workout.name ?? 'Workout',
-                        style: TextStyle(
-                          color: colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _formatDuration(_elapsed),
-                        style: TextStyle(
-                          color: colorScheme.onPrimaryContainer
-                              .withValues(alpha: 0.7),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('End Workout?'),
-                        content: const Text(
-                          'Are you sure you want to end this workout session?',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
-                          ),
-                          FilledButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('End'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirmed == true) {
-                      // Stop rest timer if running
-                      final timerState = context.read<TimerState>();
-                      await timerState.stopTimer();
-                      await workoutState.stopWorkout();
-                    }
-                  },
-                  icon: Icon(
-                    Icons.stop,
-                    color: colorScheme.error,
-                    size: 18,
-                  ),
-                  label: Text(
-                    'End',
-                    style: TextStyle(color: colorScheme.error),
-                  ),
-                ),
-              ],
+          }
+
+          // Already on Plans tab, navigate directly
+          _navigateToWorkout(navKey, plan);
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(left: 12, right: 12, top: 6, bottom: 2),
+        decoration: BoxDecoration(
+          color: colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  Icons.fitness_center,
+                  color: colorScheme.onPrimary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      workout.name ?? 'Workout',
+                      style: TextStyle(
+                        color: colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatDuration(_elapsed),
+                      style: TextStyle(
+                        color:
+                            colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Discard button
+              IconButton(
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    useRootNavigator: true,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Discard Workout?'),
+                      content: const Text(
+                        'All sets from this workout will be permanently deleted. This action cannot be undone.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colorScheme.error,
+                          ),
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Discard'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    final timerState = context.read<TimerState>();
+                    await timerState.stopTimer();
+                    await workoutState.discardWorkout();
+                  }
+                },
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: colorScheme.error,
+                  size: 18,
+                ),
+                tooltip: 'Discard workout',
+              ),
+              const SizedBox(width: 4),
+              // End button
+              IconButton(
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    useRootNavigator: true,
+                    builder: (context) => AlertDialog(
+                      title: const Text('End Workout?'),
+                      content: const Text(
+                        'Are you sure you want to end this workout session?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('End'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    final timerState = context.read<TimerState>();
+                    await timerState.stopTimer();
+                    await workoutState.stopWorkout();
+                  }
+                },
+                icon: Icon(
+                  Icons.stop,
+                  color: colorScheme.error,
+                  size: 18,
+                ),
+                tooltip: 'End workout',
+              ),
+            ],
           ),
         ),
       ),
