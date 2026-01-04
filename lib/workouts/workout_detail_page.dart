@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart' hide Column;
+import 'package:flexify/constants.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/database/gym_sets.dart';
 import 'package:flexify/graph/cardio_page.dart';
@@ -804,6 +805,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         MaterialPageRoute(
           builder: (context) => CardioPage(
             name: exerciseName,
+            unit: exerciseData.unit,
             data: data,
           ),
         ),
@@ -812,7 +814,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       final data = await getStrengthData(
         target: exerciseData.unit,
         name: exerciseName,
-        metric: Metric.bestWeight,
+        metric: StrengthMetric.bestWeight,
         period: Period.months3,
       );
       if (!parentContext.mounted) return;
@@ -821,6 +823,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         MaterialPageRoute(
           builder: (context) => StrengthPage(
             name: exerciseName,
+            unit: exerciseData.unit,
             data: data,
           ),
         ),
