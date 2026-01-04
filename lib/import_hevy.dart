@@ -21,13 +21,19 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'flat bench press (dumbbell)': ('Dumbbell bench press', 'Chest'),
   'incline bench press (barbell)': ('Incline bench press', 'Chest'),
   'incline bench press (dumbbell)': ('Incline dumbbell press', 'Chest'),
-  'incline bench press (smith machine)': ('Incline bench press (Smith machine)', 'Chest'),
+  'incline bench press (smith machine)': (
+    'Incline bench press (Smith machine)',
+    'Chest'
+  ),
   'incline chest press (machine)': ('Incline chest press (Machine)', 'Chest'),
   'decline bench press (barbell)': ('Decline bench press', 'Chest'),
   'decline bench press (dumbbell)': ('Decline dumbbell press', 'Chest'),
   'decline bench press (machine)': ('Decline bench press (Machine)', 'Chest'),
   'chest press (machine)': ('Chest press (Machine)', 'Chest'),
-  'iso-lateral chest press (machine)': ('Iso-lateral chest press (Machine)', 'Chest'),
+  'iso-lateral chest press (machine)': (
+    'Iso-lateral chest press (Machine)',
+    'Chest'
+  ),
   'chest fly': ('Chest fly', 'Chest'),
   'chest fly (dumbbell)': ('Dumbbell fly', 'Chest'),
   'chest fly (cable)': ('Cable fly', 'Chest'),
@@ -44,9 +50,9 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'push ups': ('Push-up', 'Chest'),
   'diamond push up': ('Diamond push-up', 'Chest'),
   'wide push up': ('Wide-grip push-up', 'Chest'),
-  'dips': ('Triceps dip', 'Chest'),
-  'dip': ('Triceps dip', 'Chest'),
-  'chest dip': ('Triceps dip', 'Chest'),
+  'dips': ('Dip', 'Chest'),
+  'dip': ('Dip', 'Chest'),
+  'chest dip': ('Chest dip', 'Chest'),
   'chest dip (assisted)': ('Assisted chest dip', 'Chest'),
   'seated dip machine': ('Seated dip (Machine)', 'Chest'),
 
@@ -58,16 +64,19 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'conventional deadlift': ('Deadlift', 'Back'),
   'sumo deadlift': ('Sumo deadlift', 'Back'),
   'romanian deadlift (barbell)': ('Romanian deadlift', 'Back'),
-  'romanian deadlift (dumbbell)': ('Romanian deadlift', 'Back'),
+  'romanian deadlift (dumbbell)': ('Dumbbell Romanian deadlift', 'Back'),
   'romanian deadlift': ('Romanian deadlift', 'Back'),
-  'stiff leg deadlift': ('Romanian deadlift', 'Back'),
+  'stiff leg deadlift': ('Stiff Leg deadlift', 'Back'),
   'bent over row (barbell)': ('Barbell bent-over row', 'Back'),
   'bent over row (dumbbell)': ('Dumbbell bent-over row', 'Back'),
   'barbell row': ('Barbell bent-over row', 'Back'),
-  'dumbbell row': ('Dumbbell bent-over row', 'Back'),
-  'one arm dumbbell row': ('Dumbbell bent-over row', 'Back'),
-  'single arm dumbbell row': ('Dumbbell bent-over row', 'Back'),
-  'chest supported incline row (dumbbell)': ('Chest supported incline row', 'Back'),
+  'dumbbell row': ('Dumbbell row', 'Back'),
+  'one arm dumbbell row': ('Dumbbell row', 'Back'),
+  'single arm dumbbell row': ('Dumbbell row', 'Back'),
+  'chest supported incline row (dumbbell)': (
+    'Chest supported incline row',
+    'Back'
+  ),
   'single arm cable row': ('Single arm cable row', 'Back'),
   't-bar row': ('T-bar row', 'Back'),
   't bar row': ('T-bar row', 'Back'),
@@ -90,10 +99,10 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'lat pulldown (machine)': ('Lat pull-down (Machine)', 'Back'),
   'lat pull down': ('Lat pull-down', 'Back'),
   'lat pulldown - close grip (cable)': ('Close grip lat pull-down', 'Back'),
-  'wide grip lat pulldown': ('Lat pull-down', 'Back'),
+  'wide grip lat pulldown': ('Wide grip lat pull-down', 'Back'),
   'close grip lat pulldown': ('Close grip lat pull-down', 'Back'),
   'single arm lat pulldown': ('Single arm lat pull-down', 'Back'),
-  'cable pulldown': ('Cable pull-down', 'Back'),
+  'cable pulldown': ('Straight arm lat pull-down', 'Back'),
   'straight arm lat pulldown (cable)': ('Straight arm lat pull-down', 'Back'),
   'rope straight arm pulldown': ('Rope straight arm pull-down', 'Back'),
   'seated cable row': ('Seated cable row', 'Back'),
@@ -110,7 +119,10 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'vertical traction': ('Vertical traction', 'Back'),
   'back extension': ('Back extension', 'Back'),
   'back extension (machine)': ('Back extension (Machine)', 'Back'),
-  'back extension (weighted hyperextension)': ('Weighted hyperextension', 'Back'),
+  'back extension (weighted hyperextension)': (
+    'Weighted hyperextension',
+    'Back'
+  ),
   'hyperextension': ('Hyperextension', 'Back'),
   'good morning': ('Good morning', 'Back'),
   'good morning (barbell)': ('Good morning', 'Back'),
@@ -121,7 +133,10 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'overhead press (barbell)': ('Barbell shoulder press', 'Shoulders'),
   'overhead press (dumbbell)': ('Dumbbell shoulder press', 'Shoulders'),
   'overhead press': ('Barbell shoulder press', 'Shoulders'),
-  'overhead press (smith machine)': ('Overhead press (Smith machine)', 'Shoulders'),
+  'overhead press (smith machine)': (
+    'Overhead press (Smith machine)',
+    'Shoulders'
+  ),
   'military press': ('Barbell shoulder press', 'Shoulders'),
   'shoulder press (barbell)': ('Barbell shoulder press', 'Shoulders'),
   'shoulder press (dumbbell)': ('Dumbbell shoulder press', 'Shoulders'),
@@ -139,7 +154,10 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'seated lateral raise (dumbbell)': ('Seated lateral raise', 'Shoulders'),
   'lying lateral raise': ('Lying lateral raise', 'Shoulders'),
   'cable lateral raise': ('Cable lateral raise', 'Shoulders'),
-  'single arm lateral raise (cable)': ('Single arm cable lateral raise', 'Shoulders'),
+  'single arm lateral raise (cable)': (
+    'Single arm cable lateral raise',
+    'Shoulders'
+  ),
   'egyptian cable lateral raise': ('Egyptian lateral raise', 'Shoulders'),
   'cuffed behind lateral raise': ('Behind back lateral raise', 'Shoulders'),
   'front raise': ('Front raise', 'Shoulders'),
@@ -157,12 +175,12 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'face pull (cable)': ('Face pull', 'Shoulders'),
   'shrug (barbell)': ('Barbell shrug', 'Shoulders'),
   'shrug (dumbbell)': ('Dumbbell shrug', 'Shoulders'),
-  'shrug': ('Shoulder shrug', 'Shoulders'),
+  'shrug': ('Barbell shrug', 'Shoulders'),
   'barbell shrug': ('Barbell shrug', 'Shoulders'),
   'dumbbell shrug': ('Dumbbell shrug', 'Shoulders'),
   'upright row': ('Upright row', 'Shoulders'),
   'upright row (barbell)': ('Upright row', 'Shoulders'),
-  'upright row (dumbbell)': ('Upright row', 'Shoulders'),
+  'upright row (dumbbell)': ('Dumbbell upright row', 'Shoulders'),
   'upright row (cable)': ('Cable upright row', 'Shoulders'),
 
   // Arms - Biceps
@@ -182,8 +200,8 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'cross body hammer curl': ('Cross body hammer curl', 'Arms'),
   'lying bicep hammer curls': ('Lying hammer curl', 'Arms'),
   'preacher curl': ('Preacher curl', 'Arms'),
-  'preacher curl (barbell)': ('Preacher curl', 'Arms'),
-  'preacher curl (dumbbell)': ('Dumbbell preacher curl', 'Arms'),
+  'preacher curl (barbell)': ('Barbell preacher curl', 'Arms'),
+  'preacher curl (dumbbell)': ('Preacher curl', 'Arms'),
   'preacher curl (machine)': ('Preacher curl (Machine)', 'Arms'),
   'hammer preacher curl': ('Hammer preacher curl', 'Arms'),
   'concentration curl': ('Concentration curl', 'Arms'),
@@ -196,7 +214,10 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'ez bar curl': ('EZ bar curl', 'Arms'),
   'ez bar biceps curl': ('EZ bar curl', 'Arms'),
   'reverse curl (barbell)': ('Reverse barbell curl', 'Arms'),
-  'behind the back bicep wrist curl (barbell)': ('Behind back wrist curl', 'Arms'),
+  'behind the back bicep wrist curl (barbell)': (
+    'Behind back wrist curl',
+    'Arms'
+  ),
   'seated palms up wrist curl': ('Wrist curl', 'Arms'),
 
   // Arms - Triceps
@@ -208,25 +229,34 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'triceps pushdown (cable)': ('Triceps pushdown', 'Arms'),
   'rope pushdown': ('Rope triceps pushdown', 'Arms'),
   'triceps rope pushdown': ('Rope triceps pushdown', 'Arms'),
-  'single arm triceps pushdown (cable)': ('Single arm triceps pushdown', 'Arms'),
+  'single arm triceps pushdown (cable)': (
+    'Single arm triceps pushdown',
+    'Arms'
+  ),
   'tricep extension': ('Triceps extension', 'Arms'),
   'triceps extension': ('Triceps extension', 'Arms'),
-  'tricep extension (straight bar)': ('Triceps extension (Straight bar)', 'Arms'),
+  'tricep extension (straight bar)': (
+    'Triceps extension (Straight bar)',
+    'Arms'
+  ),
   'triceps extension (barbell)': ('Barbell triceps extension', 'Arms'),
   'triceps extension (cable)': ('Cable triceps extension', 'Arms'),
   'triceps extension (dumbbell)': ('Dumbbell triceps extension', 'Arms'),
-  'overhead tricep extension': ('Overhead triceps extension', 'Arms'),
-  'overhead triceps extension': ('Overhead triceps extension', 'Arms'),
-  'single arm tricep extension (dumbbell)': ('Single arm triceps extension', 'Arms'),
+  'overhead tricep extension': ('Triceps extension', 'Arms'),
+  'overhead triceps extension': ('Triceps extension', 'Arms'),
+  'single arm tricep extension (dumbbell)': (
+    'Single arm triceps extension',
+    'Arms'
+  ),
   'seated triceps press': ('Seated triceps press', 'Arms'),
   'skull crusher': ('Skull crusher', 'Arms'),
   'skull crushers': ('Skull crusher', 'Arms'),
   'skullcrusher (barbell)': ('Skull crusher', 'Arms'),
   'skullcrusher (dumbbell)': ('Dumbbell skull crusher', 'Arms'),
   'lying tricep extension': ('Skull crusher', 'Arms'),
-  'tricep dip': ('Triceps dip', 'Arms'),
-  'triceps dip': ('Triceps dip', 'Arms'),
-  'triceps dip (assisted)': ('Assisted triceps dip', 'Arms'),
+  'tricep dip': ('Dip', 'Arms'),
+  'triceps dip': ('Dip', 'Arms'),
+  'triceps dip (assisted)': ('Assisted dip', 'Arms'),
   'tricep kickback': ('Tricep kickback', 'Arms'),
 
   // Legs
@@ -243,20 +273,20 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'pendulum squat (machine)': ('Pendulum squat (Machine)', 'Legs'),
   'leg press': ('Leg press', 'Legs'),
   'leg press (machine)': ('Leg press', 'Legs'),
-  'leg press horizontal (machine)': ('Leg press', 'Legs'),
+  'leg press horizontal (machine)': ('Horizontal leg press', 'Legs'),
   'leg extension': ('Leg extension', 'Legs'),
-  'leg extension (machine)': ('Leg extension (Machine)', 'Legs'),
-  'nautilus leg extension': ('Leg extension (Machine)', 'Legs'),
+  'leg extension (machine)': ('Leg extension', 'Legs'),
+  'nautilus leg extension': ('Nautilus leg extension', 'Legs'),
   'single leg extensions': ('Single leg extension', 'Legs'),
   'leg curl': ('Leg curl', 'Legs'),
-  'leg curl (machine)': ('Leg curl (Machine)', 'Legs'),
-  'lying leg curl': ('Leg curl', 'Legs'),
-  'lying leg curl (machine)': ('Lying leg curl (Machine)', 'Legs'),
-  'seated leg curl': ('Seated leg curl', 'Legs'),
-  'seated leg curl (machine)': ('Seated leg curl (Machine)', 'Legs'),
-  'iso leg curl': ('Iso leg curl (Machine)', 'Legs'),
+  'leg curl (machine)': ('Leg curl', 'Legs'),
+  'lying leg curl': ('Lying leg curl', 'Legs'),
+  'lying leg curl (machine)': ('Lying leg curl', 'Legs'),
+  'seated leg curl': ('Leg curl', 'Legs'),
+  'seated leg curl (machine)': ('Leg curl', 'Legs'),
+  'iso leg curl': ('Iso leg curl', 'Legs'),
   'lunge': ('Lunge', 'Legs'),
-  'lunge (barbell)': ('Lunge', 'Legs'),
+  'lunge (barbell)': ('Barbell lunge', 'Legs'),
   'lunge (dumbbell)': ('Lunge', 'Legs'),
   'walking lunge': ('Lunge', 'Legs'),
   'hip thrust': ('Hip thrust', 'Legs'),
@@ -270,7 +300,10 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'calf raise (standing)': ('Standing calf raise', 'Calves'),
   'calf raise (seated)': ('Seated calf raise', 'Calves'),
   'standing calf raise': ('Standing calf raise', 'Calves'),
-  'standing calf raise (smith)': ('Standing calf raise (Smith machine)', 'Calves'),
+  'standing calf raise (smith)': (
+    'Standing calf raise (Smith machine)',
+    'Calves'
+  ),
   'seated calf raise': ('Seated calf raise', 'Calves'),
   'calf raise': ('Standing calf raise', 'Calves'),
   'calf press': ('Calf press', 'Calves'),
@@ -346,8 +379,10 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   // Capitalize the first letter of each word
   final formattedName = hevyName
       .split(' ')
-      .map((word) =>
-          word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : '')
+      .map(
+        (word) =>
+            word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : '',
+      )
       .join(' ');
   return (formattedName, category);
 }
@@ -459,22 +494,42 @@ class ImportHevy extends StatelessWidget {
         throw Exception('CSV file must contain at least one data row');
       }
 
-      final headers = rows.first.map((e) => e.toString().toLowerCase()).toList();
+      final headers =
+          rows.first.map((e) => e.toString().toLowerCase()).toList();
 
       // Find column indices
-      final titleIdx = _findColumnIndex(headers, ['title', 'workout_name', 'workout']);
-      final startTimeIdx = _findColumnIndex(headers, ['start_time', 'date', 'start']);
+      final titleIdx =
+          _findColumnIndex(headers, ['title', 'workout_name', 'workout']);
+      final startTimeIdx =
+          _findColumnIndex(headers, ['start_time', 'date', 'start']);
       final endTimeIdx = _findColumnIndex(headers, ['end_time', 'end']);
-      final exerciseIdx = _findColumnIndex(headers, ['exercise_title', 'exercise_name', 'exercise']);
-      final weightIdx = _findColumnIndex(headers, ['weight_kg', 'weight_lbs', 'weight (kg)', 'weight (lbs)', 'weight']);
+      final exerciseIdx = _findColumnIndex(
+        headers,
+        ['exercise_title', 'exercise_name', 'exercise'],
+      );
+      final weightIdx = _findColumnIndex(
+        headers,
+        ['weight_kg', 'weight_lbs', 'weight (kg)', 'weight (lbs)', 'weight'],
+      );
       final repsIdx = _findColumnIndex(headers, ['reps', 'repetitions']);
-      final distanceIdx = _findColumnIndex(headers, ['distance_km', 'distance_m', 'distance (km)', 'distance']);
-      final durationIdx = _findColumnIndex(headers, ['duration_seconds', 'duration_s', 'duration']);
-      final notesIdx = _findColumnIndex(headers, ['exercise_notes', 'notes', 'note', 'set_notes']);
+      final distanceIdx = _findColumnIndex(
+        headers,
+        ['distance_km', 'distance_m', 'distance (km)', 'distance'],
+      );
+      final durationIdx = _findColumnIndex(
+        headers,
+        ['duration_seconds', 'duration_s', 'duration'],
+      );
+      final notesIdx = _findColumnIndex(
+        headers,
+        ['exercise_notes', 'notes', 'note', 'set_notes'],
+      );
       final setTypeIdx = _findColumnIndex(headers, ['set_type', 'type']);
 
       if (exerciseIdx == -1) {
-        throw Exception('Could not find exercise column in CSV. Expected columns: exercise_title, exercise_name, or exercise');
+        throw Exception(
+          'Could not find exercise column in CSV. Expected columns: exercise_title, exercise_name, or exercise',
+        );
       }
       if (weightIdx == -1 && repsIdx == -1) {
         throw Exception('Could not find weight or reps columns in CSV');
@@ -557,7 +612,8 @@ class ImportHevy extends StatelessWidget {
 
         double duration = 0;
         if (durationIdx != -1 && row.elementAtOrNull(durationIdx) != null) {
-          final durationSeconds = double.tryParse(row[durationIdx].toString()) ?? 0;
+          final durationSeconds =
+              double.tryParse(row[durationIdx].toString()) ?? 0;
           duration = durationSeconds / 60;
         }
 
@@ -575,7 +631,8 @@ class ImportHevy extends StatelessWidget {
           isDropSet = setType == 'dropset';
         }
 
-        final isCardio = distance > 0 || (duration > 0 && weight == 0 && reps == 0);
+        final isCardio =
+            distance > 0 || (duration > 0 && weight == 0 && reps == 0);
 
         // Add to workout's sets
         workoutSets.putIfAbsent(workoutKey, () => []);
@@ -660,7 +717,8 @@ class ImportHevy extends StatelessWidget {
 
       if (!ctx.mounted) return;
 
-      final message = 'Imported $totalSets sets in $totalWorkouts workouts from Hevy. '
+      final message =
+          'Imported $totalSets sets in $totalWorkouts workouts from Hevy. '
           '${newExercises.isNotEmpty ? 'Created ${newExercises.length} new exercises.' : ''}';
 
       toast(message);
@@ -700,12 +758,23 @@ class ImportHevy extends StatelessWidget {
 
     // Month name mapping
     const months = {
-      'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
-      'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+      'jan': 1,
+      'feb': 2,
+      'mar': 3,
+      'apr': 4,
+      'may': 5,
+      'jun': 6,
+      'jul': 7,
+      'aug': 8,
+      'sep': 9,
+      'oct': 10,
+      'nov': 11,
+      'dec': 12,
     };
 
     // Try Hevy format: "31 Dec 2025, 14:59"
-    final hevyPattern = RegExp(r'(\d{1,2})\s+(\w{3})\s+(\d{4}),?\s+(\d{1,2}):(\d{2})');
+    final hevyPattern =
+        RegExp(r'(\d{1,2})\s+(\w{3})\s+(\d{4}),?\s+(\d{1,2}):(\d{2})');
     final hevyMatch = hevyPattern.firstMatch(dateStr);
     if (hevyMatch != null) {
       try {
