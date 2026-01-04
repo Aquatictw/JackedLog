@@ -16,46 +16,72 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   // Chest exercises
   'bench press (barbell)': ('Barbell bench press', 'Chest'),
   'bench press (dumbbell)': ('Dumbbell bench press', 'Chest'),
+  'bench press (smith machine)': ('Bench press (Smith machine)', 'Chest'),
   'flat bench press (barbell)': ('Barbell bench press', 'Chest'),
   'flat bench press (dumbbell)': ('Dumbbell bench press', 'Chest'),
   'incline bench press (barbell)': ('Incline bench press', 'Chest'),
-  'incline bench press (dumbbell)': ('Incline bench press', 'Chest'),
+  'incline bench press (dumbbell)': ('Incline dumbbell press', 'Chest'),
+  'incline bench press (smith machine)': (
+    'Incline bench press (Smith machine)',
+    'Chest'
+  ),
   'incline chest press (machine)': ('Incline chest press (Machine)', 'Chest'),
   'decline bench press (barbell)': ('Decline bench press', 'Chest'),
-  'decline bench press (dumbbell)': ('Decline bench press', 'Chest'),
+  'decline bench press (dumbbell)': ('Decline dumbbell press', 'Chest'),
+  'decline bench press (machine)': ('Decline bench press (Machine)', 'Chest'),
   'chest press (machine)': ('Chest press (Machine)', 'Chest'),
+  'iso-lateral chest press (machine)': (
+    'Iso-lateral chest press (Machine)',
+    'Chest'
+  ),
   'chest fly': ('Chest fly', 'Chest'),
   'chest fly (dumbbell)': ('Dumbbell fly', 'Chest'),
   'chest fly (cable)': ('Cable fly', 'Chest'),
+  'chest fly (machine)': ('Chest fly (Machine)', 'Chest'),
   'cable fly': ('Cable fly', 'Chest'),
-  'pec deck': ('Chest fly', 'Chest'),
+  'cable fly crossovers': ('Cable fly crossover', 'Chest'),
+  'low cable fly crossovers': ('Low cable fly', 'Chest'),
+  'seated chest flys (cable)': ('Seated cable fly', 'Chest'),
+  'pec deck': ('Pec deck', 'Chest'),
+  'butterfly (pec deck)': ('Pec deck', 'Chest'),
   'push up': ('Push-up', 'Chest'),
   'push-up': ('Push-up', 'Chest'),
   'pushup': ('Push-up', 'Chest'),
   'push ups': ('Push-up', 'Chest'),
   'diamond push up': ('Diamond push-up', 'Chest'),
   'wide push up': ('Wide-grip push-up', 'Chest'),
-  'dips': ('Triceps dip', 'Chest'),
-  'dip': ('Triceps dip', 'Chest'),
-  'chest dip': ('Triceps dip', 'Chest'),
+  'dips': ('Dip', 'Chest'),
+  'dip': ('Dip', 'Chest'),
+  'chest dip': ('Chest dip', 'Chest'),
+  'chest dip (assisted)': ('Assisted chest dip', 'Chest'),
   'seated dip machine': ('Seated dip (Machine)', 'Chest'),
 
   // Back exercises
   'deadlift (barbell)': ('Deadlift', 'Back'),
   'deadlift': ('Deadlift', 'Back'),
+  'deadlift (smith machine)': ('Deadlift (Smith machine)', 'Back'),
+  'deadlift (trap bar)': ('Trap bar deadlift', 'Back'),
   'conventional deadlift': ('Deadlift', 'Back'),
+  'sumo deadlift': ('Sumo deadlift', 'Back'),
   'romanian deadlift (barbell)': ('Romanian deadlift', 'Back'),
-  'romanian deadlift (dumbbell)': ('Romanian deadlift', 'Back'),
+  'romanian deadlift (dumbbell)': ('Dumbbell Romanian deadlift', 'Back'),
   'romanian deadlift': ('Romanian deadlift', 'Back'),
-  'stiff leg deadlift': ('Romanian deadlift', 'Back'),
+  'stiff leg deadlift': ('Stiff Leg deadlift', 'Back'),
   'bent over row (barbell)': ('Barbell bent-over row', 'Back'),
   'bent over row (dumbbell)': ('Dumbbell bent-over row', 'Back'),
   'barbell row': ('Barbell bent-over row', 'Back'),
-  'dumbbell row': ('Dumbbell bent-over row', 'Back'),
-  'one arm dumbbell row': ('Dumbbell bent-over row', 'Back'),
-  'single arm dumbbell row': ('Dumbbell bent-over row', 'Back'),
+  'dumbbell row': ('Dumbbell row', 'Back'),
+  'one arm dumbbell row': ('Dumbbell row', 'Back'),
+  'single arm dumbbell row': ('Dumbbell row', 'Back'),
+  'chest supported incline row (dumbbell)': (
+    'Chest supported incline row',
+    'Back'
+  ),
+  'single arm cable row': ('Single arm cable row', 'Back'),
   't-bar row': ('T-bar row', 'Back'),
   't bar row': ('T-bar row', 'Back'),
+  'meadows rows (barbell)': ('Meadows row', 'Back'),
+  'seal row': ('Seal row', 'Back'),
   'pull up': ('Pull-up', 'Back'),
   'pull-up': ('Pull-up', 'Back'),
   'pullup': ('Pull-up', 'Back'),
@@ -70,29 +96,54 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'close grip pull up': ('Close-grip pull-up', 'Back'),
   'lat pulldown': ('Lat pull-down', 'Back'),
   'lat pulldown (cable)': ('Lat pull-down', 'Back'),
+  'lat pulldown (machine)': ('Lat pull-down (Machine)', 'Back'),
   'lat pull down': ('Lat pull-down', 'Back'),
-  'wide grip lat pulldown': ('Lat pull-down', 'Back'),
-  'close grip lat pulldown': ('Lat pull-down', 'Back'),
-  'cable pulldown': ('Cable pull-down', 'Back'),
+  'lat pulldown - close grip (cable)': ('Close grip lat pull-down', 'Back'),
+  'wide grip lat pulldown': ('Wide grip lat pull-down', 'Back'),
+  'close grip lat pulldown': ('Close grip lat pull-down', 'Back'),
+  'single arm lat pulldown': ('Single arm lat pull-down', 'Back'),
+  'cable pulldown': ('Straight arm lat pull-down', 'Back'),
+  'straight arm lat pulldown (cable)': ('Straight arm lat pull-down', 'Back'),
+  'rope straight arm pulldown': ('Rope straight arm pull-down', 'Back'),
   'seated cable row': ('Seated cable row', 'Back'),
+  'seated cable row - bar grip': ('Seated cable row', 'Back'),
+  'seated cable row - v grip (cable)': ('Seated cable row (V-grip)', 'Back'),
   'cable row': ('Seated cable row', 'Back'),
   'seated row': ('Seated cable row', 'Back'),
   'seated row (cable)': ('Seated cable row', 'Back'),
+  'seated row (machine)': ('Seated row (Machine)', 'Back'),
+  'iso-lateral row (machine)': ('Iso-lateral row (Machine)', 'Back'),
+  'iso-lateral high row (machine)': ('Iso-lateral high row (Machine)', 'Back'),
+  'iso-lateral low row': ('Iso-lateral low row (Machine)', 'Back'),
+  'rhomboid cable high pull': ('Rhomboid cable pull', 'Back'),
+  'vertical traction': ('Vertical traction', 'Back'),
   'back extension': ('Back extension', 'Back'),
+  'back extension (machine)': ('Back extension (Machine)', 'Back'),
+  'back extension (weighted hyperextension)': (
+    'Weighted hyperextension',
+    'Back'
+  ),
   'hyperextension': ('Hyperextension', 'Back'),
   'good morning': ('Good morning', 'Back'),
   'good morning (barbell)': ('Good morning', 'Back'),
   'reverse grip pulldown': ('Reverse grip pull-down', 'Back'),
+  'techno gym cable standing roa': ('Cable row', 'Back'),
 
   // Shoulder exercises
-  'overhead press (barbell)': ('Barbell shoulder press', 'Shoulders'),
+  'overhead press (barbell)': ('Overhead press', 'Shoulders'),
   'overhead press (dumbbell)': ('Dumbbell shoulder press', 'Shoulders'),
-  'overhead press': ('Barbell shoulder press', 'Shoulders'),
-  'military press': ('Barbell shoulder press', 'Shoulders'),
-  'shoulder press (barbell)': ('Barbell shoulder press', 'Shoulders'),
+  'overhead press': ('Overhead press', 'Shoulders'),
+  'overhead press (smith machine)': (
+    'Overhead press (Smith machine)',
+    'Shoulders'
+  ),
+  'military press': ('Overhead press', 'Shoulders'),
+  'shoulder press (barbell)': ('Overhead press', 'Shoulders'),
   'shoulder press (dumbbell)': ('Dumbbell shoulder press', 'Shoulders'),
   'shoulder press (machine)': ('Shoulder press (Machine)', 'Shoulders'),
-  'seated overhead press (barbell)': ('Barbell shoulder press', 'Shoulders'),
+  'shoulder press (machine plates)': ('Shoulder press (Machine)', 'Shoulders'),
+  'seated overhead press (barbell)': ('Seated overhead press', 'Shoulders'),
+  'seated shoulder press (machine)': ('Shoulder press (Machine)', 'Shoulders'),
   'arnold press': ('Arnold press', 'Shoulders'),
   'arnold press (dumbbell)': ('Arnold press', 'Shoulders'),
   'lateral raise': ('Dumbbell lateral raise', 'Shoulders'),
@@ -100,99 +151,174 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'lateral raise (cable)': ('Cable lateral raise', 'Shoulders'),
   'lateral raise (machine)': ('Lateral raise (Machine)', 'Shoulders'),
   'side lateral raise': ('Dumbbell lateral raise', 'Shoulders'),
+  'seated lateral raise (dumbbell)': ('Seated lateral raise', 'Shoulders'),
+  'lying lateral raise': ('Lying lateral raise', 'Shoulders'),
   'cable lateral raise': ('Cable lateral raise', 'Shoulders'),
+  'single arm lateral raise (cable)': (
+    'Single arm cable lateral raise',
+    'Shoulders'
+  ),
+  'egyptian cable lateral raise': ('Egyptian lateral raise', 'Shoulders'),
+  'cuffed behind lateral raise': ('Behind back lateral raise', 'Shoulders'),
   'front raise': ('Front raise', 'Shoulders'),
   'front raise (dumbbell)': ('Front raise', 'Shoulders'),
+  'front raise (barbell)': ('Barbell front raise', 'Shoulders'),
+  'front raise (cable)': ('Cable front raise', 'Shoulders'),
   'rear delt fly': ('Rear delt fly', 'Shoulders'),
-  'rear delt fly (dumbbell)': ('Rear delt fly', 'Shoulders'),
+  'rear delt fly (dumbbell)': ('Dumbbell rear delt fly', 'Shoulders'),
+  'rear delt reverse fly (dumbbell)': ('Dumbbell rear delt fly', 'Shoulders'),
+  'rear delt reverse fly (cable)': ('Cable rear delt fly', 'Shoulders'),
+  'rear delt reverse fly (machine)': ('Rear delt fly (Machine)', 'Shoulders'),
   'reverse fly': ('Rear delt fly', 'Shoulders'),
+  'reverse fly single arm (cable)': ('Single arm reverse fly', 'Shoulders'),
   'face pull': ('Face pull', 'Shoulders'),
   'face pull (cable)': ('Face pull', 'Shoulders'),
   'shrug (barbell)': ('Barbell shrug', 'Shoulders'),
   'shrug (dumbbell)': ('Dumbbell shrug', 'Shoulders'),
-  'shrug': ('Shoulder shrug', 'Shoulders'),
+  'shrug': ('Barbell shrug', 'Shoulders'),
   'barbell shrug': ('Barbell shrug', 'Shoulders'),
   'dumbbell shrug': ('Dumbbell shrug', 'Shoulders'),
   'upright row': ('Upright row', 'Shoulders'),
   'upright row (barbell)': ('Upright row', 'Shoulders'),
-  'upright row (dumbbell)': ('Upright row', 'Shoulders'),
+  'upright row (dumbbell)': ('Dumbbell upright row', 'Shoulders'),
+  'upright row (cable)': ('Cable upright row', 'Shoulders'),
 
   // Arms - Biceps
   'bicep curl (barbell)': ('Barbell biceps curl', 'Arms'),
   'bicep curl (dumbbell)': ('Dumbbell biceps curl', 'Arms'),
+  'bicep curl (cable)': ('Cable biceps curl', 'Arms'),
+  'bicep curl (machine)': ('Biceps curl (Machine)', 'Arms'),
   'biceps curl (barbell)': ('Barbell biceps curl', 'Arms'),
   'biceps curl (dumbbell)': ('Dumbbell biceps curl', 'Arms'),
   'barbell curl': ('Barbell biceps curl', 'Arms'),
   'dumbbell curl': ('Dumbbell biceps curl', 'Arms'),
+  '21s bicep curl': ('21s biceps curl', 'Arms'),
+  'single arm bicep curl (cable)': ('Single arm cable curl', 'Arms'),
   'hammer curl': ('Hammer curl', 'Arms'),
   'hammer curl (dumbbell)': ('Hammer curl', 'Arms'),
+  'hammer curl (cable)': ('Cable hammer curl', 'Arms'),
+  'cross body hammer curl': ('Cross body hammer curl', 'Arms'),
+  'lying bicep hammer curls': ('Lying hammer curl', 'Arms'),
   'preacher curl': ('Preacher curl', 'Arms'),
-  'preacher curl (barbell)': ('Preacher curl', 'Arms'),
+  'preacher curl (barbell)': ('Barbell preacher curl', 'Arms'),
   'preacher curl (dumbbell)': ('Preacher curl', 'Arms'),
+  'preacher curl (machine)': ('Preacher curl (Machine)', 'Arms'),
+  'hammer preacher curl': ('Hammer preacher curl', 'Arms'),
   'concentration curl': ('Concentration curl', 'Arms'),
   'incline curl': ('Incline curl', 'Arms'),
   'incline dumbbell curl': ('Incline curl', 'Arms'),
+  'seated incline curl (dumbbell)': ('Seated incline curl', 'Arms'),
   'cable curl': ('Cable curl', 'Arms'),
+  'rope cable curl': ('Rope cable curl', 'Arms'),
+  'bicep cable high pull': ('Cable high pull', 'Arms'),
   'ez bar curl': ('EZ bar curl', 'Arms'),
+  'ez bar biceps curl': ('EZ bar curl', 'Arms'),
+  'reverse curl (barbell)': ('Reverse barbell curl', 'Arms'),
+  'behind the back bicep wrist curl (barbell)': (
+    'Behind back wrist curl',
+    'Arms'
+  ),
+  'seated palms up wrist curl': ('Wrist curl', 'Arms'),
 
   // Arms - Triceps
+  'bench press - close grip (barbell)': ('Close grip bench press', 'Arms'),
+  'close grip bench press': ('Close grip bench press', 'Arms'),
   'tricep pushdown': ('Triceps pushdown', 'Arms'),
   'triceps pushdown': ('Triceps pushdown', 'Arms'),
   'tricep pushdown (cable)': ('Triceps pushdown', 'Arms'),
   'triceps pushdown (cable)': ('Triceps pushdown', 'Arms'),
+  'rope pushdown': ('Rope triceps pushdown', 'Arms'),
+  'triceps rope pushdown': ('Rope triceps pushdown', 'Arms'),
+  'single arm triceps pushdown (cable)': (
+    'Single arm triceps pushdown',
+    'Arms'
+  ),
   'tricep extension': ('Triceps extension', 'Arms'),
   'triceps extension': ('Triceps extension', 'Arms'),
-  'overhead tricep extension': ('Overhead triceps extension', 'Arms'),
-  'overhead triceps extension': ('Overhead triceps extension', 'Arms'),
+  'tricep extension (straight bar)': (
+    'Triceps extension (Straight bar)',
+    'Arms'
+  ),
+  'triceps extension (barbell)': ('Barbell triceps extension', 'Arms'),
+  'triceps extension (cable)': ('Cable triceps extension', 'Arms'),
+  'triceps extension (dumbbell)': ('Dumbbell triceps extension', 'Arms'),
+  'overhead tricep extension': ('Triceps extension', 'Arms'),
+  'overhead triceps extension': ('Triceps extension', 'Arms'),
+  'single arm tricep extension (dumbbell)': (
+    'Single arm triceps extension',
+    'Arms'
+  ),
+  'seated triceps press': ('Seated triceps press', 'Arms'),
   'skull crusher': ('Skull crusher', 'Arms'),
   'skull crushers': ('Skull crusher', 'Arms'),
+  'skullcrusher (barbell)': ('Skull crusher', 'Arms'),
+  'skullcrusher (dumbbell)': ('Dumbbell skull crusher', 'Arms'),
   'lying tricep extension': ('Skull crusher', 'Arms'),
-  'tricep dip': ('Triceps dip', 'Arms'),
-  'triceps dip': ('Triceps dip', 'Arms'),
-  'close grip bench press': ('Close grip bench press', 'Arms'),
-  'rope pushdown': ('Triceps pushdown', 'Arms'),
+  'tricep dip': ('Dip', 'Arms'),
+  'triceps dip': ('Dip', 'Arms'),
+  'triceps dip (assisted)': ('Assisted dip', 'Arms'),
   'tricep kickback': ('Tricep kickback', 'Arms'),
 
   // Legs
   'squat (barbell)': ('Squat', 'Legs'),
   'squat': ('Squat', 'Legs'),
+  'squat (machine)': ('Squat (Machine)', 'Legs'),
   'back squat': ('Squat', 'Legs'),
   'front squat': ('Front squat', 'Legs'),
   'front squat (barbell)': ('Front squat', 'Legs'),
   'goblet squat': ('Goblet squat', 'Legs'),
+  'hack squat': ('Hack squat', 'Legs'),
+  'hack squat (machine)': ('Hack squat (Machine)', 'Legs'),
+  'bulgarian split squat': ('Bulgarian split squat', 'Legs'),
+  'pendulum squat (machine)': ('Pendulum squat (Machine)', 'Legs'),
   'leg press': ('Leg press', 'Legs'),
   'leg press (machine)': ('Leg press', 'Legs'),
-  'leg press horizontal (machine)': ('Leg press', 'Legs'),
+  'leg press horizontal (machine)': ('Horizontal leg press', 'Legs'),
   'leg extension': ('Leg extension', 'Legs'),
   'leg extension (machine)': ('Leg extension', 'Legs'),
+  'nautilus leg extension': ('Nautilus leg extension', 'Legs'),
+  'single leg extensions': ('Single leg extension', 'Legs'),
   'leg curl': ('Leg curl', 'Legs'),
   'leg curl (machine)': ('Leg curl', 'Legs'),
-  'lying leg curl': ('Leg curl', 'Legs'),
+  'lying leg curl': ('Lying leg curl', 'Legs'),
+  'lying leg curl (machine)': ('Lying leg curl', 'Legs'),
   'seated leg curl': ('Leg curl', 'Legs'),
   'seated leg curl (machine)': ('Leg curl', 'Legs'),
+  'iso leg curl': ('Iso leg curl', 'Legs'),
   'lunge': ('Lunge', 'Legs'),
-  'lunge (barbell)': ('Lunge', 'Legs'),
+  'lunge (barbell)': ('Barbell lunge', 'Legs'),
   'lunge (dumbbell)': ('Lunge', 'Legs'),
   'walking lunge': ('Lunge', 'Legs'),
-  'bulgarian split squat': ('Bulgarian split squat', 'Legs'),
   'hip thrust': ('Hip thrust', 'Legs'),
   'hip thrust (barbell)': ('Hip thrust', 'Legs'),
+  'hip thrust (machine)': ('Hip thrust (Machine)', 'Legs'),
+  'hip abduction (machine)': ('Hip abduction (Machine)', 'Legs'),
+  'hip adduction (machine)': ('Hip adduction (Machine)', 'Legs'),
   'glute bridge': ('Glute bridge', 'Legs'),
-  'hack squat': ('Hack squat', 'Legs'),
-  'hack squat (machine)': ('Hack squat', 'Legs'),
-  'sumo deadlift': ('Sumo deadlift', 'Legs'),
 
   // Calves
   'calf raise (standing)': ('Standing calf raise', 'Calves'),
   'calf raise (seated)': ('Seated calf raise', 'Calves'),
   'standing calf raise': ('Standing calf raise', 'Calves'),
+  'standing calf raise (smith)': (
+    'Standing calf raise (Smith machine)',
+    'Calves'
+  ),
   'seated calf raise': ('Seated calf raise', 'Calves'),
   'calf raise': ('Standing calf raise', 'Calves'),
   'calf press': ('Calf press', 'Calves'),
+  'calf press (machine)': ('Calf press (Machine)', 'Calves'),
+  'calf extension (machine)': ('Calf extension (Machine)', 'Calves'),
+  'leg press calf raise': ('Leg press calf raise', 'Calves'),
 
   // Core
   'crunch': ('Crunch', 'Core'),
   'crunches': ('Crunch', 'Core'),
+  'crunch (machine)': ('Crunch (Machine)', 'Core'),
+  'cable crunch': ('Cable crunch', 'Core'),
+  'decline crunch': ('Decline crunch', 'Core'),
+  'decline crunch (weighted)': ('Weighted decline crunch', 'Core'),
+  'bicycle crunch': ('Bicycle crunch', 'Core'),
   'sit up': ('Sit-up', 'Core'),
   'sit-up': ('Sit-up', 'Core'),
   'situp': ('Sit-up', 'Core'),
@@ -202,27 +328,33 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'leg raise': ('Leg raise', 'Core'),
   'leg raises': ('Leg raise', 'Core'),
   'hanging leg raise': ('Hanging leg raise', 'Core'),
-  'hanging knee raise': ('Hanging leg raise', 'Core'),
-  'cable crunch': ('Cable crunch', 'Core'),
+  'hanging knee raise': ('Hanging knee raise', 'Core'),
+  'knee raise parallel bars': ('Parallel bar knee raise', 'Core'),
+  'leg raise parallel bars': ('Parallel bar leg raise', 'Core'),
   'ab wheel': ('Ab wheel', 'Core'),
   'ab wheel rollout': ('Ab wheel', 'Core'),
   'wood chop': ('Wood chop', 'Core'),
   'mountain climber': ('Mountain climber', 'Core'),
-  'bicycle crunch': ('Bicycle crunch', 'Core'),
   'dead bug': ('Dead bug', 'Core'),
 
   // Cardio
   'running': ('Running', 'Cardio'),
+  'running (time)': ('Running', 'Cardio'),
   'treadmill': ('Treadmill', 'Cardio'),
   'cycling': ('Cycling', 'Cardio'),
   'bike': ('Cycling', 'Cardio'),
   'stationary bike': ('Stationary bike', 'Cardio'),
+  'spinning': ('Spinning', 'Cardio'),
   'elliptical': ('Elliptical', 'Cardio'),
   'rowing': ('Rowing', 'Cardio'),
   'rowing machine': ('Rowing', 'Cardio'),
   'stair climber': ('Stair climber', 'Cardio'),
   'jump rope': ('Jump rope', 'Cardio'),
   'walking': ('Walking', 'Cardio'),
+  'sled push': ('Sled push', 'Cardio'),
+
+  // Other
+  'dead hang': ('Dead hang', 'Other'),
 };
 
 /// Parse Hevy exercise name to Flexify format
@@ -247,8 +379,10 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   // Capitalize the first letter of each word
   final formattedName = hevyName
       .split(' ')
-      .map((word) =>
-          word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : '')
+      .map(
+        (word) =>
+            word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : '',
+      )
       .join(' ');
   return (formattedName, category);
 }
@@ -360,22 +494,42 @@ class ImportHevy extends StatelessWidget {
         throw Exception('CSV file must contain at least one data row');
       }
 
-      final headers = rows.first.map((e) => e.toString().toLowerCase()).toList();
+      final headers =
+          rows.first.map((e) => e.toString().toLowerCase()).toList();
 
       // Find column indices
-      final titleIdx = _findColumnIndex(headers, ['title', 'workout_name', 'workout']);
-      final startTimeIdx = _findColumnIndex(headers, ['start_time', 'date', 'start']);
+      final titleIdx =
+          _findColumnIndex(headers, ['title', 'workout_name', 'workout']);
+      final startTimeIdx =
+          _findColumnIndex(headers, ['start_time', 'date', 'start']);
       final endTimeIdx = _findColumnIndex(headers, ['end_time', 'end']);
-      final exerciseIdx = _findColumnIndex(headers, ['exercise_title', 'exercise_name', 'exercise']);
-      final weightIdx = _findColumnIndex(headers, ['weight_kg', 'weight_lbs', 'weight (kg)', 'weight (lbs)', 'weight']);
+      final exerciseIdx = _findColumnIndex(
+        headers,
+        ['exercise_title', 'exercise_name', 'exercise'],
+      );
+      final weightIdx = _findColumnIndex(
+        headers,
+        ['weight_kg', 'weight_lbs', 'weight (kg)', 'weight (lbs)', 'weight'],
+      );
       final repsIdx = _findColumnIndex(headers, ['reps', 'repetitions']);
-      final distanceIdx = _findColumnIndex(headers, ['distance_km', 'distance_m', 'distance (km)', 'distance']);
-      final durationIdx = _findColumnIndex(headers, ['duration_seconds', 'duration_s', 'duration']);
-      final notesIdx = _findColumnIndex(headers, ['exercise_notes', 'notes', 'note', 'set_notes']);
+      final distanceIdx = _findColumnIndex(
+        headers,
+        ['distance_km', 'distance_m', 'distance (km)', 'distance'],
+      );
+      final durationIdx = _findColumnIndex(
+        headers,
+        ['duration_seconds', 'duration_s', 'duration'],
+      );
+      final notesIdx = _findColumnIndex(
+        headers,
+        ['exercise_notes', 'notes', 'note', 'set_notes'],
+      );
       final setTypeIdx = _findColumnIndex(headers, ['set_type', 'type']);
 
       if (exerciseIdx == -1) {
-        throw Exception('Could not find exercise column in CSV. Expected columns: exercise_title, exercise_name, or exercise');
+        throw Exception(
+          'Could not find exercise column in CSV. Expected columns: exercise_title, exercise_name, or exercise',
+        );
       }
       if (weightIdx == -1 && repsIdx == -1) {
         throw Exception('Could not find weight or reps columns in CSV');
@@ -458,7 +612,8 @@ class ImportHevy extends StatelessWidget {
 
         double duration = 0;
         if (durationIdx != -1 && row.elementAtOrNull(durationIdx) != null) {
-          final durationSeconds = double.tryParse(row[durationIdx].toString()) ?? 0;
+          final durationSeconds =
+              double.tryParse(row[durationIdx].toString()) ?? 0;
           duration = durationSeconds / 60;
         }
 
@@ -469,12 +624,15 @@ class ImportHevy extends StatelessWidget {
         }
 
         bool isWarmup = false;
+        bool isDropSet = false;
         if (setTypeIdx != -1 && row.elementAtOrNull(setTypeIdx) != null) {
           final setType = row[setTypeIdx].toString().toLowerCase();
           isWarmup = setType == 'warmup';
+          isDropSet = setType == 'dropset';
         }
 
-        final isCardio = distance > 0 || (duration > 0 && weight == 0 && reps == 0);
+        final isCardio =
+            distance > 0 || (duration > 0 && weight == 0 && reps == 0);
 
         // Add to workout's sets
         workoutSets.putIfAbsent(workoutKey, () => []);
@@ -490,6 +648,7 @@ class ImportHevy extends StatelessWidget {
           'duration': duration,
           'notes': notes,
           'warmup': isWarmup,
+          'dropSet': isDropSet,
         });
       }
 
@@ -548,6 +707,7 @@ class ImportHevy extends StatelessWidget {
                   hidden: const Value(false),
                   workoutId: Value(workoutId),
                   warmup: Value(setData['warmup'] as bool),
+                  dropSet: Value(setData['dropSet'] as bool),
                   sequence: Value(sequence++),
                 ),
               );
@@ -557,7 +717,8 @@ class ImportHevy extends StatelessWidget {
 
       if (!ctx.mounted) return;
 
-      final message = 'Imported $totalSets sets in $totalWorkouts workouts from Hevy. '
+      final message =
+          'Imported $totalSets sets in $totalWorkouts workouts from Hevy. '
           '${newExercises.isNotEmpty ? 'Created ${newExercises.length} new exercises.' : ''}';
 
       toast(message);
@@ -597,12 +758,23 @@ class ImportHevy extends StatelessWidget {
 
     // Month name mapping
     const months = {
-      'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
-      'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+      'jan': 1,
+      'feb': 2,
+      'mar': 3,
+      'apr': 4,
+      'may': 5,
+      'jun': 6,
+      'jul': 7,
+      'aug': 8,
+      'sep': 9,
+      'oct': 10,
+      'nov': 11,
+      'dec': 12,
     };
 
     // Try Hevy format: "31 Dec 2025, 14:59"
-    final hevyPattern = RegExp(r'(\d{1,2})\s+(\w{3})\s+(\d{4}),?\s+(\d{1,2}):(\d{2})');
+    final hevyPattern =
+        RegExp(r'(\d{1,2})\s+(\w{3})\s+(\d{4}),?\s+(\d{1,2}):(\d{2})');
     final hevyMatch = hevyPattern.firstMatch(dateStr);
     if (hevyMatch != null) {
       try {
