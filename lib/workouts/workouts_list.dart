@@ -100,6 +100,12 @@ class _WorkoutsListState extends State<WorkoutsList> {
     return query.watch().asyncMap((workouts) async {
       final List<WorkoutWithSets> result = [];
 
+      // Get all workout IDs first
+      final workoutIds = workouts.map((w) => w.id).toList();
+
+      // Batch query for record counts
+      final recordCounts = await getBatchWorkoutRecordCounts(workoutIds);
+
       for (final workout in workouts) {
         // Filter by search term if provided
         if (widget.search.isNotEmpty) {
@@ -137,9 +143,8 @@ class _WorkoutsListState extends State<WorkoutsList> {
           (sum, s) => sum + (s.weight * s.reps),
         );
 
-        // Get record count for this workout
-        final records = await getWorkoutRecords(workout.id);
-        final recordCount = records.length;
+        // Get record count from batch query
+        final recordCount = recordCounts[workout.id] ?? 0;
 
         result.add(
           WorkoutWithSets(

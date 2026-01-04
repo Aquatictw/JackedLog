@@ -301,3 +301,78 @@ Future<int> getWorkoutRecordCount(int workoutId) async {
   final records = await getWorkoutRecords(workoutId);
   return records.values.fold<int>(0, (sum, recordSet) => sum + recordSet.length);
 }
+
+/// Get record counts for multiple workouts efficiently
+/// Returns a map of workoutId -> number of record-breaking sets
+Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
+  if (workoutIds.isEmpty) return {};
+
+  final recordCounts = <int, int>{};
+
+  // Get all sets from these workouts
+  final workoutSets = await (db.gymSets.select()
+        ..where((s) =>
+            s.workoutId.isIn(workoutIds) &
+            s.hidden.equals(false) &
+            s.cardio.equals(false)))
+      .get();
+
+  // Group by exercise name to get all-time bests
+  final exerciseNames = workoutSets.map((s) => s.name).toSet();
+  final exerciseBests = <String, ({double weight, double rm1, double volume})>{};
+
+  // Get all-time bests for each exercise in a single batch
+  for (final exerciseName in exerciseNames) {
+    final bestQuery = '''
+      SELECT
+        MAX(weight) as best_weight,
+        MAX(CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END) as best_1rm,
+        MAX(weight * reps) as best_volume
+      FROM gym_sets
+      WHERE name = ?
+        AND hidden = 0
+        AND cardio = 0
+    ''';
+
+    final result = await db.customSelect(
+      bestQuery,
+      variables: [Variable.withString(exerciseName)],
+    ).getSingleOrNull();
+
+    if (result != null) {
+      exerciseBests[exerciseName] = (
+        weight: result.read<double?>('best_weight') ?? 0.0,
+        rm1: result.read<double?>('best_1rm') ?? 0.0,
+        volume: result.read<double?>('best_volume') ?? 0.0,
+      );
+    }
+  }
+
+  // Check each set against the bests
+  for (final set in workoutSets) {
+    final bests = exerciseBests[set.name];
+    if (bests == null) continue;
+
+    var hasRecord = false;
+
+    if (set.weight >= bests.weight && bests.weight > 0) {
+      hasRecord = true;
+    }
+
+    final set1RM = calculate1RM(set.weight, set.reps);
+    if (set1RM >= bests.rm1 && bests.rm1 > 0) {
+      hasRecord = true;
+    }
+
+    final setVolume = calculateVolume(set.weight, set.reps);
+    if (setVolume >= bests.volume && bests.volume > 0) {
+      hasRecord = true;
+    }
+
+    if (hasRecord && set.workoutId != null) {
+      recordCounts[set.workoutId!] = (recordCounts[set.workoutId!] ?? 0) + 1;
+    }
+  }
+
+  return recordCounts;
+}

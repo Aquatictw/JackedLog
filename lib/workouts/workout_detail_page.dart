@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' hide Column;
 import 'package:flexify/database/database.dart';
+import 'package:flexify/database/gym_sets.dart';
+import 'package:flexify/graph/cardio_page.dart';
+import 'package:flexify/graph/strength_page.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/records/record_notification.dart';
 import 'package:flexify/records/records_service.dart';
@@ -510,52 +513,55 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       })(),
     ];
 
-    return ExpansionTile(
-      leading: leading,
-      title: Row(
-        children: [
-          Flexible(
-            child: Text(exerciseName),
-          ),
-          if (brandName != null && brandName.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                brandName,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+    return InkWell(
+      onLongPress: () => _showExerciseMenu(context, exerciseName),
+      child: ExpansionTile(
+        leading: leading,
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(exerciseName),
+            ),
+            if (brandName != null && brandName.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  brandName,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
                 ),
               ),
-            ),
+            ],
+            if (groupHasRecords) ...[
+              const SizedBox(width: 8),
+              Icon(
+                Icons.emoji_events,
+                size: 18,
+                color: Colors.amber.shade600,
+              ),
+            ],
           ],
-          if (groupHasRecords) ...[
-            const SizedBox(width: 8),
-            Icon(
-              Icons.emoji_events,
-              size: 18,
-              color: Colors.amber.shade600,
-            ),
-          ],
-        ],
+        ),
+        subtitle: exerciseNotes?.isNotEmpty == true
+            ? Row(
+                children: [
+                  Icon(Icons.note, size: 14, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 4),
+                  Text('${sets.length} sets'),
+                ],
+              )
+            : Text('${sets.length} sets'),
+        initiallyExpanded: true,
+        children: children,
       ),
-      subtitle: exerciseNotes?.isNotEmpty == true
-          ? Row(
-              children: [
-                Icon(Icons.note, size: 14, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 4),
-                Text('${sets.length} sets'),
-              ],
-            )
-          : Text('${sets.length} sets'),
-      initiallyExpanded: true,
-      children: children,
     );
   }
 
@@ -643,20 +649,70 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                     ),
         ),
       ),
-      title: Row(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              subtitle,
-              style: (isWarmup || isDropSet)
-                  ? TextStyle(color: colorScheme.onSurfaceVariant)
-                  : hasRecords
-                      ? TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)
-                      : null,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  subtitle,
+                  style: (isWarmup || isDropSet)
+                      ? TextStyle(color: colorScheme.onSurfaceVariant)
+                      : hasRecords
+                          ? TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)
+                          : null,
+                ),
+              ),
+              if (hasRecords)
+                RecordCrown(records: records, size: 18),
+            ],
           ),
           if (hasRecords)
-            RecordCrown(records: records, size: 18),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: records.map((recordType) {
+                  String label;
+                  Color color;
+                  switch (recordType) {
+                    case RecordType.best1RM:
+                      label = '1RM Record';
+                      color = Colors.orange;
+                      break;
+                    case RecordType.bestVolume:
+                      label = 'Volume Record';
+                      color = Colors.deepOrange;
+                      break;
+                    case RecordType.bestWeight:
+                      label = 'Weight Record';
+                      color = Colors.amber;
+                      break;
+                  }
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: color.withValues(alpha: 0.4),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: color.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
         ],
       ),
       onTap: () {
@@ -668,6 +724,108 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         );
       },
     );
+  }
+
+  Future<void> _showExerciseMenu(BuildContext parentContext, String exerciseName) async {
+    final colorScheme = Theme.of(parentContext).colorScheme;
+
+    await showModalBottomSheet(
+      context: parentContext,
+      useRootNavigator: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.fitness_center, color: colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      exerciseName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: Icon(Icons.show_chart, color: colorScheme.primary),
+              title: const Text('View Graph'),
+              subtitle: const Text('Jump to graph page for this exercise'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _jumpToGraph(parentContext, exerciseName);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _jumpToGraph(BuildContext parentContext, String exerciseName) async {
+    // Get the exercise data to determine if it's cardio or strength
+    final exerciseData = await (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(exerciseName))
+          ..orderBy([
+            (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+
+    if (exerciseData == null || !parentContext.mounted) return;
+
+    if (exerciseData.cardio) {
+      final data = await getCardioData(
+        target: exerciseData.unit,
+        name: exerciseName,
+        metric: CardioMetric.pace,
+        period: Period.months3,
+      );
+      if (!parentContext.mounted) return;
+      Navigator.push(
+        parentContext,
+        MaterialPageRoute(
+          builder: (context) => CardioPage(
+            name: exerciseName,
+            data: data,
+          ),
+        ),
+      );
+    } else {
+      final data = await getStrengthData(
+        target: exerciseData.unit,
+        name: exerciseName,
+        metric: Metric.bestWeight,
+        period: Period.months3,
+      );
+      if (!parentContext.mounted) return;
+      Navigator.push(
+        parentContext,
+        MaterialPageRoute(
+          builder: (context) => StrengthPage(
+            name: exerciseName,
+            data: data,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _deleteWorkout(BuildContext context) async {
