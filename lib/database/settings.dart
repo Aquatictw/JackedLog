@@ -45,4 +45,10 @@ class Settings extends Table {
   IntColumn get warmupSets => integer().nullable()();
   BoolColumn get scrollableTabs =>
       boolean().withDefault(const Constant(true))();
+  // 5/3/1 Training Max values (in user's preferred unit)
+  RealColumn get fivethreeoneSquatTm => real().nullable()();
+  RealColumn get fivethreeoneBenchTm => real().nullable()();
+  RealColumn get fivethreeoneDeadliftTm => real().nullable()();
+  RealColumn get fivethreeonePressTm => real().nullable()();
+  IntColumn get fivethreeoneWeek => integer().withDefault(const Constant(1))();
 }

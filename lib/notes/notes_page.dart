@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/notes/note_editor_page.dart';
+import 'package:flexify/widgets/training_max_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -217,9 +218,23 @@ class _NotesPageState extends State<NotesPage> {
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
-            itemCount: notes.length,
+            itemCount: notes.length + 1, // +1 for TM card
             itemBuilder: (context, index) {
-              final note = notes[index];
+              // First card is the Training Max editor
+              if (index == 0) {
+                return _TrainingMaxCard(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const TrainingMaxEditor(),
+                    );
+                  },
+                );
+              }
+
+              // Adjust index for notes (subtract 1 because TM card is at 0)
+              final noteIndex = index - 1;
+              final note = notes[noteIndex];
               final color = _getColorFromValue(note.color);
 
               return _NoteCard(
@@ -231,6 +246,63 @@ class _NotesPageState extends State<NotesPage> {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class _TrainingMaxCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _TrainingMaxCard({
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      elevation: 2,
+      color: colorScheme.primaryContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.fitness_center,
+                size: 48,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '5/3/1 Training Max',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Edit your training max values',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
