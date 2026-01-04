@@ -304,15 +304,21 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.plan.title?.isNotEmpty == true) title = widget.plan.title!;
     final colorScheme = Theme.of(context).colorScheme;
+    final workoutState = context.watch<WorkoutState>();
+    final displayTitle = workoutState.activeWorkout?.name ?? title;
 
     return StreamBuilder(
       stream: stream,
       builder: (context, snapshot) {
         if (snapshot.data == null) {
           return Scaffold(
-            appBar: AppBar(title: Text(title)),
+            appBar: AppBar(
+              title: Text(
+                displayTitle,
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
             body: const Center(child: CircularProgressIndicator()),
           );
         }
@@ -332,8 +338,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
                       children: [
                         Flexible(
                           child: Text(
-                            title,
+                            displayTitle,
                             overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 18),
                           ),
                         ),
                         const SizedBox(width: 6),
