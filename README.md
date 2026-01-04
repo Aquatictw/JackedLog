@@ -112,7 +112,9 @@ flutter build macos
 - **Provider Pattern**: Global state management for active workouts and timers—seamless UX
 - **Migration System**: Schema versioning (currently v50) with step-by-step migrations—data integrity guaranteed
 
-![Screenshot](assets/sakuna.jpg)
+<p align="center">
+  <img src="assets/sakuna.jpg" alt="Screenshot" width="500">
+</p>
 
 ## License
 
