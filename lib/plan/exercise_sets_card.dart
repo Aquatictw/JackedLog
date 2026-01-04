@@ -227,6 +227,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                   hidden: const Value(true), // Uncompleted
                   brandName: Value(_brandName),
                   exerciseType: Value(_exerciseType),
+                  category: Value(_category),
                 ),
               );
 
@@ -522,6 +523,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               dropSet: Value(setData.isDropSet),
               brandName: Value(_brandName),
               exerciseType: Value(_exerciseType),
+              category: Value(_category),
             ),
           );
 
@@ -694,6 +696,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               dropSet: Value(isDropSet),
               brandName: Value(_brandName),
               exerciseType: Value(_exerciseType),
+              category: Value(_category),
             ),
           );
 
