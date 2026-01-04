@@ -12,7 +12,7 @@ import 'package:flexify/records/record_notification.dart';
 import 'package:flexify/records/records_service.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
-import 'package:flexify/widgets/bodypart_tag.dart';
+import 'package:flexify/widgets/five_three_one_calculator.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -38,7 +38,8 @@ class _ExerciseItem {
       : isPlanExercise = true,
         planExerciseId = exercise.id,
         adHocName = null,
-        uniqueId = 'plan_${exercise.id}_${DateTime.now().microsecondsSinceEpoch}';
+        uniqueId =
+            'plan_${exercise.id}_${DateTime.now().microsecondsSinceEpoch}';
 
   _ExerciseItem.adHoc(String name)
       : isPlanExercise = false,
@@ -59,7 +60,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
   bool _isReorderMode = false; // Reorder mode toggle
   List<_ExerciseItem> _exerciseOrder = []; // Unified ordered list
   Map<int, PlanExercise> _planExercisesMap = {}; // Cache of plan exercises
-  Map<String, String> _exerciseNotes = {}; // Track notes per exercise (key -> notes)
+  final Map<String, String> _exerciseNotes =
+      {}; // Track notes per exercise (key -> notes)
   late WorkoutState _workoutState; // Store reference for dispose()
 
   @override
@@ -131,9 +133,11 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
     // Query all sets for this workout (excluding tombstones)
     final existingSets = await (db.gymSets.select()
-          ..where((s) => s.workoutId.equals(workoutId!) & s.sequence.isBiggerOrEqualValue(0))
+          ..where((s) =>
+              s.workoutId.equals(workoutId!) &
+              s.sequence.isBiggerOrEqualValue(0))
           ..orderBy([
-            (s) => OrderingTerm(expression: s.sequence, mode: OrderingMode.asc)
+            (s) => OrderingTerm(expression: s.sequence, mode: OrderingMode.asc),
           ]))
         .get();
 
@@ -145,7 +149,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
     // Identify removed exercises (those with tombstone markers)
     final tombstones = await (db.gymSets.select()
-          ..where((s) => s.workoutId.equals(workoutId!) & s.sequence.equals(-1)))
+          ..where(
+              (s) => s.workoutId.equals(workoutId!) & s.sequence.equals(-1)))
         .get();
     final removedExercises = tombstones.map((s) => s.name).toSet();
 
@@ -164,7 +169,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
         } else {
           // Resuming - rebuild exercise list from sets (preserves order)
           // Group sets by exercise, but detect sequence gaps to identify separate instances
-          final List<({String name, int minSeq, int maxSeq})> exerciseGroups = [];
+          final List<({String name, int minSeq, int maxSeq})> exerciseGroups =
+              [];
 
           String? currentExercise;
           int? currentMinSeq;
@@ -176,11 +182,13 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 (currentMaxSeq != null && set.sequence > currentMaxSeq + 1)) {
               // New exercise or gap detected - save previous group
               if (currentExercise != null) {
-                exerciseGroups.add((
-                  name: currentExercise,
-                  minSeq: currentMinSeq!,
-                  maxSeq: currentMaxSeq!,
-                ));
+                exerciseGroups.add(
+                  (
+                    name: currentExercise,
+                    minSeq: currentMinSeq!,
+                    maxSeq: currentMaxSeq!,
+                  ),
+                );
               }
               // Start new group
               currentExercise = set.name;
@@ -194,16 +202,20 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
           // Add last group
           if (currentExercise != null) {
-            exerciseGroups.add((
-              name: currentExercise,
-              minSeq: currentMinSeq!,
-              maxSeq: currentMaxSeq!,
-            ));
+            exerciseGroups.add(
+              (
+                name: currentExercise,
+                minSeq: currentMinSeq!,
+                maxSeq: currentMaxSeq!,
+              ),
+            );
           }
 
           // Create exercise items for each group
           for (final group in exerciseGroups) {
-            final planExercise = planExercises.where((e) => e.exercise == group.name).firstOrNull;
+            final planExercise = planExercises
+                .where((e) => e.exercise == group.name)
+                .firstOrNull;
             if (planExercise != null) {
               _exerciseOrder.add(_ExerciseItem.plan(planExercise));
             } else {
@@ -211,12 +223,15 @@ class _StartPlanPageState extends State<StartPlanPage> {
             }
 
             // Restore notes from first set of this group
-            final setWithNotes = existingSets.where(
-              (s) => s.name == group.name &&
-                     s.sequence >= group.minSeq &&
-                     s.sequence <= group.maxSeq &&
-                     s.notes?.isNotEmpty == true,
-            ).firstOrNull;
+            final setWithNotes = existingSets
+                .where(
+                  (s) =>
+                      s.name == group.name &&
+                      s.sequence >= group.minSeq &&
+                      s.sequence <= group.maxSeq &&
+                      s.notes?.isNotEmpty == true,
+                )
+                .firstOrNull;
 
             if (setWithNotes != null) {
               _exerciseNotes[_exerciseOrder.last.key] = setWithNotes.notes!;
@@ -305,21 +320,15 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.plan.title?.isNotEmpty == true) title = widget.plan.title!;
     final colorScheme = Theme.of(context).colorScheme;
-    final workoutState = context.watch<WorkoutState>();
-    final displayTitle = workoutState.activeWorkout?.name ?? title;
 
     return StreamBuilder(
       stream: stream,
       builder: (context, snapshot) {
         if (snapshot.data == null) {
           return Scaffold(
-            appBar: AppBar(
-              title: Text(
-                displayTitle,
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
+            appBar: AppBar(title: Text(title)),
             body: const Center(child: CircularProgressIndicator()),
           );
         }
@@ -339,9 +348,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
                       children: [
                         Flexible(
                           child: Text(
-                            displayTitle,
+                            title,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 18),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -473,9 +481,11 @@ class _StartPlanPageState extends State<StartPlanPage> {
               final exerciseName = exercise.exercise;
               // Delete all sets for this exercise from the database
               await (db.gymSets.delete()
-                    ..where((s) =>
-                      s.workoutId.equals(workoutId!) &
-                      s.name.equals(exerciseName)))
+                    ..where(
+                      (s) =>
+                          s.workoutId.equals(workoutId!) &
+                          s.name.equals(exerciseName),
+                    ))
                   .go();
 
               // Insert a tombstone marker to remember this exercise was removed
@@ -529,9 +539,11 @@ class _StartPlanPageState extends State<StartPlanPage> {
               final exerciseName = item.adHocName!;
               // Delete all sets for this exercise from the database
               await (db.gymSets.delete()
-                    ..where((s) =>
-                      s.workoutId.equals(workoutId!) &
-                      s.name.equals(exerciseName)))
+                    ..where(
+                      (s) =>
+                          s.workoutId.equals(workoutId!) &
+                          s.name.equals(exerciseName),
+                    ))
                   .go();
 
               // Insert a tombstone marker to remember this exercise was removed
@@ -835,7 +847,7 @@ class _ExercisePickerModal extends StatefulWidget {
 
 class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   String _search = '';
-  List<({String name, String? brandName, String? category, int workoutCount})> _allExercises = [];
+  List<({String name, String? brandName, int workoutCount})> _allExercises = [];
   bool _loading = true;
 
   @override
@@ -845,7 +857,7 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   }
 
   Future<void> _loadExercises() async {
-    // Get distinct exercise names with brand names, categories, and workout counts from gym_sets
+    // Get distinct exercise names with brand names and workout counts from gym_sets
     // Sort by workout count descending (most frequently used exercises first)
     // Note: COUNT(DISTINCT workout_id) excludes NULL values, so exercises that
     // have never been used in any workout will have a count of 0
@@ -857,7 +869,6 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
           ..addColumns([
             db.gymSets.name,
             db.gymSets.brandName,
-            db.gymSets.category,
             workoutCountCol,
           ])
           // Don't filter by hidden - we want to show all exercises including ones
@@ -869,12 +880,15 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
           ..groupBy([db.gymSets.name]))
         .get();
 
-    final exerciseList = results.map((r) => (
-      name: r.read(db.gymSets.name)!,
-      brandName: r.read(db.gymSets.brandName),
-      category: r.read(db.gymSets.category),
-      workoutCount: r.read(workoutCountCol) ?? 0,
-    )).toList();
+    final exerciseList = results
+        .map(
+          (r) => (
+            name: r.read(db.gymSets.name)!,
+            brandName: r.read(db.gymSets.brandName),
+            workoutCount: r.read(workoutCountCol) ?? 0,
+          ),
+        )
+        .toList();
 
     if (mounted) {
       setState(() {
@@ -884,7 +898,8 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
     }
   }
 
-  List<({String name, String? brandName, String? category, int workoutCount})> get _filteredExercises {
+  List<({String name, String? brandName, int workoutCount})>
+      get _filteredExercises {
     if (_search.isEmpty) return _allExercises;
     return _allExercises
         .where((e) => e.name.toLowerCase().contains(_search.toLowerCase()))
@@ -984,7 +999,8 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                   ),
                   filled: true,
                   fillColor: colorScheme.surfaceContainerHighest,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   isDense: true,
                 ),
                 onChanged: (value) => setState(() => _search = value),
@@ -999,7 +1015,8 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                   onTap: () => _showCreateExerciseDialog(context),
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
@@ -1055,7 +1072,8 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                        color:
+                            colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -1109,11 +1127,13 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
 
                             return ListTile(
                               dense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 2),
                               leading: Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.primaryContainer.withValues(alpha: 0.7),
+                                  color: colorScheme.primaryContainer
+                                      .withValues(alpha: 0.7),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
@@ -1134,16 +1154,15 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  if (exercise.category != null && exercise.category!.isNotEmpty) ...[
-                                    const SizedBox(width: 5),
-                                    BodypartTag(bodypart: exercise.category, fontSize: 9),
-                                  ],
-                                  if (exercise.brandName != null && exercise.brandName!.isNotEmpty) ...[
-                                    const SizedBox(width: 5),
+                                  if (exercise.brandName != null &&
+                                      exercise.brandName!.isNotEmpty) ...[
+                                    const SizedBox(width: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                        color: colorScheme.secondaryContainer
+                                            .withValues(alpha: 0.7),
                                         borderRadius: BorderRadius.circular(5),
                                       ),
                                       child: Text(
@@ -1151,7 +1170,8 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                                         style: TextStyle(
                                           fontSize: 9,
                                           fontWeight: FontWeight.w600,
-                                          color: colorScheme.onSecondaryContainer,
+                                          color:
+                                              colorScheme.onSecondaryContainer,
                                         ),
                                       ),
                                     ),
@@ -1163,7 +1183,8 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                                       '${exercise.workoutCount} workout${exercise.workoutCount == 1 ? '' : 's'}',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                        color: colorScheme.onSurfaceVariant
+                                            .withValues(alpha: 0.7),
                                       ),
                                     )
                                   : null,
@@ -1172,7 +1193,8 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                                 color: colorScheme.primary,
                                 size: 20,
                               ),
-                              onTap: () => Navigator.pop(context, exercise.name),
+                              onTap: () =>
+                                  Navigator.pop(context, exercise.name),
                             );
                           },
                         ),
@@ -1218,7 +1240,6 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
   int _defaultReps = 8;
   String? _brandName;
   String? _exerciseType;
-  String? _category;
   int? _restMs; // Custom rest time for this exercise
 
   // Store previous sets by type for smarter set creation
@@ -1238,11 +1259,14 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     // Get the most recent workout that had this exercise (completed sets only)
     final recentWorkoutRow = await (db.gymSets.selectOnly()
           ..addColumns([db.gymSets.workoutId])
-          ..where(db.gymSets.name.equals(widget.exerciseName) &
-                  db.gymSets.hidden.equals(false) &
-                  db.gymSets.workoutId.isNotNull())
+          ..where(
+            db.gymSets.name.equals(widget.exerciseName) &
+                db.gymSets.hidden.equals(false) &
+                db.gymSets.workoutId.isNotNull(),
+          )
           ..orderBy([
-            OrderingTerm(expression: db.gymSets.created, mode: OrderingMode.desc),
+            OrderingTerm(
+                expression: db.gymSets.created, mode: OrderingMode.desc),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -1253,12 +1277,15 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     if (recentWorkoutId != null) {
       // Get all sets from that workout for this exercise
       previousSets = await (db.gymSets.select()
-            ..where((tbl) =>
-                tbl.name.equals(widget.exerciseName) &
-                tbl.workoutId.equals(recentWorkoutId) &
-                tbl.hidden.equals(false))
+            ..where(
+              (tbl) =>
+                  tbl.name.equals(widget.exerciseName) &
+                  tbl.workoutId.equals(recentWorkoutId) &
+                  tbl.hidden.equals(false),
+            )
             ..orderBy([
-              (u) => OrderingTerm(expression: u.created, mode: OrderingMode.asc),
+              (u) =>
+                  OrderingTerm(expression: u.created, mode: OrderingMode.asc),
             ]))
           .get();
     }
@@ -1266,28 +1293,32 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     // Separate sets by type
     _previousWarmups = previousSets.where((s) => s.warmup).toList();
     _previousDropSets = previousSets.where((s) => s.dropSet).toList();
-    _previousWorkingSets = previousSets.where((s) => !s.warmup && !s.dropSet).toList();
+    _previousWorkingSets =
+        previousSets.where((s) => !s.warmup && !s.dropSet).toList();
 
     // Get default values from the first working set, or first set, or fallback
-    GymSet? referenceSet = _previousWorkingSets.firstOrNull ?? previousSets.firstOrNull;
+    GymSet? referenceSet =
+        _previousWorkingSets.firstOrNull ?? previousSets.firstOrNull;
     _defaultWeight = referenceSet?.weight ?? 0.0;
     _defaultReps = referenceSet?.reps.toInt() ?? 8;
     final defaultUnit = referenceSet?.unit ?? settings.strengthUnit;
     _brandName = referenceSet?.brandName;
     _exerciseType = referenceSet?.exerciseType;
-    _category = referenceSet?.category;
     _restMs = referenceSet?.restMs; // Load custom rest time
 
     // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
     List<GymSet> existingSets = [];
     if (widget.workoutId != null) {
       existingSets = await (db.gymSets.select()
-            ..where((tbl) =>
-                tbl.name.equals(widget.exerciseName) &
-                tbl.workoutId.equals(widget.workoutId!) &
-                tbl.sequence.equals(widget.sequence)) // Filter by sequence to get only this instance
+            ..where(
+              (tbl) =>
+                  tbl.name.equals(widget.exerciseName) &
+                  tbl.workoutId.equals(widget.workoutId!) &
+                  tbl.sequence.equals(widget.sequence),
+            ) // Filter by sequence to get only this instance
             ..orderBy([
-              (u) => OrderingTerm(expression: u.created, mode: OrderingMode.asc),
+              (u) =>
+                  OrderingTerm(expression: u.created, mode: OrderingMode.asc),
             ]))
           .get();
     }
@@ -1337,26 +1368,28 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
           }
 
           final gymSet = await db.into(db.gymSets).insertReturning(
-            GymSetsCompanion.insert(
-              name: widget.exerciseName,
-              reps: reps.toDouble(),
+                GymSetsCompanion.insert(
+                  name: widget.exerciseName,
+                  reps: reps.toDouble(),
+                  weight: weight,
+                  unit: defaultUnit,
+                  created: DateTime.now().toLocal(),
+                  workoutId: Value(widget.workoutId),
+                  sequence: Value(widget.sequence),
+                  hidden: const Value(true), // Uncompleted
+                  brandName: Value(_brandName),
+                  exerciseType: Value(_exerciseType),
+                ),
+              );
+
+          newSets.add(
+            SetData(
               weight: weight,
-              unit: defaultUnit,
-              created: DateTime.now().toLocal(),
-              workoutId: Value(widget.workoutId),
-              sequence: Value(widget.sequence),
-              hidden: const Value(true), // Uncompleted
-              brandName: Value(_brandName),
-              exerciseType: Value(_exerciseType),
+              reps: reps,
+              completed: false,
+              savedSetId: gymSet.id,
             ),
           );
-
-          newSets.add(SetData(
-            weight: weight,
-            reps: reps,
-            completed: false,
-            savedSetId: gymSet.id,
-          ));
         }
         if (mounted) {
           setState(() {
@@ -1398,6 +1431,14 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
   int get completedCount => sets.where((s) => s.completed).length;
 
+  bool get _isMainPowerliftingExercise {
+    final name = widget.exerciseName.toLowerCase();
+    return name.contains('squat') ||
+        name.contains('bench') ||
+        name.contains('deadlift') ||
+        name.contains('press');
+  }
+
   Future<void> _showExerciseMenu(BuildContext parentContext) async {
     final colorScheme = Theme.of(parentContext).colorScheme;
 
@@ -1435,8 +1476,20 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               ),
             ),
             const Divider(),
+            if (_isMainPowerliftingExercise)
+              ListTile(
+                leading:
+                    Icon(Icons.calculate_outlined, color: colorScheme.primary),
+                title: const Text('5/3/1 Calculator'),
+                subtitle: const Text('Calculate weights for 5/3/1 program'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _show531Calculator(parentContext);
+                },
+              ),
             ListTile(
-              leading: Icon(Icons.note_add_outlined, color: colorScheme.primary),
+              leading:
+                  Icon(Icons.note_add_outlined, color: colorScheme.primary),
               title: const Text('Add Notes'),
               subtitle: widget.exerciseNotes?.isNotEmpty == true
                   ? Text(
@@ -1460,8 +1513,10 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
-              title: Text('Remove Exercise', style: TextStyle(color: colorScheme.error)),
+              leading:
+                  Icon(Icons.remove_circle_outline, color: colorScheme.error),
+              title: Text('Remove Exercise',
+                  style: TextStyle(color: colorScheme.error)),
               subtitle: const Text('Remove this exercise from workout'),
               onTap: () {
                 Navigator.pop(context);
@@ -1471,6 +1526,15 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
             const SizedBox(height: 8),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _show531Calculator(BuildContext parentContext) async {
+    await showDialog(
+      context: parentContext,
+      builder: (context) => FiveThreeOneCalculator(
+        exerciseName: widget.exerciseName,
       ),
     );
   }
@@ -1589,9 +1653,11 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
       // Update existing record - just change hidden to false
       await (db.gymSets.update()
             ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
-          .write(const GymSetsCompanion(
-            hidden: Value(false),
-          ));
+          .write(
+        const GymSetsCompanion(
+          hidden: Value(false),
+        ),
+      );
 
       setState(() {
         sets[index].completed = true;
@@ -1675,9 +1741,11 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     // Update record to mark as uncompleted (hidden=true) instead of deleting
     await (db.gymSets.update()
           ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
-        .write(const GymSetsCompanion(
-          hidden: Value(true),
-        ));
+        .write(
+      const GymSetsCompanion(
+        hidden: Value(true),
+      ),
+    );
 
     setState(() {
       sets[index].completed = false;
@@ -1714,7 +1782,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
         reps = _previousWarmups.last.reps.toInt();
       } else {
         // Fallback: 50% of base weight
-        final baseWeight = _previousWorkingSets.firstOrNull?.weight ?? _defaultWeight;
+        final baseWeight =
+            _previousWorkingSets.firstOrNull?.weight ?? _defaultWeight;
         weight = (baseWeight * 0.5).roundToDouble();
         reps = _defaultReps;
       }
@@ -1731,13 +1800,15 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
         reps = _previousDropSets.last.reps.toInt();
       } else {
         // Fallback: 75% of last working set weight
-        final baseWeight = _previousWorkingSets.lastOrNull?.weight ?? _defaultWeight;
+        final baseWeight =
+            _previousWorkingSets.lastOrNull?.weight ?? _defaultWeight;
         weight = (baseWeight * 0.75).roundToDouble();
         reps = _defaultReps;
       }
     } else {
       // Working set - use previous working sets
-      final currentWorkingCount = sets.where((s) => !s.isWarmup && !s.isDropSet).length;
+      final currentWorkingCount =
+          sets.where((s) => !s.isWarmup && !s.isDropSet).length;
       if (currentWorkingCount < _previousWorkingSets.length) {
         // Use the corresponding previous working set
         weight = _previousWorkingSets[currentWorkingCount].weight;
@@ -1755,42 +1826,48 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
     if (widget.workoutId != null) {
       final gymSet = await db.into(db.gymSets).insertReturning(
-        GymSetsCompanion.insert(
-          name: widget.exerciseName,
-          reps: reps.toDouble(),
-          weight: weight,
-          unit: unit,
-          created: DateTime.now().toLocal(),
-          workoutId: Value(widget.workoutId),
-          sequence: Value(widget.sequence),
-          notes: Value(widget.exerciseNotes ?? ''),
-          hidden: const Value(true),
-          warmup: Value(isWarmup),
-          dropSet: Value(isDropSet),
-          brandName: Value(_brandName),
-          exerciseType: Value(_exerciseType),
-        ),
-      );
+            GymSetsCompanion.insert(
+              name: widget.exerciseName,
+              reps: reps.toDouble(),
+              weight: weight,
+              unit: unit,
+              created: DateTime.now().toLocal(),
+              workoutId: Value(widget.workoutId),
+              sequence: Value(widget.sequence),
+              notes: Value(widget.exerciseNotes ?? ''),
+              hidden: const Value(true),
+              warmup: Value(isWarmup),
+              dropSet: Value(isDropSet),
+              brandName: Value(_brandName),
+              exerciseType: Value(_exerciseType),
+            ),
+          );
 
       setState(() {
-        sets.insert(insertIndex, SetData(
-          weight: weight,
-          reps: reps,
-          completed: false,
-          isWarmup: isWarmup,
-          isDropSet: isDropSet,
-          savedSetId: gymSet.id,
-        ));
+        sets.insert(
+          insertIndex,
+          SetData(
+            weight: weight,
+            reps: reps,
+            completed: false,
+            isWarmup: isWarmup,
+            isDropSet: isDropSet,
+            savedSetId: gymSet.id,
+          ),
+        );
       });
     } else {
       setState(() {
-        sets.insert(insertIndex, SetData(
-          weight: weight,
-          reps: reps,
-          completed: false,
-          isWarmup: isWarmup,
-          isDropSet: isDropSet,
-        ));
+        sets.insert(
+          insertIndex,
+          SetData(
+            weight: weight,
+            reps: reps,
+            completed: false,
+            isWarmup: isWarmup,
+            isDropSet: isDropSet,
+          ),
+        );
       });
     }
   }
@@ -1817,10 +1894,12 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     if (sets[index].savedSetId != null) {
       await (db.gymSets.update()
             ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
-          .write(GymSetsCompanion(
-            warmup: Value(isWarmup),
-            dropSet: Value(isDropSet),
-          ));
+          .write(
+        GymSetsCompanion(
+          warmup: Value(isWarmup),
+          dropSet: Value(isDropSet),
+        ),
+      );
     }
   }
 
@@ -1843,9 +1922,11 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
         if (sets[i].savedSetId != null) {
           await (db.gymSets.update()
                 ..where((tbl) => tbl.id.equals(sets[i].savedSetId!)))
-              .write(GymSetsCompanion(
-                sequence: Value(i),
-              ));
+              .write(
+            GymSetsCompanion(
+              sequence: Value(i),
+            ),
+          );
         }
       }
     }
@@ -1857,10 +1938,12 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
     await (db.gymSets.update()
           ..where((tbl) => tbl.id.equals(setData.savedSetId!)))
-        .write(GymSetsCompanion(
-          weight: Value(setData.weight),
-          reps: Value(setData.reps.toDouble()),
-        ));
+        .write(
+      GymSetsCompanion(
+        weight: Value(setData.weight),
+        reps: Value(setData.reps.toDouble()),
+      ),
+    );
   }
 
   @override
@@ -1921,21 +2004,23 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                             Flexible(
                               child: Text(
                                 widget.exerciseName,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
                             ),
-                            if (_category != null && _category!.isNotEmpty) ...[
-                              const SizedBox(width: 6),
-                              BodypartTag(bodypart: _category),
-                            ],
-                            if (_brandName != null && _brandName!.isNotEmpty) ...[
-                              const SizedBox(width: 6),
+                            if (_brandName != null &&
+                                _brandName!.isNotEmpty) ...[
+                              const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                  color: colorScheme.secondaryContainer
+                                      .withValues(alpha: 0.7),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -1964,7 +2049,10 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                               Expanded(
                                 child: Text(
                                   widget.exerciseNotes!,
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
                                         color: colorScheme.tertiary,
                                         fontStyle: FontStyle.italic,
                                       ),
@@ -1987,7 +2075,10 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                               const SizedBox(width: 4),
                               Text(
                                 '$completedCount / ${sets.length} sets',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                               ),
@@ -2001,7 +2092,10 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                 const SizedBox(width: 4),
                                 Text(
                                   '${_getTotalVolume()} $unit',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
                                         color: colorScheme.onSurfaceVariant,
                                       ),
                                 ),
@@ -2062,16 +2156,23 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                             );
                           },
                           itemBuilder: (context, index) {
-                            final warmupCount = sets.take(index).where((s) => s.isWarmup).length;
-                            final dropSetCount = sets.take(index).where((s) => s.isDropSet).length;
+                            final warmupCount = sets
+                                .take(index)
+                                .where((s) => s.isWarmup)
+                                .length;
+                            final dropSetCount = sets
+                                .take(index)
+                                .where((s) => s.isDropSet)
+                                .length;
                             final displayIndex = sets[index].isWarmup
                                 ? index + 1 - dropSetCount
                                 : sets[index].isDropSet
-                                  ? index + 1 - warmupCount
-                                  : index - warmupCount - dropSetCount + 1;
+                                    ? index + 1 - warmupCount
+                                    : index - warmupCount - dropSetCount + 1;
 
                             return _AdHocSetRow(
-                              key: ValueKey('adhoc_set_${sets[index].savedSetId ?? index}'),
+                              key: ValueKey(
+                                  'adhoc_set_${sets[index].savedSetId ?? index}'),
                               index: displayIndex,
                               setData: sets[index],
                               unit: unit,
@@ -2095,14 +2196,17 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                 _toggleSet(index);
                               },
                               onDelete: () => _deleteSet(index),
-                              onTypeChanged: (isWarmup, isDropSet) => _changeSetType(index, isWarmup, isDropSet),
+                              onTypeChanged: (isWarmup, isDropSet) =>
+                                  _changeSetType(index, isWarmup, isDropSet),
                             );
                           },
                         ),
                         // Add set buttons
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           child: Row(
                             children: [
                               Expanded(
@@ -2110,26 +2214,35 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                   onTap: () => _addSet(isWarmup: true),
                                   borderRadius: BorderRadius.circular(12),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10),
                                     decoration: BoxDecoration(
                                       border: Border.all(
-                                        color: colorScheme.tertiary.withValues(alpha: 0.5),
+                                        color: colorScheme.tertiary
+                                            .withValues(alpha: 0.5),
                                       ),
                                       borderRadius: BorderRadius.circular(12),
-                                      color: colorScheme.tertiaryContainer.withValues(alpha: 0.2),
+                                      color: colorScheme.tertiaryContainer
+                                          .withValues(alpha: 0.2),
                                     ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.whatshot_outlined,
-                                            size: 16, color: colorScheme.tertiary),
+                                        Icon(
+                                          Icons.whatshot_outlined,
+                                          size: 16,
+                                          color: colorScheme.tertiary,
+                                        ),
                                         const SizedBox(width: 6),
-                                        Text('Warmup',
-                                            style: TextStyle(
-                                              color: colorScheme.tertiary,
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 12,
-                                            )),
+                                        Text(
+                                          'Warmup',
+                                          style: TextStyle(
+                                            color: colorScheme.tertiary,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -2141,26 +2254,35 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                   onTap: () => _addSet(isDropSet: true),
                                   borderRadius: BorderRadius.circular(12),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10),
                                     decoration: BoxDecoration(
                                       border: Border.all(
-                                        color: colorScheme.secondary.withValues(alpha: 0.5),
+                                        color: colorScheme.secondary
+                                            .withValues(alpha: 0.5),
                                       ),
                                       borderRadius: BorderRadius.circular(12),
-                                      color: colorScheme.secondaryContainer.withValues(alpha: 0.2),
+                                      color: colorScheme.secondaryContainer
+                                          .withValues(alpha: 0.2),
                                     ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.trending_down,
-                                            size: 16, color: colorScheme.secondary),
+                                        Icon(
+                                          Icons.trending_down,
+                                          size: 16,
+                                          color: colorScheme.secondary,
+                                        ),
                                         const SizedBox(width: 6),
-                                        Text('Drop',
-                                            style: TextStyle(
-                                              color: colorScheme.secondary,
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 12,
-                                            )),
+                                        Text(
+                                          'Drop',
+                                          style: TextStyle(
+                                            color: colorScheme.secondary,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -2172,26 +2294,35 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                   onTap: () => _addSet(isWarmup: false),
                                   borderRadius: BorderRadius.circular(12),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10),
                                     decoration: BoxDecoration(
                                       border: Border.all(
-                                        color: colorScheme.primary.withValues(alpha: 0.5),
+                                        color: colorScheme.primary
+                                            .withValues(alpha: 0.5),
                                       ),
                                       borderRadius: BorderRadius.circular(12),
-                                      color: colorScheme.primaryContainer.withValues(alpha: 0.2),
+                                      color: colorScheme.primaryContainer
+                                          .withValues(alpha: 0.2),
                                     ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.add,
-                                            size: 16, color: colorScheme.primary),
+                                        Icon(
+                                          Icons.add,
+                                          size: 16,
+                                          color: colorScheme.primary,
+                                        ),
                                         const SizedBox(width: 6),
-                                        Text('Working',
-                                            style: TextStyle(
-                                              color: colorScheme.primary,
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 12,
-                                            )),
+                                        Text(
+                                          'Working',
+                                          style: TextStyle(
+                                            color: colorScheme.primary,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -2238,7 +2369,8 @@ class _AdHocSetRow extends StatelessWidget {
     this.onTypeChanged,
   });
 
-  Future<void> _showSetTypeMenu(BuildContext context, ColorScheme colorScheme) async {
+  Future<void> _showSetTypeMenu(
+      BuildContext context, ColorScheme colorScheme) async {
     final result = await showModalBottomSheet<String>(
       context: context,
       useRootNavigator: true,
@@ -2323,14 +2455,16 @@ class _AdHocSetRow extends StatelessWidget {
       bgColor = completed
           ? colorScheme.tertiaryContainer.withValues(alpha: 0.4)
           : colorScheme.tertiaryContainer.withValues(alpha: 0.2);
-      borderColor = colorScheme.tertiary.withValues(alpha: completed ? 0.5 : 0.3);
+      borderColor =
+          colorScheme.tertiary.withValues(alpha: completed ? 0.5 : 0.3);
       accentColor = colorScheme.tertiary;
       setTypeIcon = Icons.whatshot;
     } else if (isDropSet) {
       bgColor = completed
           ? colorScheme.secondaryContainer.withValues(alpha: 0.4)
           : colorScheme.secondaryContainer.withValues(alpha: 0.2);
-      borderColor = colorScheme.secondary.withValues(alpha: completed ? 0.5 : 0.3);
+      borderColor =
+          colorScheme.secondary.withValues(alpha: completed ? 0.5 : 0.3);
       accentColor = colorScheme.secondary;
       setTypeIcon = Icons.trending_down;
     } else {
@@ -2373,7 +2507,9 @@ class _AdHocSetRow extends StatelessWidget {
           children: [
             // Set number badge (clickable)
             GestureDetector(
-              onTap: onTypeChanged != null ? () => _showSetTypeMenu(context, colorScheme) : null,
+              onTap: onTypeChanged != null
+                  ? () => _showSetTypeMenu(context, colorScheme)
+                  : null,
               child: Container(
                 width: 44,
                 padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
@@ -2383,7 +2519,8 @@ class _AdHocSetRow extends StatelessWidget {
                       : colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                   border: onTypeChanged != null
-                      ? Border.all(color: accentColor.withValues(alpha: 0.3), width: 1)
+                      ? Border.all(
+                          color: accentColor.withValues(alpha: 0.3), width: 1)
                       : null,
                 ),
                 child: Column(
@@ -2392,7 +2529,11 @@ class _AdHocSetRow extends StatelessWidget {
                     if (isWarmup || isDropSet)
                       Icon(setTypeIcon, size: 12, color: accentColor),
                     Text(
-                      isWarmup ? 'W$index' : isDropSet ? 'D$index' : '$index',
+                      isWarmup
+                          ? 'W$index'
+                          : isDropSet
+                              ? 'D$index'
+                              : '$index',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -2541,17 +2682,20 @@ class _SimpleWeightInputState extends State<_SimpleWeightInput> {
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         suffixText: widget.unit,
-        suffixStyle: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+        suffixStyle:
+            TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: widget.completed
-              ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+              ? BorderSide(
+                  color: widget.accentColor.withValues(alpha: 0.3), width: 1)
               : BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: widget.completed
-              ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+              ? BorderSide(
+                  color: widget.accentColor.withValues(alpha: 0.3), width: 1)
               : BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
@@ -2640,7 +2784,8 @@ class _SimpleRepsInputState extends State<_SimpleRepsInput> {
             : colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         border: widget.completed
-            ? Border.all(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+            ? Border.all(
+                color: widget.accentColor.withValues(alpha: 0.3), width: 1)
             : null,
       ),
       child: Row(
@@ -2675,7 +2820,9 @@ class _SimpleRepsInputState extends State<_SimpleRepsInput> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: widget.completed ? widget.accentColor : colorScheme.onSurface,
+                color: widget.completed
+                    ? widget.accentColor
+                    : colorScheme.onSurface,
               ),
               decoration: InputDecoration(
                 isDense: true,

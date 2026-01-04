@@ -11,6 +11,7 @@ import 'package:flexify/records/records_service.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
 import 'package:flexify/widgets/bodypart_tag.dart';
+import 'package:flexify/widgets/five_three_one_calculator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -102,11 +103,16 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     // Get the most recent workout that had this exercise (completed sets only)
     final recentWorkoutRow = await (db.gymSets.selectOnly()
           ..addColumns([db.gymSets.workoutId])
-          ..where(db.gymSets.name.equals(widget.exercise.exercise) &
-                  db.gymSets.hidden.equals(false) &
-                  db.gymSets.workoutId.isNotNull())
+          ..where(
+            db.gymSets.name.equals(widget.exercise.exercise) &
+                db.gymSets.hidden.equals(false) &
+                db.gymSets.workoutId.isNotNull(),
+          )
           ..orderBy([
-            OrderingTerm(expression: db.gymSets.created, mode: OrderingMode.desc),
+            OrderingTerm(
+              expression: db.gymSets.created,
+              mode: OrderingMode.desc,
+            ),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -117,12 +123,15 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     if (recentWorkoutId != null) {
       // Get all sets from that workout for this exercise
       previousSets = await (db.gymSets.select()
-            ..where((tbl) =>
-                tbl.name.equals(widget.exercise.exercise) &
-                tbl.workoutId.equals(recentWorkoutId) &
-                tbl.hidden.equals(false))
+            ..where(
+              (tbl) =>
+                  tbl.name.equals(widget.exercise.exercise) &
+                  tbl.workoutId.equals(recentWorkoutId) &
+                  tbl.hidden.equals(false),
+            )
             ..orderBy([
-              (u) => OrderingTerm(expression: u.created, mode: OrderingMode.asc),
+              (u) =>
+                  OrderingTerm(expression: u.created, mode: OrderingMode.asc),
             ]))
           .get();
     }
@@ -130,10 +139,12 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     // Separate sets by type
     _previousWarmups = previousSets.where((s) => s.warmup).toList();
     _previousDropSets = previousSets.where((s) => s.dropSet).toList();
-    _previousWorkingSets = previousSets.where((s) => !s.warmup && !s.dropSet).toList();
+    _previousWorkingSets =
+        previousSets.where((s) => !s.warmup && !s.dropSet).toList();
 
     // Get default values from the first working set, or first set, or fallback
-    GymSet? referenceSet = _previousWorkingSets.firstOrNull ?? previousSets.firstOrNull;
+    GymSet? referenceSet =
+        _previousWorkingSets.firstOrNull ?? previousSets.firstOrNull;
     _defaultWeight = referenceSet?.weight ?? 0.0;
     _defaultReps = referenceSet?.reps.toInt() ?? 8;
     final defaultUnit = referenceSet?.unit ?? settings.strengthUnit;
@@ -146,12 +157,15 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     List<GymSet> existingSets = [];
     if (widget.workoutId != null) {
       existingSets = await (db.gymSets.select()
-            ..where((tbl) =>
-                tbl.name.equals(widget.exercise.exercise) &
-                tbl.workoutId.equals(widget.workoutId!) &
-                tbl.sequence.equals(widget.sequence)) // Filter by sequence to get only this instance
+            ..where(
+              (tbl) =>
+                  tbl.name.equals(widget.exercise.exercise) &
+                  tbl.workoutId.equals(widget.workoutId!) &
+                  tbl.sequence.equals(widget.sequence),
+            ) // Filter by sequence to get only this instance
             ..orderBy([
-              (u) => OrderingTerm(expression: u.created, mode: OrderingMode.asc),
+              (u) =>
+                  OrderingTerm(expression: u.created, mode: OrderingMode.asc),
             ]))
           .get();
     }
@@ -201,27 +215,29 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           }
 
           final gymSet = await db.into(db.gymSets).insertReturning(
-            GymSetsCompanion.insert(
-              name: widget.exercise.exercise,
-              reps: reps.toDouble(),
+                GymSetsCompanion.insert(
+                  name: widget.exercise.exercise,
+                  reps: reps.toDouble(),
+                  weight: weight,
+                  unit: defaultUnit,
+                  created: DateTime.now().toLocal(),
+                  planId: Value(widget.planId),
+                  workoutId: Value(widget.workoutId),
+                  sequence: Value(widget.sequence),
+                  hidden: const Value(true), // Uncompleted
+                  brandName: Value(_brandName),
+                  exerciseType: Value(_exerciseType),
+                ),
+              );
+
+          newSets.add(
+            SetData(
               weight: weight,
-              unit: defaultUnit,
-              created: DateTime.now().toLocal(),
-              planId: Value(widget.planId),
-              workoutId: Value(widget.workoutId),
-              sequence: Value(widget.sequence),
-              hidden: const Value(true), // Uncompleted
-              brandName: Value(_brandName),
-              exerciseType: Value(_exerciseType),
+              reps: reps,
+              completed: false,
+              savedSetId: gymSet.id,
             ),
           );
-
-          newSets.add(SetData(
-            weight: weight,
-            reps: reps,
-            completed: false,
-            savedSetId: gymSet.id,
-          ));
         }
         if (mounted) {
           setState(() {
@@ -263,6 +279,14 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
 
   int get completedCount => sets.where((s) => s.completed).length;
 
+  bool get _isMainPowerliftingExercise {
+    final name = widget.exercise.exercise.toLowerCase();
+    return name.contains('squat') ||
+        name.contains('bench') ||
+        name.contains('deadlift') ||
+        name.contains('press');
+  }
+
   Future<void> _showExerciseMenu(BuildContext parentContext) async {
     final colorScheme = Theme.of(parentContext).colorScheme;
 
@@ -300,8 +324,20 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               ),
             ),
             const Divider(),
+            if (_isMainPowerliftingExercise)
+              ListTile(
+                leading:
+                    Icon(Icons.calculate_outlined, color: colorScheme.primary),
+                title: const Text('5/3/1 Calculator'),
+                subtitle: const Text('Calculate weights for 5/3/1 program'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _show531Calculator(parentContext);
+                },
+              ),
             ListTile(
-              leading: Icon(Icons.note_add_outlined, color: colorScheme.primary),
+              leading:
+                  Icon(Icons.note_add_outlined, color: colorScheme.primary),
               title: const Text('Add Notes'),
               subtitle: widget.exerciseNotes?.isNotEmpty == true
                   ? Text(
@@ -325,7 +361,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
+              leading:
+                  Icon(Icons.remove_circle_outline, color: colorScheme.error),
               title: Text(
                 'Remove Exercise',
                 style: TextStyle(color: colorScheme.error),
@@ -339,6 +376,15 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
             const SizedBox(height: 8),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _show531Calculator(BuildContext parentContext) async {
+    await showDialog(
+      context: parentContext,
+      builder: (context) => FiveThreeOneCalculator(
+        exerciseName: widget.exercise.exercise,
       ),
     );
   }
@@ -449,9 +495,11 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       // Update existing record - just change hidden to false
       await (db.gymSets.update()
             ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
-          .write(const GymSetsCompanion(
-            hidden: Value(false),
-          ));
+          .write(
+        const GymSetsCompanion(
+          hidden: Value(false),
+        ),
+      );
 
       setState(() {
         sets[index].completed = true;
@@ -490,7 +538,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         weight: setData.weight,
         reps: setData.reps.toDouble(),
         unit: unit,
-        excludeSetId: sets[index].savedSetId, // Exclude this set to compare against previous bests
+        excludeSetId: sets[index]
+            .savedSetId, // Exclude this set to compare against previous bests
       );
 
       if (achievements.isNotEmpty) {
@@ -516,7 +565,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       // Use custom rest time if set, otherwise use global default
       final restMs = _restMs ?? settings.timerDuration;
       timerState.startTimer(
-        "${widget.exercise.exercise} (${completedCount})",
+        "${widget.exercise.exercise} ($completedCount)",
         Duration(milliseconds: restMs),
         settings.alarmSound,
         settings.vibrate,
@@ -539,9 +588,11 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     // Update record to mark as uncompleted (hidden=true) instead of deleting
     await (db.gymSets.update()
           ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
-        .write(const GymSetsCompanion(
-          hidden: Value(true),
-        ));
+        .write(
+      const GymSetsCompanion(
+        hidden: Value(true),
+      ),
+    );
 
     setState(() {
       sets[index].completed = false;
@@ -584,7 +635,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         reps = _previousWarmups.last.reps.toInt();
       } else {
         // Fallback: 50% of base weight
-        final baseWeight = _previousWorkingSets.firstOrNull?.weight ?? _defaultWeight;
+        final baseWeight =
+            _previousWorkingSets.firstOrNull?.weight ?? _defaultWeight;
         weight = (baseWeight * 0.5).roundToDouble();
         reps = _defaultReps;
       }
@@ -601,13 +653,15 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         reps = _previousDropSets.last.reps.toInt();
       } else {
         // Fallback: 75% of last working set weight
-        final baseWeight = _previousWorkingSets.lastOrNull?.weight ?? _defaultWeight;
+        final baseWeight =
+            _previousWorkingSets.lastOrNull?.weight ?? _defaultWeight;
         weight = (baseWeight * 0.75).roundToDouble();
         reps = _defaultReps;
       }
     } else {
       // Working set - use previous working sets
-      final currentWorkingCount = sets.where((s) => !s.isWarmup && !s.isDropSet).length;
+      final currentWorkingCount =
+          sets.where((s) => !s.isWarmup && !s.isDropSet).length;
       if (currentWorkingCount < _previousWorkingSets.length) {
         // Use the corresponding previous working set
         weight = _previousWorkingSets[currentWorkingCount].weight;
@@ -625,43 +679,49 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
 
     if (widget.workoutId != null) {
       final gymSet = await db.into(db.gymSets).insertReturning(
-        GymSetsCompanion.insert(
-          name: widget.exercise.exercise,
-          reps: reps.toDouble(),
-          weight: weight,
-          unit: unit,
-          created: DateTime.now().toLocal(),
-          planId: Value(widget.planId),
-          workoutId: Value(widget.workoutId),
-          sequence: Value(widget.sequence),
-          notes: Value(widget.exerciseNotes ?? ''),
-          hidden: const Value(true),
-          warmup: Value(isWarmup),
-          dropSet: Value(isDropSet),
-          brandName: Value(_brandName),
-          exerciseType: Value(_exerciseType),
-        ),
-      );
+            GymSetsCompanion.insert(
+              name: widget.exercise.exercise,
+              reps: reps.toDouble(),
+              weight: weight,
+              unit: unit,
+              created: DateTime.now().toLocal(),
+              planId: Value(widget.planId),
+              workoutId: Value(widget.workoutId),
+              sequence: Value(widget.sequence),
+              notes: Value(widget.exerciseNotes ?? ''),
+              hidden: const Value(true),
+              warmup: Value(isWarmup),
+              dropSet: Value(isDropSet),
+              brandName: Value(_brandName),
+              exerciseType: Value(_exerciseType),
+            ),
+          );
 
       setState(() {
-        sets.insert(insertIndex, SetData(
-          weight: weight,
-          reps: reps,
-          completed: false,
-          isWarmup: isWarmup,
-          isDropSet: isDropSet,
-          savedSetId: gymSet.id,
-        ));
+        sets.insert(
+          insertIndex,
+          SetData(
+            weight: weight,
+            reps: reps,
+            completed: false,
+            isWarmup: isWarmup,
+            isDropSet: isDropSet,
+            savedSetId: gymSet.id,
+          ),
+        );
       });
     } else {
       setState(() {
-        sets.insert(insertIndex, SetData(
-          weight: weight,
-          reps: reps,
-          completed: false,
-          isWarmup: isWarmup,
-          isDropSet: isDropSet,
-        ));
+        sets.insert(
+          insertIndex,
+          SetData(
+            weight: weight,
+            reps: reps,
+            completed: false,
+            isWarmup: isWarmup,
+            isDropSet: isDropSet,
+          ),
+        );
       });
     }
   }
@@ -673,10 +733,12 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     // Update the set in database
     await (db.gymSets.update()
           ..where((tbl) => tbl.id.equals(setData.savedSetId!)))
-        .write(GymSetsCompanion(
-          weight: Value(setData.weight),
-          reps: Value(setData.reps.toDouble()),
-        ));
+        .write(
+      GymSetsCompanion(
+        weight: Value(setData.weight),
+        reps: Value(setData.reps.toDouble()),
+      ),
+    );
 
     // Update plan state only if completed (for gym counts)
     if (setData.completed) {
@@ -716,10 +778,12 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     if (sets[index].savedSetId != null) {
       await (db.gymSets.update()
             ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
-          .write(GymSetsCompanion(
-            warmup: Value(isWarmup),
-            dropSet: Value(isDropSet),
-          ));
+          .write(
+        GymSetsCompanion(
+          warmup: Value(isWarmup),
+          dropSet: Value(isDropSet),
+        ),
+      );
     }
   }
 
@@ -742,9 +806,11 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         if (sets[i].savedSetId != null) {
           await (db.gymSets.update()
                 ..where((tbl) => tbl.id.equals(sets[i].savedSetId!)))
-              .write(GymSetsCompanion(
-                sequence: Value(i),
-              ));
+              .write(
+            GymSetsCompanion(
+              sequence: Value(i),
+            ),
+          );
         }
       }
     }
@@ -808,7 +874,10 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                             Flexible(
                               child: Text(
                                 widget.exercise.exercise,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
@@ -817,12 +886,17 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                               const SizedBox(width: 6),
                               BodypartTag(bodypart: _category),
                             ],
-                            if (_brandName != null && _brandName!.isNotEmpty) ...[
+                            if (_brandName != null &&
+                                _brandName!.isNotEmpty) ...[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                  color: colorScheme.secondaryContainer
+                                      .withValues(alpha: 0.7),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -851,7 +925,10 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                               Expanded(
                                 child: Text(
                                   widget.exerciseNotes!,
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
                                         color: colorScheme.tertiary,
                                         fontStyle: FontStyle.italic,
                                       ),
@@ -874,16 +951,24 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                               const SizedBox(width: 4),
                               Text(
                                 '$completedCount / ${sets.length} sets',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                               ),
-                              if (_brandName != null && _brandName!.isNotEmpty) ...[
+                              if (_brandName != null &&
+                                  _brandName!.isNotEmpty) ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 1,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                    color: colorScheme.secondaryContainer
+                                        .withValues(alpha: 0.7),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -906,7 +991,10 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                 const SizedBox(width: 4),
                                 Text(
                                   '${_getTotalVolume()} $unit',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
                                         color: colorScheme.onSurfaceVariant,
                                       ),
                                 ),
@@ -968,16 +1056,24 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                           },
                           itemBuilder: (context, index) {
                             // Calculate display index (exclude warmups and drop sets from numbering)
-                            final warmupCount = sets.take(index).where((s) => s.isWarmup).length;
-                            final dropSetCount = sets.take(index).where((s) => s.isDropSet).length;
+                            final warmupCount = sets
+                                .take(index)
+                                .where((s) => s.isWarmup)
+                                .length;
+                            final dropSetCount = sets
+                                .take(index)
+                                .where((s) => s.isDropSet)
+                                .length;
                             final displayIndex = sets[index].isWarmup
                                 ? index + 1 - dropSetCount
                                 : sets[index].isDropSet
-                                  ? index + 1 - warmupCount
-                                  : index - warmupCount - dropSetCount + 1;
+                                    ? index + 1 - warmupCount
+                                    : index - warmupCount - dropSetCount + 1;
 
                             return _SetRow(
-                              key: ValueKey('set_${sets[index].savedSetId ?? index}'),
+                              key: ValueKey(
+                                'set_${sets[index].savedSetId ?? index}',
+                              ),
                               index: displayIndex,
                               setData: sets[index],
                               unit: unit,
@@ -1002,14 +1098,17 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                 _toggleSet(index);
                               },
                               onDelete: () => _deleteSet(index),
-                              onTypeChanged: (isWarmup, isDropSet) => _changeSetType(index, isWarmup, isDropSet),
+                              onTypeChanged: (isWarmup, isDropSet) =>
+                                  _changeSetType(index, isWarmup, isDropSet),
                             );
                           },
                         ),
                         // Add set buttons row
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           child: Column(
                             children: [
                               Row(
@@ -1020,17 +1119,23 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                       onTap: () => _addSet(isWarmup: true),
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 10,
+                                        ),
                                         decoration: BoxDecoration(
                                           border: Border.all(
-                                            color: colorScheme.tertiary.withValues(alpha: 0.5),
+                                            color: colorScheme.tertiary
+                                                .withValues(alpha: 0.5),
                                             width: 1,
                                           ),
-                                          borderRadius: BorderRadius.circular(12),
-                                          color: colorScheme.tertiaryContainer.withValues(alpha: 0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          color: colorScheme.tertiaryContainer
+                                              .withValues(alpha: 0.2),
                                         ),
                                         child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             Icon(
                                               Icons.whatshot_outlined,
@@ -1058,17 +1163,23 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                       onTap: () => _addSet(isDropSet: true),
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 10,
+                                        ),
                                         decoration: BoxDecoration(
                                           border: Border.all(
-                                            color: colorScheme.secondary.withValues(alpha: 0.5),
+                                            color: colorScheme.secondary
+                                                .withValues(alpha: 0.5),
                                             width: 1,
                                           ),
-                                          borderRadius: BorderRadius.circular(12),
-                                          color: colorScheme.secondaryContainer.withValues(alpha: 0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          color: colorScheme.secondaryContainer
+                                              .withValues(alpha: 0.2),
                                         ),
                                         child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             Icon(
                                               Icons.trending_down,
@@ -1096,17 +1207,23 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                       onTap: () => _addSet(isWarmup: false),
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 10,
+                                        ),
                                         decoration: BoxDecoration(
                                           border: Border.all(
-                                            color: colorScheme.primary.withValues(alpha: 0.5),
+                                            color: colorScheme.primary
+                                                .withValues(alpha: 0.5),
                                             width: 1,
                                           ),
-                                          borderRadius: BorderRadius.circular(12),
-                                          color: colorScheme.primaryContainer.withValues(alpha: 0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          color: colorScheme.primaryContainer
+                                              .withValues(alpha: 0.2),
                                         ),
                                         child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             Icon(
                                               Icons.add,
@@ -1181,7 +1298,10 @@ class _SetRow extends StatelessWidget {
     this.onTypeChanged,
   });
 
-  Future<void> _showSetTypeMenu(BuildContext context, ColorScheme colorScheme) async {
+  Future<void> _showSetTypeMenu(
+    BuildContext context,
+    ColorScheme colorScheme,
+  ) async {
     final result = await showModalBottomSheet<String>(
       context: context,
       useRootNavigator: true,
@@ -1333,7 +1453,9 @@ class _SetRow extends StatelessWidget {
           children: [
             // Set number badge with warmup/drop set indicator (clickable)
             GestureDetector(
-              onTap: onTypeChanged != null ? () => _showSetTypeMenu(context, colorScheme) : null,
+              onTap: onTypeChanged != null
+                  ? () => _showSetTypeMenu(context, colorScheme)
+                  : null,
               child: Container(
                 width: 44,
                 padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
@@ -1343,7 +1465,10 @@ class _SetRow extends StatelessWidget {
                       : colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                   border: onTypeChanged != null
-                      ? Border.all(color: accentColor.withValues(alpha: 0.3), width: 1)
+                      ? Border.all(
+                          color: accentColor.withValues(alpha: 0.3),
+                          width: 1,
+                        )
                       : null,
                 ),
                 child: Column(
@@ -1356,7 +1481,11 @@ class _SetRow extends StatelessWidget {
                         color: accentColor,
                       ),
                     Text(
-                      isWarmup ? 'W$index' : isDropSet ? 'D$index' : '$index',
+                      isWarmup
+                          ? 'W$index'
+                          : isDropSet
+                              ? 'D$index'
+                              : '$index',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -1505,13 +1634,19 @@ class _WeightInputState extends State<_WeightInput> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: widget.completed
-              ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+              ? BorderSide(
+                  color: widget.accentColor.withValues(alpha: 0.3),
+                  width: 1,
+                )
               : BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: widget.completed
-              ? BorderSide(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+              ? BorderSide(
+                  color: widget.accentColor.withValues(alpha: 0.3),
+                  width: 1,
+                )
               : BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
@@ -1604,7 +1739,10 @@ class _RepsInputState extends State<_RepsInput> {
             : colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         border: widget.completed
-            ? Border.all(color: widget.accentColor.withValues(alpha: 0.3), width: 1)
+            ? Border.all(
+                color: widget.accentColor.withValues(alpha: 0.3),
+                width: 1,
+              )
             : null,
       ),
       child: Row(
@@ -1729,13 +1867,13 @@ class _CompleteButton extends StatelessWidget {
     final accentColor = isWarmup
         ? colorScheme.tertiary
         : isDropSet
-          ? colorScheme.secondary
-          : colorScheme.primary;
+            ? colorScheme.secondary
+            : colorScheme.primary;
     final onAccentColor = isWarmup
         ? colorScheme.onTertiary
         : isDropSet
-          ? colorScheme.onSecondary
-          : colorScheme.onPrimary;
+            ? colorScheme.onSecondary
+            : colorScheme.onPrimary;
 
     return SizedBox(
       width: 44,
@@ -1743,9 +1881,8 @@ class _CompleteButton extends StatelessWidget {
       child: IconButton(
         onPressed: onPressed,
         style: IconButton.styleFrom(
-          backgroundColor: completed
-              ? accentColor
-              : colorScheme.surfaceContainerHighest,
+          backgroundColor:
+              completed ? accentColor : colorScheme.surfaceContainerHighest,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -1755,9 +1892,7 @@ class _CompleteButton extends StatelessWidget {
           child: Icon(
             completed ? Icons.check : Icons.check,
             key: ValueKey(completed),
-            color: completed
-                ? onAccentColor
-                : colorScheme.onSurfaceVariant,
+            color: completed ? onAccentColor : colorScheme.onSurfaceVariant,
             size: 22,
           ),
         ),

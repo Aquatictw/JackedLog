@@ -1550,6 +1550,38 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("scrollable_tabs" IN (0, 1))'),
       defaultValue: const Constant(true));
+  static const VerificationMeta _fivethreeoneSquatTmMeta =
+      const VerificationMeta('fivethreeoneSquatTm');
+  @override
+  late final GeneratedColumn<double> fivethreeoneSquatTm =
+      GeneratedColumn<double>('fivethreeone_squat_tm', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _fivethreeoneBenchTmMeta =
+      const VerificationMeta('fivethreeoneBenchTm');
+  @override
+  late final GeneratedColumn<double> fivethreeoneBenchTm =
+      GeneratedColumn<double>('fivethreeone_bench_tm', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _fivethreeoneDeadliftTmMeta =
+      const VerificationMeta('fivethreeoneDeadliftTm');
+  @override
+  late final GeneratedColumn<double> fivethreeoneDeadliftTm =
+      GeneratedColumn<double>('fivethreeone_deadlift_tm', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _fivethreeonePressTmMeta =
+      const VerificationMeta('fivethreeonePressTm');
+  @override
+  late final GeneratedColumn<double> fivethreeonePressTm =
+      GeneratedColumn<double>('fivethreeone_press_tm', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _fivethreeoneWeekMeta =
+      const VerificationMeta('fivethreeoneWeek');
+  @override
+  late final GeneratedColumn<int> fivethreeoneWeek = GeneratedColumn<int>(
+      'fivethreeone_week', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
   @override
   List<GeneratedColumn> get $columns => [
         alarmSound,
@@ -1584,7 +1616,12 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         timerDuration,
         vibrate,
         warmupSets,
-        scrollableTabs
+        scrollableTabs,
+        fivethreeoneSquatTm,
+        fivethreeoneBenchTm,
+        fivethreeoneDeadliftTm,
+        fivethreeonePressTm,
+        fivethreeoneWeek
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1805,6 +1842,36 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           scrollableTabs.isAcceptableOrUnknown(
               data['scrollable_tabs']!, _scrollableTabsMeta));
     }
+    if (data.containsKey('fivethreeone_squat_tm')) {
+      context.handle(
+          _fivethreeoneSquatTmMeta,
+          fivethreeoneSquatTm.isAcceptableOrUnknown(
+              data['fivethreeone_squat_tm']!, _fivethreeoneSquatTmMeta));
+    }
+    if (data.containsKey('fivethreeone_bench_tm')) {
+      context.handle(
+          _fivethreeoneBenchTmMeta,
+          fivethreeoneBenchTm.isAcceptableOrUnknown(
+              data['fivethreeone_bench_tm']!, _fivethreeoneBenchTmMeta));
+    }
+    if (data.containsKey('fivethreeone_deadlift_tm')) {
+      context.handle(
+          _fivethreeoneDeadliftTmMeta,
+          fivethreeoneDeadliftTm.isAcceptableOrUnknown(
+              data['fivethreeone_deadlift_tm']!, _fivethreeoneDeadliftTmMeta));
+    }
+    if (data.containsKey('fivethreeone_press_tm')) {
+      context.handle(
+          _fivethreeonePressTmMeta,
+          fivethreeonePressTm.isAcceptableOrUnknown(
+              data['fivethreeone_press_tm']!, _fivethreeonePressTmMeta));
+    }
+    if (data.containsKey('fivethreeone_week')) {
+      context.handle(
+          _fivethreeoneWeekMeta,
+          fivethreeoneWeek.isAcceptableOrUnknown(
+              data['fivethreeone_week']!, _fivethreeoneWeekMeta));
+    }
     return context;
   }
 
@@ -1880,6 +1947,17 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           .read(DriftSqlType.int, data['${effectivePrefix}warmup_sets']),
       scrollableTabs: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}scrollable_tabs'])!,
+      fivethreeoneSquatTm: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}fivethreeone_squat_tm']),
+      fivethreeoneBenchTm: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}fivethreeone_bench_tm']),
+      fivethreeoneDeadliftTm: attachedDatabase.typeMapping.read(
+          DriftSqlType.double,
+          data['${effectivePrefix}fivethreeone_deadlift_tm']),
+      fivethreeonePressTm: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}fivethreeone_press_tm']),
+      fivethreeoneWeek: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}fivethreeone_week'])!,
     );
   }
 
@@ -1923,6 +2001,11 @@ class Setting extends DataClass implements Insertable<Setting> {
   final bool vibrate;
   final int? warmupSets;
   final bool scrollableTabs;
+  final double? fivethreeoneSquatTm;
+  final double? fivethreeoneBenchTm;
+  final double? fivethreeoneDeadliftTm;
+  final double? fivethreeonePressTm;
+  final int fivethreeoneWeek;
   const Setting(
       {required this.alarmSound,
       required this.automaticBackups,
@@ -1956,7 +2039,12 @@ class Setting extends DataClass implements Insertable<Setting> {
       required this.timerDuration,
       required this.vibrate,
       this.warmupSets,
-      required this.scrollableTabs});
+      required this.scrollableTabs,
+      this.fivethreeoneSquatTm,
+      this.fivethreeoneBenchTm,
+      this.fivethreeoneDeadliftTm,
+      this.fivethreeonePressTm,
+      required this.fivethreeoneWeek});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1999,6 +2087,20 @@ class Setting extends DataClass implements Insertable<Setting> {
       map['warmup_sets'] = Variable<int>(warmupSets);
     }
     map['scrollable_tabs'] = Variable<bool>(scrollableTabs);
+    if (!nullToAbsent || fivethreeoneSquatTm != null) {
+      map['fivethreeone_squat_tm'] = Variable<double>(fivethreeoneSquatTm);
+    }
+    if (!nullToAbsent || fivethreeoneBenchTm != null) {
+      map['fivethreeone_bench_tm'] = Variable<double>(fivethreeoneBenchTm);
+    }
+    if (!nullToAbsent || fivethreeoneDeadliftTm != null) {
+      map['fivethreeone_deadlift_tm'] =
+          Variable<double>(fivethreeoneDeadliftTm);
+    }
+    if (!nullToAbsent || fivethreeonePressTm != null) {
+      map['fivethreeone_press_tm'] = Variable<double>(fivethreeonePressTm);
+    }
+    map['fivethreeone_week'] = Variable<int>(fivethreeoneWeek);
     return map;
   }
 
@@ -2043,6 +2145,19 @@ class Setting extends DataClass implements Insertable<Setting> {
           ? const Value.absent()
           : Value(warmupSets),
       scrollableTabs: Value(scrollableTabs),
+      fivethreeoneSquatTm: fivethreeoneSquatTm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fivethreeoneSquatTm),
+      fivethreeoneBenchTm: fivethreeoneBenchTm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fivethreeoneBenchTm),
+      fivethreeoneDeadliftTm: fivethreeoneDeadliftTm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fivethreeoneDeadliftTm),
+      fivethreeonePressTm: fivethreeonePressTm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fivethreeonePressTm),
+      fivethreeoneWeek: Value(fivethreeoneWeek),
     );
   }
 
@@ -2084,6 +2199,15 @@ class Setting extends DataClass implements Insertable<Setting> {
       vibrate: serializer.fromJson<bool>(json['vibrate']),
       warmupSets: serializer.fromJson<int?>(json['warmupSets']),
       scrollableTabs: serializer.fromJson<bool>(json['scrollableTabs']),
+      fivethreeoneSquatTm:
+          serializer.fromJson<double?>(json['fivethreeoneSquatTm']),
+      fivethreeoneBenchTm:
+          serializer.fromJson<double?>(json['fivethreeoneBenchTm']),
+      fivethreeoneDeadliftTm:
+          serializer.fromJson<double?>(json['fivethreeoneDeadliftTm']),
+      fivethreeonePressTm:
+          serializer.fromJson<double?>(json['fivethreeonePressTm']),
+      fivethreeoneWeek: serializer.fromJson<int>(json['fivethreeoneWeek']),
     );
   }
   @override
@@ -2123,6 +2247,12 @@ class Setting extends DataClass implements Insertable<Setting> {
       'vibrate': serializer.toJson<bool>(vibrate),
       'warmupSets': serializer.toJson<int?>(warmupSets),
       'scrollableTabs': serializer.toJson<bool>(scrollableTabs),
+      'fivethreeoneSquatTm': serializer.toJson<double?>(fivethreeoneSquatTm),
+      'fivethreeoneBenchTm': serializer.toJson<double?>(fivethreeoneBenchTm),
+      'fivethreeoneDeadliftTm':
+          serializer.toJson<double?>(fivethreeoneDeadliftTm),
+      'fivethreeonePressTm': serializer.toJson<double?>(fivethreeonePressTm),
+      'fivethreeoneWeek': serializer.toJson<int>(fivethreeoneWeek),
     };
   }
 
@@ -2159,7 +2289,12 @@ class Setting extends DataClass implements Insertable<Setting> {
           int? timerDuration,
           bool? vibrate,
           Value<int?> warmupSets = const Value.absent(),
-          bool? scrollableTabs}) =>
+          bool? scrollableTabs,
+          Value<double?> fivethreeoneSquatTm = const Value.absent(),
+          Value<double?> fivethreeoneBenchTm = const Value.absent(),
+          Value<double?> fivethreeoneDeadliftTm = const Value.absent(),
+          Value<double?> fivethreeonePressTm = const Value.absent(),
+          int? fivethreeoneWeek}) =>
       Setting(
         alarmSound: alarmSound ?? this.alarmSound,
         automaticBackups: automaticBackups ?? this.automaticBackups,
@@ -2196,6 +2331,19 @@ class Setting extends DataClass implements Insertable<Setting> {
         vibrate: vibrate ?? this.vibrate,
         warmupSets: warmupSets.present ? warmupSets.value : this.warmupSets,
         scrollableTabs: scrollableTabs ?? this.scrollableTabs,
+        fivethreeoneSquatTm: fivethreeoneSquatTm.present
+            ? fivethreeoneSquatTm.value
+            : this.fivethreeoneSquatTm,
+        fivethreeoneBenchTm: fivethreeoneBenchTm.present
+            ? fivethreeoneBenchTm.value
+            : this.fivethreeoneBenchTm,
+        fivethreeoneDeadliftTm: fivethreeoneDeadliftTm.present
+            ? fivethreeoneDeadliftTm.value
+            : this.fivethreeoneDeadliftTm,
+        fivethreeonePressTm: fivethreeonePressTm.present
+            ? fivethreeonePressTm.value
+            : this.fivethreeonePressTm,
+        fivethreeoneWeek: fivethreeoneWeek ?? this.fivethreeoneWeek,
       );
   Setting copyWithCompanion(SettingsCompanion data) {
     return Setting(
@@ -2274,6 +2422,21 @@ class Setting extends DataClass implements Insertable<Setting> {
       scrollableTabs: data.scrollableTabs.present
           ? data.scrollableTabs.value
           : this.scrollableTabs,
+      fivethreeoneSquatTm: data.fivethreeoneSquatTm.present
+          ? data.fivethreeoneSquatTm.value
+          : this.fivethreeoneSquatTm,
+      fivethreeoneBenchTm: data.fivethreeoneBenchTm.present
+          ? data.fivethreeoneBenchTm.value
+          : this.fivethreeoneBenchTm,
+      fivethreeoneDeadliftTm: data.fivethreeoneDeadliftTm.present
+          ? data.fivethreeoneDeadliftTm.value
+          : this.fivethreeoneDeadliftTm,
+      fivethreeonePressTm: data.fivethreeonePressTm.present
+          ? data.fivethreeonePressTm.value
+          : this.fivethreeonePressTm,
+      fivethreeoneWeek: data.fivethreeoneWeek.present
+          ? data.fivethreeoneWeek.value
+          : this.fivethreeoneWeek,
     );
   }
 
@@ -2312,7 +2475,12 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('timerDuration: $timerDuration, ')
           ..write('vibrate: $vibrate, ')
           ..write('warmupSets: $warmupSets, ')
-          ..write('scrollableTabs: $scrollableTabs')
+          ..write('scrollableTabs: $scrollableTabs, ')
+          ..write('fivethreeoneSquatTm: $fivethreeoneSquatTm, ')
+          ..write('fivethreeoneBenchTm: $fivethreeoneBenchTm, ')
+          ..write('fivethreeoneDeadliftTm: $fivethreeoneDeadliftTm, ')
+          ..write('fivethreeonePressTm: $fivethreeonePressTm, ')
+          ..write('fivethreeoneWeek: $fivethreeoneWeek')
           ..write(')'))
         .toString();
   }
@@ -2351,7 +2519,12 @@ class Setting extends DataClass implements Insertable<Setting> {
         timerDuration,
         vibrate,
         warmupSets,
-        scrollableTabs
+        scrollableTabs,
+        fivethreeoneSquatTm,
+        fivethreeoneBenchTm,
+        fivethreeoneDeadliftTm,
+        fivethreeonePressTm,
+        fivethreeoneWeek
       ]);
   @override
   bool operator ==(Object other) =>
@@ -2389,7 +2562,12 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.timerDuration == this.timerDuration &&
           other.vibrate == this.vibrate &&
           other.warmupSets == this.warmupSets &&
-          other.scrollableTabs == this.scrollableTabs);
+          other.scrollableTabs == this.scrollableTabs &&
+          other.fivethreeoneSquatTm == this.fivethreeoneSquatTm &&
+          other.fivethreeoneBenchTm == this.fivethreeoneBenchTm &&
+          other.fivethreeoneDeadliftTm == this.fivethreeoneDeadliftTm &&
+          other.fivethreeonePressTm == this.fivethreeonePressTm &&
+          other.fivethreeoneWeek == this.fivethreeoneWeek);
 }
 
 class SettingsCompanion extends UpdateCompanion<Setting> {
@@ -2426,6 +2604,11 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<bool> vibrate;
   final Value<int?> warmupSets;
   final Value<bool> scrollableTabs;
+  final Value<double?> fivethreeoneSquatTm;
+  final Value<double?> fivethreeoneBenchTm;
+  final Value<double?> fivethreeoneDeadliftTm;
+  final Value<double?> fivethreeonePressTm;
+  final Value<int> fivethreeoneWeek;
   const SettingsCompanion({
     this.alarmSound = const Value.absent(),
     this.automaticBackups = const Value.absent(),
@@ -2460,6 +2643,11 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.vibrate = const Value.absent(),
     this.warmupSets = const Value.absent(),
     this.scrollableTabs = const Value.absent(),
+    this.fivethreeoneSquatTm = const Value.absent(),
+    this.fivethreeoneBenchTm = const Value.absent(),
+    this.fivethreeoneDeadliftTm = const Value.absent(),
+    this.fivethreeonePressTm = const Value.absent(),
+    this.fivethreeoneWeek = const Value.absent(),
   });
   SettingsCompanion.insert({
     required String alarmSound,
@@ -2495,6 +2683,11 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     required bool vibrate,
     this.warmupSets = const Value.absent(),
     this.scrollableTabs = const Value.absent(),
+    this.fivethreeoneSquatTm = const Value.absent(),
+    this.fivethreeoneBenchTm = const Value.absent(),
+    this.fivethreeoneDeadliftTm = const Value.absent(),
+    this.fivethreeonePressTm = const Value.absent(),
+    this.fivethreeoneWeek = const Value.absent(),
   })  : alarmSound = Value(alarmSound),
         cardioUnit = Value(cardioUnit),
         curveLines = Value(curveLines),
@@ -2543,6 +2736,11 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<bool>? vibrate,
     Expression<int>? warmupSets,
     Expression<bool>? scrollableTabs,
+    Expression<double>? fivethreeoneSquatTm,
+    Expression<double>? fivethreeoneBenchTm,
+    Expression<double>? fivethreeoneDeadliftTm,
+    Expression<double>? fivethreeonePressTm,
+    Expression<int>? fivethreeoneWeek,
   }) {
     return RawValuesInsertable({
       if (alarmSound != null) 'alarm_sound': alarmSound,
@@ -2580,6 +2778,15 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       if (vibrate != null) 'vibrate': vibrate,
       if (warmupSets != null) 'warmup_sets': warmupSets,
       if (scrollableTabs != null) 'scrollable_tabs': scrollableTabs,
+      if (fivethreeoneSquatTm != null)
+        'fivethreeone_squat_tm': fivethreeoneSquatTm,
+      if (fivethreeoneBenchTm != null)
+        'fivethreeone_bench_tm': fivethreeoneBenchTm,
+      if (fivethreeoneDeadliftTm != null)
+        'fivethreeone_deadlift_tm': fivethreeoneDeadliftTm,
+      if (fivethreeonePressTm != null)
+        'fivethreeone_press_tm': fivethreeonePressTm,
+      if (fivethreeoneWeek != null) 'fivethreeone_week': fivethreeoneWeek,
     });
   }
 
@@ -2616,7 +2823,12 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       Value<int>? timerDuration,
       Value<bool>? vibrate,
       Value<int?>? warmupSets,
-      Value<bool>? scrollableTabs}) {
+      Value<bool>? scrollableTabs,
+      Value<double?>? fivethreeoneSquatTm,
+      Value<double?>? fivethreeoneBenchTm,
+      Value<double?>? fivethreeoneDeadliftTm,
+      Value<double?>? fivethreeonePressTm,
+      Value<int>? fivethreeoneWeek}) {
     return SettingsCompanion(
       alarmSound: alarmSound ?? this.alarmSound,
       automaticBackups: automaticBackups ?? this.automaticBackups,
@@ -2651,6 +2863,12 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       vibrate: vibrate ?? this.vibrate,
       warmupSets: warmupSets ?? this.warmupSets,
       scrollableTabs: scrollableTabs ?? this.scrollableTabs,
+      fivethreeoneSquatTm: fivethreeoneSquatTm ?? this.fivethreeoneSquatTm,
+      fivethreeoneBenchTm: fivethreeoneBenchTm ?? this.fivethreeoneBenchTm,
+      fivethreeoneDeadliftTm:
+          fivethreeoneDeadliftTm ?? this.fivethreeoneDeadliftTm,
+      fivethreeonePressTm: fivethreeonePressTm ?? this.fivethreeonePressTm,
+      fivethreeoneWeek: fivethreeoneWeek ?? this.fivethreeoneWeek,
     );
   }
 
@@ -2756,6 +2974,25 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     if (scrollableTabs.present) {
       map['scrollable_tabs'] = Variable<bool>(scrollableTabs.value);
     }
+    if (fivethreeoneSquatTm.present) {
+      map['fivethreeone_squat_tm'] =
+          Variable<double>(fivethreeoneSquatTm.value);
+    }
+    if (fivethreeoneBenchTm.present) {
+      map['fivethreeone_bench_tm'] =
+          Variable<double>(fivethreeoneBenchTm.value);
+    }
+    if (fivethreeoneDeadliftTm.present) {
+      map['fivethreeone_deadlift_tm'] =
+          Variable<double>(fivethreeoneDeadliftTm.value);
+    }
+    if (fivethreeonePressTm.present) {
+      map['fivethreeone_press_tm'] =
+          Variable<double>(fivethreeonePressTm.value);
+    }
+    if (fivethreeoneWeek.present) {
+      map['fivethreeone_week'] = Variable<int>(fivethreeoneWeek.value);
+    }
     return map;
   }
 
@@ -2794,7 +3031,12 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('timerDuration: $timerDuration, ')
           ..write('vibrate: $vibrate, ')
           ..write('warmupSets: $warmupSets, ')
-          ..write('scrollableTabs: $scrollableTabs')
+          ..write('scrollableTabs: $scrollableTabs, ')
+          ..write('fivethreeoneSquatTm: $fivethreeoneSquatTm, ')
+          ..write('fivethreeoneBenchTm: $fivethreeoneBenchTm, ')
+          ..write('fivethreeoneDeadliftTm: $fivethreeoneDeadliftTm, ')
+          ..write('fivethreeonePressTm: $fivethreeonePressTm, ')
+          ..write('fivethreeoneWeek: $fivethreeoneWeek')
           ..write(')'))
         .toString();
   }
@@ -4848,6 +5090,11 @@ typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
   required bool vibrate,
   Value<int?> warmupSets,
   Value<bool> scrollableTabs,
+  Value<double?> fivethreeoneSquatTm,
+  Value<double?> fivethreeoneBenchTm,
+  Value<double?> fivethreeoneDeadliftTm,
+  Value<double?> fivethreeonePressTm,
+  Value<int> fivethreeoneWeek,
 });
 typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
   Value<String> alarmSound,
@@ -4883,6 +5130,11 @@ typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
   Value<bool> vibrate,
   Value<int?> warmupSets,
   Value<bool> scrollableTabs,
+  Value<double?> fivethreeoneSquatTm,
+  Value<double?> fivethreeoneBenchTm,
+  Value<double?> fivethreeoneDeadliftTm,
+  Value<double?> fivethreeonePressTm,
+  Value<int> fivethreeoneWeek,
 });
 
 class $$SettingsTableFilterComposer
@@ -5001,6 +5253,26 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<bool> get scrollableTabs => $composableBuilder(
       column: $table.scrollableTabs,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get fivethreeoneSquatTm => $composableBuilder(
+      column: $table.fivethreeoneSquatTm,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get fivethreeoneBenchTm => $composableBuilder(
+      column: $table.fivethreeoneBenchTm,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get fivethreeoneDeadliftTm => $composableBuilder(
+      column: $table.fivethreeoneDeadliftTm,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get fivethreeonePressTm => $composableBuilder(
+      column: $table.fivethreeonePressTm,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get fivethreeoneWeek => $composableBuilder(
+      column: $table.fivethreeoneWeek,
       builder: (column) => ColumnFilters(column));
 }
 
@@ -5128,6 +5400,26 @@ class $$SettingsTableOrderingComposer
   ColumnOrderings<bool> get scrollableTabs => $composableBuilder(
       column: $table.scrollableTabs,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get fivethreeoneSquatTm => $composableBuilder(
+      column: $table.fivethreeoneSquatTm,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get fivethreeoneBenchTm => $composableBuilder(
+      column: $table.fivethreeoneBenchTm,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get fivethreeoneDeadliftTm => $composableBuilder(
+      column: $table.fivethreeoneDeadliftTm,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get fivethreeonePressTm => $composableBuilder(
+      column: $table.fivethreeonePressTm,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get fivethreeoneWeek => $composableBuilder(
+      column: $table.fivethreeoneWeek,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$SettingsTableAnnotationComposer
@@ -5237,6 +5529,21 @@ class $$SettingsTableAnnotationComposer
 
   GeneratedColumn<bool> get scrollableTabs => $composableBuilder(
       column: $table.scrollableTabs, builder: (column) => column);
+
+  GeneratedColumn<double> get fivethreeoneSquatTm => $composableBuilder(
+      column: $table.fivethreeoneSquatTm, builder: (column) => column);
+
+  GeneratedColumn<double> get fivethreeoneBenchTm => $composableBuilder(
+      column: $table.fivethreeoneBenchTm, builder: (column) => column);
+
+  GeneratedColumn<double> get fivethreeoneDeadliftTm => $composableBuilder(
+      column: $table.fivethreeoneDeadliftTm, builder: (column) => column);
+
+  GeneratedColumn<double> get fivethreeonePressTm => $composableBuilder(
+      column: $table.fivethreeonePressTm, builder: (column) => column);
+
+  GeneratedColumn<int> get fivethreeoneWeek => $composableBuilder(
+      column: $table.fivethreeoneWeek, builder: (column) => column);
 }
 
 class $$SettingsTableTableManager extends RootTableManager<
@@ -5295,6 +5602,11 @@ class $$SettingsTableTableManager extends RootTableManager<
             Value<bool> vibrate = const Value.absent(),
             Value<int?> warmupSets = const Value.absent(),
             Value<bool> scrollableTabs = const Value.absent(),
+            Value<double?> fivethreeoneSquatTm = const Value.absent(),
+            Value<double?> fivethreeoneBenchTm = const Value.absent(),
+            Value<double?> fivethreeoneDeadliftTm = const Value.absent(),
+            Value<double?> fivethreeonePressTm = const Value.absent(),
+            Value<int> fivethreeoneWeek = const Value.absent(),
           }) =>
               SettingsCompanion(
             alarmSound: alarmSound,
@@ -5330,6 +5642,11 @@ class $$SettingsTableTableManager extends RootTableManager<
             vibrate: vibrate,
             warmupSets: warmupSets,
             scrollableTabs: scrollableTabs,
+            fivethreeoneSquatTm: fivethreeoneSquatTm,
+            fivethreeoneBenchTm: fivethreeoneBenchTm,
+            fivethreeoneDeadliftTm: fivethreeoneDeadliftTm,
+            fivethreeonePressTm: fivethreeonePressTm,
+            fivethreeoneWeek: fivethreeoneWeek,
           ),
           createCompanionCallback: ({
             required String alarmSound,
@@ -5365,6 +5682,11 @@ class $$SettingsTableTableManager extends RootTableManager<
             required bool vibrate,
             Value<int?> warmupSets = const Value.absent(),
             Value<bool> scrollableTabs = const Value.absent(),
+            Value<double?> fivethreeoneSquatTm = const Value.absent(),
+            Value<double?> fivethreeoneBenchTm = const Value.absent(),
+            Value<double?> fivethreeoneDeadliftTm = const Value.absent(),
+            Value<double?> fivethreeonePressTm = const Value.absent(),
+            Value<int> fivethreeoneWeek = const Value.absent(),
           }) =>
               SettingsCompanion.insert(
             alarmSound: alarmSound,
@@ -5400,6 +5722,11 @@ class $$SettingsTableTableManager extends RootTableManager<
             vibrate: vibrate,
             warmupSets: warmupSets,
             scrollableTabs: scrollableTabs,
+            fivethreeoneSquatTm: fivethreeoneSquatTm,
+            fivethreeoneBenchTm: fivethreeoneBenchTm,
+            fivethreeoneDeadliftTm: fivethreeoneDeadliftTm,
+            fivethreeonePressTm: fivethreeonePressTm,
+            fivethreeoneWeek: fivethreeoneWeek,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
