@@ -14,6 +14,7 @@ import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
 import 'package:flexify/widgets/bodypart_tag.dart';
 import 'package:flexify/widgets/five_three_one_calculator.dart';
+import 'package:flexify/widgets/plate_calculator.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -422,6 +423,11 @@ class _StartPlanPageState extends State<StartPlanPage> {
                   label: const Text('Done'),
                 )
               else ...[
+                IconButton(
+                  icon: const Icon(Icons.calculate_outlined),
+                  tooltip: 'Plate calculator',
+                  onPressed: () => showPlateCalculator(context),
+                ),
                 IconButton(
                   icon: const Icon(Icons.swap_vert),
                   tooltip: 'Reorder exercises',
