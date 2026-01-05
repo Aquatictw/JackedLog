@@ -181,69 +181,118 @@ class _NotesPageState extends State<NotesPage> {
             }).toList();
           }
 
-          if (notes.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.note_add_outlined,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _searchQuery.isEmpty ? 'No notes yet' : 'No notes found',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (_searchQuery.isEmpty)
-                    TextButton.icon(
-                      onPressed: _createNote,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Create your first note'),
-                    ),
-                ],
-              ),
-            );
-          }
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.85,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: notes.length + 1, // +1 for TM card
-            itemBuilder: (context, index) {
-              // First card is the Training Max editor
-              if (index == 0) {
-                return _TrainingMaxCard(
+          if (notes.isEmpty && _searchQuery.isNotEmpty) {
+            return Column(
+              children: [
+                _TrainingMaxBanner(
                   onTap: () {
                     showDialog(
                       context: context,
                       builder: (context) => const TrainingMaxEditor(),
                     );
                   },
-                );
-              }
+                ),
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.search_off_outlined,
+                          size: 80,
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "No notes found",
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
 
-              // Adjust index for notes (subtract 1 because TM card is at 0)
-              final noteIndex = index - 1;
-              final note = notes[noteIndex];
-              final color = _getColorFromValue(note.color);
+          if (notes.isEmpty) {
+            return Column(
+              children: [
+                _TrainingMaxBanner(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const TrainingMaxEditor(),
+                    );
+                  },
+                ),
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.note_add_outlined,
+                          size: 80,
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "No notes yet",
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: _createNote,
+                          icon: const Icon(Icons.add),
+                          label: const Text("Create your first note"),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
 
-              return _NoteCard(
-                note: note,
-                color: color,
-                onTap: () => _editNote(note),
-                onDelete: () => _deleteNote(note),
-              );
-            },
+          return Column(
+            children: [
+              _TrainingMaxBanner(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => const TrainingMaxEditor(),
+                  );
+                },
+              ),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.85,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: notes.length,
+                  itemBuilder: (context, index) {
+                    final note = notes[index];
+                    final color = _getColorFromValue(note.color);
+
+                    return _NoteCard(
+                      note: note,
+                      color: color,
+                      onTap: () => _editNote(note),
+                      onDelete: () => _deleteNote(note),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -251,10 +300,11 @@ class _NotesPageState extends State<NotesPage> {
   }
 }
 
-class _TrainingMaxCard extends StatelessWidget {
+
+class _TrainingMaxBanner extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _TrainingMaxCard({
+  const _TrainingMaxBanner({
     required this.onTap,
   });
 
@@ -262,45 +312,74 @@ class _TrainingMaxCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      elevation: 2,
-      color: colorScheme.primaryContainer,
-      shape: RoundedRectangleBorder(
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      child: Material(
+        elevation: 3,
         borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.fitness_center,
-                size: 48,
-                color: colorScheme.primary,
+        color: colorScheme.primaryContainer,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primaryContainer,
+                  colorScheme.primaryContainer.withValues(alpha: 0.8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(height: 12),
-              Text(
-                '5/3/1 Training Max',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onPrimaryContainer,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.fitness_center,
+                    size: 32,
+                    color: colorScheme.primary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Edit your training max values',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
-                  height: 1.3,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '5/3/1 Training Max',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onPrimaryContainer,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Calculate weights for your program',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Icon(
+                  Icons.chevron_right,
+                  color: colorScheme.primary,
+                  size: 28,
+                ),
+              ],
+            ),
           ),
         ),
       ),
