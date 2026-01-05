@@ -35,10 +35,10 @@ class PlanState extends ChangeNotifier {
     updateDefaults();
   }
 
-  void addExercise(GymSetsCompanion gymSet) {
+  void addExercise(String exerciseName) {
     exercises.add(
       PlanExercisesCompanion(
-        exercise: Value(gymSet.name.value),
+        exercise: Value(exerciseName),
         enabled: const Value(true),
       ),
     );

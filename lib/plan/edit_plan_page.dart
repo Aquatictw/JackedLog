@@ -51,17 +51,17 @@ class _EditPlanPageState extends State<EditPlanPage> {
           title: const Text("Nothing found"),
           subtitle: Text("Tap to create $search"),
           onTap: () async {
-            GymSetsCompanion? gymSet = await Navigator.of(context).push(
+            String? exerciseName = await Navigator.of(context).push(
               material.MaterialPageRoute(
                 builder: (context) => AddExercisePage(
                   name: search,
                 ),
               ),
             );
-            if (gymSet == null || !mounted) return;
+            if (exerciseName == null || !mounted) return;
 
             final state = context.read<PlanState>();
-            state.addExercise(gymSet);
+            state.addExercise(exerciseName);
             setState(() {
               exercises = state.exercises;
               search = '';
