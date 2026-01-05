@@ -10,6 +10,7 @@ import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/utils.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class EditGraphPage extends StatefulWidget {
@@ -579,13 +580,37 @@ class _EditGraphPageState extends State<EditGraphPage> {
   }
 
   void pick() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: Icon(Icons.camera_alt, color: colorScheme.primary),
+              title: const Text('Camera'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library, color: colorScheme.primary),
+              title: const Text('Gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
     );
-    if (result?.files.single == null) return;
+
+    if (source == null) return;
+
+    final picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(source: source);
+
+    if (pickedFile == null) return;
 
     setState(() {
-      image = result?.files.single.path;
+      image = pickedFile.path;
     });
   }
 
