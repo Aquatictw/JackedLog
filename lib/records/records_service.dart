@@ -176,7 +176,7 @@ Future<Set<RecordType>> getSetRecords({
 }) async {
   final records = <RecordType>{};
 
-  // Get current best values for this exercise
+  // Get current best values for this exercise (excluding this set)
   final bestQuery = '''
     SELECT
       MAX(weight) as best_weight,
@@ -185,31 +185,40 @@ Future<Set<RecordType>> getSetRecords({
     FROM gym_sets
     WHERE name = ?
       AND hidden = 0
+      AND id != ?
   ''';
 
   final result = await db.customSelect(
     bestQuery,
-    variables: [Variable.withString(exerciseName)],
+    variables: [Variable.withString(exerciseName), Variable.withInt(setId)],
   ).getSingleOrNull();
 
-  if (result == null) return records;
+  if (result == null) {
+    // No other sets exist - this must be a record
+    if (weight > 0) records.add(RecordType.bestWeight);
+    final set1RM = calculate1RM(weight, reps);
+    if (set1RM > 0) records.add(RecordType.best1RM);
+    final setVolume = calculateVolume(weight, reps);
+    if (setVolume > 0) records.add(RecordType.bestVolume);
+    return records;
+  }
 
   final bestWeight = result.read<double?>('best_weight') ?? 0.0;
   final best1RM = result.read<double?>('best_1rm') ?? 0.0;
   final bestVolume = result.read<double?>('best_volume') ?? 0.0;
 
-  // Check if this set's values match the best values
-  if (weight >= bestWeight && weight > 0) {
+  // Check if this set beats the best of all OTHER sets (strict >)
+  if (weight > bestWeight) {
     records.add(RecordType.bestWeight);
   }
 
   final set1RM = calculate1RM(weight, reps);
-  if (set1RM >= best1RM && set1RM > 0) {
+  if (set1RM > best1RM) {
     records.add(RecordType.best1RM);
   }
 
   final setVolume = calculateVolume(weight, reps);
-  if (setVolume >= bestVolume && setVolume > 0) {
+  if (setVolume > bestVolume) {
     records.add(RecordType.bestVolume);
   }
 
@@ -235,7 +244,7 @@ Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
     setsByExercise.putIfAbsent(set.name, () => []).add(set);
   }
 
-  // For each exercise, find the all-time bests and check which sets in this workout match
+  // For each exercise, find the all-time bests and check which sets hold records
   for (final entry in setsByExercise.entries) {
     final exerciseName = entry.key;
     final exerciseSets = entry.value;
@@ -263,21 +272,48 @@ Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
     final best1RM = result.read<double?>('best_1rm') ?? 0.0;
     final bestVolume = result.read<double?>('best_volume') ?? 0.0;
 
-    // Check each set in this workout
+    // Find the minimum set ID for each record type (tie-breaking)
+    int? minIdForWeight;
+    int? minIdForRM;
+    int? minIdForVolume;
+
+    // Get all sets for this exercise to find earliest record holders
+    final allExerciseSets = await (db.gymSets.select()
+          ..where((s) =>
+              s.name.equals(exerciseName) &
+              s.hidden.equals(false) &
+              s.cardio.equals(false)))
+        .get();
+
+    for (final set in allExerciseSets) {
+      if (set.weight == bestWeight && bestWeight > 0) {
+        minIdForWeight = minIdForWeight == null ? set.id : (set.id < minIdForWeight ? set.id : minIdForWeight);
+      }
+      final set1RM = calculate1RM(set.weight, set.reps);
+      if (set1RM == best1RM && best1RM > 0) {
+        minIdForRM = minIdForRM == null ? set.id : (set.id < minIdForRM ? set.id : minIdForRM);
+      }
+      final setVolume = calculateVolume(set.weight, set.reps);
+      if (setVolume == bestVolume && bestVolume > 0) {
+        minIdForVolume = minIdForVolume == null ? set.id : (set.id < minIdForVolume ? set.id : minIdForVolume);
+      }
+    }
+
+    // Check each set in this workout - only mark if it's the earliest with that value
     for (final set in exerciseSets) {
       final setRecords = <RecordType>{};
 
-      if (set.weight >= bestWeight && bestWeight > 0) {
+      if (set.weight == bestWeight && set.id == minIdForWeight) {
         setRecords.add(RecordType.bestWeight);
       }
 
       final set1RM = calculate1RM(set.weight, set.reps);
-      if (set1RM >= best1RM && best1RM > 0) {
+      if (set1RM == best1RM && set.id == minIdForRM) {
         setRecords.add(RecordType.best1RM);
       }
 
       final setVolume = calculateVolume(set.weight, set.reps);
-      if (setVolume >= bestVolume && bestVolume > 0) {
+      if (setVolume == bestVolume && set.id == minIdForVolume) {
         setRecords.add(RecordType.bestVolume);
       }
 
@@ -348,24 +384,65 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
     }
   }
 
-  // Check each set against the bests
+  // Find minimum set IDs for each record type per exercise (tie-breaking)
+  final recordHolders = <String, ({int? weightId, int? rm1Id, int? volumeId})>{};
+
+  for (final exerciseName in exerciseNames) {
+    final bests = exerciseBests[exerciseName];
+    if (bests == null) continue;
+
+    // Get all sets for this exercise to find earliest record holders
+    final allSets = await (db.gymSets.select()
+          ..where((s) =>
+              s.name.equals(exerciseName) &
+              s.hidden.equals(false) &
+              s.cardio.equals(false)))
+        .get();
+
+    int? minIdForWeight;
+    int? minIdForRM;
+    int? minIdForVolume;
+
+    for (final set in allSets) {
+      if (set.weight == bests.weight && bests.weight > 0) {
+        minIdForWeight = minIdForWeight == null ? set.id : (set.id < minIdForWeight ? set.id : minIdForWeight);
+      }
+      final set1RM = calculate1RM(set.weight, set.reps);
+      if (set1RM == bests.rm1 && bests.rm1 > 0) {
+        minIdForRM = minIdForRM == null ? set.id : (set.id < minIdForRM ? set.id : minIdForRM);
+      }
+      final setVolume = calculateVolume(set.weight, set.reps);
+      if (setVolume == bests.volume && bests.volume > 0) {
+        minIdForVolume = minIdForVolume == null ? set.id : (set.id < minIdForVolume ? set.id : minIdForVolume);
+      }
+    }
+
+    recordHolders[exerciseName] = (
+      weightId: minIdForWeight,
+      rm1Id: minIdForRM,
+      volumeId: minIdForVolume,
+    );
+  }
+
+  // Check each set - only count if it's the earliest with that record value
   for (final set in workoutSets) {
     final bests = exerciseBests[set.name];
-    if (bests == null) continue;
+    final holders = recordHolders[set.name];
+    if (bests == null || holders == null) continue;
 
     var hasRecord = false;
 
-    if (set.weight >= bests.weight && bests.weight > 0) {
+    if (set.weight == bests.weight && set.id == holders.weightId) {
       hasRecord = true;
     }
 
     final set1RM = calculate1RM(set.weight, set.reps);
-    if (set1RM >= bests.rm1 && bests.rm1 > 0) {
+    if (set1RM == bests.rm1 && set.id == holders.rm1Id) {
       hasRecord = true;
     }
 
     final setVolume = calculateVolume(set.weight, set.reps);
-    if (setVolume >= bests.volume && bests.volume > 0) {
+    if (setVolume == bests.volume && set.id == holders.volumeId) {
       hasRecord = true;
     }
 

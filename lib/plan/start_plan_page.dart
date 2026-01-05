@@ -1433,16 +1433,29 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
     if (existingSets.isNotEmpty) {
       // Load existing sets from database (resuming workout)
-      final loadedSets = existingSets.map((set) {
-        return SetData(
+      final loadedSets = <SetData>[];
+      for (final set in existingSets) {
+        // Check if this set holds any records
+        Set<RecordType> records = {};
+        if (!set.hidden) { // Only check records for completed sets
+          records = await getSetRecords(
+            setId: set.id,
+            exerciseName: set.name,
+            weight: set.weight,
+            reps: set.reps,
+          );
+        }
+
+        loadedSets.add(SetData(
           weight: set.weight,
           reps: set.reps.toInt(),
           completed: !set.hidden,
           savedSetId: set.id,
           isWarmup: set.warmup,
           isDropSet: set.dropSet,
-        );
-      }).toList();
+          records: records,
+        ));
+      }
 
       setState(() {
         unit = defaultUnit;
@@ -2294,6 +2307,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                               index: displayIndex,
                               setData: sets[index],
                               unit: unit,
+                              records: sets[index].records,
                               onWeightChanged: (value) {
                                 setState(() => sets[index].weight = value);
                                 if (sets[index].savedSetId != null) {
@@ -2472,6 +2486,7 @@ class _AdHocSetRow extends StatelessWidget {
   final int index;
   final SetData setData;
   final String unit;
+  final Set<RecordType> records;
   final ValueChanged<double> onWeightChanged;
   final ValueChanged<int> onRepsChanged;
   final VoidCallback onToggle;
@@ -2483,6 +2498,7 @@ class _AdHocSetRow extends StatelessWidget {
     required this.index,
     required this.setData,
     required this.unit,
+    required this.records,
     required this.onWeightChanged,
     required this.onRepsChanged,
     required this.onToggle,
@@ -2696,6 +2712,12 @@ class _AdHocSetRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
+            // Record crown indicator
+            if (records.isNotEmpty && completed)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: RecordCrown(records: records, size: 20),
+              ),
             // Complete button
             SizedBox(
               width: 44,

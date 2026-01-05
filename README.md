@@ -18,8 +18,6 @@
   <img src="screenshots/hero_composite.png" alt="Flexify Screenshots" width="900">
 </p>
 
-> **Note**: This is a heavily modified fork of [brandonp2412/Flexify](https://github.com/brandonp2412/Flexify). While inspired by the original, this version has been extensively rebuilt with new architecture and features.
-
 ---
 
 ## Why Flexify?
@@ -179,14 +177,13 @@ See [CLAUDE.md](CLAUDE.md) for complete schema documentation.
 
 Contributions are welcome! This is an open-source project and improvements are always appreciated.
 
+### Acknowledgments
+
+> This project is based on [brandonp2412/Flexify](https://github.com/brandonp2412/Flexify) and has been heavily modified and rebuilt with new architecture and features.
+
 ### License
 
 Flexify is licensed under the [MIT License](LICENSE.md).
-
-
-### Acknowledgments
-
-Original [Flexify](https://github.com/brandonp2412/Flexify) by brandonp2412
 
 
 <p align="center">
