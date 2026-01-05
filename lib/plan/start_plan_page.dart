@@ -353,7 +353,6 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.plan.title?.isNotEmpty == true) title = widget.plan.title!;
     final colorScheme = Theme.of(context).colorScheme;
 
     return StreamBuilder(
@@ -383,6 +382,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
                           child: Text(
                             title,
                             overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 18),
                           ),
                         ),
                         const SizedBox(width: 6),
