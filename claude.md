@@ -16,7 +16,7 @@ Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, 
 
 ## Database Architecture
 
-### Current Schema (v54)
+### Current Schema (v55)
 
 #### Tables
 
@@ -62,6 +62,10 @@ Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, 
 
 5. **Settings** (app preferences - 30+ fields including 5/3/1 training maxes)
    - General settings (theme, units, timers, etc.)
+   - Theme settings:
+     - `themeMode` (text - "ThemeMode.system", "ThemeMode.dark", or "ThemeMode.light")
+     - `systemColors` (bool - whether to use device's dynamic colors)
+     - `customColorSeed` (int - custom color seed for Material Design 3 theme, default: 0xFF673AB7 deep purple)
    - 5/3/1 specific settings:
      - `fivethreeoneWeek` (int - current week in 5/3/1 cycle: 1, 2, or 3)
      - `fivethreeoneSquatTm` (nullable real - squat training max)
@@ -117,6 +121,8 @@ Workout Session (e.g., "Monday Chest - Dec 29, 5pm")
 | `lib/graph/overview_page.dart` | Workout overview with stats, heatmap, and muscle charts |
 | `lib/widgets/five_three_one_calculator.dart` | 5/3/1 powerlifting program calculator dialog |
 | `lib/widgets/bodypart_tag.dart` | Compact muscle group/bodypart tag widget |
+| `lib/widgets/artistic_color_picker.dart` | Custom color picker with palettes, HSL sliders, and color grid |
+| `lib/settings/appearance_settings.dart` | Appearance settings page including theme and color customization |
 | `lib/database/notes.dart` | Notes table definition for general notes |
 | `drift_schemas/db/drift_schema_vN.json` | Schema JSON files for each version |
 
@@ -694,6 +700,156 @@ Chest Press [Chest] [Hammer Strength]
 Where:
 - `[Chest]` = BodypartTag (category)
 - `[Hammer Strength]` = Brand name badge
+
+## Custom Color Theming
+
+### Overview
+
+The app supports full Material Design 3 color customization through an artistic color picker, allowing users to personalize their app's entire color scheme. Users can choose between system dynamic colors (Android 12+) or a custom color seed.
+
+### How It Works
+
+**1. Color System Options:**
+- **System Colors**: Uses Android's dynamic color system (extracted from wallpaper on supported devices)
+- **Custom Color**: User-selected color seed generates a complete Material Design 3 ColorScheme
+
+**2. Database Storage:**
+- `Settings.systemColors` (bool) - toggles between system and custom colors
+- `Settings.customColorSeed` (int) - stores custom color as integer (default: 0xFF673AB7 - deep purple)
+
+**3. Theme Generation** (`lib/main.dart`):
+```dart
+final customColor = context.select<SettingsState, int>(
+  (settings) => settings.value.customColorSeed,
+);
+
+final light = ColorScheme.fromSeed(seedColor: Color(customColor));
+final dark = ColorScheme.fromSeed(
+  seedColor: Color(customColor),
+  brightness: Brightness.dark,
+);
+
+return MaterialApp(
+  theme: ThemeData(
+    colorScheme: colors ? lightDynamic : light,
+    // ...
+  ),
+  darkTheme: ThemeData(
+    colorScheme: colors ? darkDynamic : dark,
+    // ...
+  ),
+);
+```
+
+**4. Artistic Color Picker** (`lib/widgets/artistic_color_picker.dart`):
+
+The color picker dialog provides three selection methods:
+
+- **Palettes Tab**: 6 curated mood-based collections
+  - Energetic (reds, oranges, yellows)
+  - Calm (blues, cyans, teals)
+  - Natural (greens, browns)
+  - Elegant (purples, indigos)
+  - Bold (pinks, reds, purples)
+  - Pastel (soft pastels)
+
+- **Custom Tab**: Precise HSL control
+  - Hue slider (0-360°) with rainbow gradient preview
+  - Saturation slider (0-100%) with dynamic gradient
+  - Lightness slider (0-100%) with dynamic gradient
+  - Live hex code display (selectable)
+  - RGB values display
+
+- **Grid Tab**: 360+ color variations
+  - Generates colors across entire hue spectrum
+  - Multiple saturation/lightness variations per hue
+  - Visual browsing for color discovery
+
+**5. Live Preview:**
+- Shows Primary, Secondary, Tertiary, and Surface colors
+- Updates in real-time as user adjusts sliders or selects colors
+- Demonstrates how color will look in actual app
+
+**6. Additional Features:**
+- Random color generator (shuffle button)
+- Disabled state when system colors are active
+- Visual indicator (color circle) showing current custom color in settings
+
+### Implementation Details
+
+**Files:**
+- `lib/widgets/artistic_color_picker.dart` - Color picker dialog (565 lines)
+- `lib/settings/appearance_settings.dart` - Settings UI integration
+- `lib/main.dart` - Theme generation and color application
+- `lib/database/settings.dart` - Database schema
+
+**Color Model:**
+- Uses HSL (Hue, Saturation, Lightness) for intuitive color manipulation
+- Stores as RGB integer for database compatibility
+- Converts to Material Design 3 ColorScheme via `ColorScheme.fromSeed()`
+
+**UX Patterns:**
+- Dialog appears above all overlays using `useRootNavigator: true`
+- Returns selected color on "Apply", null on "Cancel"
+- Auto-saves to database when user applies color
+- Immediate theme update via Provider state management
+
+**Visual Styling:**
+- Color chips: 56x56px with rounded corners and shadows
+- Selected state: Primary color border with checkmark icon
+- Sliders: Custom track height (12px) with dynamic gradients
+- Dialog: Max 500px width, 700px height with responsive layout
+
+### Key Code Paths
+
+**Opening the color picker** (`lib/settings/appearance_settings.dart`):
+```dart
+final color = await showDialog<Color>(
+  context: context,
+  builder: (context) => ArtisticColorPicker(
+    initialColor: Color(settings.value.customColorSeed),
+    onColorChanged: (color) {},
+  ),
+);
+if (color != null) {
+  await db.settings.update().write(
+    SettingsCompanion(
+      customColorSeed: Value(color.value),
+    ),
+  );
+}
+```
+
+**HSL to Color conversion** (`lib/widgets/artistic_color_picker.dart`):
+```dart
+void _updateFromHSL() {
+  final color = HSLColor.fromAHSL(1.0, _hue, _saturation, _lightness).toColor();
+  _updateColor(color);
+}
+```
+
+**Dynamic gradient generation:**
+```dart
+// Saturation gradient based on current hue and lightness
+Widget _buildSaturationGradientBar() {
+  final baseColor = HSLColor.fromAHSL(1.0, _hue, 0, _lightness).toColor();
+  final saturatedColor = HSLColor.fromAHSL(1.0, _hue, 1, _lightness).toColor();
+
+  return Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(colors: [baseColor, saturatedColor]),
+    ),
+  );
+}
+```
+
+### Important Notes
+
+- Color changes apply immediately to entire app via reactive Provider state
+- Material Design 3 automatically generates harmonious color palettes from the seed
+- Custom colors are disabled when "System color scheme" is enabled
+- The picker supports both light and dark theme modes
+- Default color (deep purple #673AB7) provides good contrast in both themes
 
 ## Development Commands
 
