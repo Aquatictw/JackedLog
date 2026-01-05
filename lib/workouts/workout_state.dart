@@ -126,4 +126,51 @@ class WorkoutState extends ChangeNotifier {
     _activePlan = plan;
     notifyListeners();
   }
+
+  Future<Plan?> resumeWorkout(Workout workout) async {
+    if (_activeWorkout != null && _activeWorkout!.id != workout.id) {
+      return null; // Cannot resume a different workout while one is active
+    }
+
+    // Calculate the original workout duration
+    final originalDuration = workout.endTime != null
+        ? workout.endTime!.difference(workout.startTime)
+        : Duration.zero;
+
+    // Adjust startTime so the timer continues from where it left off
+    final newStartTime = DateTime.now().toLocal().subtract(originalDuration);
+
+    // Update the workout with new startTime and cleared endTime
+    await (db.workouts.update()..where((w) => w.id.equals(workout.id)))
+        .write(WorkoutsCompanion(
+          startTime: Value(newStartTime),
+          endTime: Value(null),
+        ));
+
+    // Load the updated workout
+    final updatedWorkout = await (db.workouts.select()
+          ..where((w) => w.id.equals(workout.id)))
+        .getSingle();
+
+    // Load the associated plan
+    Plan? plan;
+    if (updatedWorkout.planId != null) {
+      plan = await (db.plans.select()
+            ..where((p) => p.id.equals(updatedWorkout.planId!)))
+          .getSingleOrNull();
+    } else {
+      // Freeform workout - create temporary plan
+      plan = Plan(
+        id: -1,
+        days: updatedWorkout.name ?? 'Workout',
+        sequence: 0,
+        title: updatedWorkout.name ?? 'Workout',
+      );
+    }
+
+    _activeWorkout = updatedWorkout;
+    _activePlan = plan;
+    notifyListeners();
+    return plan;
+  }
 }

@@ -9,10 +9,12 @@ import 'package:flexify/graph/strength_page.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/records/record_notification.dart';
 import 'package:flexify/records/records_service.dart';
+import 'package:flexify/plan/start_plan_page.dart';
 import 'package:flexify/sets/edit_set_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/utils.dart';
 import 'package:flexify/widgets/bodypart_tag.dart';
+import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -60,6 +62,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       (settings) => settings.value.showImages,
     );
     final colorScheme = Theme.of(context).colorScheme;
+
+    final workoutEnded = widget.workout.endTime != null;
 
     return Scaffold(
       body: StreamBuilder<List<GymSet>>(
@@ -138,6 +142,12 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 expandedHeight: 200,
                 pinned: true,
                 actions: [
+                  if (workoutEnded)
+                    IconButton(
+                      icon: const Icon(Icons.play_arrow),
+                      tooltip: 'Resume Workout',
+                      onPressed: () => _resumeWorkout(context),
+                    ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
                     onPressed: () => _deleteWorkout(context),
@@ -834,6 +844,52 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _resumeWorkout(BuildContext context) async {
+    final workoutState = context.read<WorkoutState>();
+
+    // Try to resume the workout
+    final plan = await workoutState.resumeWorkout(widget.workout);
+
+    if (plan == null && context.mounted) {
+      // Failed to resume (another workout is active)
+      toast('Finish your current workout first');
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    // Navigate to the Plans tab and then to the workout page
+    final tabController = workoutState.tabController;
+    final plansTabIndex = workoutState.plansTabIndex;
+
+    if (tabController != null && tabController.index != plansTabIndex) {
+      tabController.animateTo(plansTabIndex);
+      // Wait for tab animation
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    if (!context.mounted) return;
+
+    // Navigate to the workout execution page
+    final plansNavigatorKey = workoutState.plansNavigatorKey;
+    if (plansNavigatorKey?.currentState != null) {
+      // Push the workout page (keeping Plans page in back stack)
+      plansNavigatorKey!.currentState!.push(
+        MaterialPageRoute(
+          builder: (context) => StartPlanPage(plan: plan!),
+          settings: RouteSettings(
+            name: 'StartPlanPage_${plan!.id}',
+          ),
+        ),
+      );
+    }
+
+    // Pop the detail page
+    if (context.mounted) {
+      Navigator.pop(context);
     }
   }
 

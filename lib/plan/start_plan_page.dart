@@ -34,15 +34,16 @@ class _ExerciseItem {
   final int? planExerciseId;
   final String? adHocName;
   final String uniqueId;
+  int sequence; // Preserve sequence number, mutable for reordering
 
-  _ExerciseItem.plan(PlanExercise exercise)
+  _ExerciseItem.plan(PlanExercise exercise, {required this.sequence})
       : isPlanExercise = true,
         planExerciseId = exercise.id,
         adHocName = null,
         uniqueId =
             'plan_${exercise.id}_${DateTime.now().microsecondsSinceEpoch}';
 
-  _ExerciseItem.adHoc(String name)
+  _ExerciseItem.adHoc(String name, {required this.sequence})
       : isPlanExercise = false,
         planExerciseId = null,
         adHocName = name,
@@ -165,9 +166,11 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
         if (existingSets.isEmpty) {
           // New workout - load plan exercises minus removed ones
+          int seq = 0;
           for (final planEx in planExercises) {
             if (!removedExercises.contains(planEx.exercise)) {
-              _exerciseOrder.add(_ExerciseItem.plan(planEx));
+              _exerciseOrder.add(_ExerciseItem.plan(planEx, sequence: seq));
+              seq++;
             }
           }
         } else {
@@ -221,9 +224,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 .where((e) => e.exercise == group.name)
                 .firstOrNull;
             if (planExercise != null) {
-              _exerciseOrder.add(_ExerciseItem.plan(planExercise));
+              _exerciseOrder.add(_ExerciseItem.plan(planExercise, sequence: group.minSeq));
             } else {
-              _exerciseOrder.add(_ExerciseItem.adHoc(group.name));
+              _exerciseOrder.add(_ExerciseItem.adHoc(group.name, sequence: group.minSeq));
             }
 
             // Restore notes from first set of this group
@@ -261,7 +264,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
     HapticFeedback.mediumImpact();
 
-    // Update sequence numbers in the database to match the new visual order
+    // Update sequence numbers in the database and in-memory items to match the new visual order
     if (workoutId != null) {
       // We need to update all exercises' sequence numbers to match their new positions
       for (int i = 0; i < _exerciseOrder.length; i++) {
@@ -277,16 +280,23 @@ class _StartPlanPageState extends State<StartPlanPage> {
           exerciseName = item.adHocName!;
         }
 
-        // Update all sets for this exercise to have the new sequence number
+        // Update all sets for this specific exercise instance to have the new sequence number
+        // Match on old sequence (item.sequence) and update to new sequence (i)
+        // Update both completed (hidden=0) and uncompleted (hidden=1) sets, but not tombstones (sequence=-1)
+        final oldSequence = item.sequence;
         await db.customUpdate(
-          'UPDATE gym_sets SET sequence = ? WHERE workout_id = ? AND name = ? AND hidden = 0',
+          'UPDATE gym_sets SET sequence = ? WHERE workout_id = ? AND name = ? AND sequence = ?',
           updates: {db.gymSets},
           variables: [
             Variable.withInt(i),
             Variable.withInt(workoutId!),
             Variable.withString(exerciseName),
+            Variable.withInt(oldSequence),
           ],
         );
+
+        // Update the in-memory sequence number after database update
+        item.sequence = i;
       }
     }
   }
@@ -490,7 +500,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
             workoutId: workoutId,
             isExpanded: expandedExercises.contains(item.key),
             exerciseNotes: _exerciseNotes[item.key],
-            sequence: index, // Pass the visual order
+            sequence: item.sequence, // Use preserved sequence number
             onNotesChanged: (notes) {
               setState(() {
                 if (notes.isEmpty) {
@@ -562,7 +572,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
             workoutId: workoutId,
             isExpanded: expandedExercises.contains(item.key),
             exerciseNotes: _exerciseNotes[item.key],
-            sequence: index, // Pass the visual order
+            sequence: item.sequence, // Use preserved sequence number
             onNotesChanged: (notes) {
               setState(() {
                 if (notes.isEmpty) {
@@ -674,7 +684,10 @@ class _StartPlanPageState extends State<StartPlanPage> {
     );
 
     if (result != null && mounted) {
-      final newItem = _ExerciseItem.adHoc(result);
+      final nextSequence = _exerciseOrder.isEmpty
+          ? 0
+          : _exerciseOrder.map((e) => e.sequence).reduce((a, b) => a > b ? a : b) + 1;
+      final newItem = _ExerciseItem.adHoc(result, sequence: nextSequence);
       setState(() {
         _exerciseOrder.add(newItem);
         expandedExercises.add(newItem.key);
