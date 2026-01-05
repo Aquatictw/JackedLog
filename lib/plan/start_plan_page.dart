@@ -1319,6 +1319,20 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     // Get default values from the first working set, or first set, or fallback
     GymSet? referenceSet =
         _previousWorkingSets.firstOrNull ?? previousSets.firstOrNull;
+
+    // If no previous completed sets found, check for any set (including hidden ones)
+    // to get metadata like brandName, category, exerciseType, restMs
+    if (referenceSet == null) {
+      referenceSet = await (db.gymSets.select()
+            ..where((tbl) => tbl.name.equals(widget.exerciseName))
+            ..orderBy([
+              (u) =>
+                  OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+            ])
+            ..limit(1))
+          .getSingleOrNull();
+    }
+
     _defaultWeight = referenceSet?.weight ?? 0.0;
     _defaultReps = referenceSet?.reps.toInt() ?? 8;
     final defaultUnit = referenceSet?.unit ?? settings.strengthUnit;

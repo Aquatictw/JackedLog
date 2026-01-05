@@ -558,6 +558,6 @@ class _AddExercisePageState extends State<AddExercisePage> {
     await db.gymSets.insertOne(insert);
     if (!mounted) return;
 
-    Navigator.pop(context, insert);
+    Navigator.pop(context, nameCtrl.text);
   }
 }
