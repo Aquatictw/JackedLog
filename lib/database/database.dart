@@ -469,10 +469,13 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(schema.settings, schema.settings.fivethreeonePressTm);
           await m.addColumn(schema.settings, schema.settings.fivethreeoneWeek);
         },
+        from54To55: (Migrator m, Schema55 schema) async {
+          await m.addColumn(schema.settings, schema.settings.customColorSeed);
+        },
       ),
     );
   }
 
   @override
-  int get schemaVersion => 54;
+  int get schemaVersion => 55;
 }

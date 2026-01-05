@@ -55,10 +55,13 @@ class App extends StatelessWidget {
       (settings) => ThemeMode.values
           .byName(settings.value.themeMode.replaceFirst('ThemeMode.', '')),
     );
+    final customColor = context.select<SettingsState, int>(
+      (settings) => settings.value.customColorSeed,
+    );
 
-    final light = ColorScheme.fromSeed(seedColor: Colors.deepPurple);
+    final light = ColorScheme.fromSeed(seedColor: Color(customColor));
     final dark = ColorScheme.fromSeed(
-      seedColor: Colors.deepPurple,
+      seedColor: Color(customColor),
       brightness: Brightness.dark,
     );
 

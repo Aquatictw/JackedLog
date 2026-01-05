@@ -5,6 +5,7 @@ import 'package:flexify/graph/cardio_data.dart';
 import 'package:flexify/graph/flex_line.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/widgets/artistic_color_picker.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -69,6 +70,73 @@ List<Widget> getAppearanceSettings(
                     ),
                   ),
             ),
+          ),
+        ),
+      ),
+    if ('custom color'.contains(term.toLowerCase()) ||
+        'app color'.contains(term.toLowerCase()))
+      Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: Tooltip(
+          message: 'Choose a custom color for your app theme',
+          child: ListTile(
+            title: const Text('Custom app color'),
+            subtitle: Text(
+              settings.value.systemColors
+                  ? 'Disabled (using system colors)'
+                  : 'Tap to customize',
+              style: TextStyle(
+                color: settings.value.systemColors
+                    ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)
+                    : null,
+              ),
+            ),
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Color(settings.value.customColorSeed),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(settings.value.customColorSeed).withValues(alpha: 0.4),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.palette, color: Colors.white, size: 20),
+            ),
+            enabled: !settings.value.systemColors,
+            onTap: settings.value.systemColors
+                ? null
+                : () async {
+                    final color = await showDialog<Color>(
+                      context: context,
+                      builder: (context) => ArtisticColorPicker(
+                        initialColor: Color(settings.value.customColorSeed),
+                        onColorChanged: (color) {},
+                      ),
+                    );
+                    if (color != null) {
+                      await db.settings.update().write(
+                        SettingsCompanion(
+                          customColorSeed: Value(color.value),
+                        ),
+                      );
+                    }
+                  },
+            trailing: settings.value.systemColors
+                ? null
+                : Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
           ),
         ),
       ),

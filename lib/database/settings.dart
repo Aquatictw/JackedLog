@@ -51,4 +51,5 @@ class Settings extends Table {
   RealColumn get fivethreeoneDeadliftTm => real().nullable()();
   RealColumn get fivethreeonePressTm => real().nullable()();
   IntColumn get fivethreeoneWeek => integer().withDefault(const Constant(1))();
+  IntColumn get customColorSeed => integer().withDefault(const Constant(0xFF673AB7))();  // Default: deep purple
 }
