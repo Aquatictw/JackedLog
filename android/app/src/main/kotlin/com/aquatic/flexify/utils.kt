@@ -1,4 +1,4 @@
-package com.presley.flexify
+package com.aquatic.flexify
 
 import android.app.AlarmManager
 import android.app.PendingIntent
