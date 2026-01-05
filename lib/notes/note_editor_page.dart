@@ -88,14 +88,14 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       }
     } else {
       // Update existing note
-      final companion = NotesCompanion(
-        id: Value(widget.note!.id),
-        title: Value(title.isEmpty ? 'Untitled' : title),
-        content: Value(content),
-        updated: Value(now),
-        color: Value(_selectedColorIndex),
+      await (db.notes.update()..where((n) => n.id.equals(widget.note!.id))).write(
+        NotesCompanion(
+          title: Value(title.isEmpty ? 'Untitled' : title),
+          content: Value(content),
+          updated: Value(now),
+          color: Value(_selectedColorIndex),
+        ),
       );
-      await db.notes.update().replace(companion);
       final note = await (db.notes.select()..where((n) => n.id.equals(widget.note!.id))).getSingle();
       if (mounted) {
         Navigator.pop(context, note);
