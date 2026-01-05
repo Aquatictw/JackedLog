@@ -11,17 +11,17 @@ Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, 
 
 ## Database Architecture
 
-### Current Schema (v50)
+### Current Schema (v54)
 
 #### Tables
 
 1. **Workouts** (workout sessions - groups sets together)
    - `id` (autoincrement, primary key)
    - `startTime` (DateTime - when workout started)
-   - `endTime` (DateTime, nullable - when workout finished)
+   - `endTime` (DateTime, nullable - when workout finished, null means workout is active)
    - `planId` (nullable int - which plan template was used)
    - `name` (nullable text - workout name, e.g., "Monday Chest")
-   - `notes` (nullable text)
+   - `notes` (nullable text - workout notes)
 
 2. **GymSets** (individual exercise sets)
    - `id` (autoincrement, primary key)
@@ -35,16 +35,44 @@ Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, 
    - `image`, `category`, `notes`
    - `sequence` (int, default 0 - **preserves exercise display order in history**)
    - `warmup` (bool, default false - **indicates if set is a warmup set**)
+   - `exerciseType` (nullable text - **exercise equipment type**: "free weight", "machine", "cable", etc.)
+   - `brandName` (nullable text - **machine brand name** for machine exercises, e.g., "Hammer Strength")
+   - `dropSet` (bool, default false - **indicates if set is a drop set**)
 
 3. **Plans** (workout templates)
-   - `id`, `days`, `sequence`, `title`
+   - `id` (autoincrement, primary key)
+   - `days` (text - days of week or plan name)
+   - `sequence` (int - display order)
+   - `title` (nullable text - plan title)
 
 4. **PlanExercises** (exercises in a plan template)
-   - `id`, `planId`, `exercise`, `enabled`, `maxSets`, `warmupSets`, `timers`, `sequence`
+   - `id` (autoincrement, primary key)
+   - `planId` (int - foreign key to Plans)
+   - `exercise` (text - exercise name)
+   - `enabled` (bool - whether exercise is active)
+   - `maxSets` (nullable int - max sets for this exercise)
+   - `warmupSets` (nullable int - number of warmup sets)
+   - `timers` (nullable text)
+   - `sequence` (int - display order within plan)
 
-5. **Settings** (app preferences - 30+ fields)
+5. **Settings** (app preferences - 30+ fields including 5/3/1 training maxes)
+   - General settings (theme, units, timers, etc.)
+   - 5/3/1 specific settings:
+     - `fivethreeoneWeek` (int - current week in 5/3/1 cycle: 1, 2, or 3)
+     - `fivethreeoneSquatTm` (nullable real - squat training max)
+     - `fivethreeoneBenchTm` (nullable real - bench press training max)
+     - `fivethreeoneDeadliftTm` (nullable real - deadlift training max)
+     - `fivethreeonePressTm` (nullable real - overhead press training max)
 
-6. **Metadata** (version tracking)
+6. **Notes** (general purpose notes, separate from workout/exercise notes)
+   - `id` (autoincrement, primary key)
+   - `title` (text - note title)
+   - `content` (text - note content)
+   - `created` (DateTime - creation timestamp)
+   - `updated` (DateTime - last update timestamp)
+   - `color` (nullable int - note color for categorization)
+
+7. **Metadata** (version tracking)
 
 ### Data Hierarchy
 ```
@@ -82,6 +110,9 @@ Workout Session (e.g., "Monday Chest - Dec 29, 5pm")
 | `lib/records/record_notification.dart` | PR celebration UI and badge widgets |
 | `lib/app_search.dart` | Reusable search AppBar with optional Add menu item |
 | `lib/graph/overview_page.dart` | Workout overview with stats, heatmap, and muscle charts |
+| `lib/widgets/five_three_one_calculator.dart` | 5/3/1 powerlifting program calculator dialog |
+| `lib/widgets/bodypart_tag.dart` | Compact muscle group/bodypart tag widget |
+| `lib/database/notes.dart` | Notes table definition for general notes |
 | `drift_schemas/db/drift_schema_vN.json` | Schema JSON files for each version |
 
 ## Workout Overview & Statistics
@@ -132,11 +163,19 @@ The workout overview page (`lib/graph/overview_page.dart`) displays comprehensiv
 
 8. **Active Workout Navigation**: Clicking the ActiveWorkoutBar switches to the Plans tab (if needed) and navigates to the active workout. It clears the Plans navigator stack before pushing the workout page to avoid duplicate routes.
 
+9. **Resuming Ended Workouts**: Ended workouts (those with an `endTime` set) can be resumed from the `WorkoutDetailPage`:
+   - A "Resume Workout" FloatingActionButton appears only for ended workouts
+   - Tapping it clears the workout's `endTime`, making it active again
+   - The workout is set as the active workout in `WorkoutState`
+   - User is automatically navigated to the Plans tab and the workout execution page
+   - If another workout is already active, shows a toast message "Finish your current workout first"
+
 ### Key Code Paths
 
 **WorkoutState provider** (`lib/workouts/workout_state.dart`):
 - `startWorkout(Plan plan)` - Creates new workout, returns null if one already exists
 - `stopWorkout()` - Sets endTime on active workout and clears state
+- `resumeWorkout(Workout workout)` - Clears endTime on ended workout to reactivate it, returns associated plan or null if another workout is active
 - `hasActiveWorkout` - Boolean indicating if a workout is in progress
 
 **Starting a workout via WorkoutState** (`lib/plan/start_plan_page.dart`):
@@ -164,6 +203,16 @@ workoutId: Value(workoutId),
 **Ending workout via ActiveWorkoutBar** (`lib/workouts/active_workout_bar.dart`):
 ```dart
 await workoutState.stopWorkout();
+```
+
+**Resuming ended workout** (`lib/workouts/workout_detail_page.dart`):
+```dart
+final plan = await workoutState.resumeWorkout(widget.workout);
+if (plan == null) {
+  toast('Finish your current workout first');
+  return;
+}
+// Navigate to workout execution page with the plan
 ```
 
 ## Multi-Select Workout Deletion
@@ -479,6 +528,168 @@ double calculate1RM(double weight, double reps) {
 - Record badges are stored in the set's local state for immediate UI updates
 - The notification dialog uses `useRootNavigator: true` to appear above overlays
 
+## 5/3/1 Calculator Feature
+
+### Overview
+
+The 5/3/1 calculator (`lib/widgets/five_three_one_calculator.dart`) helps users calculate weights for Jim Wendler's 5/3/1 powerlifting program. It appears as a calculator icon next to exercise notes in the workout execution screen.
+
+### How It Works
+
+**1. Training Max (TM) Storage:**
+- Training maxes are stored in the Settings table for 4 main lifts:
+  - Squat (`fivethreeoneSquatTm`)
+  - Bench Press (`fivethreeoneBenchTm`)
+  - Deadlift (`fivethreeoneDeadliftTm`)
+  - Overhead Press (`fivethreeonePressTm`)
+- Current week (1, 2, or 3) is stored in `fivethreeoneWeek`
+
+**2. Exercise Detection:**
+The calculator automatically detects which lift based on exercise name:
+```dart
+static const Map<String, String> exerciseMapping = {
+  'Squat': 'squat',
+  'Bench Press': 'bench',
+  'Deadlift': 'deadlift',
+  'Overhead Press': 'press',
+  'Press': 'press', // Alternative name
+};
+```
+
+**3. Week Calculation:**
+- **Week 1**: 65%, 75%, 85% of TM for 5+, 5+, 5+ reps
+- **Week 2**: 70%, 80%, 90% of TM for 3+, 3+, 3+ reps
+- **Week 3**: 75%, 85%, 95% of TM for 5+, 3+, 1+ reps
+
+**4. UI Features:**
+- Week selector (SegmentedButton for weeks 1, 2, 3)
+- Training max input field
+- Calculated percentages displayed as tappable chips
+- Tapping a weight chip auto-fills it into the current exercise set
+- Auto-saves TM to settings when changed
+- Shows warmup sets (40%, 50%, 60%) below main sets
+
+**5. Integration:**
+- Appears in `ExerciseSetsCard` when exercise notes are present
+- Uses `useRootNavigator: true` to appear above active workout bar
+- Automatically loads saved TM and current week from settings
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `lib/widgets/five_three_one_calculator.dart` | Calculator dialog implementation |
+| `lib/plan/exercise_sets_card.dart` | Integrates calculator icon into exercise cards |
+
+## Drop Sets Feature
+
+### Overview
+
+Drop sets are a training technique where you perform a set to failure, then immediately reduce the weight and continue. The app visually distinguishes drop sets from regular working sets.
+
+### Implementation
+
+**1. Database Field:**
+- `GymSets.dropSet` (bool, default false) marks a set as a drop set
+
+**2. Visual Indicators:**
+- **Badge**: Drop sets show a downward trending arrow icon (🔽) instead of set number
+- **Background**: Uses `secondaryContainer` color to differentiate from regular sets
+- **Sorting**: Drop sets are grouped with their parent working sets in history
+
+**3. Display in Workout Detail:**
+```dart
+if (set.dropSet) {
+  dropSetNumber++;
+  return _buildSetTile(set, dropSetNumber, isDropSet: true, records: setRecords);
+}
+```
+
+**4. Usage:**
+- Drop sets follow immediately after a working set
+- Numbered independently (Drop 1, Drop 2, etc.)
+- Shown in workout history with distinct styling
+
+## Bodypart Tags & Exercise Categorization
+
+### Overview
+
+Exercises can be categorized by muscle group/bodypart, displayed as compact colored tags throughout the app.
+
+### Implementation
+
+**1. Database Field:**
+- `GymSets.category` (nullable text) stores the bodypart/muscle group name
+- Examples: "Chest", "Back", "Legs", "Shoulders", "Arms", "Core"
+
+**2. BodypartTag Widget** (`lib/widgets/bodypart_tag.dart`):
+```dart
+BodypartTag(
+  bodypart: category,
+  fontSize: 10, // Optional, defaults to 10
+)
+```
+
+**3. Visual Styling:**
+- Background: `tertiaryContainer` with 60% opacity
+- Text: `onTertiaryContainer` color
+- Compact: 6px horizontal padding, 2px vertical padding
+- Rounded corners: 4px border radius
+
+**4. Usage Locations:**
+- Exercise tiles in workout execution (`ExerciseSetsCard`)
+- Workout detail page (next to exercise names)
+- Exercise lists and search results
+- Graph pages showing exercise history
+
+**5. Category Management:**
+- Categories are stored per exercise across all sets with that name
+- `getCategories()` function retrieves all unique categories from database
+- Category can be set when adding/editing exercises
+
+## Exercise Type & Brand Name
+
+### Overview
+
+Exercises can be tagged with equipment type and specific machine brands for better tracking and organization.
+
+### Database Fields
+
+**1. Exercise Type** (`GymSets.exerciseType`):
+- Values: "free weight", "machine", "cable", "bodyweight", etc.
+- Helps users filter and analyze exercises by equipment type
+- Useful for program design and gym availability
+
+**2. Brand Name** (`GymSets.brandName`):
+- Stores machine manufacturer/brand (e.g., "Hammer Strength", "Life Fitness", "Nautilus")
+- Displayed as a badge next to exercise name in workout detail
+- Helps differentiate between different machines with same exercise name
+
+**3. Visual Display:**
+Brand names appear as small badges with:
+- Background: `secondaryContainer` with 70% opacity
+- Text: `onSecondaryContainer` color
+- Small font (10pt), medium weight
+- Appears next to bodypart tags in exercise headers
+
+**4. Use Cases:**
+- Tracking which specific machines were used
+- Comparing performance on different equipment
+- Gym-specific workout logging
+- Import/export with machine-specific data (e.g., from Hevy)
+
+### Example Display
+
+```
+Chest Press [Chest] [Hammer Strength]
+  Set 1: 10 x 135 lb
+  Set 2: 8 x 155 lb
+```
+
+Where:
+- `[Chest]` = BodypartTag (category)
+- `[Hammer Strength]` = Brand name badge
+
 ## Development Commands
 
 ```bash
@@ -578,7 +789,7 @@ Create with a temporary Plan object (id: -1) that has no exercises.
 When adding new columns or tables, you'll need to manually update both the schema JSON and `database.steps.dart`:
 
 **a. Create the new schema JSON file** in `drift_schemas/db/`:
-Copy the previous version's JSON (e.g., `drift_schema_v49.json` → `drift_schema_v50.json`) and add the new column to the appropriate table's columns array:
+Copy the previous version's JSON (e.g., `drift_schema_v53.json` → `drift_schema_v54.json`) and add the new column to the appropriate table's columns array:
 ```json
 {
   "name": "warmup",
@@ -616,18 +827,18 @@ class Shape39 extends i0.VersionedTable {
 
 **d. Add Schema class** (copy previous Schema, use new Shape for modified table, add new column to columns list):
 ```dart
-final class Schema50 extends i0.VersionedSchema {
-  Schema50({required super.database}) : super(version: 50);
+final class Schema54 extends i0.VersionedSchema {
+  Schema54({required super.database}) : super(version: 54);
   @override
   late final List<i1.DatabaseSchemaEntity> entities = [
-    plans, gymSets, settings, planExercises, metadata, workouts,
+    plans, gymSets, settings, planExercises, metadata, workouts, notes,
   ];
-  // Use Shape39 instead of Shape38 for gymSets:
-  late final Shape39 gymSets = Shape39(
+  // Use new Shape for modified table:
+  late final ShapeXX gymSets = ShapeXX(
       source: i0.VersionedTable(
         entityName: 'gym_sets',
-        // ... copy from previous Schema, add _column_89 to columns list
-        columns: [..., _column_89],
+        // ... copy from previous Schema, add new column to columns list
+        columns: [..., _column_XX],
       ),
       alias: null);
   // Copy other tables from previous Schema unchanged
@@ -635,19 +846,19 @@ final class Schema50 extends i0.VersionedSchema {
 ```
 
 **e. Update `migrationSteps()` function:**
-- Add parameter: `required Future<void> Function(i1.Migrator m, Schema50 schema) from49To50,`
+- Add parameter: `required Future<void> Function(i1.Migrator m, Schema54 schema) from53To54,`
 - Add switch case:
   ```dart
-  case 49:
-    final schema = Schema50(database: database);
+  case 53:
+    final schema = Schema54(database: database);
     final migrator = i1.Migrator(database, schema);
-    await from49To50(migrator, schema);
-    return 50;
+    await from53To54(migrator, schema);
+    return 54;
   ```
 
 **f. Update `stepByStep()` function:**
-- Add parameter: `required Future<void> Function(i1.Migrator m, Schema50 schema) from49To50,`
-- Add to migrationSteps call: `from49To50: from49To50,`
+- Add parameter: `required Future<void> Function(i1.Migrator m, Schema54 schema) from53To54,`
+- Add to migrationSteps call: `from53To54: from53To54,`
 
 **g. Run build_runner** to regenerate database.g.dart with the new column:
 ```bash
@@ -673,3 +884,7 @@ import 'package:drift/drift.dart' hide Column;
 2. **Popup menu context**: When showing dialogs from bottom sheets, capture the parent context before the bottom sheet opens
 3. **Exercise order in history**: Use the `sequence` column in GymSets to sort, not creation time
 4. **Schema JSON structure**: The JSON includes all tables and their columns - ensure column order matches the schema class
+5. **Active workouts**: A workout is considered "active" when `endTime` is NULL in the Workouts table
+6. **Drop sets vs warmup sets**: Both are boolean flags - a set can be marked as both, though UI typically prevents this
+7. **Exercise metadata propagation**: Fields like `category`, `exerciseType`, and `brandName` are stored per set, not per exercise - update all sets for an exercise to change these globally
+8. **5/3/1 calculator visibility**: Only appears for exercises matching the hardcoded exercise names in the mapping (Squat, Bench Press, Deadlift, Overhead Press)
