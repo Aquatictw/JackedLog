@@ -1,4 +1,4 @@
-package com.presley.flexify
+package com.aquatic.flexify
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -291,7 +291,7 @@ class MainActivity : FlutterActivity() {
     }
 
     companion object {
-        const val FLUTTER_CHANNEL = "com.presley.flexify/android"
+        const val FLUTTER_CHANNEL = "com.aquatic.flexify/android"
         const val WRITE_REQUEST_CODE = 43
         const val TIMER_PERMISSION_REQUEST_CODE = 44
         const val TICK_BROADCAST = "tick-event"

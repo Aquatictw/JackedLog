@@ -1,4 +1,4 @@
-package com.presley.flexify
+package com.aquatic.flexify
 
 import android.content.BroadcastReceiver
 import android.content.Context
