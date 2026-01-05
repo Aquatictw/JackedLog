@@ -251,7 +251,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
     }
   }
 
-  void _onReorder(int oldIndex, int newIndex) {
+  Future<void> _onReorder(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex--;
 
     setState(() {
@@ -260,6 +260,35 @@ class _StartPlanPageState extends State<StartPlanPage> {
     });
 
     HapticFeedback.mediumImpact();
+
+    // Update sequence numbers in the database to match the new visual order
+    if (workoutId != null) {
+      // We need to update all exercises' sequence numbers to match their new positions
+      for (int i = 0; i < _exerciseOrder.length; i++) {
+        final item = _exerciseOrder[i];
+
+        // Get exercise name based on whether it's a plan exercise or ad-hoc
+        final String exerciseName;
+        if (item.isPlanExercise) {
+          final exercise = _planExercisesMap[item.planExerciseId];
+          if (exercise == null) continue;
+          exerciseName = exercise.exercise;
+        } else {
+          exerciseName = item.adHocName!;
+        }
+
+        // Update all sets for this exercise to have the new sequence number
+        await db.customUpdate(
+          'UPDATE gym_sets SET sequence = ? WHERE workout_id = ? AND name = ? AND hidden = 0',
+          updates: {db.gymSets},
+          variables: [
+            Variable.withInt(i),
+            Variable.withInt(workoutId!),
+            Variable.withString(exerciseName),
+          ],
+        );
+      }
+    }
   }
 
   Future<void> _saveNotes() async {
@@ -483,6 +512,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
             onSetCompleted: () {},
             onDeleteExercise: () async {
               final exerciseName = exercise.exercise;
+              final removedSequence = index;
+
               // Delete all sets for this exercise from the database
               await (db.gymSets.delete()
                     ..where(
@@ -505,6 +536,17 @@ class _StartPlanPageState extends State<StartPlanPage> {
                   hidden: const Value(true), // Hide from history
                   sequence: const Value(-1), // Special sequence for tombstones
                 ),
+              );
+
+              // Update sequence numbers for all exercises after the removed one
+              // This ensures the sequence numbers match the new visual order
+              await db.customUpdate(
+                'UPDATE gym_sets SET sequence = sequence - 1 WHERE workout_id = ? AND sequence > ?',
+                updates: {db.gymSets},
+                variables: [
+                  Variable.withInt(workoutId!),
+                  Variable.withInt(removedSequence),
+                ],
               );
 
               setState(() {
@@ -541,6 +583,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
             },
             onRemove: () async {
               final exerciseName = item.adHocName!;
+              final removedSequence = index;
+
               // Delete all sets for this exercise from the database
               await (db.gymSets.delete()
                     ..where(
@@ -562,6 +606,17 @@ class _StartPlanPageState extends State<StartPlanPage> {
                   hidden: const Value(true), // Hide from history
                   sequence: const Value(-1), // Special sequence for tombstones
                 ),
+              );
+
+              // Update sequence numbers for all exercises after the removed one
+              // This ensures the sequence numbers match the new visual order
+              await db.customUpdate(
+                'UPDATE gym_sets SET sequence = sequence - 1 WHERE workout_id = ? AND sequence > ?',
+                updates: {db.gymSets},
+                variables: [
+                  Variable.withInt(workoutId!),
+                  Variable.withInt(removedSequence),
+                ],
               );
 
               setState(() {
@@ -851,7 +906,8 @@ class _ExercisePickerModal extends StatefulWidget {
 
 class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   String _search = '';
-  List<({String name, String? brandName, String? category, int workoutCount})> _allExercises = [];
+  List<({String name, String? brandName, String? category, int workoutCount})>
+      _allExercises = [];
   bool _loading = true;
 
   @override
@@ -1167,7 +1223,9 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                                   if (exercise.category != null &&
                                       exercise.category!.isNotEmpty) ...[
                                     const SizedBox(width: 5),
-                                    BodypartTag(bodypart: exercise.category, fontSize: 9),
+                                    BodypartTag(
+                                        bodypart: exercise.category,
+                                        fontSize: 9),
                                   ],
                                   if (exercise.brandName != null &&
                                       exercise.brandName!.isNotEmpty) ...[
