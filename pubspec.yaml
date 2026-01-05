@@ -28,6 +28,7 @@ dependencies:
   badges: ^3.1.2
   flutter_local_notifications: ^19.3.0
   timeago: ^3.2.2
+  archive: ^4.0.0
 dev_dependencies:
   integration_test:
     sdk: flutter

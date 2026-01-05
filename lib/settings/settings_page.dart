@@ -1,7 +1,4 @@
-import 'dart:io';
-
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flexify/about_page.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/settings/appearance_settings.dart';
 import 'package:flexify/settings/data_settings.dart';
@@ -87,20 +84,6 @@ class _SettingsPageState extends State<SettingsPage>
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Settings'),
-        actions: [
-          if (!kIsWeb && !Platform.isIOS && !Platform.isMacOS)
-            IconButton(
-              onPressed: () async {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AboutPage(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.info_outline_rounded),
-            ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),

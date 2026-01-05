@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
-import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/utils.dart';
 import 'package:flutter/foundation.dart';
@@ -37,14 +37,9 @@ class ImportData extends StatelessWidget {
               child: Wrap(
                 children: <Widget>[
                   ListTile(
-                    leading: const Icon(Icons.insights),
-                    title: const Text('Graphs'),
-                    onTap: () => importGraphs(context),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.event),
-                    title: const Text('Plans'),
-                    onTap: () => importPlans(context),
+                    leading: const Icon(Icons.fitness_center),
+                    title: const Text('Workouts'),
+                    onTap: () => importWorkouts(context),
                   ),
                   ListTile(
                     leading: const Icon(Icons.storage),
@@ -163,100 +158,176 @@ $version
     );
   }
 
-  Future<void> importGraphs(BuildContext context) async {
+  Future<void> importWorkouts(BuildContext context) async {
     Navigator.pop(context);
 
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['zip'],
+      );
       if (result == null) return;
 
-      String csvContent;
+      // Read ZIP file
+      Uint8List zipBytes;
       if (kIsWeb) {
         final fileBytes = result.files.single.bytes;
         if (fileBytes == null) throw Exception('Could not read file data');
-        csvContent = String.fromCharCodes(fileBytes);
+        zipBytes = fileBytes;
       } else {
-        Uint8List fileBytes;
         if (result.files.single.bytes != null) {
-          fileBytes = result.files.single.bytes!;
+          zipBytes = result.files.single.bytes!;
         } else {
           final file = File(result.files.single.path!);
-          fileBytes = await file.readAsBytes();
-        }
-        try {
-          csvContent = utf8.decode(fileBytes, allowMalformed: false);
-        } catch (e) {
-          csvContent = latin1.decode(fileBytes);
+          zipBytes = await file.readAsBytes();
         }
       }
 
-      final rows = const CsvToListConverter(eol: "\n").convert(csvContent);
+      // Extract ZIP
+      final archive = ZipDecoder().decodeBytes(zipBytes);
 
-      if (rows.isEmpty) throw Exception('CSV file is empty');
-      if (rows.length <= 1)
-        throw Exception('CSV file must contain at least one data row');
+      // Find workouts.csv and gym_sets.csv
+      ArchiveFile? workoutsFile;
+      ArchiveFile? setsFile;
+      for (var file in archive) {
+        if (file.name == 'workouts.csv') workoutsFile = file;
+        if (file.name == 'gym_sets.csv') setsFile = file;
+      }
 
-      final columns = rows.first;
+      if (workoutsFile == null || setsFile == null) {
+        throw Exception('Invalid backup file: missing required CSV files');
+      }
 
-      final gymSets = rows.skip(1).map((row) {
+      // Parse workouts CSV
+      String workoutsCsvContent;
+      try {
+        workoutsCsvContent = utf8.decode(workoutsFile.content as List<int>, allowMalformed: false);
+      } catch (e) {
+        workoutsCsvContent = latin1.decode(workoutsFile.content as List<int>);
+      }
+
+      final workoutsRows = const CsvToListConverter(eol: "\n").convert(workoutsCsvContent);
+      if (workoutsRows.isEmpty) throw Exception('Workouts CSV is empty');
+
+      // Parse gym sets CSV
+      String setsCsvContent;
+      try {
+        setsCsvContent = utf8.decode(setsFile.content as List<int>, allowMalformed: false);
+      } catch (e) {
+        setsCsvContent = latin1.decode(setsFile.content as List<int>);
+      }
+
+      final setsRows = const CsvToListConverter(eol: "\n").convert(setsCsvContent);
+      if (setsRows.isEmpty) throw Exception('Gym sets CSV is empty');
+
+      // Import workouts first (skip header row)
+      final workoutsToInsert = workoutsRows.skip(1).map((row) {
         if (row.length < 6) {
-          throw Exception(
-            'Row ${rows.indexOf(row) + 1} has insufficient columns: ${row.length}',
-          );
+          throw Exception('Workout row has insufficient columns: ${row.length}');
         }
 
-        final reps = _parseDouble(row[2], 'reps', rows.indexOf(row) + 1);
-        final weight = _parseDouble(row[3], 'weight', rows.indexOf(row) + 1);
-
-        Value<bool> hidden = const Value(false);
-
-        // Check for hidden column at position 6 or 9
-        if (columns.elementAtOrNull(6) == 'hidden') {
-          hidden = Value(
-            row.elementAtOrNull(6) == 1.0 || row.elementAtOrNull(6) == "1",
-          );
-        } else if (columns.elementAtOrNull(9) == 'hidden') {
-          final hiddenValue = row.elementAtOrNull(9);
-          if (hiddenValue != null) {
-            hidden = Value(hiddenValue.toString().toLowerCase() == 'true');
-          }
-        }
-
-        return GymSetsCompanion(
-          name: Value(row[1]?.toString() ?? ''),
-          reps: reps,
-          weight: weight,
-          created: Value(parseDate(row[4])),
-          unit: Value(row[5]?.toString() ?? ''),
-          hidden: hidden,
-          duration: columns.elementAtOrNull(6) == 'duration'
-              ? Value(double.tryParse(row[6]?.toString() ?? '0') ?? 0)
-              : const Value(0),
-          distance: columns.elementAtOrNull(7) == 'distance'
-              ? Value(double.tryParse(row[7]?.toString() ?? '0') ?? 0)
-              : const Value(0),
-          cardio: columns.elementAtOrNull(8) == 'cardio'
-              ? Value(parseBool(row[8]))
-              : const Value(false),
-          incline: columns.elementAtOrNull(10) == 'incline'
-              ? Value(int.tryParse(row[10]?.toString() ?? ''))
-              : const Value(null),
+        return WorkoutsCompanion(
+          id: Value(int.tryParse(row[0]?.toString() ?? '0') ?? 0),
+          startTime: Value(parseDate(row[1])),
+          endTime: Value(_parseNullableDateTime(row[2])),
+          planId: Value(_parseNullableInt(row[3])),
+          name: Value(_parseNullableString(row[4])),
+          notes: Value(_parseNullableString(row[5])),
         );
       });
 
+      // Import gym sets (skip header row)
+      final gymSets = setsRows.skip(1).map((row) {
+        if (row.length < 6) {
+          throw Exception('Set row has insufficient columns: ${row.length}');
+        }
+
+        final reps = _parseDouble(row[2], 'reps', setsRows.indexOf(row) + 1);
+        final weight = _parseDouble(row[3], 'weight', setsRows.indexOf(row) + 1);
+
+        return GymSetsCompanion(
+          id: Value(int.tryParse(row[0]?.toString() ?? '0') ?? 0),
+          name: Value(row[1]?.toString() ?? ''),
+          reps: reps,
+          weight: weight,
+          unit: Value(row[4]?.toString() ?? ''),
+          created: Value(parseDate(row[5])),
+          cardio: Value(parseBool(row.elementAtOrNull(6))),
+          duration: Value(double.tryParse(row.elementAtOrNull(7)?.toString() ?? '0') ?? 0),
+          distance: Value(double.tryParse(row.elementAtOrNull(8)?.toString() ?? '0') ?? 0),
+          incline: Value(_parseNullableInt(row.elementAtOrNull(9))),
+          bodyWeight: Value(_parseNullableDouble(row.elementAtOrNull(10)) ?? 0.0),
+          restMs: Value(_parseNullableInt(row.elementAtOrNull(11))),
+          hidden: Value(parseBool(row.elementAtOrNull(12))),
+          workoutId: Value(_parseNullableInt(row.elementAtOrNull(13))),
+          planId: Value(_parseNullableInt(row.elementAtOrNull(14))),
+          image: Value(_parseNullableString(row.elementAtOrNull(15))),
+          category: Value(_parseNullableString(row.elementAtOrNull(16))),
+          notes: Value(_parseNullableString(row.elementAtOrNull(17))),
+          sequence: Value(int.tryParse(row.elementAtOrNull(18)?.toString() ?? '0') ?? 0),
+          warmup: Value(parseBool(row.elementAtOrNull(19))),
+          exerciseType: Value(_parseNullableString(row.elementAtOrNull(20))),
+          brandName: Value(_parseNullableString(row.elementAtOrNull(21))),
+          dropSet: Value(parseBool(row.elementAtOrNull(22))),
+        );
+      });
+
+      // Delete existing data and import new data
+      await db.workouts.deleteAll();
       await db.gymSets.deleteAll();
+      await db.workouts.insertAll(workoutsToInsert);
       await db.gymSets.insertAll(gymSets);
 
       if (!ctx.mounted) return;
       Navigator.pop(ctx);
 
-      toast('Graph data imported successfully!');
-    } catch (e) {
+      toast('Workout data imported successfully!');
+    } catch (e, stackTrace) {
       if (!ctx.mounted) return;
+      final packageInfo = await PackageInfo.fromPlatform();
+      final version = packageInfo.version;
+
+      final title = Uri.encodeComponent(
+        'Import failed: ${e.toString().split('\n').first}',
+      );
+      final body = Uri.encodeComponent('''
+# Describe the bug
+Failed to import workouts.
+
+# Error
+```
+${e.toString()}
+```
+
+# Stack trace
+```
+${stackTrace.toString()}
+```
+
+# App version
+$version
+
+# Steps to reproduce
+1. Go to import workouts
+2. Select file
+3. See error
+''');
+
+      final url =
+          'https://github.com/brandonp2412/Flexify/issues/new?title=$title&body=$body';
 
       toast(
-        'Failed to import graphs: ${e.toString()}',
+        'Failed to import workouts: ${e.toString()}',
         duration: Duration(seconds: 10),
+        action: SnackBarAction(
+          label: 'Report',
+          onPressed: () async {
+            await launchUrl(
+              Uri.parse(url),
+              mode: LaunchMode.externalApplication,
+            );
+          },
+        ),
       );
     }
   }
@@ -275,123 +346,37 @@ $version
     );
   }
 
-  Future<void> importPlans(BuildContext context) async {
-    Navigator.pop(context);
+  int? _parseNullableInt(dynamic value) {
+    if (value == null || value == '') return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
 
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
-      if (result == null) return;
+  double? _parseNullableDouble(dynamic value) {
+    if (value == null || value == '') return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
 
-      String csvContent;
-      if (kIsWeb) {
-        final fileBytes = result.files.single.bytes;
-        if (fileBytes == null) throw Exception('Could not read file data');
-        csvContent = String.fromCharCodes(fileBytes);
-      } else {
-        Uint8List fileBytes;
-        if (result.files.single.bytes != null) {
-          fileBytes = result.files.single.bytes!;
-        } else {
-          final file = File(result.files.single.path!);
-          fileBytes = await file.readAsBytes();
-        }
-        try {
-          csvContent = utf8.decode(fileBytes, allowMalformed: false);
-        } catch (e) {
-          csvContent = latin1.decode(fileBytes);
-        }
+  String? _parseNullableString(dynamic value) {
+    if (value == null || value == '') return null;
+    return value.toString();
+  }
+
+  DateTime? _parseNullableDateTime(dynamic value) {
+    if (value == null || value == '') return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        return null;
       }
-
-      final csvList = const CsvToListConverter(eol: "\n").convert(csvContent);
-
-      if (csvList.isEmpty) throw Exception('CSV file is empty');
-      if (csvList.length <= 1)
-        throw Exception('CSV file must contain at least one data row');
-
-      final plansToInsert = <PlansCompanion>[];
-      final planExercisesToInsert = <PlanExercisesCompanion>[];
-
-      for (final row in csvList.skip(1)) {
-        plansToInsert.add(
-          PlansCompanion.insert(
-            id: Value(int.parse(row[0].toString())),
-            days: row[1].toString(),
-            title: Value(row[2].toString()),
-            sequence: Value(int.parse(row[3].toString())),
-          ),
-        );
-
-        final exerciseNames = row[4].toString().split(';');
-        planExercisesToInsert.addAll(
-          exerciseNames.map((exerciseName) {
-            return PlanExercisesCompanion.insert(
-              planId: int.parse(row[0].toString()),
-              exercise: exerciseName,
-              enabled: true,
-              timers: const Value(true),
-            );
-          }),
-        );
-      }
-
-      await db.plans.deleteAll();
-      await db.planExercises.deleteAll();
-      await db.plans.insertAll(plansToInsert);
-      await db.planExercises.insertAll(planExercisesToInsert);
-
-      if (!ctx.mounted) return;
-      ctx.read<PlanState>().updatePlans(null);
-      Navigator.pop(ctx);
-
-      toast('Plans imported successfully');
-    } catch (e, stackTrace) {
-      if (!ctx.mounted) return;
-      final packageInfo = await PackageInfo.fromPlatform();
-      final version = packageInfo.version;
-
-      final title = Uri.encodeComponent(
-        'Import failed: ${e.toString().split('\n').first}',
-      );
-      final body = Uri.encodeComponent('''
-# Describe the bug
-Failed to import plans.
-
-# Error
-```
-${e.toString()}
-```
-
-# Stack trace
-```
-${stackTrace.toString()}
-```
-
-# App version
-$version
-
-# Steps to reproduce
-1. Go to import plans
-2. Select file
-3. See error
-''');
-
-      final url =
-          'https://github.com/brandonp2412/Flexify/issues/new?title=$title&body=$body';
-
-      toast(
-        'Failed to import plans: ${e.toString()}',
-        duration: Duration(seconds: 10),
-        action: SnackBarAction(
-          label: 'Report',
-          onPressed: () async {
-            await launchUrl(
-              Uri.parse(url),
-              mode: LaunchMode.externalApplication,
-            );
-          },
-        ),
-      );
     }
+    return null;
   }
 
   bool parseBool(dynamic value) {

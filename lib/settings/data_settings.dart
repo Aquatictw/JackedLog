@@ -1,31 +1,10 @@
-import 'package:drift/drift.dart';
-import 'package:flexify/database/database.dart';
 import 'package:flexify/delete_records_button.dart';
 import 'package:flexify/export_data.dart';
 import 'package:flexify/import_data.dart';
 import 'package:flexify/import_hevy.dart';
-import 'package:flexify/main.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-
-void tapBackup(bool value) async {
-  await db.settings.update().write(
-        SettingsCompanion(
-          automaticBackups: Value(value),
-        ),
-      );
-
-  if (value) {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final dbPath = p.join(dbFolder.path, 'flexify.sqlite');
-    androidChannel.invokeMethod('pick', {'dbPath': dbPath});
-    await Permission.notification.request();
-  }
-}
 
 List<Widget> getDataSettings(
   String term,
@@ -33,23 +12,11 @@ List<Widget> getDataSettings(
   BuildContext context,
 ) {
   return [
-    if ('automatic backup'.contains(term.toLowerCase()))
-      ListTile(
-        title: const Text('Automatic backup'),
-        leading: settings.value.automaticBackups
-            ? const Icon(Icons.timer)
-            : const Icon(Icons.timer_outlined),
-        onTap: () => tapBackup(!settings.value.automaticBackups),
-        trailing: Switch(
-          value: settings.value.automaticBackups,
-          onChanged: (value) => tapBackup(value),
-        ),
-      ),
     if ('export data'.contains(term.toLowerCase())) const ExportData(),
     if ('import data'.contains(term.toLowerCase())) ImportData(ctx: context),
     if ('import hevy'.contains(term.toLowerCase())) ImportHevy(ctx: context),
-    if ('delete records'.contains(term.toLowerCase()))
-      DeleteRecordsButton(ctx: context),
+    if ('delete database'.contains(term.toLowerCase()))
+      DeleteDatabaseButton(ctx: context),
   ];
 }
 

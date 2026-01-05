@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
@@ -26,123 +27,108 @@ class ExportData extends StatelessWidget {
               child: Wrap(
                 children: <Widget>[
                   ListTile(
-                    leading: const Icon(Icons.insights),
-                    title: const Text('Graphs'),
+                    leading: const Icon(Icons.fitness_center),
+                    title: const Text('Workouts'),
                     onTap: () async {
                       Navigator.pop(context);
                       if (!await requestNotificationPermission()) return;
+
+                      // Export workouts table
+                      final workouts = await db.workouts.select().get();
+                      final List<List<dynamic>> workoutsData = [
+                        ['id', 'startTime', 'endTime', 'planId', 'name', 'notes']
+                      ];
+                      for (var workout in workouts) {
+                        workoutsData.add([
+                          workout.id,
+                          workout.startTime.toIso8601String(),
+                          workout.endTime?.toIso8601String() ?? '',
+                          workout.planId ?? '',
+                          workout.name ?? '',
+                          workout.notes ?? '',
+                        ]);
+                      }
+                      final workoutsCsv =
+                          const ListToCsvConverter(eol: "\n").convert(workoutsData);
+
+                      // Export gym sets table
                       final gymSets = await db.gymSets.select().get();
-                      final List<List<dynamic>> data = [
+                      final List<List<dynamic>> setsData = [
                         [
                           'id',
                           'name',
                           'reps',
                           'weight',
-                          'created',
                           'unit',
+                          'created',
+                          'cardio',
                           'duration',
                           'distance',
-                          'cardio',
-                          'hidden',
                           'incline',
+                          'bodyWeight',
+                          'restMs',
+                          'hidden',
+                          'workoutId',
+                          'planId',
+                          'image',
+                          'category',
+                          'notes',
+                          'sequence',
+                          'warmup',
+                          'exerciseType',
+                          'brandName',
+                          'dropSet',
                         ]
                       ];
                       for (var gymSet in gymSets) {
-                        data.add([
+                        setsData.add([
                           gymSet.id,
                           gymSet.name,
                           gymSet.reps,
                           gymSet.weight,
-                          gymSet.created.toIso8601String(),
                           gymSet.unit,
+                          gymSet.created.toIso8601String(),
+                          gymSet.cardio,
                           gymSet.duration,
                           gymSet.distance,
-                          gymSet.cardio,
+                          gymSet.incline ?? '',
+                          gymSet.bodyWeight ?? '',
+                          gymSet.restMs ?? '',
                           gymSet.hidden,
-                          gymSet.incline,
+                          gymSet.workoutId ?? '',
+                          gymSet.planId ?? '',
+                          gymSet.image ?? '',
+                          gymSet.category ?? '',
+                          gymSet.notes ?? '',
+                          gymSet.sequence,
+                          gymSet.warmup,
+                          gymSet.exerciseType ?? '',
+                          gymSet.brandName ?? '',
+                          gymSet.dropSet,
                         ]);
                       }
-                      final csv =
-                          const ListToCsvConverter(eol: "\n").convert(data);
-                      final bytes = Uint8List.fromList(csv.codeUnits);
-                      await FilePicker.platform.saveFile(
-                        fileName: 'graphs.csv',
-                        bytes: bytes,
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.event),
-                    title: const Text('Plans'),
-                    onTap: () async {
-                      Navigator.pop(context);
-                      final plans = await db.plans.select().get();
-                      final List<List<dynamic>> data = [
-                        ['id', 'days', 'title', 'sequence', 'exercises'],
-                      ];
-                      for (var plan in plans) {
-                        final planExercises = await (db.planExercises.select()
-                              ..where(
-                                (u) => u.planId.equals(plan.id) & u.enabled,
-                              ))
-                            .get();
-                        data.add([
-                          plan.id,
-                          plan.days,
-                          plan.title ?? '',
-                          plan.sequence ?? '',
-                          planExercises.map((e) => e.exercise).join(';'),
-                        ]);
-                      }
+                      final setsCsv =
+                          const ListToCsvConverter(eol: "\n").convert(setsData);
 
-                      if (!await requestNotificationPermission()) return;
+                      // Create ZIP archive
+                      final archive = Archive();
+                      archive.addFile(ArchiveFile(
+                        'workouts.csv',
+                        workoutsCsv.length,
+                        workoutsCsv.codeUnits,
+                      ));
+                      archive.addFile(ArchiveFile(
+                        'gym_sets.csv',
+                        setsCsv.length,
+                        setsCsv.codeUnits,
+                      ));
 
-                      final csv =
-                          const ListToCsvConverter(eol: "\n").convert(data);
-                      final bytes = Uint8List.fromList(csv.codeUnits);
+                      final zipBytes = ZipEncoder().encode(archive);
                       await FilePicker.platform.saveFile(
-                        fileName: 'plans.csv',
-                        bytes: bytes,
+                        fileName: 'flexify_workouts.zip',
+                        bytes: Uint8List.fromList(zipBytes!),
                         type: FileType.custom,
-                        allowedExtensions: ['csv'],
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.note),
-                    title: const Text('Notes'),
-                    onTap: () async {
-                      Navigator.pop(context);
-                      if (!await requestNotificationPermission()) return;
-                      final notes = await db.notes.select().get();
-                      final List<List<dynamic>> data = [
-                        [
-                          'id',
-                          'title',
-                          'content',
-                          'created',
-                          'updated',
-                          'color',
-                        ]
-                      ];
-                      for (var note in notes) {
-                        data.add([
-                          note.id,
-                          note.title,
-                          note.content,
-                          note.created.toIso8601String(),
-                          note.updated.toIso8601String(),
-                          note.color ?? '',
-                        ]);
-                      }
-                      final csv =
-                          const ListToCsvConverter(eol: "\n").convert(data);
-                      final bytes = Uint8List.fromList(csv.codeUnits);
-                      await FilePicker.platform.saveFile(
-                        fileName: 'notes.csv',
-                        bytes: bytes,
-                        type: FileType.custom,
-                        allowedExtensions: ['csv'],
+                        allowedExtensions: ['zip'],
                       );
                     },
                   ),
