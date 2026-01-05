@@ -53,4 +53,4 @@ flexify-release-key.keystore
 /.github/
 /.vscode/
 /.claude/
-/test/hevy_data.csv
+/test/
