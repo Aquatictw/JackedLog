@@ -188,16 +188,29 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
 
     if (existingSets.isNotEmpty) {
       // Load existing sets from database (resuming workout)
-      final loadedSets = existingSets.map((set) {
-        return SetData(
+      final loadedSets = <SetData>[];
+      for (final set in existingSets) {
+        // Check if this set holds any records
+        Set<RecordType> records = {};
+        if (!set.hidden) { // Only check records for completed sets
+          records = await getSetRecords(
+            setId: set.id,
+            exerciseName: set.name,
+            weight: set.weight,
+            reps: set.reps,
+          );
+        }
+
+        loadedSets.add(SetData(
           weight: set.weight,
           reps: set.reps.toInt(),
           completed: !set.hidden, // hidden=false means completed
           savedSetId: set.id,
           isWarmup: set.warmup,
           isDropSet: set.dropSet,
-        );
-      }).toList();
+          records: records,
+        ));
+      }
 
       setState(() {
         unit = defaultUnit;
