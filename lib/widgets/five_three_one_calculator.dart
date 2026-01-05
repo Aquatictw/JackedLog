@@ -1,10 +1,10 @@
+import 'package:drift/drift.dart' hide Column;
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:drift/drift.dart' hide Column;
 
 /// 5/3/1 powerlifting calculator dialog
 /// Helps calculate weights for the 5/3/1 program based on Training Max
@@ -91,24 +91,32 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
     // Update appropriate TM field
     switch (exerciseKey) {
       case 'squat':
-        await db.settings.update().write(SettingsCompanion(
-          fivethreeoneSquatTm: Value(tm),
-        ));
+        await db.settings.update().write(
+              SettingsCompanion(
+                fivethreeoneSquatTm: Value(tm),
+              ),
+            );
         break;
       case 'bench':
-        await db.settings.update().write(SettingsCompanion(
-          fivethreeoneBenchTm: Value(tm),
-        ));
+        await db.settings.update().write(
+              SettingsCompanion(
+                fivethreeoneBenchTm: Value(tm),
+              ),
+            );
         break;
       case 'deadlift':
-        await db.settings.update().write(SettingsCompanion(
-          fivethreeoneDeadliftTm: Value(tm),
-        ));
+        await db.settings.update().write(
+              SettingsCompanion(
+                fivethreeoneDeadliftTm: Value(tm),
+              ),
+            );
         break;
       case 'press':
-        await db.settings.update().write(SettingsCompanion(
-          fivethreeonePressTm: Value(tm),
-        ));
+        await db.settings.update().write(
+              SettingsCompanion(
+                fivethreeonePressTm: Value(tm),
+              ),
+            );
         break;
     }
 
@@ -120,9 +128,11 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
   }
 
   Future<void> _updateWeek(int week) async {
-    await db.settings.update().write(SettingsCompanion(
-      fivethreeoneWeek: Value(week),
-    ));
+    await db.settings.update().write(
+          SettingsCompanion(
+            fivethreeoneWeek: Value(week),
+          ),
+        );
 
     setState(() {
       _currentWeek = week;
@@ -157,7 +167,9 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Cycle complete! New TM: ${newTM.toStringAsFixed(1)} $_unit'),
+          content: Text(
+            'Cycle complete! New TM: ${newTM.toStringAsFixed(1)} $_unit',
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -231,13 +243,18 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(28)),
               ),
               child: Column(
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.fitness_center, color: colorScheme.primary, size: 28),
+                      Icon(
+                        Icons.fitness_center,
+                        color: colorScheme.primary,
+                        size: 28,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -245,15 +262,22 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                           children: [
                             Text(
                               '5/3/1 Calculator',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: colorScheme.onPrimaryContainer,
                                   ),
                             ),
                             Text(
                               widget.exerciseName,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: colorScheme.onPrimaryContainer
+                                        .withValues(alpha: 0.7),
                                   ),
                             ),
                           ],
@@ -287,7 +311,8 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: _tmController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         hintText: 'Enter your Training Max',
                         suffixText: _unit,
@@ -321,7 +346,9 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                               label: Text(
                                 'W$week',
                                 style: TextStyle(
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                                 ),
                               ),
                               onSelected: (_) => _updateWeek(week),
@@ -341,13 +368,19 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                         children: [
                           Text(
                             'Week $_currentWeek: $weekName',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
                           if (_currentWeek == 4)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: colorScheme.tertiaryContainer,
                                 borderRadius: BorderRadius.circular(12),
@@ -376,7 +409,10 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                             color: colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(12),
                             border: set.amrap
-                                ? Border.all(color: colorScheme.primary, width: 2)
+                                ? Border.all(
+                                    color: colorScheme.primary,
+                                    width: 2,
+                                  )
                                 : null,
                           ),
                           child: Row(
@@ -411,22 +447,32 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                                       children: [
                                         Text(
                                           '${weight.toStringAsFixed(1)} $_unit',
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
                                                 fontWeight: FontWeight.bold,
                                               ),
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
                                           '×${set.reps}${set.amrap ? '+' : ''}',
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                color: colorScheme.onSurfaceVariant,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
                                               ),
                                         ),
                                       ],
                                     ),
                                     Text(
                                       '${(set.percentage * 100).toInt()}% of TM${set.amrap ? ' · AMRAP' : ''}',
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
                                             color: set.amrap
                                                 ? colorScheme.primary
                                                 : colorScheme.onSurfaceVariant,
@@ -461,12 +507,17 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline, color: colorScheme.primary),
+                            Icon(
+                              Icons.info_outline,
+                              color: colorScheme.primary,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 'Enter your Training Max to see the prescribed sets',
-                                style: TextStyle(color: colorScheme.onSurfaceVariant),
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ],
@@ -482,11 +533,16 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHigh,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(28)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.lightbulb_outline, size: 16, color: colorScheme.tertiary),
+                  Icon(
+                    Icons.lightbulb_outline,
+                    size: 16,
+                    color: colorScheme.tertiary,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

@@ -7,6 +7,7 @@ import 'package:flexify/plan/plans_list.dart';
 import 'package:flexify/plan/start_plan_page.dart';
 import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/utils.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -111,6 +112,31 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
 
   Future<void> _startFreeformWorkout() async {
     final workoutState = context.read<WorkoutState>();
+
+    // Check if there's any active workout
+    if (workoutState.hasActiveWorkout) {
+      toast(
+        'Finish your current workout first',
+        action: SnackBarAction(
+          label: 'Resume',
+          onPressed: () {
+            if (workoutState.activePlan != null) {
+              widget.navKey.currentState!.push(
+                MaterialPageRoute(
+                  builder: (context) => StartPlanPage(
+                    plan: workoutState.activePlan!,
+                  ),
+                  settings: RouteSettings(
+                    name: 'StartPlanPage_${workoutState.activePlan!.id}',
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+      );
+      return;
+    }
 
     // Create a temporary plan for freeform workout
     final freeformPlan = Plan(
