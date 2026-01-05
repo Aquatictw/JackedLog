@@ -206,9 +206,8 @@ class _PlanTileState extends State<PlanTile> {
 
               final workoutState = context.read<WorkoutState>();
 
-              // Check if there's an active workout for a different plan
-              if (workoutState.hasActiveWorkout &&
-                  workoutState.activePlan?.id != widget.plan.id) {
+              // Check if there's any active workout
+              if (workoutState.hasActiveWorkout) {
                 toast(
                   'Finish your current workout first',
                   action: SnackBarAction(
@@ -262,8 +261,7 @@ class _PlanTileState extends State<PlanTile> {
                       onPressed: () async {
                         final workoutState = context.read<WorkoutState>();
 
-                        if (workoutState.hasActiveWorkout &&
-                            workoutState.activePlan?.id != widget.plan.id) {
+                        if (workoutState.hasActiveWorkout) {
                           toast(
                             'Finish your current workout first',
                             action: SnackBarAction(
