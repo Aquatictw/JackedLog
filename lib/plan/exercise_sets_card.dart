@@ -1561,17 +1561,12 @@ class _SetRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // Record crown indicator
-            if (records.isNotEmpty && completed)
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: RecordCrown(records: records, size: 20),
-              ),
-            // Complete/Toggle button
+            // Complete/Toggle button with integrated PR crown
             _CompleteButton(
               completed: completed,
               isWarmup: isWarmup,
               isDropSet: isDropSet,
+              records: completed ? records : {},
               onPressed: onToggle,
             ),
           ],
@@ -1888,12 +1883,14 @@ class _CompleteButton extends StatelessWidget {
   final bool completed;
   final bool isWarmup;
   final bool isDropSet;
+  final Set<RecordType> records;
   final VoidCallback onPressed;
 
   const _CompleteButton({
     required this.completed,
     required this.isWarmup,
     this.isDropSet = false,
+    this.records = const {},
     required this.onPressed,
   });
 
@@ -1911,6 +1908,9 @@ class _CompleteButton extends StatelessWidget {
             ? colorScheme.onSecondary
             : colorScheme.onPrimary;
 
+    // If completed and has records, show crown instead of checkmark
+    final bool hasPR = completed && records.isNotEmpty;
+
     return SizedBox(
       width: 44,
       height: 44,
@@ -1925,12 +1925,32 @@ class _CompleteButton extends StatelessWidget {
         ),
         icon: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
-          child: Icon(
-            completed ? Icons.check : Icons.check,
-            key: ValueKey(completed),
-            color: completed ? onAccentColor : colorScheme.onSurfaceVariant,
-            size: 22,
-          ),
+          child: hasPR
+              ? Stack(
+                  key: ValueKey('crown_$completed'),
+                  alignment: Alignment.center,
+                  children: [
+                    // Golden glow effect
+                    Icon(
+                      Icons.workspace_premium,
+                      color: Colors.amber.shade300.withValues(alpha: 0.5),
+                      size: 28,
+                    ),
+                    // Main crown icon
+                    Icon(
+                      Icons.workspace_premium,
+                      color: onAccentColor,
+                      size: 24,
+                    ),
+                  ],
+                )
+              : Icon(
+                  completed ? Icons.check : Icons.check,
+                  key: ValueKey('check_$completed'),
+                  color:
+                      completed ? onAccentColor : colorScheme.onSurfaceVariant,
+                  size: 22,
+                ),
         ),
       ),
     );

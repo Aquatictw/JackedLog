@@ -324,39 +324,36 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
 
                     const SizedBox(height: 24),
 
-                    // Week Selector
-                    Text(
-                      'Current Week',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: List.generate(4, (index) {
-                        final week = index + 1;
-                        final isSelected = _currentWeek == week;
-                        return Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                              right: index < 3 ? 8 : 0,
-                            ),
-                            child: FilterChip(
-                              selected: isSelected,
-                              label: Text(
-                                'W$week',
-                                style: TextStyle(
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                              onSelected: (_) => _updateWeek(week),
-                              showCheckmark: false,
-                            ),
-                          ),
-                        );
-                      }),
+                    // Week Selector - buttons with better spacing
+                    SegmentedButton<int>(
+                      segments: [
+                        ButtonSegment(
+                          value: 1,
+                          label: Text('W1'),
+                        ),
+                        ButtonSegment(
+                          value: 2,
+                          label: Text('W2'),
+                        ),
+                        ButtonSegment(
+                          value: 3,
+                          label: Text('W3'),
+                        ),
+                        ButtonSegment(
+                          value: 4,
+                          label: Text('W4'),
+                        ),
+                      ],
+                      selected: {_currentWeek},
+                      onSelectionChanged: (Set<int> newSelection) {
+                        _updateWeek(newSelection.first);
+                      },
+                      showSelectedIcon: false,
+                      style: ButtonStyle(
+                        padding: WidgetStateProperty.all(
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 24),
