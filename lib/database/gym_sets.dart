@@ -646,7 +646,6 @@ Future<ExerciseRecords> getExerciseRecords({
 }
 
 class GymSets extends Table {
-  RealColumn get bodyWeight => real().withDefault(const Constant(0.0))();
   BoolColumn get cardio => boolean().withDefault(const Constant(false))();
   TextColumn get category => text().nullable()();
   DateTimeColumn get created => dateTime()();

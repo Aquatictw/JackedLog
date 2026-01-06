@@ -220,6 +220,10 @@ $version
       final setsRows = const CsvToListConverter(eol: "\n").convert(setsCsvContent);
       if (setsRows.isEmpty) throw Exception('Gym sets CSV is empty');
 
+      // Check CSV format version by examining header row
+      final setsHeader = setsRows.first.map((e) => e.toString().toLowerCase()).toList();
+      final hasBodyWeightColumn = setsHeader.contains('bodyweight');
+
       // Import workouts first (skip header row)
       final workoutsToInsert = workoutsRows.skip(1).map((row) {
         if (row.length < 6) {
@@ -245,6 +249,11 @@ $version
         final reps = _parseDouble(row[2], 'reps', setsRows.indexOf(row) + 1);
         final weight = _parseDouble(row[3], 'weight', setsRows.indexOf(row) + 1);
 
+        // Adjust column indices based on CSV format version
+        // Old format (v54 and earlier): had bodyWeight column at index 9
+        // New format (v55+): removed bodyWeight column
+        final offset = hasBodyWeightColumn ? 1 : 0;
+
         return GymSetsCompanion(
           id: Value(int.tryParse(row[0]?.toString() ?? '0') ?? 0),
           name: Value(row[1]?.toString() ?? ''),
@@ -255,20 +264,20 @@ $version
           cardio: Value(parseBool(row.elementAtOrNull(6))),
           duration: Value(double.tryParse(row.elementAtOrNull(7)?.toString() ?? '0') ?? 0),
           distance: Value(double.tryParse(row.elementAtOrNull(8)?.toString() ?? '0') ?? 0),
-          incline: Value(_parseNullableInt(row.elementAtOrNull(9))),
-          bodyWeight: Value(_parseNullableDouble(row.elementAtOrNull(10)) ?? 0.0),
-          restMs: Value(_parseNullableInt(row.elementAtOrNull(11))),
-          hidden: Value(parseBool(row.elementAtOrNull(12))),
-          workoutId: Value(_parseNullableInt(row.elementAtOrNull(13))),
-          planId: Value(_parseNullableInt(row.elementAtOrNull(14))),
-          image: Value(_parseNullableString(row.elementAtOrNull(15))),
-          category: Value(_parseNullableString(row.elementAtOrNull(16))),
-          notes: Value(_parseNullableString(row.elementAtOrNull(17))),
-          sequence: Value(int.tryParse(row.elementAtOrNull(18)?.toString() ?? '0') ?? 0),
-          warmup: Value(parseBool(row.elementAtOrNull(19))),
-          exerciseType: Value(_parseNullableString(row.elementAtOrNull(20))),
-          brandName: Value(_parseNullableString(row.elementAtOrNull(21))),
-          dropSet: Value(parseBool(row.elementAtOrNull(22))),
+          // Skip bodyWeight column (index 9) if present in old format
+          incline: Value(_parseNullableInt(row.elementAtOrNull(9 + offset))),
+          restMs: Value(_parseNullableInt(row.elementAtOrNull(10 + offset))),
+          hidden: Value(parseBool(row.elementAtOrNull(11 + offset))),
+          workoutId: Value(_parseNullableInt(row.elementAtOrNull(12 + offset))),
+          planId: Value(_parseNullableInt(row.elementAtOrNull(13 + offset))),
+          image: Value(_parseNullableString(row.elementAtOrNull(14 + offset))),
+          category: Value(_parseNullableString(row.elementAtOrNull(15 + offset))),
+          notes: Value(_parseNullableString(row.elementAtOrNull(16 + offset))),
+          sequence: Value(int.tryParse(row.elementAtOrNull(17 + offset)?.toString() ?? '0') ?? 0),
+          warmup: Value(parseBool(row.elementAtOrNull(18 + offset))),
+          exerciseType: Value(_parseNullableString(row.elementAtOrNull(19 + offset))),
+          brandName: Value(_parseNullableString(row.elementAtOrNull(20 + offset))),
+          dropSet: Value(parseBool(row.elementAtOrNull(21 + offset))),
         );
       });
 

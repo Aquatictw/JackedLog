@@ -8,6 +8,7 @@ import 'package:flexify/plan/start_plan_page.dart';
 import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/utils.dart';
+import 'package:flexify/widgets/timer_quick_access.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -256,6 +257,12 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
                 }),
               ),
         actions: [
+          if (selected.isEmpty)
+            IconButton(
+              icon: const Icon(Icons.timer),
+              tooltip: "Timer",
+              onPressed: () => showTimerQuickAccess(context),
+            ),
           if (selected.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete),

@@ -1,4 +1,5 @@
 import 'package:flexify/settings/settings_page.dart';
+import 'package:flexify/widgets/timer_quick_access.dart';
 import 'package:flutter/material.dart';
 
 class AppSearch extends StatefulWidget {
@@ -164,6 +165,17 @@ class _AppSearchState extends State<AppSearch> {
                           onTap: () {
                             Navigator.pop(context);
                             widget.onAdd!();
+                          },
+                        ),
+                      ),
+                    if (widget.selected.isEmpty)
+                      PopupMenuItem(
+                        child: ListTile(
+                          leading: const Icon(Icons.timer),
+                          title: const Text('Timer'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            showTimerQuickAccess(context);
                           },
                         ),
                       ),

@@ -25,7 +25,6 @@ class _TabSettingsState extends State<TabSettings> {
     (name: 'HistoryPage', enabled: false),
     (name: 'PlansPage', enabled: false),
     (name: 'GraphsPage', enabled: false),
-    (name: 'TimerPage', enabled: false),
     (name: 'NotesPage', enabled: false),
     (name: 'SettingsPage', enabled: false),
   ];
@@ -153,26 +152,6 @@ class _TabSettingsState extends State<TabSettings> {
                           const Icon(Icons.insights_rounded),
                           SizedBox(width: 8),
                           const Text("Graphs"),
-                        ],
-                      ),
-                      trailing: ReorderableDragStartListener(
-                        index: index,
-                        child: const Icon(Icons.drag_handle),
-                      ),
-                    );
-                  } else if (tab.name == 'TimerPage') {
-                    return ListTile(
-                      key: Key(tab.name),
-                      onTap: () => setTab(tab.name, !tab.enabled),
-                      leading: Switch(
-                        value: tab.enabled,
-                        onChanged: (value) => setTab(tab.name, value),
-                      ),
-                      title: material.Row(
-                        children: [
-                          const Icon(Icons.timer),
-                          SizedBox(width: 8),
-                          const Text("Timer"),
                         ],
                       ),
                       trailing: ReorderableDragStartListener(

@@ -9,7 +9,6 @@ import 'package:flexify/sets/history_page.dart';
 import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/rest_timer_bar.dart';
-import 'package:flexify/timer/timer_page.dart';
 import 'package:flexify/utils.dart';
 import 'package:flexify/workouts/active_workout_bar.dart';
 import 'package:flexify/workouts/workout_state.dart';
@@ -110,8 +109,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   );
                 else if (tab == 'GraphsPage')
                   return GraphsPage(tabController: controller);
-                else if (tab == 'TimerPage')
-                  return const TimerPage();
                 else if (tab == 'NotesPage')
                   return const NotesPage();
                 else if (tab == 'SettingsPage')

@@ -10,6 +10,7 @@ import 'package:flexify/main.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/widgets/timer_quick_access.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -112,7 +113,12 @@ class GraphsPageState extends State<GraphsPage>
                 }),
               ),
         actions: [
-          if (selected.isEmpty)
+          if (selected.isEmpty) ...[
+            IconButton(
+              icon: const Icon(Icons.timer),
+              tooltip: "Timer",
+              onPressed: () => showTimerQuickAccess(context),
+            ),
             IconButton(
               icon: const Icon(Icons.dashboard),
               tooltip: "Overview",
@@ -125,6 +131,7 @@ class GraphsPageState extends State<GraphsPage>
                 );
               },
             ),
+          ],
           if (selected.isNotEmpty) ...[
             IconButton(
               icon: const Icon(Icons.delete),

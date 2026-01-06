@@ -2,9 +2,12 @@ import 'package:drift/drift.dart' as drift;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
+import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/widgets/bodyweight_entry_dialog.dart';
 import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 enum OverviewPeriod { week, month, months3, months6, year, allTime }
 
@@ -26,6 +29,11 @@ class _OverviewPageState extends State<OverviewPage> {
   String? mostTrainedMuscle;
   bool isLoading = true;
   DateTime? actualStartDate; // The actual start date used in queries
+
+  // Bodyweight tracking
+  double? currentBodyweight;
+  double? previousBodyweight;
+  List<BodyweightEntry> bodyweightHistory = [];
 
   @override
   void initState() {
@@ -161,6 +169,38 @@ class _OverviewPageState extends State<OverviewPage> {
           volumes.entries.reduce((a, b) => a.value > b.value ? a : b).key;
     }
 
+    // Load bodyweight data
+    double? latestWeight;
+    double? previousWeight;
+    List<BodyweightEntry> weightHistory = [];
+
+    // Get latest bodyweight entry
+    final latestEntry = await (db.bodyweightEntries.select()
+          ..orderBy([(e) => drift.OrderingTerm(expression: e.date, mode: drift.OrderingMode.desc)])
+          ..limit(1))
+        .getSingleOrNull();
+
+    if (latestEntry != null) {
+      latestWeight = latestEntry.weight;
+
+      // Get bodyweight at start of period for comparison
+      final startEntry = await (db.bodyweightEntries.select()
+            ..where((e) => e.date.isSmallerOrEqualValue(startDate))
+            ..orderBy([(e) => drift.OrderingTerm(expression: e.date, mode: drift.OrderingMode.desc)])
+            ..limit(1))
+          .getSingleOrNull();
+
+      if (startEntry != null) {
+        previousWeight = startEntry.weight;
+      }
+
+      // Get all entries in the period for chart
+      weightHistory = await (db.bodyweightEntries.select()
+            ..where((e) => e.date.isBiggerOrEqualValue(startDate))
+            ..orderBy([(e) => drift.OrderingTerm(expression: e.date, mode: drift.OrderingMode.asc)]))
+          .get();
+    }
+
     if (mounted) {
       setState(() {
         muscleVolumes = volumes;
@@ -171,6 +211,9 @@ class _OverviewPageState extends State<OverviewPage> {
         currentStreak = streak;
         mostTrainedMuscle = topMuscle;
         actualStartDate = startDate; // Save the actual start date used
+        currentBodyweight = latestWeight;
+        previousBodyweight = previousWeight;
+        bodyweightHistory = weightHistory;
         isLoading = false;
       });
     }
@@ -504,6 +547,19 @@ class _OverviewPageState extends State<OverviewPage> {
       appBar: AppBar(
         title: const Text('Workout Overview'),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final result = await showDialog<bool>(
+            context: context,
+            builder: (context) => const BodyweightEntryDialog(),
+          );
+          if (result == true) {
+            _loadData(); // Reload data after successful entry
+          }
+        },
+        icon: const Icon(Icons.monitor_weight_outlined),
+        label: const Text('Log Weight'),
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -628,6 +684,320 @@ class _OverviewPageState extends State<OverviewPage> {
               ),
             ),
           ],
+        ),
+        if (currentBodyweight != null) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildBodyweightCard(
+                  colorScheme: colorScheme,
+                  context: context,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildBodyweightTrendCard(
+                  colorScheme: colorScheme,
+                ),
+              ),
+            ],
+          ),
+        ],
+        // Bodyweight chart
+        if (bodyweightHistory.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          _buildBodyweightChart(colorScheme, context),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBodyweightCard({
+    required ColorScheme colorScheme,
+    required BuildContext context,
+  }) {
+    final settings = context.watch<SettingsState>().value;
+    final unit = settings.strengthUnit;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.cyan.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.cyan.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.monitor_weight_outlined, color: Colors.cyan, size: 20),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Bodyweight',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            currentBodyweight != null
+                ? '${currentBodyweight!.toStringAsFixed(1)} $unit'
+                : 'No data',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBodyweightTrendCard({
+    required ColorScheme colorScheme,
+  }) {
+    String trend = 'No change';
+    Color trendColor = colorScheme.onSurface;
+    IconData trendIcon = Icons.trending_flat;
+
+    if (currentBodyweight != null && previousBodyweight != null) {
+      final change = currentBodyweight! - previousBodyweight!;
+      if (change > 0.1) {
+        trend = '+${change.toStringAsFixed(1)}';
+        trendColor = Colors.green;
+        trendIcon = Icons.trending_up;
+      } else if (change < -0.1) {
+        trend = change.toStringAsFixed(1);
+        trendColor = Colors.red;
+        trendIcon = Icons.trending_down;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.teal.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.teal.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(trendIcon, color: Colors.teal, size: 20),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Weight Change',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            trend,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: trendColor,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBodyweightChart(ColorScheme colorScheme, BuildContext context) {
+    final settings = context.watch<SettingsState>().value;
+    final unit = settings.strengthUnit;
+
+    // Prepare data points for the chart
+    final spots = bodyweightHistory.asMap().entries.map((entry) {
+      return FlSpot(entry.key.toDouble(), entry.value.weight);
+    }).toList();
+
+    if (spots.isEmpty) return const SizedBox.shrink();
+
+    // Calculate min/max for Y axis
+    final weights = bodyweightHistory.map((e) => e.weight).toList();
+    final minWeight = weights.reduce((a, b) => a < b ? a : b);
+    final maxWeight = weights.reduce((a, b) => a > b ? a : b);
+    final range = maxWeight - minWeight;
+    final yMin = (minWeight - range * 0.1).floorToDouble();
+    final yMax = (maxWeight + range * 0.1).ceilToDouble();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.show_chart, color: Colors.cyan, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Bodyweight Progress',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+          ),
+          child: SizedBox(
+            height: 200,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: range > 10 ? 5 : 1,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 45,
+                      interval: range > 10 ? 5 : 1,
+                      getTitlesWidget: (value, meta) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Text(
+                            '${value.toStringAsFixed(0)} $unit',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      interval: (spots.length / 5).ceilToDouble(),
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+                        if (index < 0 || index >= bodyweightHistory.length) {
+                          return const SizedBox.shrink();
+                        }
+                        final date = bodyweightHistory[index].date;
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            DateFormat('MMM d').format(date),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                minX: 0,
+                maxX: (spots.length - 1).toDouble(),
+                minY: yMin,
+                maxY: yMax,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    color: Colors.cyan,
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: Colors.cyan,
+                          strokeWidth: 2,
+                          strokeColor: colorScheme.surface,
+                        );
+                      },
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: Colors.cyan.withValues(alpha: 0.1),
+                    ),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (touchedSpot) =>
+                        colorScheme.surfaceContainerHighest,
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        final index = spot.x.toInt();
+                        if (index < 0 || index >= bodyweightHistory.length) {
+                          return null;
+                        }
+                        final entry = bodyweightHistory[index];
+                        return LineTooltipItem(
+                          '${entry.weight.toStringAsFixed(1)} $unit\n${DateFormat('MMM d, yyyy').format(entry.date)}',
+                          TextStyle(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );
