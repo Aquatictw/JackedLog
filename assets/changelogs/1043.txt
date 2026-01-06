@@ -1,3 +1,0 @@
-- Fix edit gym set disposal
-- Remove dispose calls to settings
-- Clean up listeners on dispose

@@ -1,3 +1,0 @@
-• Fix broken re-ordering on Plans
-• Greatly simplify setting exercises in plan state
-• Revert "Greatly simplify setting exercises in plan state"

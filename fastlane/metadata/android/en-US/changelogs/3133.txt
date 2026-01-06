@@ -1,3 +1,0 @@
-• Add sample performance test
-• Improve performance
-• Try to fix msstore deployments

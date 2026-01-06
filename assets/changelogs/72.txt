@@ -1,2 +1,0 @@
-- Merge branch 'main' of github.com:brandonp2412/Flexify
-- Fix distance field staying highlighted - 1.0.64 🚀

@@ -1,2 +1,0 @@
-- Fix app crashes after 1.1.36
-- Improve cardio editing experience

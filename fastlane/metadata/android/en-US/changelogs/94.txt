@@ -1,2 +1,0 @@
-- Add best reps graph
-- Comment out fastlane supply in deploy.sh

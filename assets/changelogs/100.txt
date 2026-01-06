@@ -1,2 +1,0 @@
-- Fix counting plans
-- Refactor strength & cardio lines

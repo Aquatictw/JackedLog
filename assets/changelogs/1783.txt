@@ -1,3 +1,0 @@
-- Double tap to open any metric
-- Show ORM while editing a set
-- Add toggle for alarm sound

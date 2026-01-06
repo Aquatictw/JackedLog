@@ -1,4 +1,0 @@
-• Always show tab titles
-• Fix not being able to scroll global graphs
-• Fix updating categories
-• Reduce global graph clutter on tooltip

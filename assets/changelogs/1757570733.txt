@@ -1,8 +1,0 @@
-• Fix bottom progress bar not updating
-• Fix padding consistency on Plans
-• Fix system back navigation
-• Fix unit tests
-• Link shields.io on downloads badge
-• Match spacing from edit set on edit weight page
-• Prevent double-tap editing sets that haven't been entered yet
-• Remove get it on X spacing

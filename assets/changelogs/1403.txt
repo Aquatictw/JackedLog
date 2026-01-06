@@ -1,4 +1,0 @@
-- Include settings in database backups
-- Fix database exporting on desktop
-- Add plan trailing to home page
-- Add options for plan trailing

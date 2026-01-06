@@ -1,1 +1,0 @@
-Automatically deploy to Windows store

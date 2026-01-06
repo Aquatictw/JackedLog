@@ -1,3 +1,0 @@
-- Clarify what edit graph does
-- Clear limit size when searching history
-- Allow scrolling past end on lists

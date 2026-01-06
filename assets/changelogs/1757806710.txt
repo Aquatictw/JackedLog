@@ -1,2 +1,0 @@
-• Fix deploy.sh
-• Fix tab nav not floating over lists

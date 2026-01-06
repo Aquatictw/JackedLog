@@ -1,1 +1,0 @@
-- Fix deploy workflow triggering by adding workflow_dispatch and API call

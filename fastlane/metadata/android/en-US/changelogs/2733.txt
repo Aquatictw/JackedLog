@@ -1,7 +1,0 @@
-• Add github pages hosting for Flexify web
-• Add missing changelogs
-• Allow user to clear max sets
-• Delete unused scripts
-• Fix what's new copying
-• Only back up to a single file every time
-• Remove reps from strength graph

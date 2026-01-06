@@ -1,3 +1,0 @@
-- Make editing gym sets scrollable
-- Checkout to flutter main in ci_post_clone
-- Revert to dropdowns for period

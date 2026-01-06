@@ -1,2 +1,0 @@
-- Use flutter submodule in deployment
-- Fix graph sizes for shorter screens

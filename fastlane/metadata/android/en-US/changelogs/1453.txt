@@ -1,2 +1,0 @@
-- Fix app crash on timeout
-- Fix selecting exercises from history page

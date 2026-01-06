@@ -1,2 +1,0 @@
-• Downgrade agp to 8.11.1
-• Fix pre-populating reps/weight

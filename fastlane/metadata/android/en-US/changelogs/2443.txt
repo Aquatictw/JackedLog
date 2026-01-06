@@ -1,2 +1,0 @@
-- Update pubspec.lock
-- Fix artifact file paths for GitHub release

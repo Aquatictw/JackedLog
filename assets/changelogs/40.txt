@@ -1,1 +1,0 @@
-Fix timer always resetting to zero

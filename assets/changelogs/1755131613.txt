@@ -1,3 +1,0 @@
-• Fix timer page screenshot
-• Fix timer page screenshot tests
-• Hide changelog notification for screenshots

@@ -1,2 +1,0 @@
-- Strip trailing zeros from share menus
-- Fix buggy unit when toggling cardio

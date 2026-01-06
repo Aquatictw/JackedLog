@@ -1,3 +1,0 @@
-- Add settings button to active plans
-- Fix trailing reorder buttons on desktop
-- Disable rest timers on warmup sets

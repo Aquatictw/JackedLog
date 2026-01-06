@@ -1,2 +1,0 @@
-- Fix unit tests
-- Remove git push force from deploy.sh

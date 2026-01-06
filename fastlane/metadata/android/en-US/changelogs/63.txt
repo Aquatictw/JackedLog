@@ -1,1 +1,0 @@
-Persist system color settings

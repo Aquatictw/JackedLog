@@ -8,14 +8,12 @@ import 'package:flexify/plan/plans_page.dart';
 import 'package:flexify/sets/history_page.dart';
 import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/settings/whats_new.dart';
 import 'package:flexify/timer/rest_timer_bar.dart';
 import 'package:flexify/timer/timer_page.dart';
 import 'package:flexify/utils.dart';
 import 'package:flexify/workouts/active_workout_bar.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -40,36 +38,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final plansIndex = tabs.indexOf('PlansPage');
       context.read<WorkoutState>().setTabController(controller, plansIndex);
-    });
-
-    final info = PackageInfo.fromPlatform();
-    info.then((pkg) async {
-      final meta = await (db.metadata.select()..limit(1)).getSingleOrNull();
-      if (meta == null)
-        return db.metadata.insertOne(
-          MetadataCompanion(buildNumber: Value(int.parse(pkg.buildNumber))),
-        );
-      else
-        db.metadata.update().write(
-              MetadataCompanion(
-                buildNumber: Value(int.parse(pkg.buildNumber)),
-              ),
-            );
-
-      if (int.parse(pkg.buildNumber) == meta.buildNumber) return null;
-
-      if (mounted)
-        toast(
-          "New version ${pkg.version}",
-          action: SnackBarAction(
-            label: 'Changes',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const WhatsNew(),
-              ),
-            ),
-          ),
-        );
     });
   }
 

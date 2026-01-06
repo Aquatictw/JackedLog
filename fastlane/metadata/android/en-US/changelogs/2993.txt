@@ -1,4 +1,0 @@
-• Fix automatic screenshots
-• Fix spacing issues on edit set page
-• Make default history ungrouped
-• Pull before final push

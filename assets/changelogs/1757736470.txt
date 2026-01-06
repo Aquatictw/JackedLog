@@ -1,4 +1,0 @@
-• Fix deploy.sh
-• Make bottom sheets easier to tap
-• Make it easier to see/tap last entries
-• Use previously entered boy weights in plans page

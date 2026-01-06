@@ -1,1 +1,0 @@
-- Fix macOS build code signing issue

@@ -1,4 +1,0 @@
-• Allow all unit types for cardio
-• Change style of tabs settings page
-• Fix adding a cardio exercise from the Graphs page
-• Prevent saying the changelog on first install

@@ -1,3 +1,0 @@
-- Add tabs setting
-- Add plan settings
-- Fix graph fab blocking information
