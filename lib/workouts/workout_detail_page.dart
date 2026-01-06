@@ -230,8 +230,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                   childCount: exerciseGroups.length,
                 ),
               ),
-              // Bottom padding for navigation bar
-              const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+              // Bottom padding for navigation bar + active workout bar + timer
+              const SliverPadding(padding: EdgeInsets.only(bottom: 260)),
             ],
           );
         },
