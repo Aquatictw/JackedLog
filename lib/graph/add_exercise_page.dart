@@ -523,6 +523,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
 
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => SafeArea(
         child: Wrap(
           children: [
