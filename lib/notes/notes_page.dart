@@ -17,16 +17,16 @@ class _NotesPageState extends State<NotesPage> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
-  // Artistic color palette for notes
+  // Artistic color palette for notes (darker shades)
   final List<Color> _noteColors = [
-    const Color(0xFFFFD6A5), // Peach
-    const Color(0xFFCAFAFA), // Mint
-    const Color(0xFFA0C4FF), // Sky Blue
-    const Color(0xFFFFC6FF), // Pink
-    const Color(0xFFFFADAD), // Coral
-    const Color(0xFFFDFFB6), // Light Yellow
-    const Color(0xFFB9FBC0), // Mint Green
-    const Color(0xFFBDB2FF), // Lavender
+    const Color(0xFFFFB366), // Peach
+    const Color(0xFF7DD3D3), // Mint
+    const Color(0xFF6FA8FF), // Sky Blue
+    const Color(0xFFFF99FF), // Pink
+    const Color(0xFFFF7A7A), // Coral
+    const Color(0xFFF9FF66), // Light Yellow
+    const Color(0xFF7FD98A), // Mint Green
+    const Color(0xFF9D8FFF), // Lavender
   ];
 
   @override
@@ -36,10 +36,15 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   Color _getColorFromValue(int? colorValue) {
-    if (colorValue == null || colorValue < 0 || colorValue >= _noteColors.length) {
+    if (colorValue == null) {
       return _noteColors[0];
     }
-    return _noteColors[colorValue];
+    // If it's a preset index (0-7), use the preset color
+    if (colorValue >= 0 && colorValue < _noteColors.length) {
+      return _noteColors[colorValue];
+    }
+    // Otherwise, treat it as a custom color value
+    return Color(colorValue);
   }
 
   int _getRandomColorIndex() {
@@ -465,11 +470,15 @@ class _NoteCard extends StatelessWidget {
                     color: Colors.black54,
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    '${dateFormat.format(note.updated)} ${timeFormat.format(note.updated)}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.black54,
+                  Flexible(
+                    child: Text(
+                      '${dateFormat.format(note.updated)} ${timeFormat.format(note.updated)}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.black54,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
                 ],

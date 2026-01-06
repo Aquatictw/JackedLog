@@ -21,16 +21,17 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
   late final TextEditingController _titleController;
   late final TextEditingController _contentController;
   late int _selectedColorIndex;
+  Color? _customColor;
 
   final List<Color> _noteColors = [
-    const Color(0xFFFFD6A5), // Peach
-    const Color(0xFFCAFAFA), // Mint
-    const Color(0xFFA0C4FF), // Sky Blue
-    const Color(0xFFFFC6FF), // Pink
-    const Color(0xFFFFADAD), // Coral
-    const Color(0xFFFDFFB6), // Light Yellow
-    const Color(0xFFB9FBC0), // Mint Green
-    const Color(0xFFBDB2FF), // Lavender
+    const Color(0xFFFFB366), // Peach
+    const Color(0xFF7DD3D3), // Mint
+    const Color(0xFF6FA8FF), // Sky Blue
+    const Color(0xFFFF99FF), // Pink
+    const Color(0xFFFF7A7A), // Coral
+    const Color(0xFFF9FF66), // Light Yellow
+    const Color(0xFF7FD98A), // Mint Green
+    const Color(0xFF9D8FFF), // Lavender
   ];
 
   bool _isModified = false;
@@ -40,7 +41,16 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     super.initState();
     _titleController = TextEditingController(text: widget.note?.title ?? '');
     _contentController = TextEditingController(text: widget.note?.content ?? '');
-    _selectedColorIndex = widget.colorIndex;
+
+    // Check if it's a custom color or preset index
+    final colorValue = widget.note?.color ?? widget.colorIndex;
+    if (colorValue >= 0 && colorValue < _noteColors.length) {
+      _selectedColorIndex = colorValue;
+      _customColor = null;
+    } else {
+      _selectedColorIndex = -1; // Custom color indicator
+      _customColor = Color(colorValue);
+    }
 
     _titleController.addListener(_onTextChanged);
     _contentController.addListener(_onTextChanged);
@@ -71,6 +81,8 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     }
 
     final now = DateTime.now();
+    // Save custom color value or preset index
+    final colorValue = _customColor?.value ?? _selectedColorIndex;
 
     if (widget.note == null) {
       // Create new note
@@ -79,7 +91,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
         content: content,
         created: now,
         updated: now,
-        color: Value(_selectedColorIndex),
+        color: Value(colorValue),
       );
       final id = await db.notes.insertOne(companion);
       final note = await (db.notes.select()..where((n) => n.id.equals(id))).getSingle();
@@ -93,7 +105,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           title: Value(title.isEmpty ? 'Untitled' : title),
           content: Value(content),
           updated: Value(now),
-          color: Value(_selectedColorIndex),
+          color: Value(colorValue),
         ),
       );
       final note = await (db.notes.select()..where((n) => n.id.equals(widget.note!.id))).getSingle();
@@ -134,14 +146,33 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     return shouldSave == false;
   }
 
+  Color get _currentColor => _customColor ?? _noteColors[_selectedColorIndex >= 0 ? _selectedColorIndex : 0];
+
+  Future<void> _showCustomColorPicker() async {
+    final result = await showDialog<Color>(
+      context: context,
+      builder: (context) => _SimpleColorPickerDialog(
+        initialColor: _customColor ?? _noteColors[0],
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _customColor = result;
+        _selectedColorIndex = -1;
+        _isModified = true;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: _noteColors[_selectedColorIndex],
+        backgroundColor: _currentColor,
         appBar: AppBar(
-          backgroundColor: _noteColors[_selectedColorIndex],
+          backgroundColor: _currentColor,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black87),
@@ -163,7 +194,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           children: [
             // Color picker
             Container(
-              color: _noteColors[_selectedColorIndex],
+              color: _currentColor,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
@@ -181,15 +212,46 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                       height: 40,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
-                        itemCount: _noteColors.length,
+                        itemCount: _noteColors.length + 1, // +1 for custom color button
                         itemBuilder: (context, index) {
-                          final isSelected = index == _selectedColorIndex;
+                          // Custom color picker button
+                          if (index == _noteColors.length) {
+                            final isSelected = _customColor != null;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: InkWell(
+                                onTap: _showCustomColorPicker,
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: _customColor ?? Colors.grey[300],
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected ? Colors.black87 : Colors.black26,
+                                      width: isSelected ? 3 : 1,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    isSelected ? Icons.check : Icons.add,
+                                    color: Colors.black87,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          // Preset color options
+                          final isSelected = index == _selectedColorIndex && _customColor == null;
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: InkWell(
                               onTap: () {
                                 setState(() {
                                   _selectedColorIndex = index;
+                                  _customColor = null;
                                   _isModified = true;
                                 });
                               },
@@ -225,7 +287,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
             // Note content
             Expanded(
               child: Container(
-                color: _noteColors[_selectedColorIndex],
+                color: _currentColor,
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
@@ -242,9 +304,11 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                           color: Colors.black38,
                         ),
                         border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                     ),
+                    const SizedBox(height: 4),
                     const Divider(color: Colors.black26),
                     const SizedBox(height: 8),
                     Expanded(
@@ -274,6 +338,163 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SimpleColorPickerDialog extends StatefulWidget {
+  final Color initialColor;
+
+  const _SimpleColorPickerDialog({required this.initialColor});
+
+  @override
+  State<_SimpleColorPickerDialog> createState() => _SimpleColorPickerDialogState();
+}
+
+class _SimpleColorPickerDialogState extends State<_SimpleColorPickerDialog> {
+  late HSLColor _hslColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _hslColor = HSLColor.fromColor(widget.initialColor);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentColor = _hslColor.toColor();
+
+    return AlertDialog(
+      title: const Text('Pick a color'),
+      content: SizedBox(
+        width: 280,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Color preview
+            Container(
+              width: double.infinity,
+              height: 80,
+              decoration: BoxDecoration(
+                color: currentColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.black26),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Hue slider
+            _buildSlider(
+              label: 'Hue',
+              value: _hslColor.hue,
+              max: 360,
+              onChanged: (value) {
+                setState(() {
+                  _hslColor = _hslColor.withHue(value);
+                });
+              },
+              gradient: LinearGradient(
+                colors: [
+                  HSLColor.fromAHSL(1, 0, _hslColor.saturation, _hslColor.lightness).toColor(),
+                  HSLColor.fromAHSL(1, 60, _hslColor.saturation, _hslColor.lightness).toColor(),
+                  HSLColor.fromAHSL(1, 120, _hslColor.saturation, _hslColor.lightness).toColor(),
+                  HSLColor.fromAHSL(1, 180, _hslColor.saturation, _hslColor.lightness).toColor(),
+                  HSLColor.fromAHSL(1, 240, _hslColor.saturation, _hslColor.lightness).toColor(),
+                  HSLColor.fromAHSL(1, 300, _hslColor.saturation, _hslColor.lightness).toColor(),
+                  HSLColor.fromAHSL(1, 360, _hslColor.saturation, _hslColor.lightness).toColor(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Saturation slider
+            _buildSlider(
+              label: 'Saturation',
+              value: _hslColor.saturation * 100,
+              max: 100,
+              onChanged: (value) {
+                setState(() {
+                  _hslColor = _hslColor.withSaturation(value / 100);
+                });
+              },
+              gradient: LinearGradient(
+                colors: [
+                  HSLColor.fromAHSL(1, _hslColor.hue, 0, _hslColor.lightness).toColor(),
+                  HSLColor.fromAHSL(1, _hslColor.hue, 1, _hslColor.lightness).toColor(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Lightness slider
+            _buildSlider(
+              label: 'Lightness',
+              value: _hslColor.lightness * 100,
+              max: 100,
+              onChanged: (value) {
+                setState(() {
+                  _hslColor = _hslColor.withLightness(value / 100);
+                });
+              },
+              gradient: LinearGradient(
+                colors: [
+                  HSLColor.fromAHSL(1, _hslColor.hue, _hslColor.saturation, 0).toColor(),
+                  HSLColor.fromAHSL(1, _hslColor.hue, _hslColor.saturation, 0.5).toColor(),
+                  HSLColor.fromAHSL(1, _hslColor.hue, _hslColor.saturation, 1).toColor(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, currentColor),
+          child: const Text('Select'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSlider({
+    required String label,
+    required double value,
+    required double max,
+    required ValueChanged<double> onChanged,
+    required Gradient gradient,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label: ${value.round()}',
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 24,
+          decoration: BoxDecoration(
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black26),
+          ),
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 24,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
+              activeTrackColor: Colors.transparent,
+              inactiveTrackColor: Colors.transparent,
+            ),
+            child: Slider(
+              value: value,
+              max: max,
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
