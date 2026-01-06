@@ -529,6 +529,9 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         ),
       );
 
+      // Clear PR cache since a set was completed
+      clearPRCache();
+
       setState(() {
         sets[index].completed = true;
       });
@@ -553,6 +556,9 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               category: Value(_category),
             ),
           );
+
+      // Clear PR cache since a set was completed
+      clearPRCache();
 
       setState(() {
         sets[index].completed = true;

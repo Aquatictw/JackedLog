@@ -2,6 +2,15 @@ import 'package:drift/drift.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
 
+// Cache for batch workout record counts
+final _prCache = <String, ({Map<int, int> counts, DateTime cachedAt})>{};
+const _cacheDuration = Duration(seconds: 30);
+
+/// Clears the PR cache (call when new sets are added/modified)
+void clearPRCache() {
+  _prCache.clear();
+}
+
 /// Types of personal records that can be achieved
 enum RecordType {
   /// Best estimated one-rep max (Brzycki formula)
@@ -343,6 +352,25 @@ Future<int> getWorkoutRecordCount(int workoutId) async {
 Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
   if (workoutIds.isEmpty) return {};
 
+  // Create cache key from sorted workout IDs
+  final sortedIds = List<int>.from(workoutIds)..sort();
+  final cacheKey = sortedIds.join(',');
+
+  // Check cache
+  final cached = _prCache[cacheKey];
+  if (cached != null) {
+    final age = DateTime.now().difference(cached.cachedAt);
+    if (age < _cacheDuration) {
+      return cached.counts;
+    }
+  }
+
+  // Clean up old cache entries (prevent memory leak)
+  _prCache.removeWhere((key, value) {
+    final age = DateTime.now().difference(value.cachedAt);
+    return age >= _cacheDuration;
+  });
+
   final recordCounts = <int, int>{};
 
   // Get all sets from these workouts
@@ -450,6 +478,9 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
       recordCounts[set.workoutId!] = (recordCounts[set.workoutId!] ?? 0) + 1;
     }
   }
+
+  // Store in cache before returning
+  _prCache[cacheKey] = (counts: recordCounts, cachedAt: DateTime.now());
 
   return recordCounts;
 }

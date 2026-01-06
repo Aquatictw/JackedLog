@@ -57,7 +57,14 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
     }
   }
 
-  void _navigateToWorkout(GlobalKey<NavigatorState>? navKey, Plan plan) {
+  Future<void> _navigateToWorkout(GlobalKey<NavigatorState>? navKey, Plan plan) async {
+    // Wait for navigator to be ready (up to 2 seconds)
+    int attempts = 0;
+    while (navKey?.currentState == null && attempts < 20) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
+
     if (navKey?.currentState == null) return;
 
     final navigator = navKey!.currentState!;
@@ -112,15 +119,10 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
           if (tabController != null && plansIndex >= 0) {
             if (tabController.index != plansIndex) {
               tabController.animateTo(plansIndex);
-              // Wait for tab switch animation, then navigate
-              Future.delayed(const Duration(milliseconds: 300), () {
-                _navigateToWorkout(navKey, plan);
-              });
-              return;
             }
           }
 
-          // Already on Plans tab, navigate directly
+          // Navigate to workout (will wait for navigator to be ready)
           _navigateToWorkout(navKey, plan);
         }
       },
