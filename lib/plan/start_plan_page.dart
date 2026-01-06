@@ -1787,6 +1787,9 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
         ),
       );
 
+      // Clear PR cache since a set was completed
+      clearPRCache();
+
       setState(() {
         sets[index].completed = true;
       });
@@ -1812,6 +1815,9 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               category: Value(_category),
             ),
           );
+
+      // Clear PR cache since a set was completed
+      clearPRCache();
 
       setState(() {
         sets[index].completed = true;

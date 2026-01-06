@@ -9,6 +9,7 @@ import 'package:flexify/database/database.dart';
 import 'package:flexify/database/gym_sets.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/plan/plan_state.dart';
+import 'package:flexify/records/records_service.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
 import 'package:flexify/utils.dart';
@@ -130,6 +131,8 @@ class _EditSetPageState extends State<EditSetPage> {
               onPressed: () async {
                 Navigator.pop(dialogContext);
                 await db.delete(db.gymSets).delete(widget.gymSet);
+                // Clear PR cache since a set was deleted
+                clearPRCache();
                 if (mounted) Navigator.pop(context);
               },
             ),
@@ -605,12 +608,16 @@ class _EditSetPageState extends State<EditSetPage> {
       if (image != null)
         (db.update(db.gymSets)..where((u) => u.name.equals(name)))
             .write(GymSetsCompanion(image: Value(image)));
+      // Clear PR cache since a set was updated
+      clearPRCache();
       if (!mounted) return;
       planState.updateDefaults();
       return Navigator.of(context).pop();
     } else {
       var insert = gymSet.toCompanion(false).copyWith(id: const Value.absent());
       await db.into(db.gymSets).insert(insert);
+      // Clear PR cache since a set was inserted
+      clearPRCache();
       planState.updateDefaults();
     }
 
