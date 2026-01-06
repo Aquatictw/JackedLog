@@ -2724,13 +2724,7 @@ class _AdHocSetRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // Record crown indicator
-            if (records.isNotEmpty && completed)
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: RecordCrown(records: records, size: 20),
-              ),
-            // Complete button
+            // Complete button with integrated PR crown
             SizedBox(
               width: 44,
               height: 44,
@@ -2744,15 +2738,35 @@ class _AdHocSetRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                icon: Icon(
-                  Icons.check,
-                  color: completed
-                      ? (isWarmup
-                          ? colorScheme.onTertiary
-                          : colorScheme.onPrimary)
-                      : colorScheme.onSurfaceVariant,
-                  size: 22,
-                ),
+                icon: (completed && records.isNotEmpty)
+                    ? Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Golden glow effect
+                          Icon(
+                            Icons.workspace_premium,
+                            color: Colors.amber.shade300.withValues(alpha: 0.5),
+                            size: 28,
+                          ),
+                          // Main crown icon
+                          Icon(
+                            Icons.workspace_premium,
+                            color: isWarmup
+                                ? colorScheme.onTertiary
+                                : colorScheme.onPrimary,
+                            size: 24,
+                          ),
+                        ],
+                      )
+                    : Icon(
+                        Icons.check,
+                        color: completed
+                            ? (isWarmup
+                                ? colorScheme.onTertiary
+                                : colorScheme.onPrimary)
+                            : colorScheme.onSurfaceVariant,
+                        size: 22,
+                      ),
               ),
             ),
           ],
