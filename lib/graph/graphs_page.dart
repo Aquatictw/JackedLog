@@ -15,6 +15,7 @@ import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'bodyweight_overview_page.dart';
 import 'graph_tile.dart';
 import 'overview_page.dart';
 
@@ -118,6 +119,18 @@ class GraphsPageState extends State<GraphsPage>
               icon: const Icon(Icons.timer),
               tooltip: "Timer",
               onPressed: () => showTimerQuickAccess(context),
+            ),
+            IconButton(
+              icon: const Icon(Icons.monitor_weight),
+              tooltip: "Bodyweight Tracking",
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const BodyweightOverviewPage(),
+                  ),
+                );
+              },
             ),
             IconButton(
               icon: const Icon(Icons.dashboard),
