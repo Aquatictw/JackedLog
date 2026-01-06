@@ -35,13 +35,6 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(widget.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            tooltip: 'Showing workouts containing ${widget.name}',
-            onPressed: () {},
-          ),
-        ],
       ),
       body: Builder(
         builder: (context) {
