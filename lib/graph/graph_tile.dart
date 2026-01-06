@@ -1,11 +1,11 @@
 import 'dart:io';
 
-import 'package:flexify/constants.dart';
-import 'package:flexify/database/gym_sets.dart';
-import 'package:flexify/graph/cardio_page.dart';
-import 'package:flexify/graph/strength_page.dart';
-import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/widgets/bodypart_tag.dart';
+import 'package:jackedlog/constants.dart';
+import 'package:jackedlog/database/gym_sets.dart';
+import 'package:jackedlog/graph/cardio_page.dart';
+import 'package:jackedlog/graph/strength_page.dart';
+import 'package:jackedlog/settings/settings_state.dart';
+import 'package:jackedlog/widgets/bodypart_tag.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;

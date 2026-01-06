@@ -1,4 +1,4 @@
-package com.aquatic.flexify
+package com.aquatic.jackedlog
 
 import android.Manifest
 import android.app.NotificationChannel

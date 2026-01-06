@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:flexify/records/records_service.dart';
+import 'package:jackedlog/records/records_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

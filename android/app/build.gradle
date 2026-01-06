@@ -29,7 +29,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.aquatic.flexify"
+    namespace "com.aquatic.jackedlog"
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion = "28.2.13676358"
 
@@ -52,7 +52,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.aquatic.flexify"
+        applicationId "com.aquatic.jackedlog"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion flutter.minSdkVersion
@@ -111,7 +111,6 @@ android {
            buildConfigField "long", "BUILD_TIME", "0L"
        }
    }
-   // https://github.com/brandonp2412/Flexify/issues/125
    dependenciesInfo {
         // Disables dependency metadata when building APKs.
         includeInApk = false

@@ -4,8 +4,8 @@ import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flexify/main.dart';
-import 'package:flexify/utils.dart';
+import 'package:jackedlog/main.dart';
+import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -123,7 +123,7 @@ class ExportData extends StatelessWidget {
 
                       final zipBytes = ZipEncoder().encode(archive);
                       await FilePicker.platform.saveFile(
-                        fileName: 'flexify_workouts.zip',
+                        fileName: 'jackedlog_workouts.zip',
                         bytes: Uint8List.fromList(zipBytes!),
                         type: FileType.custom,
                         allowedExtensions: ['zip'],
@@ -137,10 +137,10 @@ class ExportData extends StatelessWidget {
                       Navigator.pop(context);
                       final dbFolder = await getApplicationDocumentsDirectory();
                       final file =
-                          File(p.join(dbFolder.path, 'flexify.sqlite'));
+                          File(p.join(dbFolder.path, 'jackedlog.sqlite'));
                       final bytes = await file.readAsBytes();
                       final result = await FilePicker.platform.saveFile(
-                        fileName: 'flexify.sqlite',
+                        fileName: 'jackedlog.sqlite',
                         bytes: bytes,
                         type: FileType.custom,
                         allowedExtensions: ['sqlite'],

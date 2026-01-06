@@ -1,5 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flexify/database/database.dart';
+import 'package:jackedlog/database/database.dart';
 
 /// Calculates a moving average over a specified window of days.
 ///

@@ -1,4 +1,4 @@
-name: flexify
+name: jackedlog
 description: Track gym progress, visualize graphs, enjoy offline support & timers
 publish_to: none
 version: 1.0.0+1
@@ -38,7 +38,14 @@ dev_dependencies:
   mockito: ^5.4.4
   drift_dev: ^2.28.1
   build_runner: ^2.6.0
+  flutter_launcher_icons: ^0.14.2
 flutter:
   uses-material-design: true
   assets:
     - assets/
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "screenshots/app_icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "screenshots/app_icon.png"

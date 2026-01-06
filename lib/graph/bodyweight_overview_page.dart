@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flexify/database/database.dart';
-import 'package:flexify/main.dart';
-import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/utils/bodyweight_calculations.dart';
-import 'package:flexify/widgets/bodyweight_entry_dialog.dart';
-import 'package:flexify/widgets/bodyweight_entry_tile.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/main.dart';
+import 'package:jackedlog/settings/settings_state.dart';
+import 'package:jackedlog/utils/bodyweight_calculations.dart';
+import 'package:jackedlog/widgets/bodyweight_entry_dialog.dart';
+import 'package:jackedlog/widgets/bodyweight_entry_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';

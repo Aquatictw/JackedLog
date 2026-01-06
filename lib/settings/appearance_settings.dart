@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flexify/database/database.dart';
-import 'package:flexify/graph/cardio_data.dart';
-import 'package:flexify/graph/flex_line.dart';
-import 'package:flexify/main.dart';
-import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/widgets/artistic_color_picker.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/graph/cardio_data.dart';
+import 'package:jackedlog/graph/flex_line.dart';
+import 'package:jackedlog/main.dart';
+import 'package:jackedlog/settings/settings_state.dart';
+import 'package:jackedlog/widgets/artistic_color_picker.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

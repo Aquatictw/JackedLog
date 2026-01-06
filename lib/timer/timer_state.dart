@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flexify/main.dart';
-import 'package:flexify/native_timer_wrapper.dart';
+import 'package:jackedlog/main.dart';
+import 'package:jackedlog/native_timer_wrapper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -156,8 +156,8 @@ class TimerState extends ChangeNotifier {
       iOS: darwin,
       android: AndroidInitializationSettings('ic_launcher'),
       windows: WindowsInitializationSettings(
-        appName: 'Flexify',
-        appUserModelId: 'com.presley.flexify',
+        appName: 'JackedLog',
+        appUserModelId: 'com.presley.jackedlog',
         guid: '550e8400-e29b-41d4-a716-446655440000',
         iconPath: 'assets/ic_launcher.png',
       ),

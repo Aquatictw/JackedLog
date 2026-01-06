@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
-import 'package:flexify/constants.dart';
-import 'package:flexify/database/database.dart';
-import 'package:flexify/graph/cardio_data.dart';
-import 'package:flexify/graph/strength_data.dart';
-import 'package:flexify/main.dart';
+import 'package:jackedlog/constants.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/graph/cardio_data.dart';
+import 'package:jackedlog/graph/strength_data.dart';
+import 'package:jackedlog/main.dart';
 
 const inclineAdjustedPace = CustomExpression<double>(
   "SUM(distance) * POW(1.1, AVG(incline)) / SUM(duration)",

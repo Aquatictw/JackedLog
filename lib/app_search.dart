@@ -1,5 +1,5 @@
-import 'package:flexify/settings/settings_page.dart';
-import 'package:flexify/widgets/timer_quick_access.dart';
+import 'package:jackedlog/settings/settings_page.dart';
+import 'package:jackedlog/widgets/timer_quick_access.dart';
 import 'package:flutter/material.dart';
 
 class AppSearch extends StatefulWidget {

@@ -1,15 +1,15 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
-import 'package:flexify/animated_fab.dart';
-import 'package:flexify/constants.dart';
-import 'package:flexify/database/database.dart';
-import 'package:flexify/day_selector.dart';
-import 'package:flexify/graph/add_exercise_page.dart';
-import 'package:flexify/main.dart';
-import 'package:flexify/plan/exercise_tile.dart';
-import 'package:flexify/plan/plan_state.dart';
-import 'package:flexify/utils.dart';
+import 'package:jackedlog/animated_fab.dart';
+import 'package:jackedlog/constants.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/day_selector.dart';
+import 'package:jackedlog/graph/add_exercise_page.dart';
+import 'package:jackedlog/main.dart';
+import 'package:jackedlog/plan/exercise_tile.dart';
+import 'package:jackedlog/plan/plan_state.dart';
+import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

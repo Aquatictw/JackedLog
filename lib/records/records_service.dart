@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:flexify/database/database.dart';
-import 'package:flexify/main.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/main.dart';
 
 // Cache for batch workout record counts
 final _prCache = <String, ({Map<int, int> counts, DateTime cachedAt})>{};

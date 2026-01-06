@@ -6,7 +6,7 @@
 #define NATIVE_CLOCK_H
 #include <chrono>
 
-namespace flexify {
+namespace jackedlog {
     using fclock_t = std::chrono::system_clock;
 }
 

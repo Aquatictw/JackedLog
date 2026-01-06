@@ -10,7 +10,7 @@
 
 #include "timer.h"
 
-namespace flexify {
+namespace jackedlog {
     inline std::optional<std::chrono::time_point<fclock_t>> convertLongToTimePoint(int64_t timestamp) {
         if (timestamp == 0) return std::nullopt;
         return std::chrono::time_point<fclock_t>(std::chrono::milliseconds(timestamp));

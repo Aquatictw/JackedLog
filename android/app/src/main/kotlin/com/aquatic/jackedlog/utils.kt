@@ -1,4 +1,4 @@
-package com.aquatic.flexify
+package com.aquatic.jackedlog
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -42,7 +42,7 @@ fun openDb(context: Context): SQLiteDatabase? {
     val parentDir = context.filesDir.parentFile
     val dbFolder = File(parentDir, "app_flutter").absolutePath
     Log.d("auto backup", "dbFolder=$dbFolder")
-    val dbFile = File(dbFolder, "flexify.sqlite")
+    val dbFile = File(dbFolder, "jackedlog.sqlite")
     if (!dbFile.exists()) return null
     return SQLiteDatabase.openDatabase(dbFile.absolutePath, null, 0)
 }

@@ -1,4 +1,4 @@
-package com.aquatic.flexify
+package com.aquatic.jackedlog
 
 import android.app.Activity
 import android.content.Intent

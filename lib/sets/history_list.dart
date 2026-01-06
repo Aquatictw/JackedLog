@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:flexify/database/database.dart';
-import 'package:flexify/sets/edit_set_page.dart';
-import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/utils.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/sets/edit_set_page.dart';
+import 'package:jackedlog/settings/settings_state.dart';
+import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';

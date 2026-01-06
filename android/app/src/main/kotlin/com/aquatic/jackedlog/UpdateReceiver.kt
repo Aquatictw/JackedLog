@@ -1,4 +1,4 @@
-package com.aquatic.flexify
+package com.aquatic.jackedlog
 
 import android.content.BroadcastReceiver
 import android.content.Context

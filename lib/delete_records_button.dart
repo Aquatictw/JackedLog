@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flexify/main.dart';
+import 'package:jackedlog/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,7 +42,7 @@ class DeleteDatabaseButton extends StatelessWidget {
                     final dbFolder =
                         await getApplicationDocumentsDirectory();
                     final file = File(
-                      p.join(dbFolder.path, 'flexify.sqlite'),
+                      p.join(dbFolder.path, 'jackedlog.sqlite'),
                     );
                     await db.close();
                     await db.executor.close();

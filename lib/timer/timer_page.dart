@@ -1,8 +1,8 @@
-import 'package:flexify/animated_fab.dart';
-import 'package:flexify/settings/settings_page.dart';
-import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/timer/timer_progress_widgets.dart';
-import 'package:flexify/timer/timer_state.dart';
+import 'package:jackedlog/animated_fab.dart';
+import 'package:jackedlog/settings/settings_page.dart';
+import 'package:jackedlog/settings/settings_state.dart';
+import 'package:jackedlog/timer/timer_progress_widgets.dart';
+import 'package:jackedlog/timer/timer_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
