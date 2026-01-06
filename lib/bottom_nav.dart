@@ -203,8 +203,6 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
         return Icons.calendar_today_rounded;
       case 'GraphsPage':
         return Icons.insights_rounded;
-      case 'TimerPage':
-        return Icons.timer_rounded;
       case 'NotesPage':
         return Icons.note_rounded;
       case 'SettingsPage':
@@ -222,8 +220,6 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
         return 'Plans';
       case 'GraphsPage':
         return 'Graphs';
-      case 'TimerPage':
-        return 'Timer';
       case 'NotesPage':
         return 'Notes';
       case 'SettingsPage':

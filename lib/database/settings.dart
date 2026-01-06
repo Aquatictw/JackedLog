@@ -24,8 +24,6 @@ class Settings extends Table {
       boolean().withDefault(const Constant(true))();
   BoolColumn get restTimers => boolean()();
   TextColumn get shortDateFormat => text()();
-  BoolColumn get showBodyWeight =>
-      boolean().withDefault(const Constant(false))();
   BoolColumn get showCategories =>
       boolean().withDefault(const Constant(true))();
   BoolColumn get showImages => boolean().withDefault(const Constant(true))();
@@ -37,7 +35,7 @@ class Settings extends Table {
   TextColumn get strengthUnit => text()();
   BoolColumn get systemColors => boolean()();
   TextColumn get tabs => text().withDefault(
-        const Constant("HistoryPage,PlansPage,GraphsPage,TimerPage,NotesPage,SettingsPage"),
+        const Constant("HistoryPage,PlansPage,GraphsPage,NotesPage,SettingsPage"),
       )();
   TextColumn get themeMode => text()();
   IntColumn get timerDuration => integer()();

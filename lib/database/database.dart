@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:flexify/constants.dart';
+import 'package:flexify/database/bodyweight_entries.dart';
 import 'package:flexify/database/database.steps.dart';
 import 'package:flexify/database/defaults.dart';
 import 'package:flexify/database/gym_sets.dart';
@@ -17,7 +18,7 @@ LazyDatabase openConnection() {
   return createNativeConnection();
 }
 
-@DriftDatabase(tables: [Plans, GymSets, Settings, PlanExercises, Metadata, Workouts, Notes])
+@DriftDatabase(tables: [Plans, GymSets, Settings, PlanExercises, Metadata, Workouts, Notes, BodyweightEntries])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
 
@@ -471,8 +472,60 @@ class AppDatabase extends _$AppDatabase {
         },
         from54To55: (Migrator m, Schema55 schema) async {
           await m.addColumn(schema.settings, schema.settings.customColorSeed);
+          // Create bodyweightEntries table using raw SQL since Schema55 doesn't include it yet
+          await m.database.customStatement('''
+            CREATE TABLE IF NOT EXISTS bodyweight_entries (
+              id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+              weight REAL NOT NULL,
+              unit TEXT NOT NULL,
+              date INTEGER NOT NULL
+            )
+          ''');
+
+          // Remove TimerPage from existing users' tabs
+          final result = await m.database.customSelect(
+            'SELECT tabs FROM settings LIMIT 1',
+            readsFrom: {schema.settings},
+          ).getSingleOrNull();
+
+          if (result != null) {
+            final currentTabs = result.read<String>('tabs');
+            final updatedTabs = currentTabs
+                .split(',')
+                .where((tab) => tab != 'TimerPage')
+                .join(',');
+
+            if (currentTabs != updatedTabs && updatedTabs.isNotEmpty) {
+              await m.database.customUpdate(
+                'UPDATE settings SET tabs = ?',
+                variables: [Variable.withString(updatedTabs)],
+                updates: {schema.settings},
+              );
+            }
+          }
         },
+        // from55To56: (Migrator m, Schema56 schema) async {
+        //   await m.createTable(schema.bodyweightEntries);
+        // },
       ),
+      beforeOpen: (details) async {
+        // Ensure bodyweight_entries table exists (safety check for migration issues)
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS bodyweight_entries (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            weight REAL NOT NULL,
+            unit TEXT NOT NULL,
+            date INTEGER NOT NULL
+          )
+        ''');
+
+        // Drop notes column if it exists (from earlier version)
+        try {
+          await customStatement('ALTER TABLE bodyweight_entries DROP COLUMN notes');
+        } catch (e) {
+          // Column might not exist, ignore error
+        }
+      },
     );
   }
 

@@ -34,7 +34,7 @@ Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, 
    - `reps`, `weight`, `unit`
    - `created` (DateTime)
    - `cardio`, `duration`, `distance`, `incline`
-   - `bodyWeight`, `restMs`, `hidden`
+   - `restMs`, `hidden`
    - `planId` (nullable - plan template reference)
    - `workoutId` (nullable int - **links to Workouts.id** for session grouping)
    - `image`, `category`, `notes`
@@ -62,6 +62,7 @@ Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, 
 
 5. **Settings** (app preferences - 30+ fields including 5/3/1 training maxes)
    - General settings (theme, units, timers, etc.)
+   - Default tabs: `"HistoryPage,PlansPage,GraphsPage,NotesPage,SettingsPage"` (TimerPage removed in v55)
    - Theme settings:
      - `themeMode` (text - "ThemeMode.system", "ThemeMode.dark", or "ThemeMode.light")
      - `systemColors` (bool - whether to use device's dynamic colors)
@@ -81,7 +82,14 @@ Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, 
    - `updated` (DateTime - last update timestamp)
    - `color` (nullable int - note color for categorization)
 
-7. **Metadata** (version tracking)
+7. **BodyweightEntries** (bodyweight tracking - added in v55)
+   - `id` (autoincrement, primary key)
+   - `weight` (real - bodyweight value)
+   - `unit` (text - weight unit, e.g., "kg" or "lb")
+   - `date` (DateTime - entry timestamp)
+   - `notes` (nullable text - optional notes for this entry)
+
+8. **Metadata** (version tracking)
 
 ### Data Hierarchy
 ```
@@ -100,12 +108,13 @@ Workout Session (e.g., "Monday Chest - Dec 29, 5pm")
 | File | Purpose |
 |------|---------|
 | `lib/main.dart` | App entry, database init, Provider setup |
-| `lib/database/database.dart` | Drift DB definition, all migrations (v1-v49) |
+| `lib/database/database.dart` | Drift DB definition, all migrations (v1-v55) |
 | `lib/database/database.steps.dart` | **Generated** migration steps, Schema classes, Shape classes |
 | `lib/database/workouts.dart` | Workouts table definition |
 | `lib/database/gym_sets.dart` | GymSets table + graph utilities |
 | `lib/database/plans.dart` | Plans table |
 | `lib/database/plan_exercises.dart` | PlanExercises junction table |
+| `lib/database/bodyweight_entries.dart` | BodyweightEntries table for bodyweight tracking |
 | `lib/sets/history_page.dart` | History tab - toggle between Workouts/Sets view |
 | `lib/workouts/workouts_list.dart` | Workout cards list for history |
 | `lib/workouts/workout_detail_page.dart` | View a complete workout session (sorts by sequence) |
@@ -118,10 +127,12 @@ Workout Session (e.g., "Monday Chest - Dec 29, 5pm")
 | `lib/records/records_service.dart` | Personal record detection and calculation |
 | `lib/records/record_notification.dart` | PR celebration UI and badge widgets |
 | `lib/app_search.dart` | Reusable search AppBar with optional Add menu item |
-| `lib/graph/overview_page.dart` | Workout overview with stats, heatmap, and muscle charts |
+| `lib/graph/overview_page.dart` | Workout overview with stats, heatmap, muscle charts, and bodyweight tracking |
 | `lib/widgets/five_three_one_calculator.dart` | 5/3/1 powerlifting program calculator dialog |
 | `lib/widgets/bodypart_tag.dart` | Compact muscle group/bodypart tag widget |
 | `lib/widgets/artistic_color_picker.dart` | Custom color picker with palettes, HSL sliders, and color grid |
+| `lib/widgets/bodyweight_entry_dialog.dart` | Dialog for logging bodyweight entries with date, notes |
+| `lib/widgets/timer_quick_access.dart` | Quick access timer dialog with preset durations |
 | `lib/settings/appearance_settings.dart` | Appearance settings page including theme and color customization |
 | `lib/database/notes.dart` | Notes table definition for general notes |
 | `drift_schemas/db/drift_schema_vN.json` | Schema JSON files for each version |
@@ -132,7 +143,7 @@ The workout overview page (`lib/graph/overview_page.dart`) displays comprehensiv
 
 **Features:**
 - **Period Selector**: 7D, 1M, 3M, 6M, 1Y, All-time
-- **Statistics Cards**: Workouts, Total Volume, Streak, Top Muscle
+- **Statistics Cards**: Workouts, Total Volume, Streak, Top Muscle, Current Bodyweight, Bodyweight Trend
 - **Training Heatmap**:
   - GitHub-style activity calendar showing workout days
   - Days of week column is fixed (doesn't scroll)
@@ -391,6 +402,169 @@ Custom rest times are configured via:
 - Stored per exercise, not per plan or workout
 
 **Important**: Custom rest times are stored at the GymSet level (not PlanExercise level), meaning they're tied to the exercise name across all workouts.
+
+## Timer Quick Access Feature
+
+### Overview
+
+The Timer Quick Access feature provides a convenient way to start standalone timers from anywhere in the app, replacing the standalone Timer tab (removed in v55).
+
+### How It Works
+
+**1. Access Points:**
+- **App Bar Icons**: Timer icon appears in the app bar of:
+  - Graphs/Overview page (`lib/graph/graphs_page.dart`)
+  - Plans page (`lib/plan/plans_page.dart`)
+- **Menu Item**: Timer option in AppSearch menu (History page uses AppSearch)
+
+**2. Timer Dialog** (`lib/widgets/timer_quick_access.dart`):
+- **Preset Durations**: Quick selection chips for 30s, 1m, 2m, 3m, 5m, 10m
+- **Live Progress**: Circular progress indicator showing remaining time
+- **Timer Controls**:
+  - Start/Pause button
+  - Stop button to dismiss
+- **Sound & Vibration**: Uses settings from global timer configuration
+
+**3. Implementation:**
+```dart
+// Show the timer dialog from anywhere
+showTimerQuickAccess(context);
+
+// Dialog uses TimerState provider for timer management
+final timerState = context.read<TimerState>();
+timerState.startTimer(
+  "Timer",
+  duration,
+  settings.alarmSound,
+  settings.vibrate,
+);
+```
+
+**4. Visual Design:**
+- Material Design 3 dialog with filled tonal buttons
+- Selected duration chip highlighted with primary color
+- Progress indicator animates countdown
+- Auto-dismisses when timer completes
+
+**Note**: Rest timers during workouts still use the floating RestTimerBar (`lib/timer/rest_timer_bar.dart`) which remains unchanged.
+
+## Bodyweight Tracking Feature
+
+### Overview
+
+The Bodyweight Tracking feature (added in v55) allows users to log their bodyweight over time and view trends directly in the workout overview page.
+
+### How It Works
+
+**1. Database Table** (`lib/database/bodyweight_entries.dart`):
+```dart
+class BodyweightEntries extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  RealColumn get weight => real()();
+  TextColumn get unit => text()();  // 'kg' or 'lb'
+  DateTimeColumn get date => dateTime()();
+  TextColumn get notes => text().nullable()();
+}
+```
+
+**2. Logging Entries** (`lib/widgets/bodyweight_entry_dialog.dart`):
+- **FloatingActionButton**: "Log Weight" button in overview page bottom-right
+- **Dialog Features**:
+  - Weight input with increment/decrement buttons
+  - Unit selector (uses current strength unit from settings)
+  - Date picker (defaults to today)
+  - Optional notes field
+  - Input validation (weight must be > 0)
+- **Visual Design**: Material Design 3 with outlined text fields and filled buttons
+
+**3. Display in Overview** (`lib/graph/overview_page.dart`):
+Two new stat cards appear in the overview page:
+
+- **Current Bodyweight Card**:
+  - Shows most recent bodyweight entry
+  - Displays weight with unit
+  - Shows date of entry
+  - Icon: monitor_weight_outlined
+
+- **Bodyweight Trend Card**:
+  - Compares current weight to weight at start of selected period
+  - Shows change amount and percentage
+  - Color-coded trend indicator:
+    - 🟢 Green: Weight gain (positive change)
+    - 🔴 Red: Weight loss (negative change)
+    - ⚪ Gray: No change or insufficient data
+  - Icon: trending_up/trending_down/trending_flat
+
+**4. Period Filtering:**
+- Bodyweight data respects the period selector (7D, 1M, 3M, 6M, 1Y, All)
+- Trend calculation compares current weight to weight at start of period
+- Queries filter entries by date range
+
+**5. Implementation Details:**
+```dart
+// Load current bodyweight (most recent entry)
+final current = await (db.bodyweightEntries.select()
+  ..orderBy([(t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc)])
+  ..limit(1))
+  .getSingleOrNull();
+
+// Load bodyweight at start of period for trend
+final startDate = DateTime.now().subtract(periodDuration);
+final previous = await (db.bodyweightEntries.select()
+  ..where((t) => t.date.isSmallerThanValue(startDate))
+  ..orderBy([(t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc)])
+  ..limit(1))
+  .getSingleOrNull();
+
+// Calculate change
+if (current != null && previous != null) {
+  final change = current.weight - previous.weight;
+  final percentChange = (change / previous.weight) * 100;
+}
+```
+
+**6. Data Refresh:**
+- Dialog returns `true` on successful save
+- Overview page reloads data when dialog closes with result
+- UI updates immediately with new bodyweight data
+
+### Migration Note
+
+**Database Schema v54 → v55:**
+- **Removed**: `GymSets.bodyWeight` column (was unused)
+- **Removed**: `Settings.showBodyWeight` setting
+- **Added**: `Settings.customColorSeed` column for custom color theming
+- **Added**: New `BodyweightEntries` table
+- **Updated**: Default tabs setting (removed "TimerPage")
+
+### Export/Import Backward Compatibility
+
+**Important**: The CSV export/import format changed in v55 due to removal of the `bodyWeight` column from `gym_sets.csv`.
+
+**How Backward Compatibility Works:**
+The import code (`lib/import_data.dart`) automatically detects the CSV format version:
+
+```dart
+// Check CSV header for bodyWeight column
+final setsHeader = setsRows.first.map((e) => e.toString().toLowerCase()).toList();
+final hasBodyWeightColumn = setsHeader.contains('bodyweight');
+
+// Adjust column indices based on format version
+final offset = hasBodyWeightColumn ? 1 : 0;
+
+// Old format (v54 and earlier): id,name,reps,weight,unit,created,cardio,duration,distance,bodyWeight,incline,...
+// New format (v55+): id,name,reps,weight,unit,created,cardio,duration,distance,incline,...
+```
+
+**What This Means:**
+- ✅ Old exports (v54 and earlier with bodyWeight column) can be imported into v55
+- ✅ New exports (v55+ without bodyWeight column) work correctly
+- ✅ Column indices automatically adjust to skip the bodyWeight field when present
+- ✅ No data corruption or import failures
+
+**Affected Files:**
+- `lib/export_data.dart`: Removed bodyWeight from CSV generation
+- `lib/import_data.dart`: Added format detection and dynamic column indexing
 
 ## Personal Records (PR) Feature
 
