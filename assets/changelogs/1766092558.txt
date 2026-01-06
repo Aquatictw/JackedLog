@@ -1,2 +1,0 @@
-• Ad report a bug button to about page
-• Fix alarm sound picker

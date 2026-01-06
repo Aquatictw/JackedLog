@@ -1,1 +1,0 @@
-Fix exercise list for long names

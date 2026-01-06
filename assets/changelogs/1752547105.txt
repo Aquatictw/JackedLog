@@ -1,2 +1,0 @@
-• Allow pipelines to trigger on workflow changes
-• Try to fix msstore publish

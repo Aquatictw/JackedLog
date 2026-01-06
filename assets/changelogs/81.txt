@@ -1,3 +1,0 @@
-- Use long date setting for editing gym sets
-- Fix selecting first item in gym history
-- Fix missing newline in release commit

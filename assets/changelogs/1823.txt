@@ -1,2 +1,0 @@
-- Add tooltips to settings
-- Fix automatic backups happening every 15 minutes

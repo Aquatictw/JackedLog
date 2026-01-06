@@ -1,3 +1,0 @@
-- Fix unit tests
-- Reduce icons in settings page
-- Use buttons for period selector

@@ -135,23 +135,7 @@ yq e ".version |= \"$new_flutter_version\"" -i pubspec.yaml
 yq e ".msix_config.msix_version |= \"$new_msix_version\"" -i pubspec.yaml
 print_success "Updated pubspec.yaml versions"
 
-# Copy changelogs with timestamps
-print_step "Copying changelogs with timestamps"
-mkdir -p assets/changelogs
-
-for file in fastlane/metadata/android/en-US/changelogs/*.txt; do
-    if [ -f "$file" ]; then
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            # macOS
-            timestamp=$(stat -f "%B" "$file")
-        else
-            # Linux
-            timestamp=$(stat --format="%W" "$file")
-        fi
-        target_file="assets/changelogs/$timestamp.txt"
-        cp "$file" "$target_file"
-    fi
-done
+# Changelog copying removed - app no longer shows version update notifications
 
 # Check if Android emulator is available for screenshots
 print_step "Checking for Android emulator"

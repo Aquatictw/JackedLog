@@ -1,3 +1,0 @@
-- Run dart pub upgrade
-- Dont use system colors for screenshots
-- Only build appbundle when sending to play store

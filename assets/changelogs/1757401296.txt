@@ -1,2 +1,0 @@
-• Add logic for figuring out emulator id
-• Fix screenshots

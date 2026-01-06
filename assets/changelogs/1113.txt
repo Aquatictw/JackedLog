@@ -1,3 +1,0 @@
-- Add about page
-- Add icons to settings page
-- Change plans icon

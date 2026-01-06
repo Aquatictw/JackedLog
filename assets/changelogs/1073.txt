@@ -1,2 +1,0 @@
-- Fix plan counting
-- Fix database schema watch stopping sometimes

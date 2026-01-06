@@ -1,6 +1,0 @@
-• Copy gradle setup from fitbook
-• Fix google play deployments
-• Move peek graph 1 item down
-• Remove table from get it on X readme [skip ci]
-• Re-order features in README [skip ci]
-• Space out badges [skip ci]

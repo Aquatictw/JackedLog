@@ -1,3 +1,0 @@
-• Fix working directory of java stage
-• Make sure flutter bin is always executable
-• Move java setup

@@ -1,5 +1,0 @@
-• Fix exporting plan csvs
-• Fix importing files from windows
-• Improve error handling
-• Keep timer progress even if timer page is hidden
-• Select first exercise correctly in plans

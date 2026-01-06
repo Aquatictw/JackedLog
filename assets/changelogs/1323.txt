@@ -1,1 +1,0 @@
-- Fix macos automatic deployments

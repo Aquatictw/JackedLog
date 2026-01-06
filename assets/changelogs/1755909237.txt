@@ -1,3 +1,0 @@
-• Include app-release.aab in github release creation
-• Make graph peek scrollable
-• Use correct release notes

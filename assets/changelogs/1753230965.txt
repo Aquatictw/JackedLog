@@ -1,4 +1,0 @@
-• Add dotted trend line to graphs
-• Add small button to end of timer circle
-• Remove diffing from migrate.sh
-• Set category when you select an exercise
