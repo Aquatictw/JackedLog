@@ -1,11 +1,11 @@
-# Flexify - Claude Code Context
+# JackedLog - Claude Code Context
 
 ## DISCLAIMER, MUST READ FOR CLAUDE
 ## Always do manual migration, don't attempt to run any flutter commands I'll run them for you.
 ## If database version has been changed, and previous exported data from app can't be reimported, affirm me.
 
 ## Project Overview
-Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, iOS, Linux, macOS, Windows).
+JackedLog is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, iOS, Linux, macOS, Windows).
 
 ### Key Technologies
 - **Framework**: Flutter with Dart (SDK >= 3.2.6)

@@ -1,7 +1,7 @@
-# Flexify
+# JackedLog
 
 <p align="center">
-  <img src="screenshots/app_icon.png" alt="Flexify Icon" width="120">
+  <img src="screenshots/app_icon.png" alt="JackedLog Icon" width="120">
 </p>
 
 <p align="center">
@@ -15,12 +15,12 @@
 </p>
 
 <p align="center">
-  <img src="screenshots/hero_composite.png" alt="Flexify Screenshots" width="900">
+  <img src="screenshots/hero_composite.png" alt="JackedLog Screenshots" width="900">
 </p>
 
 ---
 
-## Why Flexify?
+## Why JackedLog?
 
 - **🎯 100% Free Forever**: No ads, no subscriptions, no premium tiers. Every feature unlocked.
 - **✈️ Offline-First**: Pure SQLite—no internet, no servers, no data mining. Train anywhere.
@@ -138,8 +138,8 @@
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/Aquatictw/Flexify flexify
-   cd flexify
+   git clone https://github.com/Aquatictw/JackedLog jackedlog
+   cd jackedlog
    ```
 
 2. **Install dependencies**
@@ -179,11 +179,11 @@ Contributions are welcome! This is an open-source project and improvements are a
 
 ### Acknowledgments
 
-> This project is based on [brandonp2412/Flexify](https://github.com/brandonp2412/Flexify) and has been heavily modified and rebuilt with new architecture and features.
+> This project is based on [brandonp2412/JackedLog](https://github.com/brandonp2412/JackedLog) and has been heavily modified and rebuilt with new architecture and features.
 
 ### License
 
-Flexify is licensed under the [MIT License](LICENSE.md).
+JackedLog is licensed under the [MIT License](LICENSE.md).
 
 
 <p align="center">
@@ -195,5 +195,5 @@ Flexify is licensed under the [MIT License](LICENSE.md).
 </p>
 
 <p align="center">
-  <img src="screenshots/ronnie_coleman.png" alt="Flexify Banner" width="600">
+  <img src="screenshots/ronnie_coleman.png" alt="JackedLog Banner" width="600">
 </p>

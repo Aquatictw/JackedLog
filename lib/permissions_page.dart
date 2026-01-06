@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
-import 'package:flexify/animated_fab.dart';
-import 'package:flexify/database/database.dart';
-import 'package:flexify/main.dart';
-import 'package:flexify/settings/settings_state.dart';
+import 'package:jackedlog/animated_fab.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/main.dart';
+import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';

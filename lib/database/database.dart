@@ -1,15 +1,15 @@
 import 'package:drift/drift.dart';
-import 'package:flexify/constants.dart';
-import 'package:flexify/database/bodyweight_entries.dart';
-import 'package:flexify/database/database.steps.dart';
-import 'package:flexify/database/defaults.dart';
-import 'package:flexify/database/gym_sets.dart';
-import 'package:flexify/database/metadata.dart';
-import 'package:flexify/database/notes.dart';
-import 'package:flexify/database/plan_exercises.dart';
-import 'package:flexify/database/plans.dart';
-import 'package:flexify/database/settings.dart';
-import 'package:flexify/database/workouts.dart';
+import 'package:jackedlog/constants.dart';
+import 'package:jackedlog/database/bodyweight_entries.dart';
+import 'package:jackedlog/database/database.steps.dart';
+import 'package:jackedlog/database/defaults.dart';
+import 'package:jackedlog/database/gym_sets.dart';
+import 'package:jackedlog/database/metadata.dart';
+import 'package:jackedlog/database/notes.dart';
+import 'package:jackedlog/database/plan_exercises.dart';
+import 'package:jackedlog/database/plans.dart';
+import 'package:jackedlog/database/settings.dart';
+import 'package:jackedlog/database/workouts.dart';
 import 'database_connection_native.dart';
 
 part 'database.g.dart';

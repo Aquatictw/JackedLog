@@ -7,7 +7,7 @@
 
 using namespace std::chrono_literals;
 
-namespace flexify {
+namespace jackedlog {
 
     enum TimerState {
         Running,

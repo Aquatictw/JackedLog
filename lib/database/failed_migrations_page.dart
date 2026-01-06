@@ -1,7 +1,6 @@
-import 'package:flexify/delete_records_button.dart';
-import 'package:flexify/export_data.dart';
+import 'package:jackedlog/delete_records_button.dart';
+import 'package:jackedlog/export_data.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 
 class FailedMigrationsPage extends StatelessWidget {
   final Object error;
@@ -38,27 +37,6 @@ class FailedMigrationsPage extends StatelessWidget {
               const SizedBox(height: 16),
               const ExportData(),
               DeleteDatabaseButton(ctx: context),
-              TextButton.icon(
-                onPressed: () async {
-                  final url = Uri(
-                    scheme: 'https',
-                    host: 'github.com',
-                    path: '/brandonp2412/Flexify/issues/new',
-                    queryParameters: {
-                      'title': 'Failed migrations',
-                      'body': error.toString(),
-                    },
-                  ).toString();
-
-                  if (await canLaunchUrlString(url)) await launchUrlString(url);
-                },
-                label: const Text("Create issue"),
-                icon: Image.asset(
-                  "assets/github-mark.png",
-                  height: 24,
-                  width: 24,
-                ),
-              ),
             ],
           ),
         ),

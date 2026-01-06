@@ -1,4 +1,4 @@
-import 'package:flexify/constants.dart';
+import 'package:jackedlog/constants.dart';
 import 'package:flutter/material.dart';
 
 class DaySelector extends StatefulWidget {

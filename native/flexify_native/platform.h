@@ -7,7 +7,7 @@
 #include <string>
 #include "clock.h"
 
-namespace flexify {
+namespace jackedlog {
 
     enum Platform {
         Linux,

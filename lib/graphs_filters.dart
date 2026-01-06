@@ -1,4 +1,4 @@
-import 'package:flexify/database/gym_sets.dart';
+import 'package:jackedlog/database/gym_sets.dart';
 import 'package:flutter/material.dart';
 
 class GraphsFilters extends StatefulWidget {

@@ -5,17 +5,15 @@ import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flexify/database/database.dart';
-import 'package:flexify/main.dart';
-import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/utils.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/main.dart';
+import 'package:jackedlog/settings/settings_state.dart';
+import 'package:jackedlog/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ImportData extends StatelessWidget {
   final BuildContext ctx;
@@ -68,50 +66,10 @@ class ImportData extends StatelessWidget {
       }
     } catch (e, stackTrace) {
       if (!ctx.mounted) return;
-      final packageInfo = await PackageInfo.fromPlatform();
-      final version = packageInfo.version;
-
-      final title = Uri.encodeComponent(
-        'Import failed: ${e.toString().split('\n').first}',
-      );
-      final body = Uri.encodeComponent('''
-# Describe the bug
-Failed to import a database.
-
-# Error
-```
-${e.toString()}
-```
-
-# Stack trace
-```
-${stackTrace.toString()}
-```
-
-# App version
-$version
-
-# Steps to reproduce
-1. Go to import database
-2. Select file
-3. See error
-''');
-
-      final url =
-          'https://github.com/brandonp2412/Flexify/issues/new?title=$title&body=$body';
 
       toast(
         'Failed to import database: ${e.toString()}',
         duration: Duration(seconds: 10),
-        action: SnackBarAction(
-          label: 'Report',
-          onPressed: () async {
-            await launchUrl(
-              Uri.parse(url),
-              mode: LaunchMode.externalApplication,
-            );
-          },
-        ),
       );
     }
   }
@@ -129,7 +87,7 @@ $version
     final dbFolder = await getApplicationDocumentsDirectory();
     await db.close();
 
-    await sourceFile.copy(p.join(dbFolder.path, 'flexify.sqlite'));
+    await sourceFile.copy(p.join(dbFolder.path, 'jackedlog.sqlite'));
     db = AppDatabase();
 
     await (db.settings.update())
@@ -293,50 +251,10 @@ $version
       toast('Workout data imported successfully!');
     } catch (e, stackTrace) {
       if (!ctx.mounted) return;
-      final packageInfo = await PackageInfo.fromPlatform();
-      final version = packageInfo.version;
-
-      final title = Uri.encodeComponent(
-        'Import failed: ${e.toString().split('\n').first}',
-      );
-      final body = Uri.encodeComponent('''
-# Describe the bug
-Failed to import workouts.
-
-# Error
-```
-${e.toString()}
-```
-
-# Stack trace
-```
-${stackTrace.toString()}
-```
-
-# App version
-$version
-
-# Steps to reproduce
-1. Go to import workouts
-2. Select file
-3. See error
-''');
-
-      final url =
-          'https://github.com/brandonp2412/Flexify/issues/new?title=$title&body=$body';
 
       toast(
         'Failed to import workouts: ${e.toString()}',
         duration: Duration(seconds: 10),
-        action: SnackBarAction(
-          label: 'Report',
-          onPressed: () async {
-            await launchUrl(
-              Uri.parse(url),
-              mode: LaunchMode.externalApplication,
-            );
-          },
-        ),
       );
     }
   }

@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:flexify/database/database.dart';
-import 'package:flexify/main.dart';
-import 'package:flexify/notes/note_editor_page.dart';
-import 'package:flexify/widgets/training_max_editor.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/main.dart';
+import 'package:jackedlog/notes/note_editor_page.dart';
+import 'package:jackedlog/widgets/training_max_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 

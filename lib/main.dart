@@ -1,12 +1,12 @@
 import 'package:drift/drift.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flexify/database/database.dart';
-import 'package:flexify/database/failed_migrations_page.dart';
-import 'package:flexify/home_page.dart';
-import 'package:flexify/plan/plan_state.dart';
-import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/timer/timer_state.dart';
-import 'package:flexify/workouts/workout_state.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/database/failed_migrations_page.dart';
+import 'package:jackedlog/home_page.dart';
+import 'package:jackedlog/plan/plan_state.dart';
+import 'package:jackedlog/settings/settings_state.dart';
+import 'package:jackedlog/timer/timer_state.dart';
+import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +31,7 @@ Future<void> main() async {
 AppDatabase db = AppDatabase();
 
 MethodChannel androidChannel =
-    const MethodChannel("com.presley.flexify/android");
+    const MethodChannel("com.presley.jackedlog/android");
 
 Widget appProviders(SettingsState state) => MultiProvider(
       providers: [
@@ -92,7 +92,7 @@ class App extends StatelessWidget {
 
         return MaterialApp(
           scaffoldMessengerKey: rootScaffoldMessenger,
-          title: 'Flexify',
+          title: 'JackedLog',
           theme: ThemeData(
             colorScheme: colors ? lightDynamic : light,
             fontFamily: 'Manrope',

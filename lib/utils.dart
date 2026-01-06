@@ -1,4 +1,4 @@
-import 'package:flexify/main.dart';
+import 'package:jackedlog/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';

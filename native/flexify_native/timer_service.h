@@ -16,7 +16,7 @@
 #include "platform.h"
 
 
-namespace flexify {
+namespace jackedlog {
     const std::chrono::milliseconds ONE_MINUTE_MILLI = 1min;
 
     template <Platform P>
@@ -104,7 +104,7 @@ namespace flexify {
                 timer.getState()
         };
         
-        flexify::platform_specific::sendTickPayload<P>(payload, 4);
+        jackedlog::platform_specific::sendTickPayload<P>(payload, 4);
     }
 
     inline std::string formatRemainingSeconds(std::chrono::seconds sec) {

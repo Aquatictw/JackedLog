@@ -1,5 +1,5 @@
-import 'package:flexify/database/gym_sets.dart';
-import 'package:flexify/settings/settings_state.dart';
+import 'package:jackedlog/database/gym_sets.dart';
+import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';

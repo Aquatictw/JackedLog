@@ -1,8 +1,8 @@
-import 'package:flexify/delete_records_button.dart';
-import 'package:flexify/export_data.dart';
-import 'package:flexify/import_data.dart';
-import 'package:flexify/import_hevy.dart';
-import 'package:flexify/settings/settings_state.dart';
+import 'package:jackedlog/delete_records_button.dart';
+import 'package:jackedlog/export_data.dart';
+import 'package:jackedlog/import_data.dart';
+import 'package:jackedlog/import_hevy.dart';
+import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

@@ -6,4 +6,5 @@ class BodyweightEntries extends Table {
   RealColumn get weight => real()();
   TextColumn get unit => text()();
   DateTimeColumn get date => dateTime()();
+  TextColumn get notes => text().nullable()();
 }

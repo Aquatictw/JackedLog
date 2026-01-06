@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:flexify/database/gym_sets.dart';
-import 'package:flexify/database/plans.dart';
+import 'package:jackedlog/database/gym_sets.dart';
+import 'package:jackedlog/database/plans.dart';
 
 class PlanExercises extends Table {
   BoolColumn get enabled => boolean()();
