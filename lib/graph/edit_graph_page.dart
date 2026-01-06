@@ -584,6 +584,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
 
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => SafeArea(
         child: Wrap(
           children: [
