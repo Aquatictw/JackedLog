@@ -179,7 +179,7 @@ Contributions are welcome! This is an open-source project and improvements are a
 
 ### Acknowledgments
 
-> This project is based on [brandonp2412/JackedLog](https://github.com/brandonp2412/JackedLog) and has been heavily modified and rebuilt with new architecture and features.
+> This project is based on [brandonp2412/Flexify](https://github.com/brandonp2412/Flexify) and has been heavily modified and rebuilt with new architecture and features.
 
 ### License
 
