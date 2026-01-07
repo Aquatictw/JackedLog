@@ -131,7 +131,7 @@
 
 - Flutter SDK (3.2.6 or higher)
 - Dart SDK (included with Flutter)
-- For development: Android Studio / VS Code / IntelliJ IDEA
+- For development: Android Studio for emulator
 
 ### Installation
 
