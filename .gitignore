@@ -55,3 +55,5 @@ flexify-release-key.keystore
 /.vscode/
 /.claude/
 /test/
+notes.md
+task_plan.md
