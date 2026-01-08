@@ -53,19 +53,19 @@ Workout Session → Exercises → Sets
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `lib/database/database.dart` | Drift DB definition, all migrations |
-| `lib/database/database.steps.dart` | **Generated** migration steps |
-| `lib/workouts/workout_state.dart` | WorkoutState provider - manages single active workout |
-| `lib/workouts/active_workout_bar.dart` | Floating bar showing ongoing workout |
-| `lib/plan/start_plan_page.dart` | Workout execution UI |
-| `lib/plan/exercise_sets_card.dart` | Exercise card with sets |
-| `lib/records/records_service.dart` | PR detection and calculation |
-| `lib/records/record_notification.dart` | PR celebration UI |
-| `lib/graph/overview_page.dart` | Stats, heatmap, muscle charts, bodyweight |
-| `lib/widgets/five_three_one_calculator.dart` | 5/3/1 calculator |
-| `lib/widgets/artistic_color_picker.dart` | Custom color picker |
+| File                                         | Purpose                                               |
+| -------------------------------------------- | ----------------------------------------------------- |
+| `lib/database/database.dart`                 | Drift DB definition, all migrations                   |
+| `lib/database/database.steps.dart`           | **Generated** migration steps                         |
+| `lib/workouts/workout_state.dart`            | WorkoutState provider - manages single active workout |
+| `lib/workouts/active_workout_bar.dart`       | Floating bar showing ongoing workout                  |
+| `lib/plan/start_plan_page.dart`              | Workout execution UI                                  |
+| `lib/plan/exercise_sets_card.dart`           | Exercise card with sets                               |
+| `lib/records/records_service.dart`           | PR detection and calculation                          |
+| `lib/records/record_notification.dart`       | PR celebration UI                                     |
+| `lib/graph/overview_page.dart`               | Stats, heatmap, muscle charts, bodyweight             |
+| `lib/widgets/five_three_one_calculator.dart` | 5/3/1 calculator                                      |
+| `lib/widgets/artistic_color_picker.dart`     | Custom color picker                                   |
 
 ## Core Features
 
@@ -179,7 +179,6 @@ Import code auto-detects format by checking CSV header for `bodyweight` column a
 ## Development Commands
 
 ```bash
-./scripts/migrate.sh  # Recommended after schema changes
 dart run build_runner build --delete-conflicting-outputs
 flutter run
 flutter build apk

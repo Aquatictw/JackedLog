@@ -35,12 +35,13 @@
 
 ### Workout Execution & Tracking
 <p align="center">
-  <img src="screenshots/workout_execution.png" alt="Workout Execution" width="250">
-  <img src="screenshots/active_workout_bar.png" alt="Active Workout Bar" width="250">
-  <img src="screenshots/exercise_notes.png" alt="Exercise Notes" width="250">
+  <img src="screenshots/workout_execution.png" alt="Workout Execution" width="200">
+  <img src="screenshots/active_workout_bar.png" alt="Active Workout Bar" width="200">
+  <img src="screenshots/plate_calculator.png" alt="Exercise Notes" width="202.5">
+  <img src="screenshots/exercise_notes.png" alt="Exercise Notes" width="200">
 </p>
 
-*Exercise list, active workout page, and exercise notes*
+*Exercise list, active workout page, exercise notes and plate calculator*
 
 ### Personal Records & Celebrations
 <p align="center">
@@ -56,10 +57,10 @@
   <img src="screenshots/overview_stats.png" alt="Overview Stats" width="200">
   <img src="screenshots/muscle_charts.png" alt="Muscle Analytics" width="200">
   <img src="screenshots/detailed_exercise.png" alt="Exercise Graphs" width="200">
-  <img src="screenshots/repetition_records.png" alt="Repetition Records" width="200">
+  <img src="screenshots/bodyweight_tracking.png" alt="Repetition Records" width="208">
 </p>
 
-*Overview period stats and calendar, muscle group analytics, detailed exercise graphs and reptition records*
+*Overview period stats and calendar, muscle group analytics, detailed exercise graphs and bodyweight_tracking*
 
 ### Custom Theming and Settings
 <p align="center">
@@ -100,17 +101,19 @@
 
 - **Personal Records**: Tracks best 1RM (Brzycki formula), best volume, and best weight per exercise
 - **Custom Celebrations**: Animated notifications with confetti and improvement percentages when you break records
-- **Progressive Overload Charts**: Visualize strength gains over time with detailed graphs, with period-based stats 
+- **Progressive Overload Charts**: Visualize strength gains over time with detailed graphs, with period-based stats
 - **Training Heatmap**: GitHub-style activity calendar showing consistency and adherence
 - **Muscle Analytics**: Top muscle groups by volume and set count
+- **Bodyweight Tracking**: Log and track bodyweight over time with trends and historical charts
 
 ### 🔧 Additional Tools
 
 - **5/3/1 Programming**: Built-in calculator for Wendler's 5/3/1 methodology with training max tracking
+- **Plate Calculator**: Calculate plate loading configurations for target weights during workouts
 - **Hevy Import**: Migrate your entire training history from Hevy seamlessly
 - **Custom Rest Timers**: Set per-exercise rest periods with audio and haptic feedback
 - **Exercise Categories**: Organize exercises by muscle group, type (free weight, machine, cable) and brand (Hammer Strength, etc.)
-- **Notes System**: Separate notes feature for training programs, diet plans, etc.
+- **Notes System**: Separate notes feature with custom color-coding for training programs, diet plans, etc.
 
 
 ## Tech Stack
