@@ -1,3 +1,4 @@
+import 'package:jackedlog/backup/auto_backup_settings.dart';
 import 'package:jackedlog/delete_records_button.dart';
 import 'package:jackedlog/export_data.dart';
 import 'package:jackedlog/import_data.dart';
@@ -12,6 +13,10 @@ List<Widget> getDataSettings(
   BuildContext context,
 ) {
   return [
+    if ('automatic backups'.contains(term.toLowerCase()) ||
+        'auto backup'.contains(term.toLowerCase()) ||
+        'backup'.contains(term.toLowerCase()))
+      const AutoBackupSettings(),
     if ('export data'.contains(term.toLowerCase())) const ExportData(),
     if ('import data'.contains(term.toLowerCase())) ImportData(ctx: context),
     if ('import hevy'.contains(term.toLowerCase())) ImportHevy(ctx: context),

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:jackedlog/backup/auto_backup_service.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/database/failed_migrations_page.dart';
 import 'package:jackedlog/home_page.dart';
@@ -43,8 +44,35 @@ Widget appProviders(SettingsState state) => MultiProvider(
       child: App(),
     );
 
-class App extends StatelessWidget {
+class App extends StatefulWidget {
   const App({super.key});
+
+  @override
+  State<App> createState() => _AppState();
+}
+
+class _AppState extends State<App> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Trigger auto-backup when app is paused or detached
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      AutoBackupService.performAutoBackup();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

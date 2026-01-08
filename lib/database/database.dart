@@ -504,9 +504,9 @@ class AppDatabase extends _$AppDatabase {
             }
           }
         },
-        // from55To56: (Migrator m, Schema56 schema) async {
-        //   await m.createTable(schema.bodyweightEntries);
-        // },
+        from55To56: (Migrator m, Schema56 schema) async {
+          await m.addColumn(schema.settings, schema.settings.lastAutoBackupTime);
+        },
       ),
       beforeOpen: (details) async {
         // Ensure bodyweight_entries table exists (safety check for migration issues)
@@ -530,5 +530,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 55;
+  int get schemaVersion => 56;
 }
