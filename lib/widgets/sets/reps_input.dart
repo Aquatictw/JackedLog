@@ -1,0 +1,145 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:jackedlog/widgets/sets/reps_button.dart';
+
+class RepsInput extends StatefulWidget {
+  final int value;
+  final bool enabled;
+  final bool completed;
+  final Color accentColor;
+  final ValueChanged<int> onChanged;
+
+  const RepsInput({
+    super.key,
+    required this.value,
+    this.enabled = true,
+    required this.completed,
+    required this.accentColor,
+    required this.onChanged,
+  });
+
+  @override
+  State<RepsInput> createState() => _RepsInputState();
+}
+
+class _RepsInputState extends State<RepsInput> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+  bool _hasFocus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value.toString());
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _hasFocus = _focusNode.hasFocus;
+    });
+  }
+
+  @override
+  void didUpdateWidget(RepsInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _controller.text = widget.value.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: widget.completed
+            ? widget.accentColor.withValues(alpha: 0.1)
+            : colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: widget.completed
+            ? Border.all(
+                color: widget.accentColor.withValues(alpha: 0.3),
+                width: 1,
+              )
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          RepsButton(
+            icon: Icons.remove,
+            accentColor: widget.accentColor,
+            onPressed: widget.value > 1
+                ? () {
+                    HapticFeedback.selectionClick();
+                    widget.onChanged(widget.value - 1);
+                  }
+                : null,
+          ),
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              enabled: widget.enabled,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: widget.completed
+                    ? widget.accentColor
+                    : colorScheme.onSurface,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 2,
+                  vertical: 10,
+                ),
+                border: InputBorder.none,
+                hintText: 'reps',
+                hintStyle: TextStyle(
+                  fontSize: 10,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              onChanged: (value) {
+                final parsed = int.tryParse(value);
+                if (parsed != null && parsed > 0 && parsed < 100) {
+                  widget.onChanged(parsed);
+                }
+              },
+              onTap: () {
+                _controller.selection = TextSelection(
+                  baseOffset: 0,
+                  extentOffset: _controller.text.length,
+                );
+              },
+            ),
+          ),
+          RepsButton(
+            icon: Icons.add,
+            accentColor: widget.accentColor,
+            onPressed: widget.value < 99
+                ? () {
+                    HapticFeedback.selectionClick();
+                    widget.onChanged(widget.value + 1);
+                  }
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+}

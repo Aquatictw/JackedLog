@@ -1,4 +1,6 @@
 import 'package:drift/drift.dart' as drift;
+import 'package:jackedlog/widgets/stats/period_selector.dart';
+import 'package:jackedlog/widgets/stats/stat_card.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/main.dart';
@@ -521,23 +523,6 @@ class _OverviewPageState extends State<OverviewPage> {
     }
   }
 
-  String _getPeriodLabel(OverviewPeriod p) {
-    switch (p) {
-      case OverviewPeriod.week:
-        return '7D';
-      case OverviewPeriod.month:
-        return '1M';
-      case OverviewPeriod.months3:
-        return '3M';
-      case OverviewPeriod.months6:
-        return '6M';
-      case OverviewPeriod.year:
-        return '1Y';
-      case OverviewPeriod.allTime:
-        return 'All';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -554,26 +539,12 @@ class _OverviewPageState extends State<OverviewPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Period selector
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: OverviewPeriod.values.map((p) {
-                        final isSelected = period == p;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(_getPeriodLabel(p)),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              if (selected) {
-                                setState(() => period = p);
-                                _loadData();
-                              }
-                            },
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                  PeriodSelector(
+                    selectedPeriod: period,
+                    onPeriodChanged: (p) {
+                      setState(() => period = p);
+                      _loadData();
+                    },
                   ),
 
                   const SizedBox(height: 24),
@@ -627,8 +598,7 @@ class _OverviewPageState extends State<OverviewPage> {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard(
-                colorScheme: colorScheme,
+              child: StatCard(
                 icon: Icons.fitness_center,
                 label: 'Workouts',
                 value: '$totalWorkouts',
@@ -637,8 +607,7 @@ class _OverviewPageState extends State<OverviewPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard(
-                colorScheme: colorScheme,
+              child: StatCard(
                 icon: Icons.trending_up,
                 label: 'Total Volume',
                 value: formatter.format(totalVolume.round()),
@@ -651,8 +620,7 @@ class _OverviewPageState extends State<OverviewPage> {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard(
-                colorScheme: colorScheme,
+              child: StatCard(
                 icon: Icons.local_fire_department,
                 label: 'Streak',
                 value: '$currentStreak days',
@@ -661,8 +629,7 @@ class _OverviewPageState extends State<OverviewPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard(
-                colorScheme: colorScheme,
+              child: StatCard(
                 icon: Icons.emoji_events,
                 label: 'Top Muscle',
                 value: mostTrainedMuscle ?? 'N/A',
@@ -672,58 +639,6 @@ class _OverviewPageState extends State<OverviewPage> {
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildStatCard({
-    required ColorScheme colorScheme,
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
     );
   }
 
