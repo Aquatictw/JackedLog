@@ -1539,6 +1539,12 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0xFF673AB7));
+  static const VerificationMeta _lastAutoBackupTimeMeta =
+      const VerificationMeta('lastAutoBackupTime');
+  @override
+  late final GeneratedColumn<DateTime> lastAutoBackupTime =
+      GeneratedColumn<DateTime>('last_auto_backup_time', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         alarmSound,
@@ -1578,7 +1584,8 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         fivethreeoneDeadliftTm,
         fivethreeonePressTm,
         fivethreeoneWeek,
-        customColorSeed
+        customColorSeed,
+        lastAutoBackupTime
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1829,6 +1836,12 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           customColorSeed.isAcceptableOrUnknown(
               data['custom_color_seed']!, _customColorSeedMeta));
     }
+    if (data.containsKey('last_auto_backup_time')) {
+      context.handle(
+          _lastAutoBackupTimeMeta,
+          lastAutoBackupTime.isAcceptableOrUnknown(
+              data['last_auto_backup_time']!, _lastAutoBackupTimeMeta));
+    }
     return context;
   }
 
@@ -1915,6 +1928,9 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           .read(DriftSqlType.int, data['${effectivePrefix}fivethreeone_week'])!,
       customColorSeed: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}custom_color_seed'])!,
+      lastAutoBackupTime: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}last_auto_backup_time']),
     );
   }
 
@@ -1963,6 +1979,7 @@ class Setting extends DataClass implements Insertable<Setting> {
   final double? fivethreeonePressTm;
   final int fivethreeoneWeek;
   final int customColorSeed;
+  final DateTime? lastAutoBackupTime;
   const Setting(
       {required this.alarmSound,
       required this.automaticBackups,
@@ -2001,7 +2018,8 @@ class Setting extends DataClass implements Insertable<Setting> {
       this.fivethreeoneDeadliftTm,
       this.fivethreeonePressTm,
       required this.fivethreeoneWeek,
-      required this.customColorSeed});
+      required this.customColorSeed,
+      this.lastAutoBackupTime});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2058,6 +2076,9 @@ class Setting extends DataClass implements Insertable<Setting> {
     }
     map['fivethreeone_week'] = Variable<int>(fivethreeoneWeek);
     map['custom_color_seed'] = Variable<int>(customColorSeed);
+    if (!nullToAbsent || lastAutoBackupTime != null) {
+      map['last_auto_backup_time'] = Variable<DateTime>(lastAutoBackupTime);
+    }
     return map;
   }
 
@@ -2115,6 +2136,9 @@ class Setting extends DataClass implements Insertable<Setting> {
           : Value(fivethreeonePressTm),
       fivethreeoneWeek: Value(fivethreeoneWeek),
       customColorSeed: Value(customColorSeed),
+      lastAutoBackupTime: lastAutoBackupTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAutoBackupTime),
     );
   }
 
@@ -2165,6 +2189,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           serializer.fromJson<double?>(json['fivethreeonePressTm']),
       fivethreeoneWeek: serializer.fromJson<int>(json['fivethreeoneWeek']),
       customColorSeed: serializer.fromJson<int>(json['customColorSeed']),
+      lastAutoBackupTime:
+          serializer.fromJson<DateTime?>(json['lastAutoBackupTime']),
     );
   }
   @override
@@ -2210,6 +2236,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       'fivethreeonePressTm': serializer.toJson<double?>(fivethreeonePressTm),
       'fivethreeoneWeek': serializer.toJson<int>(fivethreeoneWeek),
       'customColorSeed': serializer.toJson<int>(customColorSeed),
+      'lastAutoBackupTime': serializer.toJson<DateTime?>(lastAutoBackupTime),
     };
   }
 
@@ -2251,7 +2278,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           Value<double?> fivethreeoneDeadliftTm = const Value.absent(),
           Value<double?> fivethreeonePressTm = const Value.absent(),
           int? fivethreeoneWeek,
-          int? customColorSeed}) =>
+          int? customColorSeed,
+          Value<DateTime?> lastAutoBackupTime = const Value.absent()}) =>
       Setting(
         alarmSound: alarmSound ?? this.alarmSound,
         automaticBackups: automaticBackups ?? this.automaticBackups,
@@ -2301,6 +2329,9 @@ class Setting extends DataClass implements Insertable<Setting> {
             : this.fivethreeonePressTm,
         fivethreeoneWeek: fivethreeoneWeek ?? this.fivethreeoneWeek,
         customColorSeed: customColorSeed ?? this.customColorSeed,
+        lastAutoBackupTime: lastAutoBackupTime.present
+            ? lastAutoBackupTime.value
+            : this.lastAutoBackupTime,
       );
   Setting copyWithCompanion(SettingsCompanion data) {
     return Setting(
@@ -2394,6 +2425,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       customColorSeed: data.customColorSeed.present
           ? data.customColorSeed.value
           : this.customColorSeed,
+      lastAutoBackupTime: data.lastAutoBackupTime.present
+          ? data.lastAutoBackupTime.value
+          : this.lastAutoBackupTime,
     );
   }
 
@@ -2437,7 +2471,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('fivethreeoneDeadliftTm: $fivethreeoneDeadliftTm, ')
           ..write('fivethreeonePressTm: $fivethreeonePressTm, ')
           ..write('fivethreeoneWeek: $fivethreeoneWeek, ')
-          ..write('customColorSeed: $customColorSeed')
+          ..write('customColorSeed: $customColorSeed, ')
+          ..write('lastAutoBackupTime: $lastAutoBackupTime')
           ..write(')'))
         .toString();
   }
@@ -2481,7 +2516,8 @@ class Setting extends DataClass implements Insertable<Setting> {
         fivethreeoneDeadliftTm,
         fivethreeonePressTm,
         fivethreeoneWeek,
-        customColorSeed
+        customColorSeed,
+        lastAutoBackupTime
       ]);
   @override
   bool operator ==(Object other) =>
@@ -2524,7 +2560,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.fivethreeoneDeadliftTm == this.fivethreeoneDeadliftTm &&
           other.fivethreeonePressTm == this.fivethreeonePressTm &&
           other.fivethreeoneWeek == this.fivethreeoneWeek &&
-          other.customColorSeed == this.customColorSeed);
+          other.customColorSeed == this.customColorSeed &&
+          other.lastAutoBackupTime == this.lastAutoBackupTime);
 }
 
 class SettingsCompanion extends UpdateCompanion<Setting> {
@@ -2566,6 +2603,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<double?> fivethreeonePressTm;
   final Value<int> fivethreeoneWeek;
   final Value<int> customColorSeed;
+  final Value<DateTime?> lastAutoBackupTime;
   const SettingsCompanion({
     this.alarmSound = const Value.absent(),
     this.automaticBackups = const Value.absent(),
@@ -2605,6 +2643,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.fivethreeonePressTm = const Value.absent(),
     this.fivethreeoneWeek = const Value.absent(),
     this.customColorSeed = const Value.absent(),
+    this.lastAutoBackupTime = const Value.absent(),
   });
   SettingsCompanion.insert({
     required String alarmSound,
@@ -2645,6 +2684,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.fivethreeonePressTm = const Value.absent(),
     this.fivethreeoneWeek = const Value.absent(),
     this.customColorSeed = const Value.absent(),
+    this.lastAutoBackupTime = const Value.absent(),
   })  : alarmSound = Value(alarmSound),
         cardioUnit = Value(cardioUnit),
         curveLines = Value(curveLines),
@@ -2698,6 +2738,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<double>? fivethreeonePressTm,
     Expression<int>? fivethreeoneWeek,
     Expression<int>? customColorSeed,
+    Expression<DateTime>? lastAutoBackupTime,
   }) {
     return RawValuesInsertable({
       if (alarmSound != null) 'alarm_sound': alarmSound,
@@ -2744,6 +2785,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
         'fivethreeone_press_tm': fivethreeonePressTm,
       if (fivethreeoneWeek != null) 'fivethreeone_week': fivethreeoneWeek,
       if (customColorSeed != null) 'custom_color_seed': customColorSeed,
+      if (lastAutoBackupTime != null)
+        'last_auto_backup_time': lastAutoBackupTime,
     });
   }
 
@@ -2785,7 +2828,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       Value<double?>? fivethreeoneDeadliftTm,
       Value<double?>? fivethreeonePressTm,
       Value<int>? fivethreeoneWeek,
-      Value<int>? customColorSeed}) {
+      Value<int>? customColorSeed,
+      Value<DateTime?>? lastAutoBackupTime}) {
     return SettingsCompanion(
       alarmSound: alarmSound ?? this.alarmSound,
       automaticBackups: automaticBackups ?? this.automaticBackups,
@@ -2826,6 +2870,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       fivethreeonePressTm: fivethreeonePressTm ?? this.fivethreeonePressTm,
       fivethreeoneWeek: fivethreeoneWeek ?? this.fivethreeoneWeek,
       customColorSeed: customColorSeed ?? this.customColorSeed,
+      lastAutoBackupTime: lastAutoBackupTime ?? this.lastAutoBackupTime,
     );
   }
 
@@ -2950,6 +2995,10 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     if (customColorSeed.present) {
       map['custom_color_seed'] = Variable<int>(customColorSeed.value);
     }
+    if (lastAutoBackupTime.present) {
+      map['last_auto_backup_time'] =
+          Variable<DateTime>(lastAutoBackupTime.value);
+    }
     return map;
   }
 
@@ -2993,7 +3042,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('fivethreeoneDeadliftTm: $fivethreeoneDeadliftTm, ')
           ..write('fivethreeonePressTm: $fivethreeonePressTm, ')
           ..write('fivethreeoneWeek: $fivethreeoneWeek, ')
-          ..write('customColorSeed: $customColorSeed')
+          ..write('customColorSeed: $customColorSeed, ')
+          ..write('lastAutoBackupTime: $lastAutoBackupTime')
           ..write(')'))
         .toString();
   }
@@ -5341,6 +5391,7 @@ typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
   Value<double?> fivethreeonePressTm,
   Value<int> fivethreeoneWeek,
   Value<int> customColorSeed,
+  Value<DateTime?> lastAutoBackupTime,
 });
 typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
   Value<String> alarmSound,
@@ -5381,6 +5432,7 @@ typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
   Value<double?> fivethreeonePressTm,
   Value<int> fivethreeoneWeek,
   Value<int> customColorSeed,
+  Value<DateTime?> lastAutoBackupTime,
 });
 
 class $$SettingsTableFilterComposer
@@ -5519,6 +5571,10 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<int> get customColorSeed => $composableBuilder(
       column: $table.customColorSeed,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastAutoBackupTime => $composableBuilder(
+      column: $table.lastAutoBackupTime,
       builder: (column) => ColumnFilters(column));
 }
 
@@ -5666,6 +5722,10 @@ class $$SettingsTableOrderingComposer
   ColumnOrderings<int> get customColorSeed => $composableBuilder(
       column: $table.customColorSeed,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastAutoBackupTime => $composableBuilder(
+      column: $table.lastAutoBackupTime,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$SettingsTableAnnotationComposer
@@ -5790,6 +5850,9 @@ class $$SettingsTableAnnotationComposer
 
   GeneratedColumn<int> get customColorSeed => $composableBuilder(
       column: $table.customColorSeed, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastAutoBackupTime => $composableBuilder(
+      column: $table.lastAutoBackupTime, builder: (column) => column);
 }
 
 class $$SettingsTableTableManager extends RootTableManager<
@@ -5853,6 +5916,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             Value<double?> fivethreeonePressTm = const Value.absent(),
             Value<int> fivethreeoneWeek = const Value.absent(),
             Value<int> customColorSeed = const Value.absent(),
+            Value<DateTime?> lastAutoBackupTime = const Value.absent(),
           }) =>
               SettingsCompanion(
             alarmSound: alarmSound,
@@ -5893,6 +5957,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             fivethreeonePressTm: fivethreeonePressTm,
             fivethreeoneWeek: fivethreeoneWeek,
             customColorSeed: customColorSeed,
+            lastAutoBackupTime: lastAutoBackupTime,
           ),
           createCompanionCallback: ({
             required String alarmSound,
@@ -5933,6 +5998,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             Value<double?> fivethreeonePressTm = const Value.absent(),
             Value<int> fivethreeoneWeek = const Value.absent(),
             Value<int> customColorSeed = const Value.absent(),
+            Value<DateTime?> lastAutoBackupTime = const Value.absent(),
           }) =>
               SettingsCompanion.insert(
             alarmSound: alarmSound,
@@ -5973,6 +6039,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             fivethreeonePressTm: fivethreeonePressTm,
             fivethreeoneWeek: fivethreeoneWeek,
             customColorSeed: customColorSeed,
+            lastAutoBackupTime: lastAutoBackupTime,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
