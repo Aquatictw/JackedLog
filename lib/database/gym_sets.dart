@@ -668,6 +668,8 @@ class GymSets extends Table {
   TextColumn get exerciseType => text().nullable()(); // free weight, machine, cable
   TextColumn get brandName => text().nullable()(); // brand for machine
   BoolColumn get dropSet => boolean().withDefault(const Constant(false))(); // Drop set indicator
+  TextColumn get supersetId => text().nullable()(); // Groups exercises in a superset
+  IntColumn get supersetPosition => integer().nullable()(); // Order within superset (0, 1, 2...)
 }
 
 final categoriesStream = (db.gymSets.selectOnly(distinct: true)
