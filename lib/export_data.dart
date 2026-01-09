@@ -77,6 +77,8 @@ class ExportData extends StatelessWidget {
                           'exerciseType',
                           'brandName',
                           'dropSet',
+                          'supersetId',
+                          'supersetPosition',
                         ]
                       ];
                       for (var gymSet in gymSets) {
@@ -103,6 +105,8 @@ class ExportData extends StatelessWidget {
                           gymSet.exerciseType ?? '',
                           gymSet.brandName ?? '',
                           gymSet.dropSet,
+                          gymSet.supersetId ?? '',
+                          gymSet.supersetPosition ?? '',
                         ]);
                       }
                       final setsCsv =

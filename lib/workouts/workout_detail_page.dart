@@ -14,6 +14,7 @@ import 'package:jackedlog/sets/edit_set_page.dart';
 import 'package:jackedlog/settings/settings_state.dart';
 import 'package:jackedlog/utils.dart';
 import 'package:jackedlog/widgets/bodypart_tag.dart';
+import 'package:jackedlog/widgets/superset/superset_group_card.dart';
 import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -127,6 +128,54 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             }
           }
 
+          // Group exercises into supersets
+          // First, collect all unique superset IDs in order
+          final supersetIds = <String>[];
+          for (final group in exerciseGroups) {
+            final supersetId = group.sets.firstOrNull?.supersetId;
+            if (supersetId != null && !supersetIds.contains(supersetId)) {
+              supersetIds.add(supersetId);
+            }
+          }
+
+          // Create display items - render each exercise individually, even in supersets
+          final displayItems = <Map<String, dynamic>>[];
+          int i = 0;
+          while (i < exerciseGroups.length) {
+            final group = exerciseGroups[i];
+            final supersetId = group.sets.firstOrNull?.supersetId;
+            final supersetPosition = group.sets.firstOrNull?.supersetPosition;
+
+            if (supersetId != null && supersetPosition != null) {
+              // This exercise is part of a superset - render individually with metadata
+              final supersetIndex = supersetIds.indexOf(supersetId);
+
+              // Determine if this is the first or last exercise in the superset
+              final isFirstInSuperset = i == 0 ||
+                  exerciseGroups[i - 1].sets.firstOrNull?.supersetId != supersetId;
+              final isLastInSuperset = i == exerciseGroups.length - 1 ||
+                  exerciseGroups[i + 1].sets.firstOrNull?.supersetId != supersetId;
+
+              displayItems.add({
+                'type': 'exercise',
+                'name': group.name,
+                'sets': group.sets,
+                'supersetIndex': supersetIndex,
+                'supersetPosition': supersetPosition,
+                'isFirstInSuperset': isFirstInSuperset,
+                'isLastInSuperset': isLastInSuperset,
+              });
+            } else {
+              // Regular exercise (not in a superset)
+              displayItems.add({
+                'type': 'exercise',
+                'name': group.name,
+                'sets': group.sets,
+              });
+            }
+            i++;
+          }
+
           final totalVolume = sets.fold<double>(
             0,
             (sum, s) => sum + (s.weight * s.reps),
@@ -209,25 +258,31 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                   child: _buildNotesSection(),
                 ),
               // Empty state
-              if (exerciseGroups.isEmpty)
+              if (displayItems.isEmpty)
                 const SliverFillRemaining(
                   child: Center(
                     child: Text('No exercises in this workout'),
                   ),
                 ),
-              // Exercise groups (each instance displayed separately)
+              // Display items (exercises with optional superset styling)
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final group = exerciseGroups[index];
+                    final item = displayItems[index];
+
+                    // All items are exercises now, some with superset metadata
                     return _buildExerciseGroup(
-                      group.name,
-                      group.sets,
+                      item['name'] as String,
+                      item['sets'] as List<GymSet>,
                       showImages,
                       _recordsMap,
+                      supersetIndex: item['supersetIndex'] as int?,
+                      supersetPosition: item['supersetPosition'] as int?,
+                      isFirstInSuperset: item['isFirstInSuperset'] as bool? ?? false,
+                      isLastInSuperset: item['isLastInSuperset'] as bool? ?? false,
                     );
                   },
-                  childCount: exerciseGroups.length,
+                  childCount: displayItems.length,
                 ),
               ),
               // Bottom padding for navigation bar + active workout bar + timer
@@ -438,8 +493,12 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     String exerciseName,
     List<GymSet> unsortedSets,
     bool showImages,
-    Map<int, Set<RecordType>> recordsMap,
-  ) {
+    Map<int, Set<RecordType>> recordsMap, {
+    int? supersetIndex,
+    int? supersetPosition,
+    bool isFirstInSuperset = false,
+    bool isLastInSuperset = false,
+  }) {
     // Sort sets: warmups first, then by creation time
     final sets = List<GymSet>.from(unsortedSets)
       ..sort((a, b) {
@@ -526,7 +585,23 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       })(),
     ];
 
-    return InkWell(
+    // Determine superset color and styling
+    final colorScheme = Theme.of(context).colorScheme;
+    Color? supersetColor;
+    String? supersetLabel;
+    if (supersetIndex != null && supersetPosition != null) {
+      final colors = [
+        colorScheme.primaryContainer,
+        colorScheme.tertiaryContainer,
+        colorScheme.secondaryContainer,
+        colorScheme.errorContainer,
+      ];
+      supersetColor = colors[supersetIndex % colors.length];
+      final letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+      supersetLabel = '${letters[supersetIndex % letters.length]}${supersetPosition + 1}';
+    }
+
+    final exerciseWidget = InkWell(
       onLongPress: () => _showExerciseMenu(context, exerciseName),
       child: ExpansionTile(
         leading: leading,
@@ -535,6 +610,38 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             Flexible(
               child: Text(exerciseName),
             ),
+            // Superset badge
+            if (supersetLabel != null && supersetColor != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      supersetColor,
+                      supersetColor.withValues(alpha: 0.7),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: supersetColor.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  supersetLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onPrimaryContainer,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
             if (category != null && category.isNotEmpty) ...[
               const SizedBox(width: 6),
               BodypartTag(bodypart: category),
@@ -580,6 +687,58 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         children: children,
       ),
     );
+
+    // Wrap with artistic superset styling if in a superset
+    if (supersetColor != null) {
+      return Container(
+        margin: EdgeInsets.only(
+          left: 8,
+          right: 16,
+          top: isFirstInSuperset ? 8 : 0,
+          bottom: isLastInSuperset ? 12 : 0,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            topLeft: isFirstInSuperset ? const Radius.circular(12) : Radius.zero,
+            bottomLeft: isLastInSuperset ? const Radius.circular(12) : Radius.zero,
+            topRight: isFirstInSuperset ? const Radius.circular(12) : Radius.zero,
+            bottomRight: isLastInSuperset ? const Radius.circular(12) : Radius.zero,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              // Subtle background tint
+              color: supersetColor.withValues(alpha: 0.05),
+              // Colored left border with gradient effect
+              border: Border(
+                left: BorderSide(
+                  color: supersetColor.withValues(alpha: 0.6),
+                  width: 4,
+                ),
+                // Add connecting lines for middle exercises
+                top: !isFirstInSuperset
+                    ? BorderSide(
+                        color: supersetColor.withValues(alpha: 0.2),
+                        width: 1,
+                      )
+                    : BorderSide.none,
+              ),
+              // Subtle glow effect
+              boxShadow: [
+                BoxShadow(
+                  color: supersetColor.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  spreadRadius: 0,
+                  offset: const Offset(-2, 0),
+                ),
+              ],
+            ),
+            child: exerciseWidget,
+          ),
+        ),
+      );
+    }
+
+    return exerciseWidget;
   }
 
   Widget _buildInitialBadge(String name) {
@@ -845,6 +1004,15 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         ),
       );
     }
+  }
+
+  void _navigateToEditSet(BuildContext context, GymSet set) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditSetPage(gymSet: set),
+      ),
+    );
   }
 
   Future<void> _resumeWorkout(BuildContext context) async {

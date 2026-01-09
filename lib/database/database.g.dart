@@ -409,6 +409,18 @@ class $GymSetsTable extends GymSets with TableInfo<$GymSetsTable, GymSet> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("drop_set" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _supersetIdMeta =
+      const VerificationMeta('supersetId');
+  @override
+  late final GeneratedColumn<String> supersetId = GeneratedColumn<String>(
+      'superset_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _supersetPositionMeta =
+      const VerificationMeta('supersetPosition');
+  @override
+  late final GeneratedColumn<int> supersetPosition = GeneratedColumn<int>(
+      'superset_position', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         cardio,
@@ -432,7 +444,9 @@ class $GymSetsTable extends GymSets with TableInfo<$GymSetsTable, GymSet> {
         workoutId,
         exerciseType,
         brandName,
-        dropSet
+        dropSet,
+        supersetId,
+        supersetPosition
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -543,6 +557,18 @@ class $GymSetsTable extends GymSets with TableInfo<$GymSetsTable, GymSet> {
       context.handle(_dropSetMeta,
           dropSet.isAcceptableOrUnknown(data['drop_set']!, _dropSetMeta));
     }
+    if (data.containsKey('superset_id')) {
+      context.handle(
+          _supersetIdMeta,
+          supersetId.isAcceptableOrUnknown(
+              data['superset_id']!, _supersetIdMeta));
+    }
+    if (data.containsKey('superset_position')) {
+      context.handle(
+          _supersetPositionMeta,
+          supersetPosition.isAcceptableOrUnknown(
+              data['superset_position']!, _supersetPositionMeta));
+    }
     return context;
   }
 
@@ -596,6 +622,10 @@ class $GymSetsTable extends GymSets with TableInfo<$GymSetsTable, GymSet> {
           .read(DriftSqlType.string, data['${effectivePrefix}brand_name']),
       dropSet: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}drop_set'])!,
+      supersetId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}superset_id']),
+      supersetPosition: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}superset_position']),
     );
   }
 
@@ -628,6 +658,8 @@ class GymSet extends DataClass implements Insertable<GymSet> {
   final String? exerciseType;
   final String? brandName;
   final bool dropSet;
+  final String? supersetId;
+  final int? supersetPosition;
   const GymSet(
       {required this.cardio,
       this.category,
@@ -650,7 +682,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
       this.workoutId,
       this.exerciseType,
       this.brandName,
-      required this.dropSet});
+      required this.dropSet,
+      this.supersetId,
+      this.supersetPosition});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -694,6 +728,12 @@ class GymSet extends DataClass implements Insertable<GymSet> {
       map['brand_name'] = Variable<String>(brandName);
     }
     map['drop_set'] = Variable<bool>(dropSet);
+    if (!nullToAbsent || supersetId != null) {
+      map['superset_id'] = Variable<String>(supersetId);
+    }
+    if (!nullToAbsent || supersetPosition != null) {
+      map['superset_position'] = Variable<int>(supersetPosition);
+    }
     return map;
   }
 
@@ -735,6 +775,12 @@ class GymSet extends DataClass implements Insertable<GymSet> {
           ? const Value.absent()
           : Value(brandName),
       dropSet: Value(dropSet),
+      supersetId: supersetId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersetId),
+      supersetPosition: supersetPosition == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersetPosition),
     );
   }
 
@@ -764,6 +810,8 @@ class GymSet extends DataClass implements Insertable<GymSet> {
       exerciseType: serializer.fromJson<String?>(json['exerciseType']),
       brandName: serializer.fromJson<String?>(json['brandName']),
       dropSet: serializer.fromJson<bool>(json['dropSet']),
+      supersetId: serializer.fromJson<String?>(json['supersetId']),
+      supersetPosition: serializer.fromJson<int?>(json['supersetPosition']),
     );
   }
   @override
@@ -792,6 +840,8 @@ class GymSet extends DataClass implements Insertable<GymSet> {
       'exerciseType': serializer.toJson<String?>(exerciseType),
       'brandName': serializer.toJson<String?>(brandName),
       'dropSet': serializer.toJson<bool>(dropSet),
+      'supersetId': serializer.toJson<String?>(supersetId),
+      'supersetPosition': serializer.toJson<int?>(supersetPosition),
     };
   }
 
@@ -817,7 +867,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
           Value<int?> workoutId = const Value.absent(),
           Value<String?> exerciseType = const Value.absent(),
           Value<String?> brandName = const Value.absent(),
-          bool? dropSet}) =>
+          bool? dropSet,
+          Value<String?> supersetId = const Value.absent(),
+          Value<int?> supersetPosition = const Value.absent()}) =>
       GymSet(
         cardio: cardio ?? this.cardio,
         category: category.present ? category.value : this.category,
@@ -842,6 +894,10 @@ class GymSet extends DataClass implements Insertable<GymSet> {
             exerciseType.present ? exerciseType.value : this.exerciseType,
         brandName: brandName.present ? brandName.value : this.brandName,
         dropSet: dropSet ?? this.dropSet,
+        supersetId: supersetId.present ? supersetId.value : this.supersetId,
+        supersetPosition: supersetPosition.present
+            ? supersetPosition.value
+            : this.supersetPosition,
       );
   GymSet copyWithCompanion(GymSetsCompanion data) {
     return GymSet(
@@ -869,6 +925,11 @@ class GymSet extends DataClass implements Insertable<GymSet> {
           : this.exerciseType,
       brandName: data.brandName.present ? data.brandName.value : this.brandName,
       dropSet: data.dropSet.present ? data.dropSet.value : this.dropSet,
+      supersetId:
+          data.supersetId.present ? data.supersetId.value : this.supersetId,
+      supersetPosition: data.supersetPosition.present
+          ? data.supersetPosition.value
+          : this.supersetPosition,
     );
   }
 
@@ -896,7 +957,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
           ..write('workoutId: $workoutId, ')
           ..write('exerciseType: $exerciseType, ')
           ..write('brandName: $brandName, ')
-          ..write('dropSet: $dropSet')
+          ..write('dropSet: $dropSet, ')
+          ..write('supersetId: $supersetId, ')
+          ..write('supersetPosition: $supersetPosition')
           ..write(')'))
         .toString();
   }
@@ -924,7 +987,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
         workoutId,
         exerciseType,
         brandName,
-        dropSet
+        dropSet,
+        supersetId,
+        supersetPosition
       ]);
   @override
   bool operator ==(Object other) =>
@@ -951,7 +1016,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
           other.workoutId == this.workoutId &&
           other.exerciseType == this.exerciseType &&
           other.brandName == this.brandName &&
-          other.dropSet == this.dropSet);
+          other.dropSet == this.dropSet &&
+          other.supersetId == this.supersetId &&
+          other.supersetPosition == this.supersetPosition);
 }
 
 class GymSetsCompanion extends UpdateCompanion<GymSet> {
@@ -977,6 +1044,8 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
   final Value<String?> exerciseType;
   final Value<String?> brandName;
   final Value<bool> dropSet;
+  final Value<String?> supersetId;
+  final Value<int?> supersetPosition;
   const GymSetsCompanion({
     this.cardio = const Value.absent(),
     this.category = const Value.absent(),
@@ -1000,6 +1069,8 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
     this.exerciseType = const Value.absent(),
     this.brandName = const Value.absent(),
     this.dropSet = const Value.absent(),
+    this.supersetId = const Value.absent(),
+    this.supersetPosition = const Value.absent(),
   });
   GymSetsCompanion.insert({
     this.cardio = const Value.absent(),
@@ -1024,6 +1095,8 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
     this.exerciseType = const Value.absent(),
     this.brandName = const Value.absent(),
     this.dropSet = const Value.absent(),
+    this.supersetId = const Value.absent(),
+    this.supersetPosition = const Value.absent(),
   })  : created = Value(created),
         name = Value(name),
         reps = Value(reps),
@@ -1052,6 +1125,8 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
     Expression<String>? exerciseType,
     Expression<String>? brandName,
     Expression<bool>? dropSet,
+    Expression<String>? supersetId,
+    Expression<int>? supersetPosition,
   }) {
     return RawValuesInsertable({
       if (cardio != null) 'cardio': cardio,
@@ -1076,6 +1151,8 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
       if (exerciseType != null) 'exercise_type': exerciseType,
       if (brandName != null) 'brand_name': brandName,
       if (dropSet != null) 'drop_set': dropSet,
+      if (supersetId != null) 'superset_id': supersetId,
+      if (supersetPosition != null) 'superset_position': supersetPosition,
     });
   }
 
@@ -1101,7 +1178,9 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
       Value<int?>? workoutId,
       Value<String?>? exerciseType,
       Value<String?>? brandName,
-      Value<bool>? dropSet}) {
+      Value<bool>? dropSet,
+      Value<String?>? supersetId,
+      Value<int?>? supersetPosition}) {
     return GymSetsCompanion(
       cardio: cardio ?? this.cardio,
       category: category ?? this.category,
@@ -1125,6 +1204,8 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
       exerciseType: exerciseType ?? this.exerciseType,
       brandName: brandName ?? this.brandName,
       dropSet: dropSet ?? this.dropSet,
+      supersetId: supersetId ?? this.supersetId,
+      supersetPosition: supersetPosition ?? this.supersetPosition,
     );
   }
 
@@ -1197,6 +1278,12 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
     if (dropSet.present) {
       map['drop_set'] = Variable<bool>(dropSet.value);
     }
+    if (supersetId.present) {
+      map['superset_id'] = Variable<String>(supersetId.value);
+    }
+    if (supersetPosition.present) {
+      map['superset_position'] = Variable<int>(supersetPosition.value);
+    }
     return map;
   }
 
@@ -1224,7 +1311,9 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
           ..write('workoutId: $workoutId, ')
           ..write('exerciseType: $exerciseType, ')
           ..write('brandName: $brandName, ')
-          ..write('dropSet: $dropSet')
+          ..write('dropSet: $dropSet, ')
+          ..write('supersetId: $supersetId, ')
+          ..write('supersetPosition: $supersetPosition')
           ..write(')'))
         .toString();
   }
@@ -4871,6 +4960,8 @@ typedef $$GymSetsTableCreateCompanionBuilder = GymSetsCompanion Function({
   Value<String?> exerciseType,
   Value<String?> brandName,
   Value<bool> dropSet,
+  Value<String?> supersetId,
+  Value<int?> supersetPosition,
 });
 typedef $$GymSetsTableUpdateCompanionBuilder = GymSetsCompanion Function({
   Value<bool> cardio,
@@ -4895,6 +4986,8 @@ typedef $$GymSetsTableUpdateCompanionBuilder = GymSetsCompanion Function({
   Value<String?> exerciseType,
   Value<String?> brandName,
   Value<bool> dropSet,
+  Value<String?> supersetId,
+  Value<int?> supersetPosition,
 });
 
 final class $$GymSetsTableReferences
@@ -4993,6 +5086,13 @@ class $$GymSetsTableFilterComposer
   ColumnFilters<bool> get dropSet => $composableBuilder(
       column: $table.dropSet, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get supersetId => $composableBuilder(
+      column: $table.supersetId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get supersetPosition => $composableBuilder(
+      column: $table.supersetPosition,
+      builder: (column) => ColumnFilters(column));
+
   Expression<bool> planExercisesRefs(
       Expression<bool> Function($$PlanExercisesTableFilterComposer f) f) {
     final $$PlanExercisesTableFilterComposer composer = $composerBuilder(
@@ -5090,6 +5190,13 @@ class $$GymSetsTableOrderingComposer
 
   ColumnOrderings<bool> get dropSet => $composableBuilder(
       column: $table.dropSet, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get supersetId => $composableBuilder(
+      column: $table.supersetId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get supersetPosition => $composableBuilder(
+      column: $table.supersetPosition,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$GymSetsTableAnnotationComposer
@@ -5167,6 +5274,12 @@ class $$GymSetsTableAnnotationComposer
   GeneratedColumn<bool> get dropSet =>
       $composableBuilder(column: $table.dropSet, builder: (column) => column);
 
+  GeneratedColumn<String> get supersetId => $composableBuilder(
+      column: $table.supersetId, builder: (column) => column);
+
+  GeneratedColumn<int> get supersetPosition => $composableBuilder(
+      column: $table.supersetPosition, builder: (column) => column);
+
   Expression<T> planExercisesRefs<T extends Object>(
       Expression<T> Function($$PlanExercisesTableAnnotationComposer a) f) {
     final $$PlanExercisesTableAnnotationComposer composer = $composerBuilder(
@@ -5234,6 +5347,8 @@ class $$GymSetsTableTableManager extends RootTableManager<
             Value<String?> exerciseType = const Value.absent(),
             Value<String?> brandName = const Value.absent(),
             Value<bool> dropSet = const Value.absent(),
+            Value<String?> supersetId = const Value.absent(),
+            Value<int?> supersetPosition = const Value.absent(),
           }) =>
               GymSetsCompanion(
             cardio: cardio,
@@ -5258,6 +5373,8 @@ class $$GymSetsTableTableManager extends RootTableManager<
             exerciseType: exerciseType,
             brandName: brandName,
             dropSet: dropSet,
+            supersetId: supersetId,
+            supersetPosition: supersetPosition,
           ),
           createCompanionCallback: ({
             Value<bool> cardio = const Value.absent(),
@@ -5282,6 +5399,8 @@ class $$GymSetsTableTableManager extends RootTableManager<
             Value<String?> exerciseType = const Value.absent(),
             Value<String?> brandName = const Value.absent(),
             Value<bool> dropSet = const Value.absent(),
+            Value<String?> supersetId = const Value.absent(),
+            Value<int?> supersetPosition = const Value.absent(),
           }) =>
               GymSetsCompanion.insert(
             cardio: cardio,
@@ -5306,6 +5425,8 @@ class $$GymSetsTableTableManager extends RootTableManager<
             exerciseType: exerciseType,
             brandName: brandName,
             dropSet: dropSet,
+            supersetId: supersetId,
+            supersetPosition: supersetPosition,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>

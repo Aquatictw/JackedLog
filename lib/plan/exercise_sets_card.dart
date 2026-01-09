@@ -17,6 +17,7 @@ import 'package:jackedlog/widgets/sets/complete_button.dart';
 import 'package:jackedlog/widgets/sets/reps_input.dart';
 import 'package:jackedlog/widgets/sets/set_row.dart';
 import 'package:jackedlog/widgets/sets/weight_input.dart';
+import 'package:jackedlog/widgets/superset/superset_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -66,6 +67,11 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
   List<GymSet> _previousWarmups = [];
   List<GymSet> _previousDropSets = [];
   List<GymSet> _previousWorkingSets = [];
+
+  // Superset information
+  String? _supersetId;
+  int? _supersetPosition;
+  int? _supersetIndex; // Global index (A=0, B=1, etc.) for color/labeling
 
   @override
   void initState() {
@@ -167,6 +173,35 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                   OrderingTerm(expression: u.created, mode: OrderingMode.asc),
             ]))
           .get();
+
+      // Load superset information from first set (if exists)
+      if (existingSets.isNotEmpty) {
+        final firstSet = existingSets.first;
+        _supersetId = firstSet.supersetId;
+        _supersetPosition = firstSet.supersetPosition;
+
+        // If in a superset, determine the global index for this superset
+        if (_supersetId != null) {
+          final allSupersets = await (db.gymSets.selectOnly(distinct: true)
+                ..addColumns([db.gymSets.supersetId])
+                ..where(
+                  db.gymSets.workoutId.equals(widget.workoutId!) &
+                      db.gymSets.supersetId.isNotNull(),
+                )
+                ..orderBy([
+                  OrderingTerm(expression: db.gymSets.created, mode: OrderingMode.asc)
+                ]))
+              .get();
+
+          final supersetIds = allSupersets
+              .map((row) => row.read(db.gymSets.supersetId))
+              .where((id) => id != null)
+              .toSet()
+              .toList();
+
+          _supersetIndex = supersetIds.indexOf(_supersetId);
+        }
+      }
     }
 
     if (!mounted) return;
@@ -240,6 +275,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                   brandName: Value(_brandName),
                   exerciseType: Value(_exerciseType),
                   category: Value(_category),
+                  supersetId: Value(_supersetId),
+                  supersetPosition: Value(_supersetPosition),
                 ),
               );
 
@@ -539,6 +576,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               brandName: Value(_brandName),
               exerciseType: Value(_exerciseType),
               category: Value(_category),
+              supersetId: Value(_supersetId),
+              supersetPosition: Value(_supersetPosition),
             ),
           );
 
@@ -715,6 +754,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               brandName: Value(_brandName),
               exerciseType: Value(_exerciseType),
               category: Value(_category),
+              supersetId: Value(_supersetId),
+              supersetPosition: Value(_supersetPosition),
             ),
           );
 
@@ -842,11 +883,33 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     final colorScheme = Theme.of(context).colorScheme;
     final allCompleted = sets.isNotEmpty && sets.every((s) => s.completed);
 
+    // Determine superset color if in a superset
+    Color? supersetColor;
+    if (_supersetId != null && _supersetIndex != null) {
+      final colors = [
+        colorScheme.primaryContainer,
+        colorScheme.tertiaryContainer,
+        colorScheme.secondaryContainer,
+        colorScheme.errorContainer,
+      ];
+      supersetColor = colors[_supersetIndex! % colors.length];
+    }
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       clipBehavior: Clip.antiAlias,
       elevation: 2,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
+      color: supersetColor?.withValues(alpha: 0.08), // Subtle background tint for superset exercises
+      shape: supersetColor != null
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: supersetColor.withValues(alpha: 0.3),
+                width: 2,
+              ),
+            )
+          : null,
       child: Column(
         children: [
           // Exercise Header
@@ -903,6 +966,14 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                     ),
                               ),
                             ),
+                            if (_supersetId != null && _supersetPosition != null && _supersetIndex != null) ...[
+                              const SizedBox(width: 8),
+                              SupersetBadge(
+                                supersetIndex: _supersetIndex!,
+                                position: _supersetPosition!,
+                                isCompact: true,
+                              ),
+                            ],
                             if (_category != null && _category!.isNotEmpty) ...[
                               const SizedBox(width: 6),
                               BodypartTag(bodypart: _category),

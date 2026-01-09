@@ -181,6 +181,7 @@ class ImportData extends StatelessWidget {
       // Check CSV format version by examining header row
       final setsHeader = setsRows.first.map((e) => e.toString().toLowerCase()).toList();
       final hasBodyWeightColumn = setsHeader.contains('bodyweight');
+      final hasSupersetColumns = setsHeader.contains('supersetid');
 
       // Import workouts first (skip header row)
       final workoutsToInsert = workoutsRows.skip(1).map((row) {
@@ -236,6 +237,8 @@ class ImportData extends StatelessWidget {
           exerciseType: Value(_parseNullableString(row.elementAtOrNull(19 + offset))),
           brandName: Value(_parseNullableString(row.elementAtOrNull(20 + offset))),
           dropSet: Value(parseBool(row.elementAtOrNull(21 + offset))),
+          supersetId: Value(hasSupersetColumns ? _parseNullableString(row.elementAtOrNull(22 + offset)) : null),
+          supersetPosition: Value(hasSupersetColumns ? _parseNullableInt(row.elementAtOrNull(23 + offset)) : null),
         );
       });
 

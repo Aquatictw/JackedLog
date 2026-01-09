@@ -16,6 +16,7 @@ import 'package:jackedlog/timer/timer_state.dart';
 import 'package:jackedlog/widgets/bodypart_tag.dart';
 import 'package:jackedlog/widgets/five_three_one_calculator.dart';
 import 'package:jackedlog/widgets/plate_calculator.dart';
+import 'package:jackedlog/widgets/superset/superset_manager_dialog.dart';
 import 'package:jackedlog/widgets/workout/add_exercise_card.dart';
 import 'package:jackedlog/widgets/workout/exercise_picker_modal.dart';
 import 'package:jackedlog/widgets/workout/notes_section.dart';
@@ -70,6 +71,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
   final Map<String, String> _exerciseNotes =
       {}; // Track notes per exercise (key -> notes)
   late WorkoutState _workoutState; // Store reference for dispose()
+  int _refreshCounter = 0; // Counter to force ExerciseSetsCard refresh
 
   @override
   void initState() {
@@ -358,6 +360,31 @@ class _StartPlanPageState extends State<StartPlanPage> {
     // Don't dispose controller - Flutter manages the dialog lifecycle
   }
 
+  void _showSupersetManager() {
+    if (workoutId == null || _exerciseOrder.length < 2) return;
+
+    final exercises = _exerciseOrder.map((item) {
+      final name = item.isPlanExercise
+          ? _planExercisesMap[item.planExerciseId]?.exercise ?? 'Unknown'
+          : item.adHocName!;
+      return (name: name, sequence: item.sequence);
+    }).toList();
+
+    showDialog(
+      context: context,
+      builder: (context) => SupersetManagerDialog(
+        exercises: exercises,
+        workoutId: workoutId!,
+        onSupersetCreated: () {
+          // Increment refresh counter to force ExerciseSetsCard widgets to reload
+          setState(() {
+            _refreshCounter++;
+          });
+        },
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _saveNotes();
@@ -433,6 +460,11 @@ class _StartPlanPageState extends State<StartPlanPage> {
                   onPressed: () => showPlateCalculator(context),
                 ),
                 IconButton(
+                  icon: const Icon(Icons.link),
+                  tooltip: 'Create superset',
+                  onPressed: _exerciseOrder.length >= 2 ? _showSupersetManager : null,
+                ),
+                IconButton(
                   icon: const Icon(Icons.swap_vert),
                   tooltip: 'Reorder exercises',
                   onPressed: _exerciseOrder.length > 1
@@ -504,7 +536,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
           if (exercise == null) return const SizedBox.shrink();
 
           return ExerciseSetsCard(
-            key: ValueKey(item.key),
+            key: ValueKey('${item.key}_$_refreshCounter'),
             exercise: exercise,
             planId: widget.plan.id,
             workoutId: workoutId,
@@ -587,7 +619,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
           );
 
           return ExerciseSetsCard(
-            key: ValueKey(item.key),
+            key: ValueKey('${item.key}_$_refreshCounter'),
             exercise: tempExercise,
             planId: -1, // Ad-hoc exercises don't have a real plan
             workoutId: workoutId,

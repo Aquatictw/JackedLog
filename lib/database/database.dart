@@ -507,8 +507,14 @@ class AppDatabase extends _$AppDatabase {
         from55To56: (Migrator m, Schema56 schema) async {
           await m.addColumn(schema.settings, schema.settings.lastAutoBackupTime);
         },
+        from56To57: (Migrator m, schema) async {
+          // Add superset columns to gym_sets table
+          await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN superset_id TEXT');
+          await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN superset_position INTEGER');
+        },
       ),
       beforeOpen: (details) async {
+
         // Ensure bodyweight_entries table exists (safety check for migration issues)
         await customStatement('''
           CREATE TABLE IF NOT EXISTS bodyweight_entries (
@@ -530,5 +536,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 56;
+  int get schemaVersion => 57;
 }
