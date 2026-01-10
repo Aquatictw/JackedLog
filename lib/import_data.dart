@@ -182,6 +182,7 @@ class ImportData extends StatelessWidget {
       final setsHeader = setsRows.first.map((e) => e.toString().toLowerCase()).toList();
       final hasBodyWeightColumn = setsHeader.contains('bodyweight');
       final hasSupersetColumns = setsHeader.contains('supersetid');
+      final hasSetOrderColumn = setsHeader.contains('setorder');
 
       // Import workouts first (skip header row)
       final workoutsToInsert = workoutsRows.skip(1).map((row) {
@@ -233,12 +234,13 @@ class ImportData extends StatelessWidget {
           category: Value(_parseNullableString(row.elementAtOrNull(15 + offset))),
           notes: Value(_parseNullableString(row.elementAtOrNull(16 + offset))),
           sequence: Value(int.tryParse(row.elementAtOrNull(17 + offset)?.toString() ?? '0') ?? 0),
-          warmup: Value(parseBool(row.elementAtOrNull(18 + offset))),
-          exerciseType: Value(_parseNullableString(row.elementAtOrNull(19 + offset))),
-          brandName: Value(_parseNullableString(row.elementAtOrNull(20 + offset))),
-          dropSet: Value(parseBool(row.elementAtOrNull(21 + offset))),
-          supersetId: Value(hasSupersetColumns ? _parseNullableString(row.elementAtOrNull(22 + offset)) : null),
-          supersetPosition: Value(hasSupersetColumns ? _parseNullableInt(row.elementAtOrNull(23 + offset)) : null),
+          setOrder: Value(hasSetOrderColumn ? _parseNullableInt(row.elementAtOrNull(18 + offset)) : null),
+          warmup: Value(parseBool(row.elementAtOrNull(hasSetOrderColumn ? 19 + offset : 18 + offset))),
+          exerciseType: Value(_parseNullableString(row.elementAtOrNull(hasSetOrderColumn ? 20 + offset : 19 + offset))),
+          brandName: Value(_parseNullableString(row.elementAtOrNull(hasSetOrderColumn ? 21 + offset : 20 + offset))),
+          dropSet: Value(parseBool(row.elementAtOrNull(hasSetOrderColumn ? 22 + offset : 21 + offset))),
+          supersetId: Value(hasSupersetColumns ? _parseNullableString(row.elementAtOrNull(hasSetOrderColumn ? 23 + offset : 22 + offset)) : null),
+          supersetPosition: Value(hasSupersetColumns ? _parseNullableInt(row.elementAtOrNull(hasSetOrderColumn ? 24 + offset : 23 + offset)) : null),
         );
       });
 

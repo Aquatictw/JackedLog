@@ -4,6 +4,23 @@
 ## Always do manual migration, don't attempt to run any flutter commands I'll run them for you.
 ## If database version has been changed, and previous exported data from app can't be reimported, affirm me.
 
+## Core Development Philosophy
+
+### KISS (Keep It Simple, Stupid)
+
+Simplicity should be a key goal in design. Choose straightforward solutions over complex ones whenever possible. Simple solutions are easier to understand, maintain, and debug.
+
+### YAGNI (You Aren't Gonna Need It)
+
+Avoid building functionality on speculation. Implement features only when they are needed, not when you anticipate they might be useful in the future.
+
+### Design Principles
+
+- **Dependency Inversion**: High-level modules should not depend on low-level modules. Both should depend on abstractions.
+- **Open/Closed Principle**: Software entities should be open for extension but closed for modification.
+- **Single Responsibility**: Each function, class, and module should have one clear purpose.
+- **Fail Fast**: Check for potential errors early and raise exceptions immediately when issues occur.
+
 ## Project Overview
 JackedLog is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, iOS, Linux, macOS, Windows).
 
@@ -15,7 +32,7 @@ JackedLog is a Flutter/Dart fitness tracking mobile app (cross-platform: Android
 
 ## Database Architecture
 
-### Current Schema (v55)
+### Current Schema (v58)
 
 #### Tables
 
@@ -26,7 +43,7 @@ JackedLog is a Flutter/Dart fitness tracking mobile app (cross-platform: Android
    - Core: `id`, `name`, `reps`, `weight`, `unit`, `created`
    - Cardio: `cardio`, `duration`, `distance`, `incline`
    - Metadata: `restMs`, `hidden`, `planId`, `workoutId` (links to Workouts.id)
-   - Organization: `sequence` (preserves order), `image`, `category`, `notes`
+   - Organization: `sequence` (exercise position), `setOrder` (set position, nullable), `image`, `category`, `notes`
    - Training: `warmup` (bool), `dropSet` (bool), `exerciseType`, `brandName`
 
 3. **Plans** - `id`, `days`, `sequence`, `title`
@@ -48,7 +65,8 @@ JackedLog is a Flutter/Dart fitness tracking mobile app (cross-platform: Android
 ```
 Workout Session → Exercises → Sets
   workoutId links sets to workout session
-  sequence preserves exercise display order
+  sequence = exercise position (0, 1, 2...)
+  setOrder = set position within exercise (0, 1, 2...), nullable
 ```
 
 ## Key Files
@@ -164,17 +182,17 @@ import 'package:drift/drift.dart' hide Column;
 ## Common Gotchas
 
 1. **Plan class**: No `exercises` field - use separate PlanExercises table
-2. **Exercise order**: Use `sequence` column in GymSets, not creation time
+2. **Set ordering**: Order by `sequence` (exercise), then `setOrder` with COALESCE fallback: `COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))`
 3. **Active workouts**: `endTime` is NULL
 4. **Drop sets & warmup sets**: Both are boolean flags
 5. **Exercise metadata**: `category`, `exerciseType`, `brandName` stored per set - update all sets for an exercise to change globally
 6. **Popup menu context**: Capture parent context before opening bottom sheets
 7. **5/3/1 calculator**: Only appears for hardcoded exercise names
 
-## Export/Import Backward Compatibility (v54→v55)
+## Export/Import Backward Compatibility
 
-CSV format changed: removed `bodyWeight` column from gym_sets.csv
-Import code auto-detects format by checking CSV header for `bodyweight` column and adjusts column indices dynamically.
+**v57→v58**: Added `setOrder` column to gym_sets.csv. Import auto-detects by checking header for `setorder`.
+**v54→v55**: Removed `bodyWeight` column. Import auto-detects by checking header for `bodyweight`.
 
 ## Development Commands
 

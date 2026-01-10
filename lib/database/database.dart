@@ -512,6 +512,25 @@ class AppDatabase extends _$AppDatabase {
           await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN superset_id TEXT');
           await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN superset_position INTEGER');
         },
+        from57To58: (Migrator m, Schema58 schema) async {
+          // Add setOrder column - nullable, no default
+          await m.addColumn(schema.gymSets, schema.gymSets.setOrder);
+
+          // Initialize setOrder for existing sets based on created timestamp
+          // Groups by workoutId + name + sequence, orders by created, assigns setOrder
+          await m.database.customStatement('''
+            UPDATE gym_sets
+            SET set_order = (
+              SELECT COUNT(*)
+              FROM gym_sets gs2
+              WHERE gs2.workout_id = gym_sets.workout_id
+                AND gs2.name = gym_sets.name
+                AND gs2.sequence = gym_sets.sequence
+                AND gs2.created < gym_sets.created
+            )
+            WHERE workout_id IS NOT NULL
+          ''');
+        },
       ),
       beforeOpen: (details) async {
 
@@ -536,5 +555,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 57;
+  int get schemaVersion => 58;
 }
