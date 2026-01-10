@@ -204,7 +204,7 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
                     child: Text(
                       gymSet.cardio
                           ? "$distance ${gymSet.unit} / $minutes:$seconds $incline"
-                          : "$reps x $weight ${gymSet.unit}",
+                          : "$weight ${gymSet.unit} x $reps",
                       style: (isWarmup || isDropSet)
                           ? TextStyle(color: colorScheme.onSurfaceVariant)
                           : null,
