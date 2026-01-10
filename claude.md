@@ -1,8 +1,9 @@
 # JackedLog - Claude Code Context
 
-## DISCLAIMER, MUST READ FOR CLAUDE
-## Always do manual migration, don't attempt to run any flutter commands I'll run them for you.
-## If database version has been changed, and previous exported data from app can't be reimported, affirm me.
+## CRITICAL RULES - READ FIRST
+
+### Always do manual migration, don't attempt to run any flutter commands I'll run them for you.
+### If database version has been changed, and previous exported data from app can't be reimported, affirm me.
 
 ## Core Development Philosophy
 
@@ -16,10 +17,55 @@ Avoid building functionality on speculation. Implement features only when they a
 
 ### Design Principles
 
-- **Dependency Inversion**: High-level modules should not depend on low-level modules. Both should depend on abstractions.
 - **Open/Closed Principle**: Software entities should be open for extension but closed for modification.
 - **Single Responsibility**: Each function, class, and module should have one clear purpose.
 - **Fail Fast**: Check for potential errors early and raise exceptions immediately when issues occur.
+
+## Code Search & Analysis Tools
+### Primary Tool: ast-grep (sg)
+Use `sg` (ast-grep) as your **PRIMARY and FIRST** tool for:
+- ANY code search or pattern matching
+- Finding function/class definitions
+- Locating method calls or usage patterns
+- Refactoring preparation
+- Code structure analysis
+
+### Secondary Tool: grep
+Use `grep` **ONLY** when:
+- Searching plain text, comments, or documentation
+- ast-grep explicitly fails or is not applicable
+- Searching non-code files (markdown, configs, etc.)
+
+**NEVER** use grep for code pattern searches without trying sg first.
+
+## Token Efficiency
+
+### Optimize Responses By
+- **Incremental Solutions**: Break large tasks into smaller steps
+- **Focused Context**: Only include relevant code sections
+- **Avoid Repetition**: Don't restate what I've already confirmed
+- **Summarize When Asked**: Provide TL;DR for complex explanations
+
+### Ask Before
+- **Large File Changes**: "Should I show the entire file or just the diff?"
+- **Multiple Approaches**: "Would you like me to explain alternatives or just go with the best option?"
+- **Deep Dives**: "Do you need detailed explanation or just the solution?"
+
+## Prohibited Actions
+
+❌ **Never**:
+- Run Flutter commands without explicit permission
+- Modify database schema without impact analysis
+- Suggest complex solutions when simple ones exist
+- Add dependencies without discussing alternatives
+- Generate large amounts of boilerplate without asking first
+
+✅ **Always**:
+- Consider backward compatibility
+- Prefer Flutter/Dart built-ins over third-party packages when reasonable
+- Think about edge cases and error scenarios
+- Validate assumptions before implementing
+
 
 ## Project Overview
 JackedLog is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, iOS, Linux, macOS, Windows).
@@ -193,12 +239,3 @@ import 'package:drift/drift.dart' hide Column;
 
 **v57→v58**: Added `setOrder` column to gym_sets.csv. Import auto-detects by checking header for `setorder`.
 **v54→v55**: Removed `bodyWeight` column. Import auto-detects by checking header for `bodyweight`.
-
-## Development Commands
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-flutter run
-flutter build apk
-flutter build ios
-```

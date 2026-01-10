@@ -782,7 +782,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       }
       subtitle = '$distance ${set.unit} / $minutes:$seconds$incline';
     } else {
-      subtitle = '$reps x $weight ${set.unit}';
+      subtitle = '$weight ${set.unit} x $reps';
     }
 
     return ListTile(

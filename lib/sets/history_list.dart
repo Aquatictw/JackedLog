@@ -180,7 +180,7 @@ class _HistoryListState extends State<HistoryList> {
       child: leading,
     );
 
-    String trailing = "$reps x $weight ${gymSet.unit}";
+    String trailing = "$weight ${gymSet.unit} x $reps";
     if (gymSet.cardio &&
         (gymSet.unit == 'kg' || gymSet.unit == 'lb' || gymSet.unit == 'stone'))
       trailing = "$weight ${gymSet.unit} / $minutes:$seconds $incline";

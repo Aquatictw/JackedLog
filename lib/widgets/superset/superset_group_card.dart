@@ -233,7 +233,7 @@ class SupersetGroupCard extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            '${set.weight.toStringAsFixed(set.weight.truncateToDouble() == set.weight ? 0 : 1)}${set.unit} × ${set.reps.toInt()}',
+                            '${set.weight.toStringAsFixed(set.weight.truncateToDouble() == set.weight ? 0 : 1)}${set.unit} x ${set.reps.toInt()}',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,

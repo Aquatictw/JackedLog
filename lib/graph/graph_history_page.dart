@@ -98,6 +98,7 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
 
   Widget _buildWorkoutCard(WorkoutSummary workout, ColorScheme colorScheme) {
     final settings = context.watch<SettingsState>().value;
+    final unit = widget.gymSets.firstOrNull?.unit ?? 'kg';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -193,7 +194,7 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
                     _buildStatChip(
                       colorScheme,
                       Icons.repeat,
-                      'Best: ${workout.bestReps.toInt()}x${_formatWeight(workout.bestWeight)}',
+                      'Best: ${_formatWeight(workout.bestWeight)} $unit x ${workout.bestReps.toInt()}',
                     ),
                   ],
                 ),

@@ -454,7 +454,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 workoutId: records!.best1RMWorkoutId,
                 subtitle: records!.best1RMReps != null &&
                         records!.best1RMWeight != null
-                    ? '${records!.best1RMReps!.toInt()} × ${formatter.format(records!.best1RMWeight!)} $target'
+                    ? '${formatter.format(records!.best1RMWeight!)} $target x ${records!.best1RMReps!.toInt()}'
                     : null,
               ),
             ),
@@ -470,7 +470,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 workoutId: records!.bestVolumeWorkoutId,
                 subtitle: records!.bestVolumeReps != null &&
                         records!.bestVolumeWeight != null
-                    ? '${records!.bestVolumeReps!.toInt()} × ${formatter.format(records!.bestVolumeWeight!)} $target'
+                    ? '${formatter.format(records!.bestVolumeWeight!)} $target x ${records!.bestVolumeReps!.toInt()}'
                     : null,
               ),
             ),
@@ -763,13 +763,13 @@ class _StrengthPageState extends State<StrengthPage> {
       case StrengthMetric.volume:
         return '${formatter.format(row.value)} $target';
       case StrengthMetric.bestWeight:
-        return '${row.reps.toInt()}x${formatter.format(row.value)} $target';
+        return '${formatter.format(row.value)} $target x ${row.reps.toInt()}';
     }
   }
 
   String _formatSetInfo(StrengthData row) {
     final formatter = NumberFormat("#,###.##");
-    return '${row.reps.toInt()} × ${formatter.format(row.weight)} $target';
+    return '${formatter.format(row.weight)} $target x ${row.reps.toInt()}';
   }
 
   Widget _buildChart(Setting settings, ColorScheme colorScheme) {
