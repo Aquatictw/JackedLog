@@ -141,6 +141,10 @@ class ExportData extends StatelessWidget {
                     title: const Text('Database'),
                     onTap: () async {
                       Navigator.pop(context);
+
+                      // Checkpoint WAL to ensure all changes are in the main database file
+                      await db.customStatement('PRAGMA wal_checkpoint(TRUNCATE)');
+
                       final dbFolder = await getApplicationDocumentsDirectory();
                       final file =
                           File(p.join(dbFolder.path, 'jackedlog.sqlite'));

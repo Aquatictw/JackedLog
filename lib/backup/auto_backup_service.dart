@@ -78,6 +78,9 @@ class AutoBackupService {
   static Future<void> _createBackup(String backupPath) async {
     final now = DateTime.now();
 
+    // Checkpoint WAL to ensure all changes are in the main database file
+    await db.customStatement('PRAGMA wal_checkpoint(TRUNCATE)');
+
     // Get the app database file
     final dbFolder = await getApplicationDocumentsDirectory();
     final sourceFile = File(p.join(dbFolder.path, 'jackedlog.sqlite'));

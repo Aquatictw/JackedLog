@@ -87,6 +87,12 @@ class ImportData extends StatelessWidget {
     final dbFolder = await getApplicationDocumentsDirectory();
     await db.close();
 
+    // Delete WAL and SHM files to prevent corruption from old write-ahead logs
+    final walFile = File(p.join(dbFolder.path, 'jackedlog.sqlite-wal'));
+    final shmFile = File(p.join(dbFolder.path, 'jackedlog.sqlite-shm'));
+    if (await walFile.exists()) await walFile.delete();
+    if (await shmFile.exists()) await shmFile.delete();
+
     await sourceFile.copy(p.join(dbFolder.path, 'jackedlog.sqlite'));
     db = AppDatabase();
 
@@ -245,6 +251,9 @@ class ImportData extends StatelessWidget {
       });
 
       // Delete existing data and import new data
+      // Clear plans and plan exercises to avoid orphaned entries
+      await db.planExercises.deleteAll();
+      await db.plans.deleteAll();
       await db.workouts.deleteAll();
       await db.gymSets.deleteAll();
       await db.workouts.insertAll(workoutsToInsert);
