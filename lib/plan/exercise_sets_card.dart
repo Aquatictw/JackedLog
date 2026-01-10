@@ -167,10 +167,15 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                   tbl.name.equals(widget.exercise.exercise) &
                   tbl.workoutId.equals(widget.workoutId!) &
                   tbl.sequence.equals(widget.sequence),
-            ) // Filter by sequence to get only this instance
+            ) // Filter by sequence to get only this exercise instance
             ..orderBy([
-              (u) =>
-                  OrderingTerm(expression: u.created, mode: OrderingMode.asc),
+              // Order by setOrder if available, fallback to created timestamp
+              (u) => OrderingTerm(
+                expression: const CustomExpression<int>(
+                  "COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))"
+                ),
+                mode: OrderingMode.asc,
+              ),
             ]))
           .get();
 
@@ -242,6 +247,17 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       if (widget.workoutId != null) {
         final newSets = <SetData>[];
 
+        // Count existing sets for this exercise instance to calculate starting setOrder
+        final existingSetCount = await (db.gymSets.selectOnly()
+          ..addColumns([db.gymSets.id.count()])
+          ..where(
+            db.gymSets.workoutId.equals(widget.workoutId!) &
+            db.gymSets.name.equals(widget.exercise.exercise) &
+            db.gymSets.sequence.equals(widget.sequence)
+          )).getSingleOrNull();
+
+        final startingSetOrder = existingSetCount?.read(db.gymSets.id.count()) ?? 0;
+
         // Create working sets based on previous working sets
         for (int i = 0; i < maxSets; i++) {
           double weight;
@@ -271,6 +287,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                   planId: Value(widget.planId),
                   workoutId: Value(widget.workoutId),
                   sequence: Value(widget.sequence),
+                  setOrder: Value(startingSetOrder + i),  // Set position within exercise
                   hidden: const Value(true), // Uncompleted
                   brandName: Value(_brandName),
                   exerciseType: Value(_exerciseType),
@@ -559,6 +576,9 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       });
     } else {
       // Fallback: Insert new record (shouldn't happen with auto-save)
+      // Calculate setOrder based on the current index in the sets array
+      final setOrderValue = index;
+
       final gymSet = await db.into(db.gymSets).insertReturning(
             GymSetsCompanion.insert(
               name: widget.exercise.exercise,
@@ -569,6 +589,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               planId: Value(widget.planId),
               workoutId: Value(widget.workoutId),
               sequence: Value(widget.sequence),
+              setOrder: Value(setOrderValue),  // Use index as setOrder
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(false),
               warmup: Value(setData.isWarmup),
@@ -747,6 +768,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               planId: Value(widget.planId),
               workoutId: Value(widget.workoutId),
               sequence: Value(widget.sequence),
+              setOrder: Value(insertIndex),  // Set position within exercise
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(true),
               warmup: Value(isWarmup),
@@ -772,6 +794,19 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           ),
         );
       });
+
+      // Update setOrder for all sets to match their new array positions
+      for (int i = 0; i < sets.length; i++) {
+        if (sets[i].savedSetId != null) {
+          await (db.gymSets.update()
+                ..where((tbl) => tbl.id.equals(sets[i].savedSetId!)))
+              .write(
+            GymSetsCompanion(
+              setOrder: Value(i),
+            ),
+          );
+        }
+      }
     } else {
       setState(() {
         sets.insert(
@@ -862,7 +897,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       sets.insert(newIndex, item);
     });
 
-    // Update sequences in database for all sets
+    // Update setOrder (NOT sequence!) in database for all sets
     if (widget.workoutId != null) {
       for (int i = 0; i < sets.length; i++) {
         if (sets[i].savedSetId != null) {
@@ -870,7 +905,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                 ..where((tbl) => tbl.id.equals(sets[i].savedSetId!)))
               .write(
             GymSetsCompanion(
-              sequence: Value(i),
+              setOrder: Value(i),  // CHANGE: Update setOrder instead of sequence
             ),
           );
         }

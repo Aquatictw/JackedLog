@@ -42,7 +42,15 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               s.hidden.equals(false) &
               s.sequence.isBiggerOrEqualValue(0))
           ..orderBy([
-            (s) => OrderingTerm(expression: s.created, mode: OrderingMode.asc)
+            // Order by sequence first (exercise position)
+            (s) => OrderingTerm(expression: s.sequence, mode: OrderingMode.asc),
+            // Then by setOrder if available, fallback to created timestamp
+            (s) => OrderingTerm(
+              expression: const CustomExpression<int>(
+                "COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))"
+              ),
+              mode: OrderingMode.asc,
+            ),
           ]))
         .watch();
     _loadRecords();
@@ -491,7 +499,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
   Widget _buildExerciseGroup(
     String exerciseName,
-    List<GymSet> unsortedSets,
+    List<GymSet> sets,
     bool showImages,
     Map<int, Set<RecordType>> recordsMap, {
     int? supersetIndex,
@@ -499,17 +507,10 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     bool isFirstInSuperset = false,
     bool isLastInSuperset = false,
   }) {
-    // Sort sets: warmups first, then by creation time
-    final sets = List<GymSet>.from(unsortedSets)
-      ..sort((a, b) {
-        // Warmups come first
-        if (a.warmup && !b.warmup) return -1;
-        if (!a.warmup && b.warmup) return 1;
-        // Then by creation time
-        return a.created.compareTo(b.created);
-      });
+    // Sets are already ordered by the database query using setOrder
+    // No need to re-sort them here
 
-    final firstSet = unsortedSets.first; // Use original first for metadata
+    final firstSet = sets.first;
     final exerciseNotes = firstSet.notes;
     final brandName = firstSet.brandName;
     final category = firstSet.category;
