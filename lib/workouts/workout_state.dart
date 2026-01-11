@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/main.dart';
@@ -82,11 +84,14 @@ class WorkoutState extends ChangeNotifier {
     return workout;
   }
 
-  Future<void> stopWorkout() async {
+  Future<void> stopWorkout({String? selfieImagePath}) async {
     if (_activeWorkout == null) return;
 
     await (db.workouts.update()..where((w) => w.id.equals(_activeWorkout!.id)))
-        .write(WorkoutsCompanion(endTime: Value(DateTime.now().toLocal())));
+        .write(WorkoutsCompanion(
+          endTime: Value(DateTime.now().toLocal()),
+          selfieImagePath: Value(selfieImagePath),
+        ));
 
     _activeWorkout = null;
     _activePlan = null;
@@ -95,6 +100,18 @@ class WorkoutState extends ChangeNotifier {
 
   Future<void> discardWorkout() async {
     if (_activeWorkout == null) return;
+
+    // Delete selfie file if it exists
+    if (_activeWorkout!.selfieImagePath != null) {
+      try {
+        final file = File(_activeWorkout!.selfieImagePath!);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (e) {
+        // Ignore file deletion errors
+      }
+    }
 
     // Delete all gym sets associated with this workout
     await (db.gymSets.delete()

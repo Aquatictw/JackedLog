@@ -3801,9 +3801,15 @@ class $WorkoutsTable extends Workouts with TableInfo<$WorkoutsTable, Workout> {
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
       'notes', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _selfieImagePathMeta =
+      const VerificationMeta('selfieImagePath');
+  @override
+  late final GeneratedColumn<String> selfieImagePath = GeneratedColumn<String>(
+      'selfie_image_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, startTime, endTime, planId, name, notes];
+      [id, startTime, endTime, planId, name, notes, selfieImagePath];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3839,6 +3845,12 @@ class $WorkoutsTable extends Workouts with TableInfo<$WorkoutsTable, Workout> {
       context.handle(
           _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
     }
+    if (data.containsKey('selfie_image_path')) {
+      context.handle(
+          _selfieImagePathMeta,
+          selfieImagePath.isAcceptableOrUnknown(
+              data['selfie_image_path']!, _selfieImagePathMeta));
+    }
     return context;
   }
 
@@ -3860,6 +3872,8 @@ class $WorkoutsTable extends Workouts with TableInfo<$WorkoutsTable, Workout> {
           .read(DriftSqlType.string, data['${effectivePrefix}name']),
       notes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      selfieImagePath: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}selfie_image_path']),
     );
   }
 
@@ -3876,13 +3890,15 @@ class Workout extends DataClass implements Insertable<Workout> {
   final int? planId;
   final String? name;
   final String? notes;
+  final String? selfieImagePath;
   const Workout(
       {required this.id,
       required this.startTime,
       this.endTime,
       this.planId,
       this.name,
-      this.notes});
+      this.notes,
+      this.selfieImagePath});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3900,6 +3916,9 @@ class Workout extends DataClass implements Insertable<Workout> {
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    if (!nullToAbsent || selfieImagePath != null) {
+      map['selfie_image_path'] = Variable<String>(selfieImagePath);
+    }
     return map;
   }
 
@@ -3915,6 +3934,9 @@ class Workout extends DataClass implements Insertable<Workout> {
       name: name == null && nullToAbsent ? const Value.absent() : Value(name),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      selfieImagePath: selfieImagePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(selfieImagePath),
     );
   }
 
@@ -3928,6 +3950,7 @@ class Workout extends DataClass implements Insertable<Workout> {
       planId: serializer.fromJson<int?>(json['planId']),
       name: serializer.fromJson<String?>(json['name']),
       notes: serializer.fromJson<String?>(json['notes']),
+      selfieImagePath: serializer.fromJson<String?>(json['selfieImagePath']),
     );
   }
   @override
@@ -3940,6 +3963,7 @@ class Workout extends DataClass implements Insertable<Workout> {
       'planId': serializer.toJson<int?>(planId),
       'name': serializer.toJson<String?>(name),
       'notes': serializer.toJson<String?>(notes),
+      'selfieImagePath': serializer.toJson<String?>(selfieImagePath),
     };
   }
 
@@ -3949,7 +3973,8 @@ class Workout extends DataClass implements Insertable<Workout> {
           Value<DateTime?> endTime = const Value.absent(),
           Value<int?> planId = const Value.absent(),
           Value<String?> name = const Value.absent(),
-          Value<String?> notes = const Value.absent()}) =>
+          Value<String?> notes = const Value.absent(),
+          Value<String?> selfieImagePath = const Value.absent()}) =>
       Workout(
         id: id ?? this.id,
         startTime: startTime ?? this.startTime,
@@ -3957,6 +3982,9 @@ class Workout extends DataClass implements Insertable<Workout> {
         planId: planId.present ? planId.value : this.planId,
         name: name.present ? name.value : this.name,
         notes: notes.present ? notes.value : this.notes,
+        selfieImagePath: selfieImagePath.present
+            ? selfieImagePath.value
+            : this.selfieImagePath,
       );
   Workout copyWithCompanion(WorkoutsCompanion data) {
     return Workout(
@@ -3966,6 +3994,9 @@ class Workout extends DataClass implements Insertable<Workout> {
       planId: data.planId.present ? data.planId.value : this.planId,
       name: data.name.present ? data.name.value : this.name,
       notes: data.notes.present ? data.notes.value : this.notes,
+      selfieImagePath: data.selfieImagePath.present
+          ? data.selfieImagePath.value
+          : this.selfieImagePath,
     );
   }
 
@@ -3977,13 +4008,15 @@ class Workout extends DataClass implements Insertable<Workout> {
           ..write('endTime: $endTime, ')
           ..write('planId: $planId, ')
           ..write('name: $name, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('selfieImagePath: $selfieImagePath')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, startTime, endTime, planId, name, notes);
+  int get hashCode =>
+      Object.hash(id, startTime, endTime, planId, name, notes, selfieImagePath);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3993,7 +4026,8 @@ class Workout extends DataClass implements Insertable<Workout> {
           other.endTime == this.endTime &&
           other.planId == this.planId &&
           other.name == this.name &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.selfieImagePath == this.selfieImagePath);
 }
 
 class WorkoutsCompanion extends UpdateCompanion<Workout> {
@@ -4003,6 +4037,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
   final Value<int?> planId;
   final Value<String?> name;
   final Value<String?> notes;
+  final Value<String?> selfieImagePath;
   const WorkoutsCompanion({
     this.id = const Value.absent(),
     this.startTime = const Value.absent(),
@@ -4010,6 +4045,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
     this.planId = const Value.absent(),
     this.name = const Value.absent(),
     this.notes = const Value.absent(),
+    this.selfieImagePath = const Value.absent(),
   });
   WorkoutsCompanion.insert({
     this.id = const Value.absent(),
@@ -4018,6 +4054,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
     this.planId = const Value.absent(),
     this.name = const Value.absent(),
     this.notes = const Value.absent(),
+    this.selfieImagePath = const Value.absent(),
   }) : startTime = Value(startTime);
   static Insertable<Workout> custom({
     Expression<int>? id,
@@ -4026,6 +4063,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
     Expression<int>? planId,
     Expression<String>? name,
     Expression<String>? notes,
+    Expression<String>? selfieImagePath,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -4034,6 +4072,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
       if (planId != null) 'plan_id': planId,
       if (name != null) 'name': name,
       if (notes != null) 'notes': notes,
+      if (selfieImagePath != null) 'selfie_image_path': selfieImagePath,
     });
   }
 
@@ -4043,7 +4082,8 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
       Value<DateTime?>? endTime,
       Value<int?>? planId,
       Value<String?>? name,
-      Value<String?>? notes}) {
+      Value<String?>? notes,
+      Value<String?>? selfieImagePath}) {
     return WorkoutsCompanion(
       id: id ?? this.id,
       startTime: startTime ?? this.startTime,
@@ -4051,6 +4091,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
       planId: planId ?? this.planId,
       name: name ?? this.name,
       notes: notes ?? this.notes,
+      selfieImagePath: selfieImagePath ?? this.selfieImagePath,
     );
   }
 
@@ -4075,6 +4116,9 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (selfieImagePath.present) {
+      map['selfie_image_path'] = Variable<String>(selfieImagePath.value);
+    }
     return map;
   }
 
@@ -4086,7 +4130,8 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
           ..write('endTime: $endTime, ')
           ..write('planId: $planId, ')
           ..write('name: $name, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('selfieImagePath: $selfieImagePath')
           ..write(')'))
         .toString();
   }
@@ -6738,6 +6783,7 @@ typedef $$WorkoutsTableCreateCompanionBuilder = WorkoutsCompanion Function({
   Value<int?> planId,
   Value<String?> name,
   Value<String?> notes,
+  Value<String?> selfieImagePath,
 });
 typedef $$WorkoutsTableUpdateCompanionBuilder = WorkoutsCompanion Function({
   Value<int> id,
@@ -6746,6 +6792,7 @@ typedef $$WorkoutsTableUpdateCompanionBuilder = WorkoutsCompanion Function({
   Value<int?> planId,
   Value<String?> name,
   Value<String?> notes,
+  Value<String?> selfieImagePath,
 });
 
 class $$WorkoutsTableFilterComposer
@@ -6774,6 +6821,10 @@ class $$WorkoutsTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get selfieImagePath => $composableBuilder(
+      column: $table.selfieImagePath,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$WorkoutsTableOrderingComposer
@@ -6802,6 +6853,10 @@ class $$WorkoutsTableOrderingComposer
 
   ColumnOrderings<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get selfieImagePath => $composableBuilder(
+      column: $table.selfieImagePath,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$WorkoutsTableAnnotationComposer
@@ -6830,6 +6885,9 @@ class $$WorkoutsTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get selfieImagePath => $composableBuilder(
+      column: $table.selfieImagePath, builder: (column) => column);
 }
 
 class $$WorkoutsTableTableManager extends RootTableManager<
@@ -6861,6 +6919,7 @@ class $$WorkoutsTableTableManager extends RootTableManager<
             Value<int?> planId = const Value.absent(),
             Value<String?> name = const Value.absent(),
             Value<String?> notes = const Value.absent(),
+            Value<String?> selfieImagePath = const Value.absent(),
           }) =>
               WorkoutsCompanion(
             id: id,
@@ -6869,6 +6928,7 @@ class $$WorkoutsTableTableManager extends RootTableManager<
             planId: planId,
             name: name,
             notes: notes,
+            selfieImagePath: selfieImagePath,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -6877,6 +6937,7 @@ class $$WorkoutsTableTableManager extends RootTableManager<
             Value<int?> planId = const Value.absent(),
             Value<String?> name = const Value.absent(),
             Value<String?> notes = const Value.absent(),
+            Value<String?> selfieImagePath = const Value.absent(),
           }) =>
               WorkoutsCompanion.insert(
             id: id,
@@ -6885,6 +6946,7 @@ class $$WorkoutsTableTableManager extends RootTableManager<
             planId: planId,
             name: name,
             notes: notes,
+            selfieImagePath: selfieImagePath,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -531,6 +531,10 @@ class AppDatabase extends _$AppDatabase {
             WHERE workout_id IS NOT NULL
           ''');
         },
+        from58To59: (Migrator m, Schema59 schema) async {
+          // Add selfieImagePath column to workouts - nullable, no default
+          await m.addColumn(schema.workouts, schema.workouts.selfieImagePath);
+        },
       ),
       beforeOpen: (details) async {
 
@@ -555,5 +559,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 58;
+  int get schemaVersion => 59;
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/plan/start_plan_page.dart';
 import 'package:jackedlog/timer/timer_state.dart';
+import 'package:jackedlog/workouts/selfie_capture_dialog.dart';
 import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -246,10 +247,21 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                       ],
                     ),
                   );
-                  if (confirmed == true) {
+
+                  if (confirmed == true && context.mounted) {
                     final timerState = context.read<TimerState>();
                     await timerState.stopTimer();
-                    await workoutState.stopWorkout();
+
+                    // Prompt for selfie
+                    String? selfiePath;
+                    if (context.mounted) {
+                      selfiePath = await showSelfieCaptureDialog(context);
+                    }
+
+                    // Stop workout with optional selfie
+                    if (context.mounted) {
+                      await workoutState.stopWorkout(selfieImagePath: selfiePath);
+                    }
                   }
                 },
                 icon: Icon(
