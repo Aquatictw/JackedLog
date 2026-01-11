@@ -292,7 +292,8 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                                         minHeight: 36,
                                       ),
                                       tooltip: 'Remove from superset',
-                                      onPressed: () => _unlinkExercise(exercise.sequence),
+                                      onPressed: () =>
+                                          _unlinkExercise(exercise.sequence),
                                     ),
                                   // Position indicator
                                   if (isSelected)
@@ -398,7 +399,8 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Exercise removed from superset'),
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            backgroundColor:
+                Theme.of(context).colorScheme.surfaceContainerHighest,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
           ),

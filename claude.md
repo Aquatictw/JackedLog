@@ -2,7 +2,8 @@
 
 ## CRITICAL RULES - READ FIRST
 
-### Always do manual migration, don't attempt to run any flutter commands I'll run them for you.
+### DO NOT run any Flutter commands (user will test manually later)
+### Always do manual migration
 ### If database version has been changed, and previous exported data from app can't be reimported, affirm me.
 
 ## Core Development Philosophy
