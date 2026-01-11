@@ -1,5 +1,4 @@
 import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/timer/timer_progress_widgets.dart';
 import 'package:jackedlog/timer/timer_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +13,7 @@ class TimerQuickAccessDialog extends StatefulWidget {
 
 class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
   Duration _selectedDuration = const Duration(minutes: 1);
+  late final bool _wasTimerRunningOnOpen;
 
   // Preset durations
   static const List<Duration> presets = [
@@ -25,21 +25,26 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
     Duration(minutes: 10),
   ];
 
-  void _startTimer() async {
+  @override
+  void initState() {
+    super.initState();
+    _wasTimerRunningOnOpen = context.read<TimerState>().timer.getDuration() != Duration.zero;
+  }
+
+  void _startTimer() {
     final settings = context.read<SettingsState>().value;
     final timerState = context.read<TimerState>();
 
-    await timerState.startTimer(
+    // Close the dialog first, then start the timer
+    Navigator.of(context).pop();
+
+    // Start timer after dialog is closed
+    timerState.startTimer(
       'Quick Timer',
       _selectedDuration,
       settings.alarmSound,
       settings.vibrate,
     );
-
-    // Close the dialog immediately after starting timer
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
   }
 
   void _stopTimer() async {
@@ -64,6 +69,10 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final timerState = context.watch<TimerState>();
+    final isTimerRunning = timerState.timer.getDuration() != Duration.zero;
+
+    // Only show running state if timer was already running when dialog opened
+    final showRunningState = _wasTimerRunningOnOpen && isTimerRunning;
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -93,7 +102,7 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    timerState.timer.getDuration() != Duration.zero ? 'Timer Running' : 'Start Timer',
+                    showRunningState ? 'Timer Running' : 'Start Timer',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -103,7 +112,7 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
             ),
             const SizedBox(height: 24),
 
-            if (timerState.timer.getDuration() != Duration.zero) ...[
+            if (showRunningState) ...[
               // Controls
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
