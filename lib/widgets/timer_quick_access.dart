@@ -111,15 +111,6 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
             const SizedBox(height: 24),
 
             if (_isRunning) ...[
-              // Timer progress indicator
-              const SizedBox(
-                height: 250,
-                child: Center(
-                  child: TimerCircularProgressIndicator(),
-                ),
-              ),
-              const SizedBox(height: 24),
-
               // Controls
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
