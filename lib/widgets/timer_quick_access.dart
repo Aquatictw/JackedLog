@@ -45,9 +45,10 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
       settings.vibrate,
     );
 
-    setState(() {
-      _isRunning = true;
-    });
+    // Close the dialog immediately after starting timer
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   void _stopTimer() async {
