@@ -108,8 +108,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             for (final set in sortedSets) {
               if (currentExercise == null ||
                   set.name != currentExercise ||
-                  (currentMaxSeq != null && set.sequence > currentMaxSeq + 1)) {
-                // New exercise or gap detected - save previous group
+                  (currentMaxSeq != null && set.sequence != currentMaxSeq)) {
+                // New exercise or sequence change detected - save previous group
                 if (currentExercise != null && currentSets.isNotEmpty) {
                   exerciseGroups.add((
                     name: currentExercise,
@@ -124,7 +124,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 currentMinSeq = set.sequence;
                 currentMaxSeq = set.sequence;
               } else {
-                // Continue current group
+                // Continue current group - sets must have same sequence
                 currentSets.add(set);
                 currentMaxSeq = set.sequence;
               }
