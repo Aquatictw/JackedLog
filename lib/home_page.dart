@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:jackedlog/bottom_nav.dart';
+import 'package:jackedlog/widgets/segmented_pill_nav.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/graph/graphs_page.dart';
 import 'package:jackedlog/main.dart';
@@ -129,7 +129,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ValueListenableBuilder(
                     valueListenable: controller.animation!,
                     builder: (context, value, child) {
-                      return BottomNav(
+                      return SegmentedPillNav(
                         tabs: tabs,
                         currentIndex: value.round(),
                         onTap: (index) {
