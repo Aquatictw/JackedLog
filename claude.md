@@ -186,6 +186,24 @@ Loads last set for defaults (weight, reps, brandName, exerciseType, restMs) → 
 
 ## UI/UX Patterns
 
+### Navigation
+The app uses a **Segmented Pill Navigation Bar** (as of 2026-01-11):
+- Single unified pill container with sliding background indicator
+- Morphing navigation icons using Rive animations (fallback to Material icons)
+- 5 tabs: History, Plans, Graphs, Notes, Settings
+- Smooth 300ms transitions with easeInOutCubic curve
+- Long-press to hide tabs (stored in Settings.tabs)
+- Swipe gesture support (controlled by Settings.scrollableTabs)
+- Integrates with ActiveWorkoutBar and RestTimerBar overlays
+
+**Implementation:**
+- `lib/widgets/segmented_pill_nav.dart` - Main navigation widget
+- `lib/widgets/morphing_nav_icon.dart` - Rive animation wrapper
+- `assets/animations/` - Navigation icon animations (.riv files)
+- Configured in `lib/home_page.dart` with TabController
+
+**Previous Implementation:** `lib/bottom_nav.dart` (deprecated, individual pill buttons)
+
 ### Modal Dialogs Over Overlays
 Use `useRootNavigator: true` for dialogs/bottom sheets that need to appear above ActiveWorkoutBar:
 ```dart
