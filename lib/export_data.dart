@@ -4,9 +4,9 @@ import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:jackedlog/main.dart';
 import 'package:jackedlog/utils.dart';
-import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -36,7 +36,14 @@ class ExportData extends StatelessWidget {
                       // Export workouts table
                       final workouts = await db.workouts.select().get();
                       final List<List<dynamic>> workoutsData = [
-                        ['id', 'startTime', 'endTime', 'planId', 'name', 'notes']
+                        [
+                          'id',
+                          'startTime',
+                          'endTime',
+                          'planId',
+                          'name',
+                          'notes'
+                        ],
                       ];
                       for (var workout in workouts) {
                         workoutsData.add([
@@ -48,8 +55,8 @@ class ExportData extends StatelessWidget {
                           workout.notes ?? '',
                         ]);
                       }
-                      final workoutsCsv =
-                          const ListToCsvConverter(eol: "\n").convert(workoutsData);
+                      final workoutsCsv = const ListToCsvConverter(eol: "\n")
+                          .convert(workoutsData);
 
                       // Export gym sets table
                       final gymSets = await db.gymSets.select().get();
@@ -116,21 +123,25 @@ class ExportData extends StatelessWidget {
 
                       // Create ZIP archive
                       final archive = Archive();
-                      archive.addFile(ArchiveFile(
-                        'workouts.csv',
-                        workoutsCsv.length,
-                        workoutsCsv.codeUnits,
-                      ));
-                      archive.addFile(ArchiveFile(
-                        'gym_sets.csv',
-                        setsCsv.length,
-                        setsCsv.codeUnits,
-                      ));
+                      archive.addFile(
+                        ArchiveFile(
+                          'workouts.csv',
+                          workoutsCsv.length,
+                          workoutsCsv.codeUnits,
+                        ),
+                      );
+                      archive.addFile(
+                        ArchiveFile(
+                          'gym_sets.csv',
+                          setsCsv.length,
+                          setsCsv.codeUnits,
+                        ),
+                      );
 
                       final zipBytes = ZipEncoder().encode(archive);
                       await FilePicker.platform.saveFile(
                         fileName: 'jackedlog_workouts.zip',
-                        bytes: Uint8List.fromList(zipBytes!),
+                        bytes: Uint8List.fromList(zipBytes),
                         type: FileType.custom,
                         allowedExtensions: ['zip'],
                       );
@@ -143,7 +154,8 @@ class ExportData extends StatelessWidget {
                       Navigator.pop(context);
 
                       // Checkpoint WAL to ensure all changes are in the main database file
-                      await db.customStatement('PRAGMA wal_checkpoint(TRUNCATE)');
+                      await db
+                          .customStatement('PRAGMA wal_checkpoint(TRUNCATE)');
 
                       final dbFolder = await getApplicationDocumentsDirectory();
                       final file =

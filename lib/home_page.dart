@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:jackedlog/bottom_nav.dart';
+import 'package:jackedlog/widgets/segmented_pill_nav.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/graph/graphs_page.dart';
 import 'package:jackedlog/main.dart';
@@ -14,6 +15,9 @@ import 'package:jackedlog/workouts/active_workout_bar.dart';
 import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+// Feature flag to toggle between old and new navigation
+const bool _useSegmentedPill = true;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -129,14 +133,23 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ValueListenableBuilder(
                     valueListenable: controller.animation!,
                     builder: (context, value, child) {
-                      return BottomNav(
-                        tabs: tabs,
-                        currentIndex: value.round(),
-                        onTap: (index) {
-                          controller.animateTo(index);
-                        },
-                        onLongPress: hideTab,
-                      );
+                      return _useSegmentedPill
+                          ? SegmentedPillNav(
+                              tabs: tabs,
+                              currentIndex: value.round(),
+                              onTap: (index) {
+                                controller.animateTo(index);
+                              },
+                              onLongPress: hideTab,
+                            )
+                          : BottomNav(
+                              tabs: tabs,
+                              currentIndex: value.round(),
+                              onTap: (index) {
+                                controller.animateTo(index);
+                              },
+                              onLongPress: hideTab,
+                            );
                     },
                   ),
                 ],
