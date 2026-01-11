@@ -14,7 +14,6 @@ class TimerQuickAccessDialog extends StatefulWidget {
 
 class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
   Duration _selectedDuration = const Duration(minutes: 1);
-  bool _isRunning = false;
 
   // Preset durations
   static const List<Duration> presets = [
@@ -25,14 +24,6 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
     Duration(minutes: 5),
     Duration(minutes: 10),
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    // Check if timer is already running
-    final timerState = context.read<TimerState>();
-    _isRunning = timerState.timer.getDuration() != Duration.zero;
-  }
 
   void _startTimer() async {
     final settings = context.read<SettingsState>().value;
@@ -55,9 +46,10 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
     final timerState = context.read<TimerState>();
     await timerState.stopTimer();
 
-    setState(() {
-      _isRunning = false;
-    });
+    // Close dialog after stopping timer
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   String _formatDuration(Duration duration) {
@@ -101,7 +93,7 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    _isRunning ? 'Timer Running' : 'Start Timer',
+                    timerState.timer.getDuration() != Duration.zero ? 'Timer Running' : 'Start Timer',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -111,7 +103,7 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
             ),
             const SizedBox(height: 24),
 
-            if (_isRunning) ...[
+            if (timerState.timer.getDuration() != Duration.zero) ...[
               // Controls
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
