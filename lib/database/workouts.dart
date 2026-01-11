@@ -7,4 +7,5 @@ class Workouts extends Table {
   IntColumn get planId => integer().nullable()();
   TextColumn get name => text().nullable()();
   TextColumn get notes => text().nullable()();
+  TextColumn get selfieImagePath => text().nullable()();
 }

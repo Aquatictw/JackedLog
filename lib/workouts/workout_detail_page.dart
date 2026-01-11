@@ -17,6 +17,7 @@ import 'package:jackedlog/widgets/bodypart_tag.dart';
 import 'package:jackedlog/widgets/superset/superset_group_card.dart';
 import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -32,10 +33,14 @@ class WorkoutDetailPage extends StatefulWidget {
 class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   late Stream<List<GymSet>> setsStream;
   Map<int, Set<RecordType>> _recordsMap = {};
+  Workout? _currentWorkout;
+
+  Workout get currentWorkout => _currentWorkout ?? widget.workout;
 
   @override
   void initState() {
     super.initState();
+    _currentWorkout = widget.workout;
     setsStream = (db.gymSets.select()
           ..where((s) =>
               s.workoutId.equals(widget.workout.id) &
@@ -201,6 +206,18 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 actions: [
                   if (workoutEnded)
                     IconButton(
+                      icon: Icon(
+                        currentWorkout.selfieImagePath != null
+                            ? Icons.edit_outlined
+                            : Icons.add_a_photo_outlined,
+                      ),
+                      tooltip: currentWorkout.selfieImagePath != null
+                          ? 'Change Selfie'
+                          : 'Add Selfie',
+                      onPressed: () => _editSelfie(context),
+                    ),
+                  if (workoutEnded)
+                    IconButton(
                       icon: const Icon(Icons.play_arrow),
                       tooltip: 'Resume Workout',
                       onPressed: () => _resumeWorkout(context),
@@ -211,49 +228,62 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                   ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          colorScheme.primaryContainer,
-                          colorScheme.primaryContainer.withValues(alpha: 0.6),
-                          colorScheme.surface,
-                        ],
-                      ),
-                    ),
-                    child: SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  background: currentWorkout.selfieImagePath != null
+                      ? Stack(
+                          fit: StackFit.expand,
                           children: [
-                            // Date badge
-                            _buildDateBadge(),
-                            const SizedBox(height: 12),
-                            // Workout title
-                            Text(
-                              widget.workout.name ?? 'Workout',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            // Selfie image
+                            Image.file(
+                              File(currentWorkout.selfieImagePath!),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildDefaultGradientBackground(colorScheme),
                             ),
-                            const SizedBox(height: 4),
-                            // Time (24h format)
-                            Text(
-                              DateFormat('HH:mm').format(widget.workout.startTime),
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
+                            // Dark gradient overlay for text readability
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.3),
+                                    Colors.black.withValues(alpha: 0.6),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Content on top
+                            SafeArea(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildDateBadge(),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      currentWorkout.name ?? 'Workout',
+                                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      DateFormat('HH:mm').format(currentWorkout.startTime),
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            color: Colors.white.withValues(alpha: 0.9),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
-                        ),
-                      ),
-                    ),
-                  ),
+                        )
+                      : _buildDefaultGradientBackground(colorScheme),
                 ),
               ),
               // Stats section
@@ -302,17 +332,65 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
   }
 
+  Widget _buildDefaultGradientBackground(ColorScheme colorScheme) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primaryContainer,
+            colorScheme.primaryContainer.withValues(alpha: 0.6),
+            colorScheme.surface,
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDateBadge(),
+              const SizedBox(height: 12),
+              Text(
+                currentWorkout.name ?? 'Workout',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                DateFormat('HH:mm').format(currentWorkout.startTime),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDateBadge() {
     final colorScheme = Theme.of(context).colorScheme;
-    final workout = widget.workout;
+    final workout = currentWorkout;
+    final hasSelfie = workout.selfieImagePath != null;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withValues(alpha: 0.15),
+        color: hasSelfie
+            ? Colors.white.withValues(alpha: 0.2)
+            : colorScheme.primary.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.3),
+          color: hasSelfie
+              ? Colors.white.withValues(alpha: 0.4)
+              : colorScheme.primary.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -321,7 +399,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           Icon(
             Icons.calendar_today,
             size: 16,
-            color: colorScheme.primary,
+            color: hasSelfie ? Colors.white : colorScheme.primary,
           ),
           const SizedBox(width: 8),
           Text(
@@ -329,7 +407,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: colorScheme.primary,
+              color: hasSelfie ? Colors.white : colorScheme.primary,
             ),
           ),
         ],
@@ -1062,6 +1140,122 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     }
   }
 
+  Future<void> _editSelfie(BuildContext context) async {
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasSelfie = currentWorkout.selfieImagePath != null;
+
+    // Show action sheet
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.camera_alt, color: colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Workout Selfie',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: Icon(Icons.camera_alt, color: colorScheme.primary),
+              title: const Text('Take Photo'),
+              onTap: () => Navigator.pop(context, 'camera'),
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library, color: colorScheme.primary),
+              title: const Text('Choose from Gallery'),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+            if (hasSelfie)
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: colorScheme.error),
+                title: Text(
+                  'Remove Selfie',
+                  style: TextStyle(color: colorScheme.error),
+                ),
+                onTap: () => Navigator.pop(context, 'remove'),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (action == null || !context.mounted) return;
+
+    if (action == 'remove') {
+      // Remove selfie
+      await _removeSelfie();
+    } else {
+      // Capture new selfie
+      final picker = ImagePicker();
+      final source = action == 'camera'
+          ? ImageSource.camera
+          : ImageSource.gallery;
+
+      final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        preferredCameraDevice: CameraDevice.front,
+      );
+
+      if (pickedFile != null) {
+        await _updateSelfie(pickedFile.path);
+      }
+    }
+  }
+
+  Future<void> _reloadWorkout() async {
+    final workout = await (db.workouts.select()
+          ..where((w) => w.id.equals(widget.workout.id)))
+        .getSingleOrNull();
+    if (mounted && workout != null) {
+      setState(() {
+        _currentWorkout = workout;
+      });
+    }
+  }
+
+  Future<void> _updateSelfie(String imagePath) async {
+    await (db.workouts.update()
+          ..where((w) => w.id.equals(widget.workout.id)))
+        .write(WorkoutsCompanion(
+          selfieImagePath: Value(imagePath),
+        ));
+
+    await _reloadWorkout();
+  }
+
+  Future<void> _removeSelfie() async {
+    await (db.workouts.update()
+          ..where((w) => w.id.equals(widget.workout.id)))
+        .write(const WorkoutsCompanion(
+          selfieImagePath: Value(null),
+        ));
+
+    await _reloadWorkout();
+  }
+
   Future<void> _deleteWorkout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -1084,6 +1278,18 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
 
     if (confirmed == true && context.mounted) {
+      // Delete selfie file if it exists
+      if (currentWorkout.selfieImagePath != null) {
+        try {
+          final file = File(currentWorkout.selfieImagePath!);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        } catch (e) {
+          // Ignore file deletion errors
+        }
+      }
+
       // Delete all sets in this workout
       await (db.gymSets.delete()
             ..where((s) => s.workoutId.equals(widget.workout.id)))

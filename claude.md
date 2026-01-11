@@ -22,29 +22,31 @@ Avoid building functionality on speculation. Implement features only when they a
 - **Fail Fast**: Check for potential errors early and raise exceptions immediately when issues occur.
 
 ## Code Search & Analysis Tools
-### Primary Tool: ast-grep (sg)
-Use `sg` (ast-grep) as your **PRIMARY and FIRST** tool for:
+### Primary Tool: ripgrep (rg)
+Use `rg` (ripgrep) as your **PRIMARY and FIRST** tool for:
 - ANY code search or pattern matching
 - Finding function/class definitions
 - Locating method calls or usage patterns
 - Refactoring preparation
 - Code structure analysis
+- Fast, repository-wide searches using regex or literals
 
 ### Secondary Tool: grep
 Use `grep` **ONLY** when:
+- `rg` is not available
 - Searching plain text, comments, or documentation
-- ast-grep explicitly fails or is not applicable
 - Searching non-code files (markdown, configs, etc.)
+- `rg` explicitly fails or is not applicable
 
-**NEVER** use grep for code pattern searches without trying sg first.
+**NEVER** use `grep` for searches without trying `rg` first.
 
 ## Token Efficiency
 
 ### Optimize Responses By
-- **Incremental Solutions**: Break large tasks into smaller steps
 - **Focused Context**: Only include relevant code sections
 - **Avoid Repetition**: Don't restate what I've already confirmed
-- **Summarize When Asked**: Provide TL;DR for complex explanations
+- **Summarize When Asked**: Always respond in a very concise and direct manner, providing only relevant information 
+- Avoid **repeated or broad search commands** that may waste tokens
 
 ### Ask Before
 - **Large File Changes**: "Should I show the entire file or just the diff?"
