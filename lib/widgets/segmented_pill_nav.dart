@@ -30,7 +30,7 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
   void initState() {
     super.initState();
     _slideController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 250),
       vsync: this,
     );
     _slideAnimation = Tween<double>(
@@ -39,7 +39,7 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
     ).animate(
       CurvedAnimation(
         parent: _slideController,
-        curve: Curves.easeInOutCubic,
+        curve: Curves.easeOutCubic,
       ),
     );
     _previousIndex = widget.currentIndex;
@@ -142,6 +142,7 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
           ),
           padding: EdgeInsets.all(pillPadding),
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
               // Sliding background indicator
               AnimatedBuilder(
@@ -154,9 +155,10 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
 
                   return Positioned(
                     left: currentX,
+                    top: 0,
+                    bottom: 0,
                     child: Container(
                       width: tabWidth,
-                      height: 56,
                       decoration: BoxDecoration(
                         color: color.primary,
                         borderRadius: BorderRadius.circular(28),
@@ -188,7 +190,6 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
                           ? () => widget.onLongPress!(context, tab)
                           : null,
                       child: Container(
-                        height: 56,
                         decoration: BoxDecoration(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(28),
