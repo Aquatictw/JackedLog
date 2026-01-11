@@ -193,8 +193,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
           for (final set in existingSets) {
             if (currentExercise == null ||
                 set.name != currentExercise ||
-                (currentMaxSeq != null && set.sequence > currentMaxSeq + 1)) {
-              // New exercise or gap detected - save previous group
+                (currentMaxSeq != null && set.sequence != currentMaxSeq)) {
+              // New exercise or sequence change detected - save previous group
               if (currentExercise != null) {
                 exerciseGroups.add(
                   (
@@ -209,7 +209,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
               currentMinSeq = set.sequence;
               currentMaxSeq = set.sequence;
             } else {
-              // Continue current group
+              // Continue current group - sets must have same sequence
               currentMaxSeq = set.sequence;
             }
           }
@@ -564,14 +564,15 @@ class _StartPlanPageState extends State<StartPlanPage> {
             onSetCompleted: () {},
             onDeleteExercise: () async {
               final exerciseName = exercise.exercise;
-              final removedSequence = index;
+              final removedSequence = item.sequence;
 
-              // Delete all sets for this exercise from the database
+              // Delete all sets for this specific exercise instance from the database
               await (db.gymSets.delete()
                     ..where(
                       (s) =>
                           s.workoutId.equals(workoutId!) &
-                          s.name.equals(exerciseName),
+                          s.name.equals(exerciseName) &
+                          s.sequence.equals(item.sequence),
                     ))
                   .go();
 
@@ -604,6 +605,12 @@ class _StartPlanPageState extends State<StartPlanPage> {
               setState(() {
                 _exerciseOrder.removeAt(index);
                 _exerciseNotes.remove(item.key);
+
+                // Synchronize in-memory sequence values with database
+                // After decrementing sequences in DB, update in-memory items to match
+                for (int i = index; i < _exerciseOrder.length; i++) {
+                  _exerciseOrder[i].sequence = i;
+                }
               });
             },
           );
@@ -647,14 +654,15 @@ class _StartPlanPageState extends State<StartPlanPage> {
             onSetCompleted: () {}, // No special action needed for ad-hoc exercises
             onDeleteExercise: () async {
               final exerciseName = item.adHocName!;
-              final removedSequence = index;
+              final removedSequence = item.sequence;
 
-              // Delete all sets for this exercise from the database
+              // Delete all sets for this specific exercise instance from the database
               await (db.gymSets.delete()
                     ..where(
                       (s) =>
                           s.workoutId.equals(workoutId!) &
-                          s.name.equals(exerciseName),
+                          s.name.equals(exerciseName) &
+                          s.sequence.equals(item.sequence),
                     ))
                   .go();
 
@@ -686,6 +694,12 @@ class _StartPlanPageState extends State<StartPlanPage> {
               setState(() {
                 _exerciseOrder.removeAt(index);
                 _exerciseNotes.remove(item.key);
+
+                // Synchronize in-memory sequence values with database
+                // After decrementing sequences in DB, update in-memory items to match
+                for (int i = index; i < _exerciseOrder.length; i++) {
+                  _exerciseOrder[i].sequence = i;
+                }
               });
             },
           );
