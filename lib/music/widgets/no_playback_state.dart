@@ -5,13 +5,13 @@ import 'package:url_launcher/url_launcher.dart';
 /// Widget displayed when user is authenticated but no Spotify playback is active.
 /// Shows placeholder UI with disabled controls and an "Open Spotify" button.
 class NoPlaybackState extends StatefulWidget {
-  /// Callback triggered when playback state should be refreshed
-  final VoidCallback? onRefresh;
 
   const NoPlaybackState({
     super.key,
     this.onRefresh,
   });
+  /// Callback triggered when playback state should be refreshed
+  final VoidCallback? onRefresh;
 
   @override
   State<NoPlaybackState> createState() => _NoPlaybackStateState();
@@ -118,13 +118,16 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
             children: [
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
-                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                  thumbShape:
+                      const RoundSliderThumbShape(enabledThumbRadius: 6),
+                  overlayShape:
+                      const RoundSliderOverlayShape(overlayRadius: 12),
                 ),
                 child: Slider(
                   value: 0,
                   onChanged: null, // Disabled
-                  activeColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.2),
+                  activeColor:
+                      colorScheme.onSurfaceVariant.withValues(alpha: 0.2),
                   inactiveColor: colorScheme.surfaceContainerHighest,
                 ),
               ),
@@ -136,13 +139,15 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
                     Text(
                       '0:00',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                        color:
+                            colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                       ),
                     ),
                     Text(
                       '0:00',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                        color:
+                            colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                       ),
                     ),
                   ],

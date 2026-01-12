@@ -1,31 +1,27 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/custom_set_indicator.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/exercise_modal.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/sets/edit_set_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants.dart';
+import '../custom_set_indicator.dart';
+import '../database/database.dart';
+import '../main.dart';
+import '../sets/edit_set_page.dart';
+import '../settings/settings_state.dart';
+import 'exercise_modal.dart';
+import 'plan_state.dart';
+
 class StartList extends StatefulWidget {
+
+  const StartList({
+    required this.exercises, required this.selected, required this.onSelect, required this.plan, required this.onMax, super.key,
+  });
   final List<PlanExercise> exercises;
   final int selected;
   final Future<void> Function(int) onSelect;
   final Function() onMax;
   final Plan plan;
-
-  const StartList({
-    super.key,
-    required this.exercises,
-    required this.selected,
-    required this.onSelect,
-    required this.plan,
-    required this.onMax,
-  });
 
   @override
   State<StartList> createState() => _StartListState();
@@ -39,7 +35,7 @@ typedef Tapped = ({
 class _StartListState extends State<StartList> {
   Tapped lastTap = (index: 0, dateTime: DateTime(0));
 
-  void tap(int index, List<GymCount> counts) async {
+  Future<void> tap(int index, List<GymCount> counts) async {
     widget.onSelect(index);
     final count = counts.elementAtOrNull(index);
     if (count == null) return;
@@ -152,7 +148,7 @@ class _StartListState extends State<StartList> {
 
       case PlanTrailing.ratio:
         trail = Text(
-          "$count / $max",
+          '$count / $max',
           style: const TextStyle(fontSize: 16),
         );
         break;
@@ -166,7 +162,7 @@ class _StartListState extends State<StartList> {
 
       case PlanTrailing.percent:
         trail = Text(
-          "${(count / max * 100).toStringAsFixed(2)}%",
+          '${(count / max * 100).toStringAsFixed(2)}%',
           style: const TextStyle(fontSize: 16),
         );
         break;
@@ -195,28 +191,32 @@ class _StartListState extends State<StartList> {
           },
         );
       },
-      child: material.Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ListTile(
-            onTap: () => tap(index, counts),
-            trailing: trail,
-            title: Row(
-              children: [
-                Radio(
-                  value: index == widget.selected,
-                  groupValue: true,
-                  onChanged: (value) {
-                    widget.onSelect(index);
-                  },
-                ),
-                Flexible(child: Text(exercise.exercise)),
-              ],
+      child: RadioGroup<int>(
+        groupValue: widget.selected,
+        onChanged: (value) {
+          if (value != null) {
+            widget.onSelect(value);
+          }
+        },
+        child: material.Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ListTile(
+              onTap: () => tap(index, counts),
+              trailing: trail,
+              title: Row(
+                children: [
+                  Radio<int>(
+                    value: index,
+                  ),
+                  Flexible(child: Text(exercise.exercise)),
+                ],
+              ),
             ),
-          ),
-          CustomSetIndicator(count: count, max: max),
-        ],
+            CustomSetIndicator(count: count, max: max),
+          ],
+        ),
       ),
     );
   }

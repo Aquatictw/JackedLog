@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 
 class RepsButton extends StatelessWidget {
+
+  const RepsButton({
+    required this.icon, required this.accentColor, super.key,
+    this.onPressed,
+  });
   final IconData icon;
   final Color accentColor;
   final VoidCallback? onPressed;
-
-  const RepsButton({
-    super.key,
-    required this.icon,
-    required this.accentColor,
-    this.onPressed,
-  });
 
   @override
   Widget build(BuildContext context) {

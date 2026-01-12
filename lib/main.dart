@@ -1,17 +1,18 @@
 import 'package:drift/drift.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:jackedlog/backup/auto_backup_service.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/database/failed_migrations_page.dart';
-import 'package:jackedlog/home_page.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/spotify/spotify_state.dart';
-import 'package:jackedlog/timer/timer_state.dart';
-import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+import 'backup/auto_backup_service.dart';
+import 'database/database.dart';
+import 'database/failed_migrations_page.dart';
+import 'home_page.dart';
+import 'plan/plan_state.dart';
+import 'settings/settings_state.dart';
+import 'spotify/spotify_state.dart';
+import 'timer/timer_state.dart';
+import 'workouts/workout_state.dart';
 
 final rootScaffoldMessenger = GlobalKey<ScaffoldMessengerState>();
 
@@ -33,7 +34,7 @@ Future<void> main() async {
 AppDatabase db = AppDatabase();
 
 MethodChannel androidChannel =
-    const MethodChannel("com.presley.jackedlog/android");
+    const MethodChannel('com.presley.jackedlog/android');
 
 Widget appProviders(SettingsState state) => MultiProvider(
       providers: [
@@ -43,7 +44,7 @@ Widget appProviders(SettingsState state) => MultiProvider(
         ChangeNotifierProvider(create: (context) => WorkoutState()),
         ChangeNotifierProvider(create: (context) => SpotifyState()),
       ],
-      child: App(),
+      child: const App(),
     );
 
 class App extends StatefulWidget {
@@ -71,7 +72,8 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
 
     // Trigger auto-backup when app is paused or detached
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
       AutoBackupService.performAutoBackup();
     }
   }
@@ -140,7 +142,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
             ),
           ),
           themeMode: mode,
-          home: HomePage(),
+          home: const HomePage(),
         );
       },
     );

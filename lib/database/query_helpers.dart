@@ -1,7 +1,8 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/records/records_service.dart';
+
+import '../main.dart';
+import '../records/records_service.dart';
+import 'database.dart';
 
 /// Helper class for complex database queries to optimize performance
 class QueryHelpers {
@@ -33,11 +34,9 @@ class QueryHelpers {
             )
             ..orderBy([
               (u) => OrderingTerm(
-                expression: const CustomExpression<int>(
-                  "COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))"
-                ),
-                mode: OrderingMode.asc,
-              ),
+                    expression: const CustomExpression<int>(
+                        'COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))',),
+                  ),
             ]))
           .get();
 
@@ -56,7 +55,8 @@ class QueryHelpers {
                       db.gymSets.supersetId.isNotNull(),
                 )
                 ..orderBy([
-                  OrderingTerm(expression: db.gymSets.created, mode: OrderingMode.asc)
+                  OrderingTerm(
+                      expression: db.gymSets.created,),
                 ]))
               .get();
 
@@ -100,7 +100,8 @@ class QueryHelpers {
                   tbl.hidden.equals(false),
             )
             ..orderBy([
-              (u) => OrderingTerm(expression: u.created, mode: OrderingMode.asc),
+              (u) =>
+                  OrderingTerm(expression: u.created),
             ]))
           .get();
     }
@@ -128,9 +129,8 @@ class QueryHelpers {
 
     // Get all historical sets for this exercise to compare against
     final allSetsForExercise = await (db.gymSets.select()
-          ..where((tbl) =>
-              tbl.name.equals(exerciseName) &
-              tbl.hidden.equals(false))
+          ..where(
+              (tbl) => tbl.name.equals(exerciseName) & tbl.hidden.equals(false),)
           ..orderBy([
             (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
           ]))
@@ -157,9 +157,9 @@ class QueryHelpers {
         if (setVolume > 0) recordTypes.add(RecordType.bestVolume);
       } else {
         // Find best values from other sets
-        double bestWeight = 0.0;
-        double best1RM = 0.0;
-        double bestVolume = 0.0;
+        double bestWeight = 0;
+        double best1RM = 0;
+        double bestVolume = 0;
 
         for (final other in otherSets) {
           if (other.weight > bestWeight) {
@@ -207,19 +207,15 @@ class QueryHelpers {
     final allSets = await (db.gymSets.select()
           ..where((s) => s.workoutId.equals(workoutId))
           ..orderBy([
-            (s) => OrderingTerm(expression: s.sequence, mode: OrderingMode.asc),
+            (s) => OrderingTerm(expression: s.sequence),
           ]))
         .get();
 
     // Separate active sets from tombstones
-    final existingSets = allSets
-        .where((s) => s.sequence >= 0)
-        .toList();
+    final existingSets = allSets.where((s) => s.sequence >= 0).toList();
 
-    final removedExercises = allSets
-        .where((s) => s.sequence == -1)
-        .map((s) => s.name)
-        .toSet();
+    final removedExercises =
+        allSets.where((s) => s.sequence == -1).map((s) => s.name).toSet();
 
     return WorkoutResumeData(
       existingSets: existingSets,
@@ -230,11 +226,6 @@ class QueryHelpers {
 
 /// Data returned by loadExerciseData query
 class ExerciseLoadData {
-  final List<GymSet> previousSets;
-  final List<GymSet> existingSets;
-  final String? supersetId;
-  final int? supersetPosition;
-  final int? supersetIndex;
 
   ExerciseLoadData({
     required this.previousSets,
@@ -243,15 +234,20 @@ class ExerciseLoadData {
     this.supersetPosition,
     this.supersetIndex,
   });
+  final List<GymSet> previousSets;
+  final List<GymSet> existingSets;
+  final String? supersetId;
+  final int? supersetPosition;
+  final int? supersetIndex;
 }
 
 /// Data returned by loadWorkoutResumeData
 class WorkoutResumeData {
-  final List<GymSet> existingSets;
-  final Set<String> removedExercises;
 
   WorkoutResumeData({
     required this.existingSets,
     required this.removedExercises,
   });
+  final List<GymSet> existingSets;
+  final Set<String> removedExercises;
 }

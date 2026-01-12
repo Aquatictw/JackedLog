@@ -1,13 +1,6 @@
-import 'package:jackedlog/records/records_service.dart';
+import '../records/records_service.dart';
 
 class SetData {
-  double weight;
-  int reps;
-  bool completed;
-  int? savedSetId;
-  bool isWarmup;
-  bool isDropSet;
-  Set<RecordType> records;
 
   SetData({
     required this.weight,
@@ -18,4 +11,11 @@ class SetData {
     this.isDropSet = false,
     Set<RecordType>? records,
   }) : records = records ?? {};
+  double weight;
+  int reps;
+  bool completed;
+  int? savedSetId;
+  bool isWarmup;
+  bool isDropSet;
+  Set<RecordType> records;
 }

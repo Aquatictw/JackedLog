@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/widgets/superset/superset_badge.dart';
-import 'package:jackedlog/widgets/superset/superset_utils.dart';
+import '../../database/database.dart';
+import 'superset_badge.dart';
+import 'superset_utils.dart';
 
 /// A card that displays a group of exercises in a superset with visual connections
 class SupersetGroupCard extends StatelessWidget {
+
+  const SupersetGroupCard({
+    required this.exercises, required this.supersetIndex, required this.showImages, required this.onSetTap, super.key,
+  });
   final List<({String name, List<GymSet> sets})> exercises;
   final int supersetIndex; // 0-based (A=0, B=1, etc.)
   final bool showImages;
   final Function(GymSet) onSetTap;
-
-  const SupersetGroupCard({
-    super.key,
-    required this.exercises,
-    required this.supersetIndex,
-    required this.showImages,
-    required this.onSetTap,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +32,7 @@ class SupersetGroupCard extends StatelessWidget {
           width: 2,
         ),
       ),
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -58,7 +54,6 @@ class SupersetGroupCard extends StatelessWidget {
                 border: Border(
                   bottom: BorderSide(
                     color: supersetColor.withValues(alpha: 0.3),
-                    width: 1,
                   ),
                 ),
               ),
@@ -97,16 +92,18 @@ class SupersetGroupCard extends StatelessWidget {
                       children: [
                         Text(
                           'Superset ${getSupersetLabel(supersetIndex, 0)[0]}',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: textColor.withValues(alpha: 0.9),
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: textColor.withValues(alpha: 0.9),
+                                  ),
                         ),
                         Text(
                           '${exercises.length} exercises',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                         ),
                       ],
                     ),
@@ -202,9 +199,10 @@ class SupersetGroupCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           exerciseName,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                       ),
                     ],
@@ -225,11 +223,11 @@ class SupersetGroupCard extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                            color: colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: supersetColor.withValues(alpha: 0.2),
-                              width: 1,
                             ),
                           ),
                           child: Text(
@@ -256,15 +254,15 @@ class SupersetGroupCard extends StatelessWidget {
 
 /// Custom painter for the superset connector bracket
 class _SupersetConnectorPainter extends CustomPainter {
-  final Color color;
-  final bool isFirst;
-  final bool isLast;
 
   _SupersetConnectorPainter({
     required this.color,
     required this.isFirst,
     required this.isLast,
   });
+  final Color color;
+  final bool isFirst;
+  final bool isLast;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -276,7 +274,7 @@ class _SupersetConnectorPainter extends CustomPainter {
 
     final path = Path();
     final centerX = size.width / 2;
-    final radius = 8.0;
+    const radius = 8.0;
 
     if (isFirst && isLast) {
       // Single exercise - just a circle

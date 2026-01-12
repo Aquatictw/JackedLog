@@ -1,28 +1,24 @@
 import 'dart:io';
 
-import 'package:jackedlog/sets/edit_set_page.dart';
-import 'package:jackedlog/sets/history_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../settings/settings_state.dart';
+import '../utils.dart';
+import 'edit_set_page.dart';
+import 'history_page.dart';
+
 class HistoryCollapsed extends StatefulWidget {
+  const HistoryCollapsed({
+    required this.days, required this.onSelect, required this.selected, required this.onNext, required this.scroll, super.key,
+  });
   final List<HistoryDay> days;
   final ScrollController scroll;
   final Function(int) onSelect;
   final Set<int> selected;
   final Function onNext;
-  const HistoryCollapsed({
-    super.key,
-    required this.days,
-    required this.onSelect,
-    required this.selected,
-    required this.onNext,
-    required this.scroll,
-  });
 
   @override
   State<HistoryCollapsed> createState() => _HistoryCollapsedState();
@@ -91,7 +87,7 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
           ],
         ),
       ExpansionTile(
-        title: Text("${history.name} (${history.gymSets.length})"),
+        title: Text('${history.name} (${history.gymSets.length})'),
         shape: const Border.symmetric(),
         children: history.gymSets.map(
           (gymSet) {
@@ -203,8 +199,8 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
                   Expanded(
                     child: Text(
                       gymSet.cardio
-                          ? "$distance ${gymSet.unit} / $minutes:$seconds $incline"
-                          : "$weight ${gymSet.unit} x $reps",
+                          ? '$distance ${gymSet.unit} / $minutes:$seconds $incline'
+                          : '$weight ${gymSet.unit} x $reps',
                       style: (isWarmup || isDropSet)
                           ? TextStyle(color: colorScheme.onSurfaceVariant)
                           : null,

@@ -42,25 +42,22 @@ Color getSupersetTextColor(BuildContext context, int supersetIndex) {
 
 /// Data class representing a superset group
 class SupersetGroup {
-  final String supersetId;
-  final int index; // 0-based index (A=0, B=1, etc.)
-  final List<SupersetExercise> exercises;
 
   SupersetGroup({
     required this.supersetId,
     required this.index,
     required this.exercises,
   });
+  final String supersetId;
+  final int index; // 0-based index (A=0, B=1, etc.)
+  final List<SupersetExercise> exercises;
 
-  String get label => getSupersetLabel(index, 0)[0]; // Just the letter (A, B, C, etc.)
+  String get label =>
+      getSupersetLabel(index, 0)[0]; // Just the letter (A, B, C, etc.)
 }
 
 /// Data class representing an exercise within a superset
 class SupersetExercise {
-  final String exerciseName;
-  final int sequence;
-  final int position; // Position within superset (0-based)
-  final String? supersetId;
 
   SupersetExercise({
     required this.exerciseName,
@@ -68,6 +65,11 @@ class SupersetExercise {
     required this.position,
     this.supersetId,
   });
+  final String exerciseName;
+  final int sequence;
+  final int position; // Position within superset (0-based)
+  final String? supersetId;
 
-  String getLabel(int supersetIndex) => getSupersetLabel(supersetIndex, position);
+  String getLabel(int supersetIndex) =>
+      getSupersetLabel(supersetIndex, position);
 }

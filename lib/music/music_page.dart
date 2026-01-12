@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:jackedlog/spotify/spotify_state.dart';
-import 'package:jackedlog/music/widgets/auth_prompt.dart';
-import 'package:jackedlog/music/widgets/no_playback_state.dart';
-import 'package:jackedlog/music/widgets/player_controls.dart';
-import 'package:jackedlog/music/widgets/seek_bar.dart';
-import 'package:jackedlog/music/widgets/queue_bottom_sheet.dart';
-import 'package:jackedlog/music/widgets/animated_equalizer.dart';
-import 'package:jackedlog/music/widgets/recently_played_bottom_sheet.dart';
+
+import '../spotify/spotify_state.dart';
+import 'widgets/animated_equalizer.dart';
+import 'widgets/auth_prompt.dart';
+import 'widgets/no_playback_state.dart';
+import 'widgets/player_controls.dart';
+import 'widgets/queue_bottom_sheet.dart';
+import 'widgets/recently_played_bottom_sheet.dart';
+import 'widgets/seek_bar.dart';
 
 /// Main UI widget for the Music tab
 /// Provides Spotify remote control interface during workouts
@@ -77,9 +78,9 @@ class _MusicPageState extends State<MusicPage> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // Add top spacing to center content vertically
                       const SizedBox(height: 40),
@@ -119,14 +120,16 @@ class _MusicPageState extends State<MusicPage> {
                           // View Queue button
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
                               child: _buildViewQueueButton(context),
                             ),
                           ),
                           // View Recently Played button
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
                               child: _buildRecentlyPlayedButton(context),
                             ),
                           ),

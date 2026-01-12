@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:provider/provider.dart';
+
+import '../database/database.dart';
+import '../settings/settings_state.dart';
 
 /// A timeline-style tile widget for displaying individual bodyweight entries.
 ///
@@ -10,18 +11,14 @@ import 'package:provider/provider.dart';
 /// Includes a timeline visual (circle indicator with connecting line)
 /// and supports edit/delete actions via swipe-to-dismiss.
 class BodyweightEntryTile extends StatelessWidget {
+
+  const BodyweightEntryTile({
+    required this.entry, required this.isLast, required this.onEdit, required this.onDelete, super.key,
+  });
   final BodyweightEntry entry;
   final bool isLast;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-
-  const BodyweightEntryTile({
-    super.key,
-    required this.entry,
-    required this.isLast,
-    required this.onEdit,
-    required this.onDelete,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +36,7 @@ class BodyweightEntryTile extends StatelessWidget {
       ),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
-        return await showDialog<bool>(
+        return showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(

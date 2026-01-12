@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Represents a weight plate with its properties
-class WeightPlate {
-  final double weight;
-  final Color color;
-  final String colorName;
-  final double size; // Relative size for visual representation
+class WeightPlate { // Relative size for visual representation
 
   const WeightPlate({
     required this.weight,
@@ -14,6 +10,10 @@ class WeightPlate {
     required this.colorName,
     required this.size,
   });
+  final double weight;
+  final Color color;
+  final String colorName;
+  final double size;
 }
 
 /// Available weight plates in descending order (for greedy algorithm)
@@ -22,7 +22,7 @@ const List<WeightPlate> availablePlates = [
     weight: 25,
     color: Color(0xFFEF5350),
     colorName: 'Red',
-    size: 1.0,
+    size: 1,
   ),
   WeightPlate(
     weight: 20,
@@ -64,10 +64,6 @@ const List<WeightPlate> availablePlates = [
 
 /// Calculates the optimal plate loading for one side of the barbell
 class PlateLoadingResult {
-  final List<WeightPlate> plates;
-  final double actualWeight;
-  final double targetWeight;
-  final bool exactMatch;
 
   PlateLoadingResult({
     required this.plates,
@@ -75,6 +71,10 @@ class PlateLoadingResult {
     required this.targetWeight,
     required this.exactMatch,
   });
+  final List<WeightPlate> plates;
+  final double actualWeight;
+  final double targetWeight;
+  final bool exactMatch;
 
   /// Total weight including both sides and bar
   double totalWeight(double barWeight) => actualWeight * 2 + barWeight;
@@ -86,7 +86,7 @@ PlateLoadingResult calculatePlateLoading(
   double barWeight,
 ) {
   // Weight needed per side
-  double weightPerSide = (targetWeight - barWeight) / 2;
+  final double weightPerSide = (targetWeight - barWeight) / 2;
 
   // Handle impossible cases
   if (weightPerSide < 0) {
@@ -98,7 +98,7 @@ PlateLoadingResult calculatePlateLoading(
     );
   }
 
-  List<WeightPlate> result = [];
+  final List<WeightPlate> result = [];
   double remaining = weightPerSide;
 
   // Greedy algorithm - use largest plates first
@@ -199,12 +199,12 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                 ],
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Target Weight (kg)',
                   hintText: '100',
-                  border: const OutlineInputBorder(),
+                  border: OutlineInputBorder(),
                   suffixText: 'kg',
-                  prefixIcon: const Icon(Icons.fitness_center),
+                  prefixIcon: Icon(Icons.fitness_center),
                 ),
                 onChanged: (_) => _calculate(),
               ),
@@ -305,7 +305,6 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: colorScheme.primary.withValues(alpha: 0.3),
-          width: 1,
         ),
       ),
       child: Column(
@@ -466,7 +465,6 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: colorScheme.outline.withValues(alpha: 0.3),
-                      width: 1,
                     ),
                   ),
                 ),
@@ -505,13 +503,13 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
 
 /// Custom painter for the plate visualization
 class _PlatePainter extends CustomPainter {
-  final List<WeightPlate> plates;
-  final ColorScheme colorScheme;
 
   _PlatePainter({
     required this.plates,
     required this.colorScheme,
   });
+  final List<WeightPlate> plates;
+  final ColorScheme colorScheme;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -522,11 +520,11 @@ class _PlatePainter extends CustomPainter {
 
     // Calculate plate widths based on weight
     double getPlateWidth(double weight) {
-      if (weight >= 20) return 30.0;
-      if (weight >= 10) return 26.0;
-      if (weight >= 5) return 20.0;
-      if (weight >= 2.5) return 14.0;
-      return 10.0; // 1.25kg - even smaller
+      if (weight >= 20) return 30;
+      if (weight >= 10) return 26;
+      if (weight >= 5) return 20;
+      if (weight >= 2.5) return 14;
+      return 10; // 1.25kg - even smaller
     }
 
     // Calculate plate heights - bigger weights all same height
@@ -657,9 +655,9 @@ class _PlatePainter extends CustomPainter {
   // Helper to get contrasting text color
   Color _getContrastColor(Color background) {
     // Calculate luminance
-    final luminance = (0.299 * background.red +
-            0.587 * background.green +
-            0.114 * background.blue) /
+    final luminance = (0.299 * (background.r * 255.0).round().clamp(0, 255) +
+            0.587 * (background.g * 255.0).round().clamp(0, 255) +
+            0.114 * (background.b * 255.0).round().clamp(0, 255)) /
         255;
     return luminance > 0.5 ? Colors.black87 : Colors.white;
   }

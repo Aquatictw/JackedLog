@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:jackedlog/widgets/bodypart_tag.dart';
+import '../bodypart_tag.dart';
 
 class ExerciseHeader extends StatelessWidget {
+
+  const ExerciseHeader({
+    required this.exerciseName, required this.isExpanded, required this.allCompleted, required this.completedCount, required this.totalSets, required this.unit, required this.onTap, super.key,
+    this.category,
+    this.brandName,
+    this.exerciseNotes,
+    this.totalVolume,
+    this.onLongPress,
+  });
   final String exerciseName;
   final String? category;
   final String? brandName;
@@ -14,22 +23,6 @@ class ExerciseHeader extends StatelessWidget {
   final String? totalVolume;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
-
-  const ExerciseHeader({
-    super.key,
-    required this.exerciseName,
-    this.category,
-    this.brandName,
-    this.exerciseNotes,
-    required this.isExpanded,
-    required this.allCompleted,
-    required this.completedCount,
-    required this.totalSets,
-    required this.unit,
-    this.totalVolume,
-    required this.onTap,
-    this.onLongPress,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -64,9 +57,8 @@ class ExerciseHeader extends StatelessWidget {
               ),
               child: Icon(
                 allCompleted ? Icons.check : Icons.fitness_center,
-                color: allCompleted
-                    ? colorScheme.onPrimary
-                    : colorScheme.primary,
+                color:
+                    allCompleted ? colorScheme.onPrimary : colorScheme.primary,
                 size: 20,
               ),
             ),
@@ -80,12 +72,10 @@ class ExerciseHeader extends StatelessWidget {
                       Flexible(
                         child: Text(
                           exerciseName,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                       ),
                       if (category != null && category!.isNotEmpty) ...[
@@ -117,7 +107,7 @@ class ExerciseHeader extends StatelessWidget {
                     ],
                   ),
                   // Exercise notes preview
-                  if (exerciseNotes?.isNotEmpty == true) ...[
+                  if (exerciseNotes?.isNotEmpty ?? false) ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -130,13 +120,11 @@ class ExerciseHeader extends StatelessWidget {
                         Expanded(
                           child: Text(
                             exerciseNotes!,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                  color: colorScheme.tertiary,
-                                  fontStyle: FontStyle.italic,
-                                ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.tertiary,
+                                      fontStyle: FontStyle.italic,
+                                    ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),

@@ -1,21 +1,20 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../database/database.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+import '../utils.dart';
+
 class ExerciseTile extends StatefulWidget {
-  final PlanExercisesCompanion planExercise;
-  final Function(PlanExercisesCompanion) onChange;
 
   const ExerciseTile({
-    super.key,
-    required this.onChange,
-    required this.planExercise,
+    required this.onChange, required this.planExercise, super.key,
   });
+  final PlanExercisesCompanion planExercise;
+  final Function(PlanExercisesCompanion) onChange;
 
   @override
   State<ExerciseTile> createState() => _ExerciseTileState();
@@ -49,9 +48,7 @@ class _ExerciseTileState extends State<ExerciseTile> {
           showDialog(
             context: context,
             builder: (context) {
-              bool timers = widget.planExercise.timers.present
-                  ? widget.planExercise.timers.value
-                  : true;
+              bool timers = !widget.planExercise.timers.present || widget.planExercise.timers.value;
 
               return AlertDialog.adaptive(
                 title: Text(widget.planExercise.exercise.value),
@@ -63,9 +60,7 @@ class _ExerciseTileState extends State<ExerciseTile> {
                             settings.value.warmupSets,
                         builder: (context, value, child) => TextField(
                           controller: warmup,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: false,
-                          ),
+                          keyboardType: TextInputType.number,
                           onTap: () => selectAll(warmup),
                           onChanged: (value) {
                             final pe = widget.planExercise.copyWith(
@@ -75,7 +70,7 @@ class _ExerciseTileState extends State<ExerciseTile> {
                             widget.onChange(pe);
                           },
                           decoration: InputDecoration(
-                            labelText: "Warmup sets",
+                            labelText: 'Warmup sets',
                             border: const OutlineInputBorder(),
                             hintText: (value ?? 0).toString(),
                           ),
@@ -86,9 +81,7 @@ class _ExerciseTileState extends State<ExerciseTile> {
                         selector: (context, settings) => settings.value.maxSets,
                         builder: (context, value, child) => TextField(
                           controller: max,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: false,
-                          ),
+                          keyboardType: TextInputType.number,
                           onTap: () => selectAll(max),
                           onChanged: (value) {
                             if (int.parse(max.text) > 0 &&
@@ -101,7 +94,7 @@ class _ExerciseTileState extends State<ExerciseTile> {
                             }
                           },
                           decoration: InputDecoration(
-                            labelText: "Working sets (max: 20)",
+                            labelText: 'Working sets (max: 20)',
                             border: const OutlineInputBorder(),
                             hintText: value.toString(),
                           ),
@@ -133,7 +126,7 @@ class _ExerciseTileState extends State<ExerciseTile> {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    label: const Text("OK"),
+                    label: const Text('OK'),
                     icon: const Icon(Icons.check),
                   ),
                 ],
@@ -155,9 +148,13 @@ class _ExerciseTileState extends State<ExerciseTile> {
               if (brandName != null && brandName.isNotEmpty) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .secondaryContainer
+                        .withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(

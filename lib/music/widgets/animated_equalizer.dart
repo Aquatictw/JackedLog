@@ -4,16 +4,15 @@ import 'package:flutter/material.dart';
 /// Animated equalizer bars that pulse to indicate playback
 /// Shows 4 bars with random heights animating up and down
 class AnimatedEqualizer extends StatefulWidget {
-  final Color color;
-  final double size;
-  final bool isPlaying;
 
   const AnimatedEqualizer({
-    super.key,
-    required this.color,
+    required this.color, super.key,
     this.size = 16.0,
     this.isPlaying = true,
   });
+  final Color color;
+  final double size;
+  final bool isPlaying;
 
   @override
   State<AnimatedEqualizer> createState() => _AnimatedEqualizerState();
@@ -40,7 +39,7 @@ class _AnimatedEqualizerState extends State<AnimatedEqualizer>
     });
 
     _animations = _controllers.map((controller) {
-      return Tween<double>(begin: 0.3, end: 1.0).animate(
+      return Tween<double>(begin: 0.3, end: 1).animate(
         CurvedAnimation(parent: controller, curve: Curves.easeInOut),
       );
     }).toList();
@@ -60,11 +59,11 @@ class _AnimatedEqualizerState extends State<AnimatedEqualizer>
     super.didUpdateWidget(oldWidget);
     if (widget.isPlaying != oldWidget.isPlaying) {
       if (widget.isPlaying) {
-        for (var controller in _controllers) {
+        for (final controller in _controllers) {
           controller.repeat(reverse: true);
         }
       } else {
-        for (var controller in _controllers) {
+        for (final controller in _controllers) {
           controller.stop();
           controller.value = 0.3;
         }
@@ -74,7 +73,7 @@ class _AnimatedEqualizerState extends State<AnimatedEqualizer>
 
   @override
   void dispose() {
-    for (var controller in _controllers) {
+    for (final controller in _controllers) {
       controller.dispose();
     }
     super.dispose();

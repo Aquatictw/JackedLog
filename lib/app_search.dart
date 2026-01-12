@@ -1,8 +1,17 @@
-import 'package:jackedlog/settings/settings_page.dart';
-import 'package:jackedlog/widgets/timer_quick_access.dart';
 import 'package:flutter/material.dart';
 
+import 'settings/settings_page.dart';
+import 'widgets/timer_quick_access.dart';
+
 class AppSearch extends StatefulWidget {
+
+  const AppSearch({
+    required this.selected, required this.onChange, required this.onClear, required this.onEdit, required this.onDelete, required this.onSelect, required this.onShare, super.key,
+    this.onRefresh,
+    this.onAdd,
+    this.filter,
+    this.confirmText,
+  });
   final Set<dynamic> selected;
 
   final Function(String) onChange;
@@ -15,21 +24,6 @@ class AppSearch extends StatefulWidget {
   final Function? onAdd;
   final Widget? filter;
   final String? confirmText;
-
-  const AppSearch({
-    super.key,
-    required this.selected,
-    required this.onChange,
-    required this.onClear,
-    required this.onEdit,
-    required this.onDelete,
-    required this.onSelect,
-    required this.onShare,
-    this.onRefresh,
-    this.onAdd,
-    this.filter,
-    this.confirmText,
-  });
 
   @override
   State<AppSearch> createState() => _AppSearchState();
@@ -46,7 +40,7 @@ class _AppSearchState extends State<AppSearch> {
       trailingMain = IconButton(
         key: const ValueKey('deleteButton'),
         icon: const Icon(Icons.delete),
-        tooltip: "Delete selected",
+        tooltip: 'Delete selected',
         onPressed: () {
           showDialog(
             context: context,
@@ -92,10 +86,10 @@ class _AppSearchState extends State<AppSearch> {
       padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
       child: SearchBar(
         constraints: const BoxConstraints(maxHeight: 48),
-        hintText: "Search...",
+        hintText: 'Search...',
         controller: ctrl,
         padding: WidgetStateProperty.all(
-          const EdgeInsets.only(right: 8.0),
+          const EdgeInsets.only(right: 8),
         ),
         textCapitalization: TextCapitalization.sentences,
         onChanged: widget.onChange,
@@ -105,7 +99,7 @@ class _AppSearchState extends State<AppSearch> {
               ScaleTransition(scale: animation, child: child),
           child: widget.selected.isEmpty && ctrl.text.isEmpty == true
               ? const Padding(
-                  padding: EdgeInsets.only(left: 16.0, right: 8.0),
+                  padding: EdgeInsets.only(left: 16, right: 8),
                   child: Icon(Icons.search),
                 )
               : IconButton(
@@ -116,8 +110,8 @@ class _AppSearchState extends State<AppSearch> {
                   },
                   icon: const Icon(Icons.arrow_back),
                   padding: const EdgeInsets.only(
-                    left: 16.0,
-                    right: 8.0,
+                    left: 16,
+                    right: 8,
                   ),
                 ),
         ),
@@ -134,7 +128,7 @@ class _AppSearchState extends State<AppSearch> {
             backgroundColor: Theme.of(context).colorScheme.primary,
             child: IconButton(
               icon: const Icon(Icons.more_vert),
-              tooltip: "Show menu",
+              tooltip: 'Show menu',
               onPressed: () async {
                 final RenderBox button =
                     context.findRenderObject() as RenderBox;

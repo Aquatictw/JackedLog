@@ -2,16 +2,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/native_timer_wrapper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../main.dart';
+import '../native_timer_wrapper.dart';
+
 class TimerState extends ChangeNotifier {
-  NativeTimerWrapper timer = NativeTimerWrapper.emptyTimer();
-  Timer? next;
-  AudioPlayer? player;
-  bool starting = false;
 
   TimerState() {
     if (!kIsWeb) {
@@ -36,6 +33,10 @@ class TimerState extends ChangeNotifier {
       }
     });
   }
+  NativeTimerWrapper timer = NativeTimerWrapper.empty();
+  Timer? next;
+  AudioPlayer? player;
+  bool starting = false;
 
   void setStarting(bool value) {
     starting = value;
@@ -141,7 +142,7 @@ class TimerState extends ChangeNotifier {
   Future<void> notify(String? title, String? alarmSound) async {
     if (player != null) {
       player!.play(
-        alarmSound?.isNotEmpty == true
+        alarmSound?.isNotEmpty ?? false
             ? DeviceFileSource(alarmSound!)
             : AssetSource('argon.mp3'),
       );
@@ -164,11 +165,11 @@ class TimerState extends ChangeNotifier {
     );
     final plugin = FlutterLocalNotificationsPlugin();
     await plugin.initialize(init);
-    await plugin.show(1, title ?? "Timer up", null, null);
+    await plugin.show(1, title ?? 'Timer up', null, null);
   }
 
   Future<void> stopTimer() async {
-    updateTimer(NativeTimerWrapper.emptyTimer());
+    updateTimer(NativeTimerWrapper.empty());
     if (kIsWeb || !Platform.isAndroid) {
       player?.stop();
       next?.cancel();

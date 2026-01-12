@@ -1,7 +1,8 @@
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/timer/timer_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../settings/settings_state.dart';
+import '../timer/timer_state.dart';
 
 /// Quick access timer dialog that can be opened from anywhere
 class TimerQuickAccessDialog extends StatefulWidget {
@@ -28,7 +29,8 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
   @override
   void initState() {
     super.initState();
-    _wasTimerRunningOnOpen = context.read<TimerState>().timer.getDuration() != Duration.zero;
+    _wasTimerRunningOnOpen =
+        context.read<TimerState>().timer.getDuration() != Duration.zero;
   }
 
   void _startTimer() {
@@ -47,7 +49,7 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
     );
   }
 
-  void _stopTimer() async {
+  Future<void> _stopTimer() async {
     final timerState = context.read<TimerState>();
     await timerState.stopTimer();
 
@@ -120,7 +122,8 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
                   IconButton.filled(
                     onPressed: () {
                       final settings = context.read<SettingsState>().value;
-                      timerState.subtractSeconds(30, settings.alarmSound, settings.vibrate);
+                      timerState.subtractSeconds(
+                          30, settings.alarmSound, settings.vibrate,);
                     },
                     icon: const Icon(Icons.remove),
                     tooltip: '-30s',
@@ -128,7 +131,8 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
                   FilledButton.tonal(
                     onPressed: () {
                       final settings = context.read<SettingsState>().value;
-                      timerState.addOneMinute(settings.alarmSound, settings.vibrate);
+                      timerState.addOneMinute(
+                          settings.alarmSound, settings.vibrate,);
                     },
                     child: const Text('+1 min'),
                   ),
@@ -168,13 +172,13 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
 
               // Start button
               FilledButton.icon(
-                onPressed: () {
-                  _startTimer();
-                },
+                onPressed: _startTimer,
                 icon: const Icon(Icons.play_arrow),
-                label: Text('Start ${_formatDuration(_selectedDuration)} Timer'),
+                label:
+                    Text('Start ${_formatDuration(_selectedDuration)} Timer'),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
               ),
             ],

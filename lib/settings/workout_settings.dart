@@ -1,10 +1,11 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../database/database.dart';
+import '../main.dart';
+import '../utils.dart';
+import 'settings_state.dart';
 
 List<Widget> getWorkoutSettings(
   BuildContext context,
@@ -160,7 +161,7 @@ class WorkoutSettings extends StatefulWidget {
 }
 
 class _WorkoutSettingsState extends State<WorkoutSettings> {
-  late var settings = context.read<SettingsState>().value;
+  late Setting settings = context.read<SettingsState>().value;
 
   late final max = TextEditingController(text: settings.maxSets.toString());
   late final warmup =
@@ -173,7 +174,7 @@ class _WorkoutSettingsState extends State<WorkoutSettings> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text("Workouts"),
+        title: const Text('Workouts'),
       ),
       body: ListView(
         children: getWorkoutSettings(context, '', settings),

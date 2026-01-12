@@ -3,13 +3,14 @@ import 'dart:io';
 import 'package:drift/drift.dart' hide Column;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:jackedlog/backup/auto_backup_service.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
+
+import '../database/database.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+import '../utils.dart';
+import 'auto_backup_service.dart';
 
 class AutoBackupSettings extends StatefulWidget {
   const AutoBackupSettings({super.key});
@@ -27,30 +28,29 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
-      margin: const EdgeInsets.all(16.0),
+      margin: const EdgeInsets.all(16),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
           color: colorScheme.outlineVariant,
-          width: 1,
         ),
       ),
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              colorScheme.primaryContainer.withOpacity(0.3),
-              colorScheme.secondaryContainer.withOpacity(0.2),
-              colorScheme.tertiaryContainer.withOpacity(0.1),
+              colorScheme.primaryContainer.withValues(alpha: 0.3),
+              colorScheme.secondaryContainer.withValues(alpha: 0.2),
+              colorScheme.tertiaryContainer.withValues(alpha: 0.1),
             ],
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -60,7 +60,7 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.1),
+                      color: colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -76,7 +76,10 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                       children: [
                         Text(
                           'Automatic Backups',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: colorScheme.onSurface,
                               ),
@@ -84,9 +87,10 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                         const SizedBox(height: 4),
                         Text(
                           'Keep your workout data safe',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                         ),
                       ],
                     ),
@@ -97,13 +101,12 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
               const SizedBox(height: 24),
 
               // Enable toggle
-              Container(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: colorScheme.outlineVariant,
-                    width: 1,
                   ),
                 ),
                 child: SwitchListTile(
@@ -124,10 +127,10 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                   value: settings.value.automaticBackups,
                   onChanged: (value) async {
                     await db.settings.update().write(
-                      SettingsCompanion(
-                        automaticBackups: Value(value),
-                      ),
-                    );
+                          SettingsCompanion(
+                            automaticBackups: Value(value),
+                          ),
+                        );
                     await settings.init();
                   },
                   shape: RoundedRectangleBorder(
@@ -140,13 +143,12 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                 const SizedBox(height: 16),
 
                 // Backup location
-                Container(
+                DecoratedBox(
                   decoration: BoxDecoration(
                     color: colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: colorScheme.outlineVariant,
-                      width: 1,
                     ),
                   ),
                   child: ListTile(
@@ -162,11 +164,11 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                       ),
                     ),
                     subtitle: Text(
-                      settings.value.backupPath?.isNotEmpty == true
+                      settings.value.backupPath?.isNotEmpty ?? false
                           ? settings.value.backupPath!
                           : 'No folder selected',
                       style: TextStyle(
-                        color: settings.value.backupPath?.isNotEmpty == true
+                        color: settings.value.backupPath?.isNotEmpty ?? false
                             ? colorScheme.onSurfaceVariant
                             : colorScheme.error,
                         fontSize: 13,
@@ -192,11 +194,11 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      color:
+                          colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: colorScheme.outlineVariant,
-                        width: 1,
                       ),
                     ),
                     child: Row(
@@ -213,15 +215,22 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                             children: [
                               Text(
                                 'Last Backup',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                       fontWeight: FontWeight.w500,
                                     ),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                timeago.format(settings.value.lastAutoBackupTime!),
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                timeago
+                                    .format(settings.value.lastAutoBackupTime!),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
                                       color: colorScheme.onSurface,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -238,7 +247,7 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                 // Manual backup button
                 FilledButton.icon(
                   onPressed: _isBackingUp ||
-                          settings.value.backupPath?.isEmpty != false
+                          (settings.value.backupPath?.isEmpty ?? true)
                       ? null
                       : _performManualBackup,
                   icon: _isBackingUp
@@ -266,11 +275,10 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: colorScheme.outlineVariant.withOpacity(0.5),
-                      width: 1,
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                     ),
                   ),
                   child: Column(
@@ -286,7 +294,10 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                           const SizedBox(width: 8),
                           Text(
                             'Retention Policy',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: colorScheme.onSurface,
                                 ),
@@ -368,7 +379,7 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
 
   Future<void> _selectBackupFolder() async {
     try {
-      String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      final String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
 
       if (selectedDirectory != null) {
         // Verify directory is writable
@@ -381,10 +392,10 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
         }
 
         await db.settings.update().write(
-          SettingsCompanion(
-            backupPath: Value(selectedDirectory),
-          ),
-        );
+              SettingsCompanion(
+                backupPath: Value(selectedDirectory),
+              ),
+            );
 
         if (mounted) {
           final settings = context.read<SettingsState>();

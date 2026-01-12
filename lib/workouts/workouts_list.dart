@@ -1,18 +1,13 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/records/records_service.dart';
-import 'package:jackedlog/workouts/workout_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../database/database.dart';
+import '../main.dart';
+import '../records/records_service.dart';
+import 'workout_detail_page.dart';
+
 class WorkoutWithSets {
-  final Workout workout;
-  final int setCount;
-  final int exerciseCount;
-  final List<String> exerciseNames;
-  final double totalVolume;
-  final int recordCount;
 
   WorkoutWithSets({
     required this.workout,
@@ -22,9 +17,21 @@ class WorkoutWithSets {
     this.totalVolume = 0,
     this.recordCount = 0,
   });
+  final Workout workout;
+  final int setCount;
+  final int exerciseCount;
+  final List<String> exerciseNames;
+  final double totalVolume;
+  final int recordCount;
 }
 
 class WorkoutsList extends StatefulWidget {
+
+  const WorkoutsList({
+    required this.scroll, required this.onNext, required this.search, required this.limit, required this.selected, required this.onSelect, super.key,
+    this.startDate,
+    this.endDate,
+  });
   final ScrollController scroll;
   final Function onNext;
   final String search;
@@ -33,18 +40,6 @@ class WorkoutsList extends StatefulWidget {
   final int limit;
   final Set<int> selected;
   final Function(int) onSelect;
-
-  const WorkoutsList({
-    super.key,
-    required this.scroll,
-    required this.onNext,
-    required this.search,
-    this.startDate,
-    this.endDate,
-    required this.limit,
-    required this.selected,
-    required this.onSelect,
-  });
 
   @override
   State<WorkoutsList> createState() => _WorkoutsListState();
@@ -201,15 +196,15 @@ class _WorkoutsListState extends State<WorkoutsList> {
 }
 
 class _WorkoutCard extends StatelessWidget {
-  final WorkoutWithSets workoutWithSets;
-  final Set<int> selected;
-  final Function(int) onSelect;
 
   const _WorkoutCard({
     required this.workoutWithSets,
     required this.selected,
     required this.onSelect,
   });
+  final WorkoutWithSets workoutWithSets;
+  final Set<int> selected;
+  final Function(int) onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -221,22 +216,19 @@ class _WorkoutCard extends StatelessWidget {
 
     final exercisePreview = workoutWithSets.exerciseNames.take(3).join(', ');
     final moreCount = workoutWithSets.exerciseNames.length - 3;
-    final hasNotes = workout.notes?.isNotEmpty == true;
+    final hasNotes = workout.notes?.isNotEmpty ?? false;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       elevation: 1,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.2),
-      color: isSelected
-          ? colorScheme.primary.withValues(alpha: .08)
-          : null,
+      color: isSelected ? colorScheme.primary.withValues(alpha: .08) : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: isSelected
               ? colorScheme.primary.withValues(alpha: 0.3)
               : colorScheme.outlineVariant.withValues(alpha: 0.1),
-          width: 1,
         ),
       ),
       child: InkWell(
@@ -286,37 +278,37 @@ class _WorkoutCard extends StatelessWidget {
                   else
                     // Date badge
                     Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          DateFormat('d').format(workout.startTime),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onPrimaryContainer,
-                            height: 1,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            DateFormat('d').format(workout.startTime),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onPrimaryContainer,
+                              height: 1,
+                            ),
                           ),
-                        ),
-                        Text(
-                          DateFormat('MMM').format(workout.startTime),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.onPrimaryContainer
-                                .withValues(alpha: 0.8),
+                          Text(
+                            DateFormat('MMM').format(workout.startTime),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onPrimaryContainer
+                                  .withValues(alpha: 0.8),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
                   if (selected.isEmpty) const SizedBox(width: 12),
                   if (selected.isNotEmpty) const SizedBox(width: 16),
                   // Title and year
@@ -329,10 +321,12 @@ class _WorkoutCard extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 workout.name ?? 'Workout',
-                                style:
-                                    Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
                             ),
                             if (workoutWithSets.recordCount > 0) ...[

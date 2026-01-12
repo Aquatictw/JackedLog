@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:jackedlog/spotify/spotify_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:provider/provider.dart';
+
+import '../../spotify/spotify_state.dart';
+import '../../utils.dart';
 
 /// Auth prompt widget for first-time Spotify connection
 /// Displays centered card with Spotify logo, explanation, and connect button
@@ -47,12 +48,13 @@ class _AuthPromptState extends State<AuthPrompt> {
 
       if (errorStr.contains('not installed') ||
           errorStr.contains('spotify app')) {
-        errorMessage = 'Spotify app not installed. Please install it from the Play Store.';
+        errorMessage =
+            'Spotify app not installed. Please install it from the Play Store.';
       } else if (errorStr.contains('timeout') ||
-                 errorStr.contains('timed out')) {
+          errorStr.contains('timed out')) {
         errorMessage = 'Connection timed out. Please try again.';
       } else if (errorStr.contains('network') ||
-                 errorStr.contains('internet')) {
+          errorStr.contains('internet')) {
         errorMessage = 'Check your internet connection and try again.';
       } else if (errorStr.contains('premium')) {
         errorMessage = 'Spotify Premium required for remote control.';
@@ -83,7 +85,6 @@ class _AuthPromptState extends State<AuthPrompt> {
             borderRadius: BorderRadius.circular(24),
             side: BorderSide(
               color: colorScheme.outlineVariant,
-              width: 1,
             ),
           ),
           child: Padding(
@@ -171,7 +172,7 @@ class _AuthPromptState extends State<AuthPrompt> {
 
                 // Info text
                 Text(
-                  'You\'ll be redirected to authorize JackedLog',
+                  "You'll be redirected to authorize JackedLog",
                   style: textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                   ),

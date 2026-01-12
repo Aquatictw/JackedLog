@@ -1,16 +1,17 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
 import 'package:flutter/material.dart';
 
+import '../database/database.dart';
+import '../main.dart';
+
 class PlanCount {
+
+  PlanCount({required this.planId, required this.total, required this.maxSets});
   final int planId;
   final int total;
   final int maxSets;
-
-  PlanCount({required this.planId, required this.total, required this.maxSets});
 }
 
 typedef GymCount = ({
@@ -23,17 +24,17 @@ typedef GymCount = ({
 });
 
 class PlanState extends ChangeNotifier {
-  List<Plan> plans = [];
-  List<GymCount> gymCounts = [];
-  List<PlanCount> planCounts = [];
-  List<GymSet> lastSets = [];
-  List<PlanExercisesCompanion> exercises = [];
 
   PlanState() {
     updatePlans(null);
     updatePlanCounts();
     updateDefaults();
   }
+  List<Plan> plans = [];
+  List<GymCount> gymCounts = [];
+  List<PlanCount> planCounts = [];
+  List<GymSet> lastSets = [];
+  List<PlanExercisesCompanion> exercises = [];
 
   void addExercise(String exerciseName) {
     exercises.add(
@@ -53,7 +54,7 @@ class PlanState extends ChangeNotifier {
   }
 
   Future<void> setExercises(PlansCompanion plan) async {
-    var query = db.gymSets.selectOnly()
+    final query = db.gymSets.selectOnly()
       ..addColumns([db.gymSets.name])
       ..groupBy([db.gymSets.name])
       ..join([
@@ -67,8 +68,8 @@ class PlanState extends ChangeNotifier {
 
     final results = await query.get();
 
-    List<PlanExercisesCompanion> enabled = [];
-    List<PlanExercisesCompanion> disabled = [];
+    final List<PlanExercisesCompanion> enabled = [];
+    final List<PlanExercisesCompanion> disabled = [];
 
     for (final result in results) {
       final pe = PlanExercisesCompanion(
@@ -131,7 +132,7 @@ class PlanState extends ChangeNotifier {
   }
 
   Future<List<PlanCount>> getPlanCounts() async {
-    return (db.customSelect(
+    return db.customSelect(
       """
         SELECT id, SUM(max_sets) AS max_sets,
           SUM(todays_count) AS todays_count FROM (
@@ -155,7 +156,7 @@ class PlanState extends ChangeNotifier {
         GROUP BY id
     """,
       readsFrom: {db.plans, db.gymSets, db.planExercises, db.settings},
-    )).get().then((rows) {
+    ).get().then((rows) {
       return rows
           .map(
             (row) => PlanCount(
@@ -172,7 +173,7 @@ class PlanState extends ChangeNotifier {
     // If workoutId is provided, count sets for that workout only
     // Otherwise, count sets from the last 24 hours
     final countExpression = workoutId != null
-        ? """
+        ? '''
       COUNT(
         CASE
           WHEN hidden = 0
@@ -180,7 +181,7 @@ class PlanState extends ChangeNotifier {
           THEN 1
         END
       )
-   """
+   '''
         : """
       COUNT(
         CASE
@@ -227,7 +228,7 @@ class PlanState extends ChangeNotifier {
         .toList();
   }
 
-  Future<List<Plan>> getPlans() async => await (db.select(db.plans)
+  Future<List<Plan>> getPlans() async => (db.select(db.plans)
         ..orderBy([
           (u) => OrderingTerm(expression: u.sequence),
         ]))

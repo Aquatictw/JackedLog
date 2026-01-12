@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:jackedlog/graph/overview_page.dart';
+import '../../graph/overview_page.dart';
 
 class PeriodSelector extends StatelessWidget {
-  final OverviewPeriod selectedPeriod;
-  final ValueChanged<OverviewPeriod> onPeriodChanged;
 
   const PeriodSelector({
-    super.key,
-    required this.selectedPeriod,
-    required this.onPeriodChanged,
+    required this.selectedPeriod, required this.onPeriodChanged, super.key,
   });
+  final OverviewPeriod selectedPeriod;
+  final ValueChanged<OverviewPeriod> onPeriodChanged;
 
   String _getPeriodLabel(OverviewPeriod p) {
     switch (p) {

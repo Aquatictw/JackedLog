@@ -3,20 +3,16 @@ import 'package:rive/rive.dart';
 
 /// Wrapper widget for Rive-animated navigation icons with fallback to Material Icons
 class MorphingNavIcon extends StatefulWidget {
+
+  const MorphingNavIcon({
+    required this.animationAsset, required this.fallbackIcon, required this.isSelected, required this.color, super.key,
+    this.size = 24.0,
+  });
   final String animationAsset;
   final IconData fallbackIcon;
   final bool isSelected;
   final Color color;
   final double size;
-
-  const MorphingNavIcon({
-    super.key,
-    required this.animationAsset,
-    required this.fallbackIcon,
-    required this.isSelected,
-    required this.color,
-    this.size = 24.0,
-  });
 
   @override
   State<MorphingNavIcon> createState() => _MorphingNavIconState();

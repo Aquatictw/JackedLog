@@ -2,36 +2,34 @@ import 'dart:async';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:fl_chart/fl_chart.dart';
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/database/gym_sets.dart';
-import 'package:jackedlog/graph/edit_graph_page.dart';
-import 'package:jackedlog/graph/graph_history_page.dart';
-import 'package:jackedlog/graph/strength_data.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/widgets/bodypart_tag.dart';
-import 'package:jackedlog/workouts/workout_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../constants.dart';
+import '../database/database.dart';
+import '../database/gym_sets.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+import '../widgets/bodypart_tag.dart';
+import '../workouts/workout_detail_page.dart';
+import 'edit_graph_page.dart';
+import 'graph_history_page.dart';
+import 'strength_data.dart';
+
 class StrengthPage extends StatefulWidget {
+
+  const StrengthPage({
+    required this.name, required this.unit, required this.data, super.key,
+    this.tabCtrl,
+  });
   final String name;
   final String unit;
   final List<StrengthData> data;
   final TabController? tabCtrl;
 
-  const StrengthPage({
-    super.key,
-    required this.name,
-    required this.unit,
-    required this.data,
-    this.tabCtrl,
-  });
-
   @override
-  createState() => _StrengthPageState();
+  _StrengthPageState createState() => _StrengthPageState();
 }
 
 class _StrengthPageState extends State<StrengthPage> {
@@ -95,7 +93,8 @@ class _StrengthPageState extends State<StrengthPage> {
     final result = await (db.gymSets.select()
           ..where((tbl) => tbl.name.equals(widget.name))
           ..orderBy([
-            (u) => drift.OrderingTerm(expression: u.created, mode: drift.OrderingMode.desc),
+            (u) => drift.OrderingTerm(
+                expression: u.created, mode: drift.OrderingMode.desc,),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -110,7 +109,8 @@ class _StrengthPageState extends State<StrengthPage> {
     final result = await (db.gymSets.select()
           ..where((tbl) => tbl.name.equals(widget.name))
           ..orderBy([
-            (u) => drift.OrderingTerm(expression: u.created, mode: drift.OrderingMode.desc),
+            (u) => drift.OrderingTerm(
+                expression: u.created, mode: drift.OrderingMode.desc,),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -216,11 +216,11 @@ class _StrengthPageState extends State<StrengthPage> {
               });
             },
             icon: const Icon(Icons.history),
-            tooltip: "History",
+            tooltip: 'History',
           ),
           IconButton(
             onPressed: () async {
-              String? newName = await Navigator.push(
+              final String? newName = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => EditGraphPage(name: name),
@@ -231,7 +231,7 @@ class _StrengthPageState extends State<StrengthPage> {
               }
             },
             icon: const Icon(Icons.edit),
-            tooltip: "Edit",
+            tooltip: 'Edit',
           ),
         ],
       ),
@@ -406,7 +406,7 @@ class _StrengthPageState extends State<StrengthPage> {
   }
 
   Widget _buildRecordsSection(ColorScheme colorScheme) {
-    final formatter = NumberFormat("#,###.##");
+    final formatter = NumberFormat('#,###.##');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,7 +454,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 workoutId: records!.best1RMWorkoutId,
                 subtitle: records!.best1RMReps != null &&
                         records!.best1RMWeight != null
-                    ? '${formatter.format(records!.best1RMWeight!)} $target x ${records!.best1RMReps!.toInt()}'
+                    ? '${formatter.format(records!.best1RMWeight)} $target x ${records!.best1RMReps!.toInt()}'
                     : null,
               ),
             ),
@@ -470,7 +470,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 workoutId: records!.bestVolumeWorkoutId,
                 subtitle: records!.bestVolumeReps != null &&
                         records!.bestVolumeWeight != null
-                    ? '${formatter.format(records!.bestVolumeWeight!)} $target x ${records!.bestVolumeReps!.toInt()}'
+                    ? '${formatter.format(records!.bestVolumeWeight)} $target x ${records!.bestVolumeReps!.toInt()}'
                     : null,
               ),
             ),
@@ -576,7 +576,7 @@ class _StrengthPageState extends State<StrengthPage> {
   }
 
   Widget _buildRepRecordsSection(ColorScheme colorScheme) {
-    final formatter = NumberFormat("#,###.##");
+    final formatter = NumberFormat('#,###.##');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -600,7 +600,7 @@ class _StrengthPageState extends State<StrengthPage> {
           ],
         ),
         const SizedBox(height: 12),
-        Container(
+        DecoratedBox(
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(16),
@@ -651,7 +651,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 final record =
                     repRecords.where((r) => r.reps == repCount).firstOrNull;
 
-                final isEven = index % 2 == 0;
+                final isEven = index.isEven;
                 final hasRecord = record != null;
 
                 return InkWell(
@@ -755,7 +755,7 @@ class _StrengthPageState extends State<StrengthPage> {
   }
 
   String _formatValue(StrengthData row) {
-    final formatter = NumberFormat("#,###.##");
+    final formatter = NumberFormat('#,###.##');
     switch (metric) {
       case StrengthMetric.bestVolume:
         return '${formatter.format(row.value)} vol';
@@ -768,12 +768,12 @@ class _StrengthPageState extends State<StrengthPage> {
   }
 
   String _formatSetInfo(StrengthData row) {
-    final formatter = NumberFormat("#,###.##");
+    final formatter = NumberFormat('#,###.##');
     return '${formatter.format(row.weight)} $target x ${row.reps.toInt()}';
   }
 
   Widget _buildChart(Setting settings, ColorScheme colorScheme) {
-    List<FlSpot> spots = [];
+    final List<FlSpot> spots = [];
     for (var i = 0; i < data.length; i++) {
       spots.add(FlSpot(i.toDouble(), data[i].value));
     }
@@ -788,7 +788,6 @@ class _StrengthPageState extends State<StrengthPage> {
         minY: minY - padding,
         maxY: maxY + padding,
         gridData: FlGridData(
-          show: true,
           drawVerticalLine: false,
           horizontalInterval: range > 0 ? range / 4 : 1,
           getDrawingHorizontalLine: (value) => FlLine(
@@ -798,9 +797,9 @@ class _StrengthPageState extends State<StrengthPage> {
         ),
         titlesData: FlTitlesData(
           topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              const AxisTitles(),
           rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              const AxisTitles(),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -829,7 +828,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 if (index < 0 || index >= data.length) return const SizedBox();
 
                 // Show 4-5 labels spread across the chart
-                final totalLabels = 5;
+                const totalLabels = 5;
                 final step = (data.length / totalLabels).ceil();
                 if (index % step != 0 && index != data.length - 1) {
                   return const SizedBox();
@@ -850,7 +849,6 @@ class _StrengthPageState extends State<StrengthPage> {
           ),
         ),
         lineTouchData: LineTouchData(
-          enabled: true,
           touchSpotThreshold: 50,
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (_) => Colors.transparent,
@@ -868,11 +866,9 @@ class _StrengthPageState extends State<StrengthPage> {
               return TouchedSpotIndicatorData(
                 FlLine(
                   color: colorScheme.primary,
-                  strokeWidth: 2,
                   dashArray: [4, 4],
                 ),
                 FlDotData(
-                  show: true,
                   getDotPainter: (spot, percent, bar, index) {
                     return FlDotCirclePainter(
                       radius: 6,
@@ -889,12 +885,10 @@ class _StrengthPageState extends State<StrengthPage> {
         lineBarsData: [
           LineChartBarData(
             spots: spots,
-            isCurved: false,
             color: colorScheme.primary,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
-              show: true,
               getDotPainter: (spot, percent, bar, index) {
                 final isSelected = index == selectedIndex;
                 return FlDotCirclePainter(
@@ -902,7 +896,6 @@ class _StrengthPageState extends State<StrengthPage> {
                   color: isSelected
                       ? colorScheme.primary
                       : colorScheme.primary.withValues(alpha: 0.7),
-                  strokeWidth: 0,
                 );
               },
             ),

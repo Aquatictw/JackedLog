@@ -1,15 +1,21 @@
 import 'package:drift/drift.dart' as drift;
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/edit_plan_page.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/plan/plan_tile.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants.dart';
+import '../database/database.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+import 'edit_plan_page.dart';
+import 'plan_state.dart';
+import 'plan_tile.dart';
+
 class PlansList extends StatefulWidget {
+
+  const PlansList({
+    required this.plans, required this.navKey, required this.selected, required this.onSelect, required this.search, required this.scroll, super.key,
+    this.footer,
+  });
   final List<Plan>? plans;
   final GlobalKey<NavigatorState> navKey;
   final Set<int> selected;
@@ -17,17 +23,6 @@ class PlansList extends StatefulWidget {
   final String search;
   final ScrollController scroll;
   final Widget? footer;
-
-  const PlansList({
-    super.key,
-    required this.plans,
-    required this.navKey,
-    required this.selected,
-    required this.onSelect,
-    required this.search,
-    required this.scroll,
-    this.footer,
-  });
 
   @override
   State<PlansList> createState() => _PlansListState();
@@ -39,8 +34,8 @@ class _PlansListState extends State<PlansList> {
     final state = context.watch<PlanState>();
 
     final noneFound = ListTile(
-      title: const Text("No plans found"),
-      subtitle: Text("Tap to create ${widget.search}"),
+      title: const Text('No plans found'),
+      subtitle: Text('Tap to create ${widget.search}'),
       onTap: () async {
         final plan = PlansCompanion(
           days: const drift.Value(''),
@@ -65,7 +60,7 @@ class _PlansListState extends State<PlansList> {
 
     final filteredPlans = widget.plans!.where((plan) {
       final term = widget.search.toLowerCase();
-      return plan.title?.toLowerCase().contains(term) == true ||
+      return (plan.title?.toLowerCase().contains(term) ?? false) ||
           plan.days.toLowerCase().contains(term);
     }).toList();
 
@@ -106,8 +101,9 @@ class _PlansListState extends State<PlansList> {
               await db.transaction(() async {
                 for (int i = 0; i < filteredPlans.length; i++) {
                   final plan = filteredPlans[i];
-                  final updated =
-                      plan.toCompanion(false).copyWith(sequence: drift.Value(i));
+                  final updated = plan
+                      .toCompanion(false)
+                      .copyWith(sequence: drift.Value(i));
                   await db.update(db.plans).replace(updated);
                 }
               });
@@ -117,7 +113,7 @@ class _PlansListState extends State<PlansList> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: widget.footer!,
+                child: widget.footer,
               ),
             ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 140)),
@@ -149,7 +145,7 @@ class _PlansListState extends State<PlansList> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: widget.footer!,
+              child: widget.footer,
             ),
           ),
         const SliverPadding(padding: EdgeInsets.only(bottom: 140)),

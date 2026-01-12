@@ -1,20 +1,21 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../database/database.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+
 /// Dialog for adding or editing a bodyweight entry
-class BodyweightEntryDialog extends StatefulWidget {
-  final BodyweightEntry? entry; // Null for new entry
+class BodyweightEntryDialog extends StatefulWidget { // Null for new entry
 
   const BodyweightEntryDialog({
     super.key,
     this.entry,
   });
+  final BodyweightEntry? entry;
 
   @override
   State<BodyweightEntryDialog> createState() => _BodyweightEntryDialogState();
@@ -172,7 +173,8 @@ class _BodyweightEntryDialogState extends State<BodyweightEntryDialog> {
                 filled: true,
                 prefixIcon: const Icon(Icons.fitness_center),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
               ],
@@ -185,13 +187,15 @@ class _BodyweightEntryDialogState extends State<BodyweightEntryDialog> {
               onTap: _selectDate,
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: colorScheme.outline.withValues(alpha: 0.5),
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  color: colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.3),
                 ),
                 child: Row(
                   children: [
@@ -221,7 +225,8 @@ class _BodyweightEntryDialogState extends State<BodyweightEntryDialog> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+                  onPressed:
+                      _saving ? null : () => Navigator.of(context).pop(false),
                   child: const Text('Cancel'),
                 ),
                 const SizedBox(width: 8),

@@ -1,15 +1,15 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/spotify/spotify_service.dart';
-import 'package:jackedlog/spotify/spotify_web_api_service.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:spotify_sdk/models/player_options.dart' as player_options;
 import 'package:spotify_sdk/models/player_state.dart';
+
+import '../database/database.dart';
+import '../main.dart';
+import 'spotify_service.dart';
+import 'spotify_web_api_service.dart';
 
 /// Connection status for Spotify
 enum ConnectionStatus {
@@ -21,12 +21,6 @@ enum ConnectionStatus {
 
 /// Track information for display
 class Track {
-  final String title;
-  final String artist;
-  final String album;
-  final String? artworkUrl;
-  final Color? dominantColor;
-  final String? uri;
 
   Track({
     required this.title,
@@ -55,7 +49,6 @@ class Track {
       artist: playerState.track?.artist.name ?? 'Unknown Artist',
       album: playerState.track?.album.name ?? 'Unknown Album',
       artworkUrl: artworkUrl,
-      dominantColor: null, // Will be extracted async
       uri: playerState.track?.uri, // Extract URI from PlayerState
     );
   }
@@ -66,11 +59,14 @@ class Track {
       title: 'No track playing',
       artist: 'Open Spotify and start playing',
       album: '',
-      artworkUrl: null,
-      dominantColor: null,
-      uri: null,
     );
   }
+  final String title;
+  final String artist;
+  final String album;
+  final String? artworkUrl;
+  final Color? dominantColor;
+  final String? uri;
 
   /// Create copy with updated dominantColor
   Track copyWith({Color? dominantColor}) {
@@ -88,6 +84,11 @@ class Track {
 /// Provider for Spotify playback state management
 /// Uses ChangeNotifier pattern following WorkoutState conventions
 class SpotifyState extends ChangeNotifier {
+
+  /// Initialize SpotifyState and check for existing connection
+  SpotifyState() {
+    _initialize();
+  }
   final SpotifyService _service = SpotifyService();
   final SpotifyWebApiService _webApiService = SpotifyWebApiService();
   Timer? _pollingTimer;
@@ -143,16 +144,12 @@ class SpotifyState extends ChangeNotifier {
 
     return combined.take(20).toList(); // Limit to 20 total
   }
+
   String? get playingFromType => _playingFromType;
   String? get playingFromName => _playingFromName;
 
   /// Get the Spotify service instance for token access
   SpotifyService get service => _service;
-
-  /// Initialize SpotifyState and check for existing connection
-  SpotifyState() {
-    _initialize();
-  }
 
   Future<void> _initialize() async {
     // Check if already connected
@@ -250,8 +247,8 @@ class SpotifyState extends ChangeNotifier {
       return;
     }
 
-    final token = _service.accessToken!;  // Safe non-null assertion
-    _webApiService.setAccessToken(token);
+    final token = _service.accessToken!; // Safe non-null assertion
+    _webApiService.accessToken = token;
 
     try {
       // Fetch queue
@@ -267,7 +264,8 @@ class SpotifyState extends ChangeNotifier {
       }).toList();
 
       // Fetch recently played
-      final recentlyPlayedData = await _webApiService.getRecentlyPlayed(limit: 10);
+      final recentlyPlayedData =
+          await _webApiService.getRecentlyPlayed();
       _recentlyPlayed = recentlyPlayedData.map((item) {
         return Track(
           title: item['title'] as String,

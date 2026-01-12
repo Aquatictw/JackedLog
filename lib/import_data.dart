@@ -7,21 +7,21 @@ import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
+import 'database/database.dart';
+import 'main.dart';
+import 'settings/settings_state.dart';
+import 'utils.dart';
+
 class ImportData extends StatelessWidget {
-  final BuildContext ctx;
 
   const ImportData({
-    super.key,
-    required this.ctx,
+    required this.ctx, super.key,
   });
+  final BuildContext ctx;
 
   @override
   Widget build(BuildContext context) {
@@ -69,16 +69,16 @@ class ImportData extends StatelessWidget {
 
       toast(
         'Failed to import database: ${e.toString()}',
-        duration: Duration(seconds: 10),
+        duration: const Duration(seconds: 10),
       );
     }
   }
 
   Future<void> _importDatabaseNative(BuildContext context) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    final FilePickerResult? result = await FilePicker.platform.pickFiles();
     if (result == null) return;
 
-    File sourceFile = File(result.files.single.path!);
+    final File sourceFile = File(result.files.single.path!);
 
     if (!await sourceFile.exists()) {
       throw Exception('Selected file does not exist');
@@ -96,7 +96,7 @@ class ImportData extends StatelessWidget {
     await sourceFile.copy(p.join(dbFolder.path, 'jackedlog.sqlite'));
     db = AppDatabase();
 
-    await (db.settings.update())
+    await db.settings.update()
         .write(const SettingsCompanion(alarmSound: Value('')));
 
     if (!ctx.mounted) return;
@@ -109,10 +109,10 @@ class ImportData extends StatelessWidget {
   }
 
   Future<void> _importDatabaseWeb(BuildContext context) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    final FilePickerResult? result = await FilePicker.platform.pickFiles();
     if (result == null) return;
 
-    Uint8List? fileBytes = result.files.single.bytes;
+    final Uint8List? fileBytes = result.files.single.bytes;
     if (fileBytes == null) {
       throw Exception('Could not read file data');
     }
@@ -126,7 +126,7 @@ class ImportData extends StatelessWidget {
     Navigator.pop(context);
 
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['zip'],
       );
@@ -153,7 +153,7 @@ class ImportData extends StatelessWidget {
       // Find workouts.csv and gym_sets.csv
       ArchiveFile? workoutsFile;
       ArchiveFile? setsFile;
-      for (var file in archive) {
+      for (final file in archive) {
         if (file.name == 'workouts.csv') workoutsFile = file;
         if (file.name == 'gym_sets.csv') setsFile = file;
       }
@@ -166,13 +166,13 @@ class ImportData extends StatelessWidget {
       String workoutsCsvContent;
       try {
         workoutsCsvContent = utf8.decode(workoutsFile.content as List<int>,
-            allowMalformed: false);
+            allowMalformed: false,);
       } catch (e) {
         workoutsCsvContent = latin1.decode(workoutsFile.content as List<int>);
       }
 
       final workoutsRows =
-          const CsvToListConverter(eol: "\n").convert(workoutsCsvContent);
+          const CsvToListConverter(eol: '\n').convert(workoutsCsvContent);
       if (workoutsRows.isEmpty) throw Exception('Workouts CSV is empty');
 
       // Parse gym sets CSV
@@ -185,7 +185,7 @@ class ImportData extends StatelessWidget {
       }
 
       final setsRows =
-          const CsvToListConverter(eol: "\n").convert(setsCsvContent);
+          const CsvToListConverter(eol: '\n').convert(setsCsvContent);
       if (setsRows.isEmpty) throw Exception('Gym sets CSV is empty');
 
       // Check CSV format version by examining header row
@@ -199,7 +199,7 @@ class ImportData extends StatelessWidget {
       final workoutsToInsert = workoutsRows.skip(1).map((row) {
         if (row.length < 6) {
           throw Exception(
-              'Workout row has insufficient columns: ${row.length}');
+              'Workout row has insufficient columns: ${row.length}',);
         }
 
         return WorkoutsCompanion(
@@ -236,9 +236,9 @@ class ImportData extends StatelessWidget {
           created: Value(parseDate(row[5])),
           cardio: Value(parseBool(row.elementAtOrNull(6))),
           duration: Value(
-              double.tryParse(row.elementAtOrNull(7)?.toString() ?? '0') ?? 0),
+              double.tryParse(row.elementAtOrNull(7)?.toString() ?? '0') ?? 0,),
           distance: Value(
-              double.tryParse(row.elementAtOrNull(8)?.toString() ?? '0') ?? 0),
+              double.tryParse(row.elementAtOrNull(8)?.toString() ?? '0') ?? 0,),
           // Skip bodyWeight column (index 9) if present in old format
           incline: Value(_parseNullableInt(row.elementAtOrNull(9 + offset))),
           restMs: Value(_parseNullableInt(row.elementAtOrNull(10 + offset))),
@@ -250,27 +250,27 @@ class ImportData extends StatelessWidget {
               Value(_parseNullableString(row.elementAtOrNull(15 + offset))),
           notes: Value(_parseNullableString(row.elementAtOrNull(16 + offset))),
           sequence: Value(int.tryParse(
-                  row.elementAtOrNull(17 + offset)?.toString() ?? '0') ??
-              0),
+                  row.elementAtOrNull(17 + offset)?.toString() ?? '0',) ??
+              0,),
           setOrder: Value(hasSetOrderColumn
               ? _parseNullableInt(row.elementAtOrNull(18 + offset))
-              : null),
+              : null,),
           warmup: Value(parseBool(row
-              .elementAtOrNull(hasSetOrderColumn ? 19 + offset : 18 + offset))),
+              .elementAtOrNull(hasSetOrderColumn ? 19 + offset : 18 + offset),),),
           exerciseType: Value(_parseNullableString(row
-              .elementAtOrNull(hasSetOrderColumn ? 20 + offset : 19 + offset))),
+              .elementAtOrNull(hasSetOrderColumn ? 20 + offset : 19 + offset),),),
           brandName: Value(_parseNullableString(row
-              .elementAtOrNull(hasSetOrderColumn ? 21 + offset : 20 + offset))),
+              .elementAtOrNull(hasSetOrderColumn ? 21 + offset : 20 + offset),),),
           dropSet: Value(parseBool(row
-              .elementAtOrNull(hasSetOrderColumn ? 22 + offset : 21 + offset))),
+              .elementAtOrNull(hasSetOrderColumn ? 22 + offset : 21 + offset),),),
           supersetId: Value(hasSupersetColumns
               ? _parseNullableString(row.elementAtOrNull(
-                  hasSetOrderColumn ? 23 + offset : 22 + offset))
-              : null),
+                  hasSetOrderColumn ? 23 + offset : 22 + offset,),)
+              : null,),
           supersetPosition: Value(hasSupersetColumns
               ? _parseNullableInt(row.elementAtOrNull(
-                  hasSetOrderColumn ? 24 + offset : 23 + offset))
-              : null),
+                  hasSetOrderColumn ? 24 + offset : 23 + offset,),)
+              : null,),
         );
       });
 
@@ -292,7 +292,7 @@ class ImportData extends StatelessWidget {
 
       toast(
         'Failed to import workouts: ${e.toString()}',
-        duration: Duration(seconds: 10),
+        duration: const Duration(seconds: 10),
       );
     }
   }
@@ -316,13 +316,6 @@ class ImportData extends StatelessWidget {
     if (value is int) return value;
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value);
-    return null;
-  }
-
-  double? _parseNullableDouble(dynamic value) {
-    if (value == null || value == '') return null;
-    if (value is num) return value.toDouble();
-    if (value is String) return double.tryParse(value);
     return null;
   }
 

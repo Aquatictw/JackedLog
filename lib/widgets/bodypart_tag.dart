@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 
 /// A small, compact tag widget that displays a bodypart/muscle group
 class BodypartTag extends StatelessWidget {
-  final String? bodypart;
-  final double fontSize;
 
   const BodypartTag({
-    super.key,
-    required this.bodypart,
+    required this.bodypart, super.key,
     this.fontSize = 10,
   });
+  final String? bodypart;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {

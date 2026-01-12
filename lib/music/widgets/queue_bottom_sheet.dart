@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:jackedlog/spotify/spotify_state.dart';
 import 'package:provider/provider.dart';
+
+import '../../spotify/spotify_state.dart';
 
 /// Shows the Spotify playback queue in a bottom sheet
 /// Displays upcoming tracks with album art, title, and artist
@@ -31,7 +32,7 @@ class QueueBottomSheet extends StatelessWidget {
       snap: true,
       snapSizes: const [0.7],
       builder: (context, scrollController) {
-        return Container(
+        return DecoratedBox(
           decoration: BoxDecoration(
             color: colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -138,8 +139,11 @@ class QueueBottomSheet extends StatelessWidget {
                                       }
                                     } catch (e) {
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Failed to play track: $e')),
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(
+                                                  'Failed to play track: $e',),),
                                         );
                                       }
                                     }

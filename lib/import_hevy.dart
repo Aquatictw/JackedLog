@@ -4,11 +4,12 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import 'database/database.dart';
+import 'main.dart';
+import 'utils.dart';
 
 /// Mapping of Hevy exercise names to Flexify exercise names and categories
 /// Format: 'hevy_name': ('flexify_name', 'category')
@@ -443,12 +444,11 @@ String _guessCategory(String name) {
 }
 
 class ImportHevy extends StatelessWidget {
-  final BuildContext ctx;
 
   const ImportHevy({
-    super.key,
-    required this.ctx,
+    required this.ctx, super.key,
   });
+  final BuildContext ctx;
 
   @override
   Widget build(BuildContext context) {
@@ -461,7 +461,7 @@ class ImportHevy extends StatelessWidget {
 
   Future<void> _importHevy(BuildContext context) async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
@@ -487,7 +487,7 @@ class ImportHevy extends StatelessWidget {
         }
       }
 
-      final rows = const CsvToListConverter(eol: "\n").convert(csvContent);
+      final rows = const CsvToListConverter(eol: '\n').convert(csvContent);
 
       if (rows.isEmpty) throw Exception('CSV file is empty');
       if (rows.length <= 1) {

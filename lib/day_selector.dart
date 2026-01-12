@@ -1,9 +1,10 @@
-import 'package:jackedlog/constants.dart';
 import 'package:flutter/material.dart';
 
+import 'constants.dart';
+
 class DaySelector extends StatefulWidget {
+  const DaySelector({required this.daySwitches, super.key});
   final List<bool> daySwitches;
-  const DaySelector({super.key, required this.daySwitches});
 
   @override
   State<DaySelector> createState() => _DaySelectorState();

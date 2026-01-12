@@ -12,16 +12,14 @@ class Settings extends Table {
       boolean().withDefault(const Constant(true))();
   BoolColumn get enableSound => boolean().withDefault(const Constant(true))();
   BoolColumn get explainedPermissions => boolean()();
-  BoolColumn get groupHistory =>
-      boolean().withDefault(const Constant(true))();
+  BoolColumn get groupHistory => boolean().withDefault(const Constant(true))();
   IntColumn get id => integer().autoIncrement()();
   TextColumn get longDateFormat => text()();
   IntColumn get maxSets => integer()();
   BoolColumn get notifications => boolean().withDefault(const Constant(true))();
   BoolColumn get peekGraph => boolean().withDefault(const Constant(false))();
   TextColumn get planTrailing => text()();
-  BoolColumn get repEstimation =>
-      boolean().withDefault(const Constant(true))();
+  BoolColumn get repEstimation => boolean().withDefault(const Constant(true))();
   BoolColumn get restTimers => boolean()();
   TextColumn get shortDateFormat => text()();
   BoolColumn get showCategories =>
@@ -30,12 +28,12 @@ class Settings extends Table {
   BoolColumn get showNotes => boolean().withDefault(const Constant(true))();
   BoolColumn get showGlobalProgress =>
       boolean().withDefault(const Constant(true))();
-  BoolColumn get showUnits =>
-      boolean().withDefault(const Constant(false))();
+  BoolColumn get showUnits => boolean().withDefault(const Constant(false))();
   TextColumn get strengthUnit => text()();
   BoolColumn get systemColors => boolean()();
   TextColumn get tabs => text().withDefault(
-        const Constant("HistoryPage,PlansPage,MusicPage,GraphsPage,NotesPage,SettingsPage"),
+        const Constant(
+            'HistoryPage,PlansPage,MusicPage,GraphsPage,NotesPage,SettingsPage',),
       )();
   TextColumn get themeMode => text()();
   IntColumn get timerDuration => integer()();
@@ -49,7 +47,8 @@ class Settings extends Table {
   RealColumn get fivethreeoneDeadliftTm => real().nullable()();
   RealColumn get fivethreeonePressTm => real().nullable()();
   IntColumn get fivethreeoneWeek => integer().withDefault(const Constant(1))();
-  IntColumn get customColorSeed => integer().withDefault(const Constant(0xFF673AB7))();  // Default: deep purple
+  IntColumn get customColorSeed => integer()
+      .withDefault(const Constant(0xFF673AB7))(); // Default: deep purple
   DateTimeColumn get lastAutoBackupTime => dateTime().nullable()();
   // Spotify integration tokens
   TextColumn get spotifyAccessToken => text().nullable()();

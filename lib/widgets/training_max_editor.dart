@@ -1,10 +1,11 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+import '../database/database.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
 
 /// Dialog for editing all 5/3/1 Training Max values
 class TrainingMaxEditor extends StatefulWidget {
@@ -210,7 +211,7 @@ class _TrainingMaxEditorState extends State<TrainingMaxEditor> {
                   Row(
                     children: [
                       Icon(Icons.lightbulb_outline,
-                          size: 16, color: colorScheme.tertiary),
+                          size: 16, color: colorScheme.tertiary,),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(

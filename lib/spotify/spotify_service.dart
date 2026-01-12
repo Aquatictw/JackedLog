@@ -9,9 +9,9 @@ import 'spotify_config.dart';
 /// Singleton service wrapping Spotify SDK
 /// Manages connection lifecycle and playback controls
 class SpotifyService {
-  static final SpotifyService _instance = SpotifyService._internal();
   factory SpotifyService() => _instance;
   SpotifyService._internal();
+  static final SpotifyService _instance = SpotifyService._internal();
 
   static const String clientId = SpotifyConfig.clientId;
   static const String redirectUrl = SpotifyConfig.redirectUrl;
@@ -185,9 +185,6 @@ class SpotifyService {
           nextMode = player_options.RepeatMode.track;
           break;
         case player_options.RepeatMode.track:
-          nextMode = player_options.RepeatMode.off;
-          break;
-        default:
           nextMode = player_options.RepeatMode.off;
           break;
       }

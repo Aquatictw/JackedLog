@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:jackedlog/records/records_service.dart';
+import '../../records/records_service.dart';
 
 class CompleteButton extends StatelessWidget {
+
+  const CompleteButton({
+    required this.completed, required this.isWarmup, required this.onPressed, super.key,
+    this.isDropSet = false,
+    this.records = const {},
+  });
   final bool completed;
   final bool isWarmup;
   final bool isDropSet;
   final Set<RecordType> records;
   final VoidCallback onPressed;
-
-  const CompleteButton({
-    super.key,
-    required this.completed,
-    required this.isWarmup,
-    this.isDropSet = false,
-    this.records = const {},
-    required this.onPressed,
-  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,20 +1,20 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../database/database.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+
 /// 5/3/1 powerlifting calculator dialog
 /// Helps calculate weights for the 5/3/1 program based on Training Max
 class FiveThreeOneCalculator extends StatefulWidget {
-  final String exerciseName;
 
   const FiveThreeOneCalculator({
-    super.key,
-    required this.exerciseName,
+    required this.exerciseName, super.key,
   });
+  final String exerciseName;
 
   @override
   State<FiveThreeOneCalculator> createState() => _FiveThreeOneCalculatorState();
@@ -326,7 +326,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
 
                     // Week Selector - buttons with better spacing
                     SegmentedButton<int>(
-                      segments: [
+                      segments: const [
                         ButtonSegment(
                           value: 1,
                           label: Text('W1'),
@@ -351,7 +351,8 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                       showSelectedIcon: false,
                       style: ButtonStyle(
                         padding: WidgetStateProperty.all(
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12,),
                         ),
                       ),
                     ),

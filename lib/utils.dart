@@ -1,8 +1,9 @@
-import 'package:jackedlog/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import 'main.dart';
 
 void toast(String message, {SnackBarAction? action, Duration? duration}) {
   rootScaffoldMessenger.currentState!.showSnackBar(
@@ -24,14 +25,14 @@ bool isSameDay(DateTime date1, DateTime date2) {
 }
 
 DateTime parseDate(String dateString) {
-  List<String> fmts = [
+  final List<String> fmts = [
     'dd.MM.yyyy',
     'yyyy-MM-ddTHH:mm',
     'yyyy-MM-ddTHH:mm:ss.SSS',
     'yyyy-MM-ddTHH:mm:ss',
   ];
 
-  for (String fmt in fmts) {
+  for (final String fmt in fmts) {
     try {
       return DateFormat(fmt).parse(dateString.replaceAll('Z', ''));
     } catch (_) {}
@@ -41,7 +42,7 @@ DateTime parseDate(String dateString) {
 }
 
 Future<bool> requestNotificationPermission() async {
-  if (const String.fromEnvironment("FLEXIFY_DEVICE_TYPE").isNotEmpty)
+  if (const String.fromEnvironment('FLEXIFY_DEVICE_TYPE').isNotEmpty)
     return true;
   if (!kIsWeb) {
     final permission = await Permission.notification.request();

@@ -1,24 +1,25 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/animated_fab.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/database/gym_sets.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/records/records_service.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../animated_fab.dart';
+import '../database/database.dart';
+import '../database/gym_sets.dart';
+import '../main.dart';
+import '../plan/plan_state.dart';
+import '../records/records_service.dart';
+import '../settings/settings_state.dart';
+import '../utils.dart';
+
 class EditSetsPage extends StatefulWidget {
+
+  const EditSetsPage({required this.ids, super.key});
   final List<int> ids;
 
-  const EditSetsPage({super.key, required this.ids});
-
   @override
-  createState() => _EditSetsPageState();
+  _EditSetsPageState createState() => _EditSetsPageState();
 }
 
 class _EditSetsPageState extends State<EditSetsPage> {
@@ -93,7 +94,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: key,
           child: ListView(
@@ -101,10 +102,10 @@ class _EditSetsPageState extends State<EditSetsPage> {
               TextField(
                 controller: name,
                 decoration:
-                    InputDecoration(labelText: "Name", hintText: oldNames),
+                    InputDecoration(labelText: 'Name', hintText: oldNames),
                 textCapitalization: TextCapitalization.sentences,
               ),
-              if (cardio == true) ...[
+              if (cardio ?? false) ...[
                 TextFormField(
                   controller: distance,
                   decoration: InputDecoration(
@@ -130,9 +131,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
                           labelText: 'Minutes',
                           hintText: oldMin,
                         ),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: false,
-                        ),
+                        keyboardType: TextInputType.number,
                         onTap: () => selectAll(minutes),
                         textInputAction: TextInputAction.next,
                         validator: (value) {
@@ -143,7 +142,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 8.0),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: TextFormField(
                         controller: seconds,
@@ -151,9 +150,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
                           labelText: 'Seconds',
                           hintText: oldSec,
                         ),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: false,
-                        ),
+                        keyboardType: TextInputType.number,
                         onTap: () => selectAll(seconds),
                         textInputAction: TextInputAction.next,
                         validator: (value) {
@@ -224,7 +221,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
                     items: _getUnitItems(),
                     onChanged: (String? newValue) {
                       setState(() {
-                        unit = newValue!;
+                        unit = newValue;
                       });
                     },
                   ),
@@ -250,7 +247,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
                         .toList(),
                     onChanged: (value) {
                       setState(() {
-                        category = value!;
+                        category = value;
                       });
                     },
                   );
@@ -258,7 +255,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
               ),
               Selector<SettingsState, String>(
                 builder: (context, longDateFormat, child) {
-                  var subtitle = oldCreated ?? "";
+                  var subtitle = oldCreated ?? '';
 
                   if (longDateFormat == 'timeago' && created != null)
                     subtitle = timeago.format(created!);
@@ -269,7 +266,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
                     title: const Text('Created Date'),
                     subtitle: Text(subtitle),
                     trailing: const Icon(Icons.calendar_today),
-                    onTap: () => _selectDate(),
+                    onTap: _selectDate,
                   );
                 },
                 selector: (context, settings) => settings.value.longDateFormat,
@@ -280,31 +277,31 @@ class _EditSetsPageState extends State<EditSetsPage> {
       ),
       floatingActionButton: AnimatedFab(
         onPressed: save,
-        label: const Text("Update"),
+        label: const Text('Update'),
         icon: const Icon(Icons.sync),
       ),
     );
   }
 
   List<DropdownMenuItem<String>> _getUnitItems() {
-    if (cardio == true) {
+    if (cardio ?? false) {
       // Cardio units: distance and energy
       return const [
         DropdownMenuItem(
           value: 'km',
-          child: Text("Kilometers (km)"),
+          child: Text('Kilometers (km)'),
         ),
         DropdownMenuItem(
           value: 'mi',
-          child: Text("Miles (mi)"),
+          child: Text('Miles (mi)'),
         ),
         DropdownMenuItem(
           value: 'm',
-          child: Text("Meters (m)"),
+          child: Text('Meters (m)'),
         ),
         DropdownMenuItem(
           value: 'kcal',
-          child: Text("Kilocalories (kcal)"),
+          child: Text('Kilocalories (kcal)'),
         ),
       ];
     } else {
@@ -312,15 +309,15 @@ class _EditSetsPageState extends State<EditSetsPage> {
       return const [
         DropdownMenuItem(
           value: 'kg',
-          child: Text("Kilograms (kg)"),
+          child: Text('Kilograms (kg)'),
         ),
         DropdownMenuItem(
           value: 'lb',
-          child: Text("Pounds (lb)"),
+          child: Text('Pounds (lb)'),
         ),
         DropdownMenuItem(
           value: 'stone',
-          child: Text("Stone"),
+          child: Text('Stone'),
         ),
       ];
     }

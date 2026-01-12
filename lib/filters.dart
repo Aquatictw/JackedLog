@@ -1,11 +1,16 @@
-import 'package:jackedlog/database/gym_sets.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import 'database/gym_sets.dart';
+import 'settings/settings_state.dart';
+
 class Filters extends StatefulWidget {
+
+  const Filters({
+    required this.repsGtCtrl, required this.repsLtCtrl, required this.weightGtCtrl, required this.weightLtCtrl, required this.setStart, required this.setEnd, required this.setStream, required this.startDate, required this.endDate, required this.category, required this.setCategory, super.key,
+  });
   final TextEditingController repsGtCtrl;
   final TextEditingController repsLtCtrl;
   final TextEditingController weightGtCtrl;
@@ -18,23 +23,8 @@ class Filters extends StatefulWidget {
   final Function(DateTime?) setEnd;
   final Function setStream;
 
-  const Filters({
-    super.key,
-    required this.repsGtCtrl,
-    required this.repsLtCtrl,
-    required this.weightGtCtrl,
-    required this.weightLtCtrl,
-    required this.setStart,
-    required this.setEnd,
-    required this.setStream,
-    required this.startDate,
-    required this.endDate,
-    required this.category,
-    required this.setCategory,
-  });
-
   @override
-  createState() => _FiltersState();
+  _FiltersState createState() => _FiltersState();
 }
 
 class _FiltersState extends State<Filters> {
@@ -73,7 +63,7 @@ class _FiltersState extends State<Filters> {
               PopupMenuItem(
                 child: DropdownButtonFormField(
                   decoration: const InputDecoration(labelText: 'Category'),
-                  value: widget.category,
+                  initialValue: widget.category,
                   items: snapshot.data
                       ?.map(
                         (category) => DropdownMenuItem(
@@ -98,7 +88,7 @@ class _FiltersState extends State<Filters> {
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: const Text("Reps filter"),
+                        title: const Text('Reps filter'),
                         content: SingleChildScrollView(
                           child: material.Column(
                             children: [
@@ -106,7 +96,7 @@ class _FiltersState extends State<Filters> {
                                 onChanged: (value) => widget.setStream(),
                                 controller: widget.repsGtCtrl,
                                 decoration: const InputDecoration(
-                                  labelText: "Greater than",
+                                  labelText: 'Greater than',
                                 ),
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
@@ -117,7 +107,7 @@ class _FiltersState extends State<Filters> {
                                 onChanged: (value) => widget.setStream(),
                                 controller: widget.repsLtCtrl,
                                 decoration: const InputDecoration(
-                                  labelText: "Less than",
+                                  labelText: 'Less than',
                                 ),
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
@@ -159,7 +149,7 @@ class _FiltersState extends State<Filters> {
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: const Text("Weight filter"),
+                        title: const Text('Weight filter'),
                         content: SingleChildScrollView(
                           child: material.Column(
                             children: [
@@ -167,7 +157,7 @@ class _FiltersState extends State<Filters> {
                                 onChanged: (value) => widget.setStream(),
                                 controller: widget.weightGtCtrl,
                                 decoration: const InputDecoration(
-                                  labelText: "Greater than",
+                                  labelText: 'Greater than',
                                 ),
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
@@ -178,7 +168,7 @@ class _FiltersState extends State<Filters> {
                                 onChanged: (value) => widget.setStream(),
                                 controller: widget.weightLtCtrl,
                                 decoration: const InputDecoration(
-                                  labelText: "Less than",
+                                  labelText: 'Less than',
                                 ),
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
@@ -213,7 +203,7 @@ class _FiltersState extends State<Filters> {
               PopupMenuItem(
                 child: ListTile(
                   leading: const Icon(Icons.calendar_today),
-                  title: const Text("Start date"),
+                  title: const Text('Start date'),
                   onLongPress: () {
                     widget.setStart(null);
                     Navigator.pop(context);
@@ -244,7 +234,7 @@ class _FiltersState extends State<Filters> {
               PopupMenuItem(
                 child: ListTile(
                   leading: const Icon(Icons.calendar_month),
-                  title: const Text("End date"),
+                  title: const Text('End date'),
                   subtitle: Selector<SettingsState, String>(
                     selector: (p0, settings) => settings.value.shortDateFormat,
                     builder: (context, shortDateFormat, child) =>
@@ -274,7 +264,7 @@ class _FiltersState extends State<Filters> {
               PopupMenuItem(
                 child: ListTile(
                   leading: const Icon(Icons.clear),
-                  title: const Text("Clear"),
+                  title: const Text('Clear'),
                   onTap: () async {
                     widget.repsGtCtrl.text = '';
                     widget.repsLtCtrl.text = '';
@@ -288,7 +278,7 @@ class _FiltersState extends State<Filters> {
                 ),
               ),
             ],
-            tooltip: "Filter",
+            tooltip: 'Filter',
             icon: const Icon(Icons.filter_list),
           );
         },

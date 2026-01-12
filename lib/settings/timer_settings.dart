@@ -1,14 +1,15 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../database/database.dart';
+import '../main.dart';
+import '../utils.dart';
+import 'settings_state.dart';
 
 List<Widget> getTimerSettings(
   String term,
@@ -129,7 +130,7 @@ List<Widget> getTimerSettings(
                   const Icon(Icons.public),
                   const SizedBox(width: 8),
                   Text(
-                    "Global default",
+                    'Global default',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ],
@@ -161,7 +162,7 @@ List<Widget> getTimerSettings(
                     ),
                   ),
                   const SizedBox(
-                    width: 8.0,
+                    width: 8,
                   ),
                   Expanded(
                     child: TextField(
@@ -212,7 +213,7 @@ List<Widget> getTimerSettings(
               },
               icon: const Icon(Icons.music_note),
               label: settings.alarmSound.isEmpty
-                  ? const Text("Alarm sound")
+                  ? const Text('Alarm sound')
                   : Text(settings.alarmSound.split('/').last),
             ),
             if (settings.alarmSound.isNotEmpty)
@@ -224,7 +225,7 @@ List<Widget> getTimerSettings(
                         ),
                       );
                 },
-                label: const Text("Delete"),
+                label: const Text('Delete'),
                 icon: const Icon(Icons.delete),
               ),
           ],
@@ -243,13 +244,13 @@ class TimerSettings extends StatefulWidget {
 class _TimerSettingsState extends State<TimerSettings> {
   late SettingsState settings = context.read<SettingsState>();
   late final minCtrl = TextEditingController(
-    text: (Duration(milliseconds: settings.value.timerDuration))
+    text: Duration(milliseconds: settings.value.timerDuration)
         .inMinutes
         .toString(),
   );
   late final secCtrl = TextEditingController(
     text:
-        ((Duration(milliseconds: settings.value.timerDuration)).inSeconds % 60)
+        (Duration(milliseconds: settings.value.timerDuration).inSeconds % 60)
             .toString(),
   );
 
@@ -371,14 +372,14 @@ class _TimerSettingsState extends State<TimerSettings> {
               const Icon(Icons.fitness_center),
               const SizedBox(width: 8),
               Text(
-                "Per-exercise rest times",
+                'Per-exercise rest times',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            "These exercises have custom rest durations",
+            'These exercises have custom rest durations',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context)
                       .textTheme
@@ -483,7 +484,7 @@ class _TimerSettingsState extends State<TimerSettings> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text("Timers"),
+        title: const Text('Timers'),
       ),
       body: ListView(
         children: player != null
@@ -500,8 +501,8 @@ class _TimerSettingsState extends State<TimerSettings> {
               ]
             : [
                 const ListTile(
-                  title: Text("Timer settings"),
-                  subtitle: Text("Audio features not available on web"),
+                  title: Text('Timer settings'),
+                  subtitle: Text('Audio features not available on web'),
                 ),
               ],
       ),

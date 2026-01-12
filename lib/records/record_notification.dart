@@ -1,8 +1,9 @@
 import 'dart:math';
 
-import 'package:jackedlog/records/records_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'records_service.dart';
 
 /// Shows a celebratory notification when a new record is achieved
 void showRecordNotification(
@@ -51,13 +52,13 @@ void showRecordNotification(
 }
 
 class _RecordNotificationDialog extends StatefulWidget {
-  final List<RecordAchievement> achievements;
-  final String exerciseName;
 
   const _RecordNotificationDialog({
     required this.achievements,
     required this.exerciseName,
   });
+  final List<RecordAchievement> achievements;
+  final String exerciseName;
 
   @override
   State<_RecordNotificationDialog> createState() =>
@@ -99,7 +100,6 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final primaryRecord = widget.achievements.first;
 
     return Stack(
       children: [
@@ -173,8 +173,10 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                                   top: Radius.circular(22),
                                 ),
                                 gradient: LinearGradient(
-                                  begin: Alignment(-2 + 4 * _shimmerController.value, 0),
-                                  end: Alignment(-1 + 4 * _shimmerController.value, 0),
+                                  begin: Alignment(
+                                      -2 + 4 * _shimmerController.value, 0,),
+                                  end: Alignment(
+                                      -1 + 4 * _shimmerController.value, 0,),
                                   colors: [
                                     Colors.transparent,
                                     Colors.white.withValues(alpha: 0.1),
@@ -187,7 +189,7 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                         ),
                         // Crown icon
                         TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.5, end: 1.0),
+                          tween: Tween(begin: 0.5, end: 1),
                           duration: const Duration(milliseconds: 600),
                           curve: Curves.elasticOut,
                           builder: (context, scale, child) {
@@ -253,7 +255,10 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                           // Exercise name
                           Text(
                             widget.exerciseName,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
                                   color: colorScheme.onSurface,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -262,7 +267,8 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                           const SizedBox(height: 20),
                           // Record achievements
                           ...widget.achievements.map(
-                            (achievement) => _RecordBadge(achievement: achievement),
+                            (achievement) =>
+                                _RecordBadge(achievement: achievement),
                           ),
                         ],
                       ),
@@ -279,16 +285,16 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
 }
 
 class _RecordBadge extends StatelessWidget {
-  final RecordAchievement achievement;
 
   const _RecordBadge({required this.achievement});
+  final RecordAchievement achievement;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
+      tween: Tween(begin: 0, end: 1),
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeOutBack,
       builder: (context, value, child) {
@@ -351,7 +357,8 @@ class _RecordBadge extends StatelessWidget {
               ),
             ),
             // Improvement badge
-            if (achievement.previousValue != null && achievement.improvement > 0)
+            if (achievement.previousValue != null &&
+                achievement.improvement > 0)
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -414,14 +421,6 @@ class _RecordBadge extends StatelessWidget {
 }
 
 class _ConfettiParticle {
-  final double startX;
-  final double startY;
-  final double velocityX;
-  final double velocityY;
-  final double size;
-  final int colorIndex;
-  final double rotation;
-  final double rotationSpeed;
 
   _ConfettiParticle(Random random)
       : startX = random.nextDouble(),
@@ -432,18 +431,26 @@ class _ConfettiParticle {
         colorIndex = random.nextInt(5),
         rotation = random.nextDouble() * 2 * pi,
         rotationSpeed = (random.nextDouble() - 0.5) * 10;
+  final double startX;
+  final double startY;
+  final double velocityX;
+  final double velocityY;
+  final double size;
+  final int colorIndex;
+  final double rotation;
+  final double rotationSpeed;
 }
 
 class _ConfettiPainter extends CustomPainter {
-  final List<_ConfettiParticle> particles;
-  final double progress;
-  final List<Color> colors;
 
   _ConfettiPainter({
     required this.particles,
     required this.progress,
     required this.colors,
   });
+  final List<_ConfettiParticle> particles;
+  final double progress;
+  final List<Color> colors;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -486,16 +493,15 @@ class _ConfettiPainter extends CustomPainter {
 
 /// A small crown icon widget for indicating record sets
 class RecordCrown extends StatelessWidget {
-  final Set<RecordType> records;
-  final double size;
-  final bool showTooltip;
 
   const RecordCrown({
-    super.key,
-    required this.records,
+    required this.records, super.key,
     this.size = 16,
     this.showTooltip = true,
   });
+  final Set<RecordType> records;
+  final double size;
+  final bool showTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -560,9 +566,9 @@ class RecordCrown extends StatelessWidget {
 
 /// A compact record indicator showing just the icon
 class RecordIndicator extends StatelessWidget {
-  final Set<RecordType> records;
 
-  const RecordIndicator({super.key, required this.records});
+  const RecordIndicator({required this.records, super.key});
+  final Set<RecordType> records;
 
   @override
   Widget build(BuildContext context) {

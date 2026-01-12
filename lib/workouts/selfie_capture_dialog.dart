@@ -6,8 +6,6 @@ class SelfieCaptureDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return AlertDialog(
       title: const Text('Capture Your Progress'),
       content: Column(
@@ -51,7 +49,7 @@ class SelfieCaptureDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context, null),
+          onPressed: () => Navigator.pop(context),
           child: const Text('Skip'),
         ),
       ],
@@ -61,9 +59,8 @@ class SelfieCaptureDialog extends StatelessWidget {
 
 /// Shows selfie capture dialog and returns the image path or null
 Future<String?> showSelfieCaptureDialog(BuildContext context) async {
-  return await showDialog<String?>(
+  return showDialog<String?>(
     context: context,
-    useRootNavigator: true,
     barrierDismissible: false,
     builder: (context) => const SelfieCaptureDialog(),
   );

@@ -1,18 +1,17 @@
-import 'package:jackedlog/database/gym_sets.dart';
 import 'package:flutter/material.dart';
 
+import 'database/gym_sets.dart';
+
 class GraphsFilters extends StatefulWidget {
+
+  const GraphsFilters({
+    required this.category, required this.setCategory, super.key,
+  });
   final String? category;
   final Function(String?) setCategory;
 
-  const GraphsFilters({
-    super.key,
-    required this.category,
-    required this.setCategory,
-  });
-
   @override
-  createState() => _GraphsFiltersState();
+  _GraphsFiltersState createState() => _GraphsFiltersState();
 }
 
 class _GraphsFiltersState extends State<GraphsFilters> {
@@ -34,7 +33,7 @@ class _GraphsFiltersState extends State<GraphsFilters> {
               PopupMenuItem(
                 child: DropdownButtonFormField(
                   decoration: const InputDecoration(labelText: 'Category'),
-                  value: widget.category,
+                  initialValue: widget.category,
                   items: snapshot.data
                       ?.map(
                         (category) => DropdownMenuItem(
@@ -52,7 +51,7 @@ class _GraphsFiltersState extends State<GraphsFilters> {
               PopupMenuItem(
                 child: ListTile(
                   leading: const Icon(Icons.clear),
-                  title: const Text("Clear"),
+                  title: const Text('Clear'),
                   onTap: () async {
                     widget.setCategory(null);
                     Navigator.pop(context);
@@ -60,7 +59,7 @@ class _GraphsFiltersState extends State<GraphsFilters> {
                 ),
               ),
             ],
-            tooltip: "Filter by category",
+            tooltip: 'Filter by category',
             icon: Icon(
               Icons.filter_list,
               color: count > 0

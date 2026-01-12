@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
 class NotesSection extends StatelessWidget {
-  final TextEditingController controller;
-  final VoidCallback onChanged;
 
   const NotesSection({
-    super.key,
-    required this.controller,
-    required this.onChanged,
+    required this.controller, required this.onChanged, super.key,
   });
+  final TextEditingController controller;
+  final VoidCallback onChanged;
 
   @override
   Widget build(BuildContext context) {

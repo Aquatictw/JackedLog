@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:jackedlog/models/set_data.dart';
-import 'package:jackedlog/records/records_service.dart';
-import 'package:jackedlog/widgets/sets/complete_button.dart';
-import 'package:jackedlog/widgets/sets/reps_input.dart';
-import 'package:jackedlog/widgets/sets/weight_input.dart';
+import '../../models/set_data.dart';
+import '../../records/records_service.dart';
+import 'complete_button.dart';
+import 'reps_input.dart';
+import 'weight_input.dart';
 
 class SetRow extends StatelessWidget {
+
+  const SetRow({
+    required this.index, required this.setData, required this.unit, required this.records, required this.onWeightChanged, required this.onRepsChanged, required this.onToggle, required this.onDelete, super.key,
+    this.onTypeChanged,
+  });
   final int index;
   final SetData setData;
   final String unit;
@@ -15,19 +20,6 @@ class SetRow extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onDelete;
   final Function(bool isWarmup, bool isDropSet)? onTypeChanged;
-
-  const SetRow({
-    super.key,
-    required this.index,
-    required this.setData,
-    required this.unit,
-    required this.records,
-    required this.onWeightChanged,
-    required this.onRepsChanged,
-    required this.onToggle,
-    required this.onDelete,
-    this.onTypeChanged,
-  });
 
   Future<void> _showSetTypeMenu(
     BuildContext context,
@@ -177,7 +169,6 @@ class SetRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: borderColor,
-            width: 1,
           ),
         ),
         child: Row(
@@ -198,7 +189,6 @@ class SetRow extends StatelessWidget {
                   border: onTypeChanged != null
                       ? Border.all(
                           color: accentColor.withValues(alpha: 0.3),
-                          width: 1,
                         )
                       : null,
                 ),
@@ -237,7 +227,6 @@ class SetRow extends StatelessWidget {
               child: WeightInput(
                 value: setData.weight,
                 unit: unit,
-                enabled: true,
                 completed: completed,
                 accentColor: accentColor,
                 onChanged: onWeightChanged,
@@ -249,7 +238,6 @@ class SetRow extends StatelessWidget {
               flex: 4,
               child: RepsInput(
                 value: setData.reps,
-                enabled: true,
                 completed: completed,
                 accentColor: accentColor,
                 onChanged: onRepsChanged,

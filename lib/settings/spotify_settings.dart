@@ -1,11 +1,12 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/spotify/spotify_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:provider/provider.dart';
+
+import '../database/database.dart';
+import '../main.dart';
+import '../spotify/spotify_state.dart';
+import '../utils.dart';
+import 'settings_state.dart';
 
 /// Get Spotify settings widgets for search functionality
 List<Widget> getSpotifySettings(
@@ -36,7 +37,7 @@ List<Widget> getSpotifySettings(
 /// Toggle Music tab visibility (helper for search functionality)
 void _toggleMusicTab(bool visible, SettingsState settings) {
   final tabSplit = settings.value.tabs.split(',');
-  List<String> newTabs = List.from(tabSplit);
+  final List<String> newTabs = List.from(tabSplit);
 
   if (visible && !tabSplit.contains('MusicPage')) {
     // Add MusicPage after PlansPage (position 2)
@@ -76,8 +77,8 @@ class _SpotifySettingsState extends State<SpotifySettings> {
     final bool hasToken = settings.value.spotifyAccessToken != null;
     final bool isTokenExpired = hasToken &&
         settings.value.spotifyTokenExpiry != null &&
-        DateTime.now().isAfter(
-            DateTime.fromMillisecondsSinceEpoch(settings.value.spotifyTokenExpiry!));
+        DateTime.now().isAfter(DateTime.fromMillisecondsSinceEpoch(
+            settings.value.spotifyTokenExpiry!,),);
 
     final bool isConnected = hasToken && !isTokenExpired;
 
@@ -89,7 +90,7 @@ class _SpotifySettingsState extends State<SpotifySettings> {
         title: const Text('Spotify'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8),
         child: ListView(
           children: [
             // Connection status indicator
@@ -134,7 +135,7 @@ class _SpotifySettingsState extends State<SpotifySettings> {
               ListTile(
                 leading: const Icon(Icons.logout),
                 title: const Text('Disconnect Spotify'),
-                onTap: _isProcessing ? null : () => _showDisconnectDialog(),
+                onTap: _isProcessing ? null : _showDisconnectDialog,
               ),
 
             // Reconnect button (visible when error state or token expired)
@@ -142,7 +143,7 @@ class _SpotifySettingsState extends State<SpotifySettings> {
               ListTile(
                 leading: const Icon(Icons.refresh),
                 title: const Text('Reconnect'),
-                onTap: _isProcessing ? null : () => _reconnectSpotify(),
+                onTap: _isProcessing ? null : _reconnectSpotify,
               ),
 
             const SizedBox(height: 8),

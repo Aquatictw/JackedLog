@@ -1,11 +1,12 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
+
+import '../database/database.dart';
+import '../main.dart';
+import 'settings_state.dart';
 
 final List<String> long = [
   'timeago',
@@ -38,26 +39,26 @@ List<Widget> getFormatSettings(String term, Setting settings) {
   return [
     if ('strength unit'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: DropdownButtonFormField<String>(
           decoration: const InputDecoration(labelText: 'Strength unit'),
           initialValue: settings.strengthUnit,
           items: const [
             DropdownMenuItem(
-              value: "last-entry",
-              child: Text("Last entry"),
+              value: 'last-entry',
+              child: Text('Last entry'),
             ),
             DropdownMenuItem(
               value: 'kg',
-              child: Text("Kilograms (kg)"),
+              child: Text('Kilograms (kg)'),
             ),
             DropdownMenuItem(
               value: 'lb',
-              child: Text("Pounds (lb)"),
+              child: Text('Pounds (lb)'),
             ),
             DropdownMenuItem(
               value: 'stone',
-              child: Text("Stone"),
+              child: Text('Stone'),
             ),
           ],
           onChanged: (value) {
@@ -71,30 +72,30 @@ List<Widget> getFormatSettings(String term, Setting settings) {
       ),
     if ('cardio unit'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: DropdownButtonFormField<String>(
           decoration: const InputDecoration(labelText: 'Cardio unit'),
           initialValue: settings.cardioUnit,
           items: const [
             DropdownMenuItem(
-              value: "last-entry",
-              child: Text("Last entry"),
+              value: 'last-entry',
+              child: Text('Last entry'),
             ),
             DropdownMenuItem(
               value: 'km',
-              child: Text("Kilometers (km)"),
+              child: Text('Kilometers (km)'),
             ),
             DropdownMenuItem(
               value: 'mi',
-              child: Text("Miles (mi)"),
+              child: Text('Miles (mi)'),
             ),
             DropdownMenuItem(
               value: 'm',
-              child: Text("Meters (m)"),
+              child: Text('Meters (m)'),
             ),
             DropdownMenuItem(
               value: 'kcal',
-              child: Text("Kilocalories (kcal)"),
+              child: Text('Kilocalories (kcal)'),
             ),
           ],
           onChanged: (value) {
@@ -108,7 +109,7 @@ List<Widget> getFormatSettings(String term, Setting settings) {
       ),
     if ('long date format'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Tooltip(
           message: 'Used where space is abundant',
           child: Builder(
@@ -142,7 +143,7 @@ List<Widget> getFormatSettings(String term, Setting settings) {
       ),
     if ('short date format'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Tooltip(
           message: 'For where space is cramped (Graph lines)',
           child: DropdownButtonFormField<String>(
@@ -178,7 +179,7 @@ class FormatSettings extends StatelessWidget {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text("Formats"),
+        title: const Text('Formats'),
       ),
       body: ListView(
         children: getFormatSettings('', settings.value),

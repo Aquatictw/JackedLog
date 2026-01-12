@@ -1,21 +1,22 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:jackedlog/bottom_nav.dart';
-import 'package:jackedlog/widgets/segmented_pill_nav.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/graph/graphs_page.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/music/music_page.dart';
-import 'package:jackedlog/notes/notes_page.dart';
-import 'package:jackedlog/plan/plans_page.dart';
-import 'package:jackedlog/sets/history_page.dart';
-import 'package:jackedlog/settings/settings_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/timer/rest_timer_bar.dart';
-import 'package:jackedlog/utils.dart';
-import 'package:jackedlog/workouts/active_workout_bar.dart';
-import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'bottom_nav.dart';
+import 'database/database.dart';
+import 'graph/graphs_page.dart';
+import 'main.dart';
+import 'music/music_page.dart';
+import 'notes/notes_page.dart';
+import 'plan/plans_page.dart';
+import 'sets/history_page.dart';
+import 'settings/settings_page.dart';
+import 'settings/settings_state.dart';
+import 'timer/rest_timer_bar.dart';
+import 'utils.dart';
+import 'widgets/segmented_pill_nav.dart';
+import 'workouts/active_workout_bar.dart';
+import 'workouts/workout_state.dart';
 
 // Feature flag to toggle between old and new navigation
 const bool _useSegmentedPill = true;
@@ -54,7 +55,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void hideTab(BuildContext context, String tab) {
     final state = context.read<SettingsState>();
     final old = state.value.tabs;
-    var tabs = state.value.tabs.split(',');
+    final tabs = state.value.tabs.split(',');
 
     if (tabs.length == 1) return toast("Can't hide everything!");
     tabs.remove(tab);
