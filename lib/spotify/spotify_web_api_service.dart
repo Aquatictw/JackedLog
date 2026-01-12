@@ -44,15 +44,20 @@ class SpotifyWebApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body) as Map<String, dynamic>;
       } else if (response.statusCode == 401) {
-        // Token expired, caller should refresh token
+        // Token expired or invalid
+        print('🎵 Token expired (401), need to reconnect to Spotify');
+        _currentToken = null;
         return null;
       } else if (response.statusCode == 429) {
-        // Rate limited, return cached data (handled by caller)
+        // Rate limited, return null (handled by caller)
+        print('🎵 Rate limited (429), skipping this fetch');
         return null;
       } else {
+        print('🎵 API error ${response.statusCode}: ${response.body}');
         return null;
       }
     } catch (e) {
+      print('🎵 Network error: $e');
       return null;
     }
   }
