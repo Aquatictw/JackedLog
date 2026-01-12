@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:jackedlog/spotify/spotify_service.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:spotify_sdk/models/player_options.dart' as player_options;
 import 'package:spotify_sdk/models/player_state.dart';
 
@@ -19,12 +21,14 @@ class Track {
   final String artist;
   final String album;
   final String? artworkUrl;
+  final Color? dominantColor;
 
   Track({
     required this.title,
     required this.artist,
     required this.album,
     this.artworkUrl,
+    this.dominantColor,
   });
 
   /// Create Track from Spotify SDK PlayerState
@@ -45,6 +49,7 @@ class Track {
       artist: playerState.track?.artist.name ?? 'Unknown Artist',
       album: playerState.track?.album.name ?? 'Unknown Album',
       artworkUrl: artworkUrl,
+      dominantColor: null, // Will be extracted async
     );
   }
 
@@ -55,6 +60,18 @@ class Track {
       artist: 'Open Spotify and start playing',
       album: '',
       artworkUrl: null,
+      dominantColor: null,
+    );
+  }
+
+  /// Create copy with updated dominantColor
+  Track copyWith({Color? dominantColor}) {
+    return Track(
+      title: title,
+      artist: artist,
+      album: album,
+      artworkUrl: artworkUrl,
+      dominantColor: dominantColor ?? this.dominantColor,
     );
   }
 }
@@ -145,10 +162,40 @@ class SpotifyState extends ChangeNotifier {
     }
   }
 
+  /// Extract dominant color from album artwork
+  Future<void> _extractDominantColor(String imageUrl) async {
+    try {
+      final imageProvider = NetworkImage(imageUrl);
+      final paletteGenerator = await PaletteGenerator.fromImageProvider(
+        imageProvider,
+        maximumColorCount: 10,
+      );
+
+      // Get dominant or vibrant color
+      final dominantColor = paletteGenerator.dominantColor?.color ??
+          paletteGenerator.vibrantColor?.color;
+
+      if (dominantColor != null) {
+        _currentTrack = _currentTrack.copyWith(dominantColor: dominantColor);
+        notifyListeners();
+      }
+    } catch (e) {
+      // Ignore color extraction errors
+    }
+  }
+
   /// Update state properties from PlayerState object
   void _updateFromPlayerState(PlayerState playerState) {
+    final newTrack = Track.fromPlayerState(playerState);
+
+    // Extract color if artwork URL changed
+    if (newTrack.artworkUrl != null &&
+        newTrack.artworkUrl != _currentTrack.artworkUrl) {
+      _extractDominantColor(newTrack.artworkUrl!);
+    }
+
     _currentPlayerState = playerState;
-    _currentTrack = Track.fromPlayerState(playerState);
+    _currentTrack = newTrack;
     _positionMs = playerState.playbackPosition;
     _durationMs = playerState.track?.duration ?? 0;
     _isPaused = playerState.isPaused;
