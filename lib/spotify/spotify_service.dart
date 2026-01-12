@@ -222,6 +222,17 @@ class SpotifyService {
     }
   }
 
+  /// Play a specific track by Spotify URI
+  /// Accepts full URI format: "spotify:track:xxxxx"
+  Future<void> playTrack(String spotifyUri) async {
+    try {
+      await SpotifySdk.play(spotifyUri: spotifyUri);
+    } catch (e) {
+      print('🎵 Play track error: $e');
+      rethrow;
+    }
+  }
+
   // Note: Queue API is not available in spotify_sdk package
   // Queue functionality has been removed as it's not supported
 }

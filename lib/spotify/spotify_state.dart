@@ -26,6 +26,7 @@ class Track {
   final String album;
   final String? artworkUrl;
   final Color? dominantColor;
+  final String? uri;
 
   Track({
     required this.title,
@@ -33,6 +34,7 @@ class Track {
     required this.album,
     this.artworkUrl,
     this.dominantColor,
+    this.uri,
   });
 
   /// Create Track from Spotify SDK PlayerState
@@ -54,6 +56,7 @@ class Track {
       album: playerState.track?.album.name ?? 'Unknown Album',
       artworkUrl: artworkUrl,
       dominantColor: null, // Will be extracted async
+      uri: playerState.track?.uri, // Extract URI from PlayerState
     );
   }
 
@@ -65,6 +68,7 @@ class Track {
       album: '',
       artworkUrl: null,
       dominantColor: null,
+      uri: null,
     );
   }
 
@@ -76,6 +80,7 @@ class Track {
       album: album,
       artworkUrl: artworkUrl,
       dominantColor: dominantColor ?? this.dominantColor,
+      uri: uri,
     );
   }
 }
@@ -100,6 +105,7 @@ class SpotifyState extends ChangeNotifier {
   player_options.RepeatMode _repeatMode = player_options.RepeatMode.off;
   List<Track> _queue = [];
   List<Track> _recentlyPlayed = [];
+  List<Track> _localSkipHistory = []; // Local skip tracking
   String? _playingFromType; // 'playlist', 'album', 'artist'
   String? _playingFromName;
 
@@ -114,7 +120,29 @@ class SpotifyState extends ChangeNotifier {
   bool get isShuffling => _isShuffling;
   player_options.RepeatMode get repeatMode => _repeatMode;
   List<Track> get queue => _queue;
-  List<Track> get recentlyPlayed => _recentlyPlayed;
+  List<Track> get recentlyPlayed {
+    // Deduplicate: local history first, then API history
+    final seen = <String>{};
+    final combined = <Track>[];
+
+    for (final track in _localSkipHistory) {
+      final key = '${track.title}_${track.artist}';
+      if (!seen.contains(key)) {
+        seen.add(key);
+        combined.add(track);
+      }
+    }
+
+    for (final track in _recentlyPlayed) {
+      final key = '${track.title}_${track.artist}';
+      if (!seen.contains(key)) {
+        seen.add(key);
+        combined.add(track);
+      }
+    }
+
+    return combined.take(20).toList(); // Limit to 20 total
+  }
   String? get playingFromType => _playingFromType;
   String? get playingFromName => _playingFromName;
 
@@ -234,6 +262,7 @@ class SpotifyState extends ChangeNotifier {
           artist: item['artist'] as String,
           album: item['album'] as String,
           artworkUrl: item['artworkUrl'] as String?,
+          uri: item['uri'] as String?,
         );
       }).toList();
 
@@ -245,6 +274,7 @@ class SpotifyState extends ChangeNotifier {
           artist: item['artist'] as String,
           album: item['album'] as String,
           artworkUrl: item['artworkUrl'] as String?,
+          uri: item['uri'] as String?,
         );
       }).toList();
 
@@ -269,6 +299,20 @@ class SpotifyState extends ChangeNotifier {
   /// Update state properties from PlayerState object
   void _updateFromPlayerState(PlayerState playerState) {
     final newTrack = Track.fromPlayerState(playerState);
+
+    // Track change detection for local skip history
+    final trackKey = '${_currentTrack.title}_${_currentTrack.artist}';
+    final newTrackKey = '${newTrack.title}_${newTrack.artist}';
+
+    if (trackKey != newTrackKey && _currentTrack.title != 'No track playing') {
+      // Track changed - add old track to local skip history
+      _localSkipHistory.insert(0, _currentTrack);
+
+      // Limit to 10 most recent
+      if (_localSkipHistory.length > 10) {
+        _localSkipHistory = _localSkipHistory.sublist(0, 10);
+      }
+    }
 
     // Extract color if artwork URL changed
     if (newTrack.artworkUrl != null &&
@@ -349,6 +393,7 @@ class SpotifyState extends ChangeNotifier {
     _repeatMode = player_options.RepeatMode.off;
     _queue = [];
     _recentlyPlayed = [];
+    _localSkipHistory = [];
     _playingFromType = null;
     _playingFromName = null;
     notifyListeners();
@@ -357,6 +402,13 @@ class SpotifyState extends ChangeNotifier {
   /// Refresh player state immediately (useful for manual refresh)
   Future<void> refresh() async {
     await _pollPlayerState();
+  }
+
+  /// Play a specific track by URI
+  Future<void> playTrack(String spotifyUri) async {
+    await _service.playTrack(spotifyUri);
+    // Refresh immediately to show new track
+    await refresh();
   }
 
   @override
