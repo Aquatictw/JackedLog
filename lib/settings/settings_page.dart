@@ -5,6 +5,7 @@ import 'package:jackedlog/settings/data_settings.dart';
 import 'package:jackedlog/settings/format_settings.dart';
 import 'package:jackedlog/settings/plan_settings.dart';
 import 'package:jackedlog/settings/settings_state.dart';
+import 'package:jackedlog/settings/spotify_settings.dart';
 import 'package:jackedlog/settings/tab_settings.dart';
 import 'package:jackedlog/settings/timer_settings.dart';
 import 'package:jackedlog/settings/workout_settings.dart';
@@ -69,6 +70,13 @@ class _SettingsPageState extends State<SettingsPage>
           settings.value,
           maxSets,
           warmupSets,
+        ),
+      );
+      filtered.addAll(
+        getSpotifySettings(
+          context,
+          searchCtrl.text,
+          settings,
         ),
       );
     }
@@ -168,6 +176,15 @@ class _SettingsPageState extends State<SettingsPage>
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const WorkoutSettings(),
+                            ),
+                          ),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.music_note),
+                          title: const Text("Spotify"),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const SpotifySettings(),
                             ),
                           ),
                         ),

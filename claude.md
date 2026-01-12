@@ -2,7 +2,7 @@
 
 ## CRITICAL RULES - READ FIRST
 
-### DO NOT run any Flutter commands other than `flutter analyze`(user will test manually later)
+### DO NOT run any Flutter commands, ask user to run `flutter analyze` or manually test
 ### Always do manual migration
 ### If database version has been changed, and previous exported data from app can't be reimported, affirm me.
 
