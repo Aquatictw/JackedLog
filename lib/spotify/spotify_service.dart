@@ -34,6 +34,10 @@ class SpotifyService {
   /// Check [hasValidToken] to verify token is still valid.
   String? get accessToken => _accessToken;
 
+  /// Get the token expiry time if available.
+  /// Returns null if no token has been acquired.
+  DateTime? get tokenExpiry => _tokenExpiry;
+
   /// Check if a valid, non-expired access token is available.
   /// Returns true only if token exists and hasn't expired.
   bool get hasValidToken =>

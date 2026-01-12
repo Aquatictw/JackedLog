@@ -24,6 +24,7 @@ class _TabSettingsState extends State<TabSettings> {
   List<TabSetting> tabs = [
     (name: 'HistoryPage', enabled: false),
     (name: 'PlansPage', enabled: false),
+    (name: 'MusicPage', enabled: false),
     (name: 'GraphsPage', enabled: false),
     (name: 'NotesPage', enabled: false),
     (name: 'SettingsPage', enabled: false),
@@ -132,6 +133,26 @@ class _TabSettingsState extends State<TabSettings> {
                           const Icon(Icons.calendar_today_outlined),
                           SizedBox(width: 8),
                           const Text("Plans"),
+                        ],
+                      ),
+                      trailing: ReorderableDragStartListener(
+                        index: index,
+                        child: const Icon(Icons.drag_handle),
+                      ),
+                    );
+                  } else if (tab.name == 'MusicPage') {
+                    return ListTile(
+                      key: Key(tab.name),
+                      onTap: () => setTab(tab.name, !tab.enabled),
+                      leading: Switch(
+                        value: tab.enabled,
+                        onChanged: (value) => setTab(tab.name, value),
+                      ),
+                      title: material.Row(
+                        children: [
+                          const Icon(Icons.music_note),
+                          SizedBox(width: 8),
+                          const Text("Music"),
                         ],
                       ),
                       trailing: ReorderableDragStartListener(

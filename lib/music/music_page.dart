@@ -7,7 +7,7 @@ import 'package:jackedlog/music/widgets/player_controls.dart';
 import 'package:jackedlog/music/widgets/seek_bar.dart';
 import 'package:jackedlog/music/widgets/queue_bottom_sheet.dart';
 import 'package:jackedlog/music/widgets/animated_equalizer.dart';
-import 'package:jackedlog/music/widgets/recently_played_section.dart';
+import 'package:jackedlog/music/widgets/recently_played_bottom_sheet.dart';
 
 /// Main UI widget for the Music tab
 /// Provides Spotify remote control interface during workouts
@@ -81,9 +81,12 @@ class _MusicPageState extends State<MusicPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      // Add top spacing to center content vertically
+                      const SizedBox(height: 40),
+
                       // Large album art
                       _buildAlbumArt(context, spotifyState),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
 
                       // Track name (bold, large text)
                       _buildTrackTitle(theme, spotifyState),
@@ -99,23 +102,35 @@ class _MusicPageState extends State<MusicPage> {
 
                       // Playing from context
                       _buildPlayingFromContext(theme, spotifyState),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
                       // Seek bar with position/duration
                       const SeekBar(),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
 
                       // Player controls (shuffle, previous, play/pause, next, repeat)
                       const PlayerControls(),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
 
-                      // View Queue button
-                      _buildViewQueueButton(context),
-                      const SizedBox(height: 24),
-
-                      // Recently played tracks
-                      RecentlyPlayedSection(
-                        recentlyPlayed: spotifyState.recentlyPlayed,
+                      // Action buttons row (Queue and Recently Played)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // View Queue button
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: _buildViewQueueButton(context),
+                            ),
+                          ),
+                          // View Recently Played button
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: _buildRecentlyPlayedButton(context),
+                            ),
+                          ),
+                        ],
                       ),
 
                       // Add bottom padding to clear navigation bar
@@ -309,9 +324,28 @@ class _MusicPageState extends State<MusicPage> {
         );
       },
       icon: const Icon(Icons.queue_music),
-      label: const Text('View Queue'),
+      label: const Text('Queue'),
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+    );
+  }
+
+  /// Build "Recently Played" button that opens recently played bottom sheet
+  Widget _buildRecentlyPlayedButton(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: () {
+        showModalBottomSheet(
+          context: context,
+          useRootNavigator: true,
+          isScrollControlled: true,
+          builder: (context) => const RecentlyPlayedBottomSheet(),
+        );
+      },
+      icon: const Icon(Icons.history),
+      label: const Text('Recent'),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }

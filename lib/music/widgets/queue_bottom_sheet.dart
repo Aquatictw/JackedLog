@@ -177,15 +177,6 @@ class QueueBottomSheet extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            trailing: Text(
-                              '${index + 1}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.6),
-                              ),
-                            ),
                           );
                         },
                       ),
