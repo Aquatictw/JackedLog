@@ -1,16 +1,15 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart' hide Column;
-import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart' as material;
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jackedlog/animated_fab.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/main.dart';
 import 'package:jackedlog/plan/plan_state.dart';
 import 'package:jackedlog/settings/settings_state.dart';
 import 'package:jackedlog/utils.dart';
-import 'package:flutter/material.dart' as material;
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class EditGraphPage extends StatefulWidget {
@@ -90,15 +89,19 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0,),
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
                     child: TextField(
                       controller: name,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: "Exercise Name",
                         border: InputBorder.none,
-                        icon: Icon(Icons.label_outline,
-                            color: colorScheme.primary,),
+                        icon: Icon(
+                          Icons.label_outline,
+                          color: colorScheme.primary,
+                        ),
                       ),
                       textCapitalization: TextCapitalization.sentences,
                     ),
@@ -123,7 +126,9 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0,),
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
                     child: Row(
                       children: [
                         Icon(Icons.timer_outlined, color: colorScheme.primary),
@@ -268,7 +273,9 @@ class _EditGraphPageState extends State<EditGraphPage> {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 8.0,),
+                        horizontal: 16.0,
+                        vertical: 8.0,
+                      ),
                       child: TextField(
                         controller: brandNameCtrl,
                         decoration: InputDecoration(
@@ -310,13 +317,17 @@ class _EditGraphPageState extends State<EditGraphPage> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0, vertical: 4.0,),
+                              horizontal: 16.0,
+                              vertical: 4.0,
+                            ),
                             child: DropdownButtonFormField<String>(
                               decoration: InputDecoration(
                                 labelText: 'Bodypart',
                                 border: InputBorder.none,
-                                icon: Icon(Icons.accessibility_new,
-                                    color: colorScheme.primary,),
+                                icon: Icon(
+                                  Icons.accessibility_new,
+                                  color: colorScheme.primary,
+                                ),
                               ),
                               initialValue: category != null &&
                                       bodyparts.contains(category)
@@ -352,7 +363,9 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0,),
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
                     child: TextField(
                       controller: notesCtrl,
                       maxLines: 3,
@@ -360,8 +373,10 @@ class _EditGraphPageState extends State<EditGraphPage> {
                         labelText: 'Notes (Optional)',
                         hintText: 'Add any notes about this exercise...',
                         border: InputBorder.none,
-                        icon: Icon(Icons.note_outlined,
-                            color: colorScheme.primary,),
+                        icon: Icon(
+                          Icons.note_outlined,
+                          color: colorScheme.primary,
+                        ),
                       ),
                     ),
                   ),

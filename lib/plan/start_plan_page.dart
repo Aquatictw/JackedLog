@@ -1,29 +1,17 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:jackedlog/constants.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/database/gym_sets.dart';
 import 'package:jackedlog/database/query_helpers.dart';
-import 'package:jackedlog/graph/add_exercise_page.dart';
-import 'package:jackedlog/graph/cardio_page.dart';
-import 'package:jackedlog/graph/strength_page.dart';
 import 'package:jackedlog/main.dart';
-import 'package:jackedlog/models/set_data.dart';
 import 'package:jackedlog/plan/exercise_sets_card.dart';
 import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/records/record_notification.dart';
-import 'package:jackedlog/records/records_service.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/timer/timer_state.dart';
-import 'package:jackedlog/widgets/bodypart_tag.dart';
-import 'package:jackedlog/widgets/five_three_one_calculator.dart';
 import 'package:jackedlog/widgets/plate_calculator.dart';
 import 'package:jackedlog/widgets/superset/superset_manager_dialog.dart';
 import 'package:jackedlog/widgets/workout/add_exercise_card.dart';
 import 'package:jackedlog/widgets/workout/exercise_picker_modal.dart';
 import 'package:jackedlog/widgets/workout/notes_section.dart';
 import 'package:jackedlog/workouts/workout_state.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class StartPlanPage extends StatefulWidget {
@@ -220,9 +208,11 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 .where((e) => e.exercise == group.name)
                 .firstOrNull;
             if (planExercise != null) {
-              _exerciseOrder.add(_ExerciseItem.plan(planExercise, sequence: group.minSeq));
+              _exerciseOrder.add(
+                  _ExerciseItem.plan(planExercise, sequence: group.minSeq));
             } else {
-              _exerciseOrder.add(_ExerciseItem.adHoc(group.name, sequence: group.minSeq));
+              _exerciseOrder
+                  .add(_ExerciseItem.adHoc(group.name, sequence: group.minSeq));
             }
 
             // Restore notes from first set of this group
@@ -451,7 +441,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 IconButton(
                   icon: const Icon(Icons.link),
                   tooltip: 'Create superset',
-                  onPressed: _exerciseOrder.length >= 2 ? _showSupersetManager : null,
+                  onPressed:
+                      _exerciseOrder.length >= 2 ? _showSupersetManager : null,
                 ),
                 IconButton(
                   icon: const Icon(Icons.swap_vert),
@@ -640,7 +631,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 }
               });
             },
-            onSetCompleted: () {}, // No special action needed for ad-hoc exercises
+            onSetCompleted:
+                () {}, // No special action needed for ad-hoc exercises
             onDeleteExercise: () async {
               final exerciseName = item.adHocName!;
               final removedSequence = item.sequence;
@@ -743,7 +735,10 @@ class _StartPlanPageState extends State<StartPlanPage> {
     if (result != null && mounted) {
       final nextSequence = _exerciseOrder.isEmpty
           ? 0
-          : _exerciseOrder.map((e) => e.sequence).reduce((a, b) => a > b ? a : b) + 1;
+          : _exerciseOrder
+                  .map((e) => e.sequence)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
       final newItem = _ExerciseItem.adHoc(result, sequence: nextSequence);
       setState(() {
         _exerciseOrder.add(newItem);

@@ -1,9 +1,7 @@
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/widgets/bodyweight_entry_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/settings/settings_state.dart';
 import 'package:provider/provider.dart';
 
 /// A timeline-style tile widget for displaying individual bodyweight entries.
