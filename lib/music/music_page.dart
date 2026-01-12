@@ -66,26 +66,29 @@ class _MusicPageState extends State<MusicPage> {
                   children: [
                     // Large album art
                     _buildAlbumArt(context, spotifyState),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
                     // Track name (bold, large text)
                     _buildTrackTitle(theme, spotifyState),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
 
                     // Artist name (medium gray text)
                     _buildArtistName(theme, spotifyState),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
 
                     // Seek bar with position/duration
                     const SeekBar(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
                     // Player controls (shuffle, previous, play/pause, next, repeat)
                     const PlayerControls(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
                     // View Queue button
                     _buildViewQueueButton(context),
+
+                    // Add bottom padding to clear navigation bar
+                    const SizedBox(height: 96),
                   ],
                 ),
               ),
