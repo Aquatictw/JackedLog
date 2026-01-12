@@ -67,12 +67,10 @@ class SpotifyWebApiService {
   Future<List<Map<String, dynamic>>> getQueue() async {
     final data = await _get('/me/player/queue');
     if (data == null) {
-      print('🎵 Queue fetch returned null');
       return [];
     }
 
     final List<dynamic> queue = data['queue'] ?? [];
-    print('🎵 Queue fetched: ${queue.length} tracks');
     return queue.map((item) {
       return {
         'title': item['name'] ?? 'Unknown Track',
@@ -88,12 +86,10 @@ class SpotifyWebApiService {
   Future<List<Map<String, dynamic>>> getRecentlyPlayed({int limit = 10}) async {
     final data = await _get('/me/player/recently-played?limit=$limit');
     if (data == null) {
-      print('🎵 Recently played fetch returned null');
       return [];
     }
 
     final List<dynamic> items = data['items'] ?? [];
-    print('🎵 Recently played fetched: ${items.length} tracks');
     return items.map((item) {
       final track = item['track'];
       return {
@@ -111,13 +107,11 @@ class SpotifyWebApiService {
   Future<Map<String, String>?> getPlaybackContext() async {
     final data = await _get('/me/player');
     if (data == null) {
-      print('🎵 Playback context fetch returned null');
       return null;
     }
 
     final context = data['context'];
     if (context == null) {
-      print('🎵 No playback context (single track or radio)');
       return null;
     }
 
@@ -129,7 +123,6 @@ class SpotifyWebApiService {
       final playlistId = uri.split(':').last;
       final playlistData = await _get('/playlists/$playlistId?fields=name');
       final name = playlistData?['name'] ?? 'Unknown Playlist';
-      print('🎵 Playing from playlist: $name');
       return {
         'type': 'playlist',
         'name': name,
@@ -139,14 +132,12 @@ class SpotifyWebApiService {
       final albumId = uri.split(':').last;
       final albumData = await _get('/albums/$albumId?fields=name');
       final name = albumData?['name'] ?? 'Unknown Album';
-      print('🎵 Playing from album: $name');
       return {
         'type': 'album',
         'name': name,
         'uri': uri,
       };
     } else if (type == 'artist') {
-      print('🎵 Playing from artist radio');
       return {
         'type': 'artist',
         'name': 'Artist Radio',
