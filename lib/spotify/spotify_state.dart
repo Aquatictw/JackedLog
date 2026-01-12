@@ -161,6 +161,7 @@ class SpotifyState extends ChangeNotifier {
 
         // Fetch Web API data every 5 seconds (reduce API calls)
         if (_pollingTick % 5 == 0) {
+          print('🎵 Polling tick $_pollingTick - fetching Web API data');
           _fetchWebApiData();
         }
       } else {
@@ -180,6 +181,7 @@ class SpotifyState extends ChangeNotifier {
       if (_connectionStatus == ConnectionStatus.connected) {
         _connectionStatus = ConnectionStatus.error;
         _errorMessage = 'Connection lost';
+        print('🎵 Polling error: $e');
         notifyListeners();
       }
     }
