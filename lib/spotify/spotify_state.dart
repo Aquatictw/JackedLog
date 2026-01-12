@@ -209,6 +209,15 @@ class SpotifyState extends ChangeNotifier {
 
   /// Fetch queue, recently played, and context from Web API
   Future<void> _fetchWebApiData() async {
+    // Set access token from service before making API calls
+    final token = _service.accessToken;
+    if (token == null) {
+      print('🎵 No access token available, skipping Web API fetch');
+      return;
+    }
+
+    _webApiService.setAccessToken(token);
+
     // Fetch queue
     final queueData = await _webApiService.getQueue();
     _queue = queueData.map((item) {
