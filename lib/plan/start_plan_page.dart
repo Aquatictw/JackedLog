@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:jackedlog/constants.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/database/gym_sets.dart';
+import 'package:jackedlog/database/query_helpers.dart';
 import 'package:jackedlog/graph/add_exercise_page.dart';
 import 'package:jackedlog/graph/cardio_page.dart';
 import 'package:jackedlog/graph/strength_page.dart';
@@ -140,31 +141,19 @@ class _StartPlanPageState extends State<StartPlanPage> {
     final planState = context.read<PlanState>();
     await planState.updateGymCounts(widget.plan.id, workoutId);
 
-    // Query all sets for this workout (excluding tombstones)
-    final existingSets = await (db.gymSets.select()
-          ..where(
-            (s) =>
-                s.workoutId.equals(workoutId!) &
-                s.sequence.isBiggerOrEqualValue(0),
-          )
-          ..orderBy([
-            (s) => OrderingTerm(expression: s.sequence, mode: OrderingMode.asc),
-          ]))
-        .get();
+    // Use optimized query - combines 2 queries into 1
+    final workoutData = await QueryHelpers.loadWorkoutResumeData(
+      workoutId: workoutId!,
+    );
+
+    final existingSets = workoutData.existingSets;
+    final removedExercises = workoutData.removedExercises;
 
     // Load plan exercises (if not freeform)
     List<PlanExercise> planExercises = [];
     if (widget.plan.id != -1) {
       planExercises = await stream.first;
     }
-
-    // Identify removed exercises (those with tombstone markers)
-    final tombstones = await (db.gymSets.select()
-          ..where(
-            (s) => s.workoutId.equals(workoutId!) & s.sequence.equals(-1),
-          ))
-        .get();
-    final removedExercises = tombstones.map((s) => s.name).toSet();
 
     if (mounted) {
       setState(() {
