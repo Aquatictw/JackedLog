@@ -4,6 +4,7 @@ import 'package:jackedlog/widgets/segmented_pill_nav.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/graph/graphs_page.dart';
 import 'package:jackedlog/main.dart';
+import 'package:jackedlog/music/music_page.dart';
 import 'package:jackedlog/notes/notes_page.dart';
 import 'package:jackedlog/plan/plans_page.dart';
 import 'package:jackedlog/sets/history_page.dart';
@@ -111,6 +112,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   return PlansPage(
                     tabController: controller,
                   );
+                else if (tab == 'MusicPage')
+                  return const MusicPage();
                 else if (tab == 'GraphsPage')
                   return GraphsPage(tabController: controller);
                 else if (tab == 'NotesPage')

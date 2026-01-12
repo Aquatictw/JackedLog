@@ -1,14 +1,12 @@
 import 'package:drift/drift.dart' as drift;
-import 'package:jackedlog/widgets/stats/period_selector.dart';
-import 'package:jackedlog/widgets/stats/stat_card.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/workouts/workout_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/main.dart';
+import 'package:jackedlog/widgets/stats/period_selector.dart';
+import 'package:jackedlog/widgets/stats/stat_card.dart';
+import 'package:jackedlog/workouts/workout_detail_page.dart';
 
 enum OverviewPeriod { week, month, months3, months6, year, allTime }
 
@@ -51,7 +49,10 @@ class _OverviewPageState extends State<OverviewPage> {
     // For All Time, get the earliest workout date
     if (period == OverviewPeriod.allTime) {
       final firstWorkout = await (db.workouts.select()
-            ..orderBy([(w) => drift.OrderingTerm(expression: w.startTime, mode: drift.OrderingMode.asc)])
+            ..orderBy([
+              (w) => drift.OrderingTerm(
+                  expression: w.startTime, mode: drift.OrderingMode.asc)
+            ])
             ..limit(1))
           .getSingleOrNull();
 
@@ -177,7 +178,10 @@ class _OverviewPageState extends State<OverviewPage> {
 
     // Get latest bodyweight entry
     final latestEntry = await (db.bodyweightEntries.select()
-          ..orderBy([(e) => drift.OrderingTerm(expression: e.date, mode: drift.OrderingMode.desc)])
+          ..orderBy([
+            (e) => drift.OrderingTerm(
+                expression: e.date, mode: drift.OrderingMode.desc)
+          ])
           ..limit(1))
         .getSingleOrNull();
 
@@ -187,7 +191,10 @@ class _OverviewPageState extends State<OverviewPage> {
       // Get bodyweight at start of period for comparison
       final startEntry = await (db.bodyweightEntries.select()
             ..where((e) => e.date.isSmallerOrEqualValue(startDate))
-            ..orderBy([(e) => drift.OrderingTerm(expression: e.date, mode: drift.OrderingMode.desc)])
+            ..orderBy([
+              (e) => drift.OrderingTerm(
+                  expression: e.date, mode: drift.OrderingMode.desc)
+            ])
             ..limit(1))
           .getSingleOrNull();
 
@@ -198,7 +205,10 @@ class _OverviewPageState extends State<OverviewPage> {
       // Get all entries in the period for chart
       weightHistory = await (db.bodyweightEntries.select()
             ..where((e) => e.date.isBiggerOrEqualValue(startDate))
-            ..orderBy([(e) => drift.OrderingTerm(expression: e.date, mode: drift.OrderingMode.asc)]))
+            ..orderBy([
+              (e) => drift.OrderingTerm(
+                  expression: e.date, mode: drift.OrderingMode.asc)
+            ]))
           .get();
     }
 
@@ -367,7 +377,8 @@ class _OverviewPageState extends State<OverviewPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => WorkoutDetailPage(workout: workout),
+                            builder: (context) =>
+                                WorkoutDetailPage(workout: workout),
                           ),
                         );
                       },
@@ -394,7 +405,8 @@ class _OverviewPageState extends State<OverviewPage> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(16),
@@ -411,7 +423,8 @@ class _OverviewPageState extends State<OverviewPage> {
                 ],
               ),
             ),
-            Divider(height: 1, color: colorScheme.outline.withValues(alpha: 0.2)),
+            Divider(
+                height: 1, color: colorScheme.outline.withValues(alpha: 0.2)),
             // Exercise list
             Flexible(
               child: ListView.builder(
@@ -429,7 +442,8 @@ class _OverviewPageState extends State<OverviewPage> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                      color: colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: colorScheme.outline.withValues(alpha: 0.2),
@@ -713,14 +727,16 @@ class _OverviewPageState extends State<OverviewPage> {
 
     // Find the Monday of the week containing startDate
     final startWeekday = startDate.weekday; // 1 = Monday, 7 = Sunday
-    final mondayOfStartWeek = startDate.subtract(Duration(days: startWeekday - 1));
+    final mondayOfStartWeek =
+        startDate.subtract(Duration(days: startWeekday - 1));
 
     // Find the Sunday of the week containing today
     final todayWeekday = today.weekday;
     final sundayOfCurrentWeek = today.add(Duration(days: 7 - todayWeekday));
 
     // Calculate weeks to display
-    final totalDays = sundayOfCurrentWeek.difference(mondayOfStartWeek).inDays + 1;
+    final totalDays =
+        sundayOfCurrentWeek.difference(mondayOfStartWeek).inDays + 1;
     final weeks = (totalDays / 7).ceil();
 
     // Build month labels (latest on left)
@@ -771,7 +787,8 @@ class _OverviewPageState extends State<OverviewPage> {
                     ['M', 'T', 'W', 'T', 'F', 'S', 'S'][dayOfWeek],
                     style: TextStyle(
                       fontSize: 10,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      color:
+                          colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -786,84 +803,89 @@ class _OverviewPageState extends State<OverviewPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                // Month labels
-                Row(
-                  children: List.generate(weeks, (weekIndex) {
-                    final label = monthLabels[weekIndex];
-                    return SizedBox(
-                      width: 18,
-                      child: label != null
-                          ? Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(
-                                label,
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.primary.withValues(alpha: 0.8),
-                                ),
-                              ),
-                            )
-                          : const SizedBox(),
-                    );
-                  }),
-                ),
-                // Day rows (Monday=0 to Sunday=6)
-                ...List.generate(7, (dayOfWeek) {
-                  return Row(
+                  // Month labels
+                  Row(
                     children: List.generate(weeks, (weekIndex) {
-                      // Calculate date from most recent week backwards
-                      final weeksFromNow = weekIndex;
-                      final weekStart = sundayOfCurrentWeek.subtract(Duration(days: weeksFromNow * 7 + (6 - dayOfWeek)));
-                      final date = DateTime(weekStart.year, weekStart.month, weekStart.day);
-
-                      if (date.isBefore(startDate) || date.isAfter(today)) {
-                        return const Padding(
-                          padding: EdgeInsets.all(2),
-                          child: SizedBox(width: 14, height: 14),
-                        );
-                      }
-
-                      final count = trainingDays[date] ?? 0;
-
-                      return Padding(
-                        padding: const EdgeInsets.all(2),
-                        child: InkWell(
-                          onTap: count > 0
-                              ? () => _showDayDetails(date)
-                              : null,
-                          borderRadius: BorderRadius.circular(3),
-                          child: Container(
-                            width: 14,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: _getHeatmapColor(colorScheme, count),
-                              borderRadius: BorderRadius.circular(3),
-                              border: Border.all(
-                                color: count > 0
-                                    ? colorScheme.primary.withValues(alpha: 0.3)
-                                    : colorScheme.outline.withValues(alpha: 0.2),
-                                width: count > 0 ? 0.8 : 0.5,
-                              ),
-                              boxShadow: count > 10
-                                  ? [
-                                      BoxShadow(
-                                        color: colorScheme.primary.withValues(alpha: 0.3),
-                                        blurRadius: 2,
-                                        spreadRadius: 0.5,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                          ),
-                        ),
+                      final label = monthLabels[weekIndex];
+                      return SizedBox(
+                        width: 18,
+                        child: label != null
+                            ? Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(
+                                  label,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.primary
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox(),
                       );
                     }),
-                  );
-                }),
-              ],
+                  ),
+                  // Day rows (Monday=0 to Sunday=6)
+                  ...List.generate(7, (dayOfWeek) {
+                    return Row(
+                      children: List.generate(weeks, (weekIndex) {
+                        // Calculate date from most recent week backwards
+                        final weeksFromNow = weekIndex;
+                        final weekStart = sundayOfCurrentWeek.subtract(
+                            Duration(days: weeksFromNow * 7 + (6 - dayOfWeek)));
+                        final date = DateTime(
+                            weekStart.year, weekStart.month, weekStart.day);
+
+                        if (date.isBefore(startDate) || date.isAfter(today)) {
+                          return const Padding(
+                            padding: EdgeInsets.all(2),
+                            child: SizedBox(width: 14, height: 14),
+                          );
+                        }
+
+                        final count = trainingDays[date] ?? 0;
+
+                        return Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: InkWell(
+                            onTap:
+                                count > 0 ? () => _showDayDetails(date) : null,
+                            borderRadius: BorderRadius.circular(3),
+                            child: Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: _getHeatmapColor(colorScheme, count),
+                                borderRadius: BorderRadius.circular(3),
+                                border: Border.all(
+                                  color: count > 0
+                                      ? colorScheme.primary
+                                          .withValues(alpha: 0.3)
+                                      : colorScheme.outline
+                                          .withValues(alpha: 0.2),
+                                  width: count > 0 ? 0.8 : 0.5,
+                                ),
+                                boxShadow: count > 10
+                                    ? [
+                                        BoxShadow(
+                                          color: colorScheme.primary
+                                              .withValues(alpha: 0.3),
+                                          blurRadius: 2,
+                                          spreadRadius: 0.5,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    );
+                  }),
+                ],
+              ),
             ),
-          ),
           ),
         ],
       ),
@@ -1035,7 +1057,8 @@ class _OverviewPageState extends State<OverviewPage> {
       children: [
         Row(
           children: [
-            Icon(Icons.format_list_numbered, color: colorScheme.secondary, size: 20),
+            Icon(Icons.format_list_numbered,
+                color: colorScheme.secondary, size: 20),
             const SizedBox(width: 8),
             Text(
               'Muscle Group Set Count',

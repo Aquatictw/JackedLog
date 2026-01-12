@@ -1,13 +1,9 @@
 import 'package:drift/drift.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/graph/cardio_data.dart';
-import 'package:jackedlog/graph/flex_line.dart';
 import 'package:jackedlog/main.dart';
 import 'package:jackedlog/settings/settings_state.dart';
 import 'package:jackedlog/widgets/artistic_color_picker.dart';
-import 'package:flutter/material.dart' as material;
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 List<Widget> getAppearanceSettings(
@@ -87,7 +83,10 @@ List<Widget> getAppearanceSettings(
                   : 'Tap to customize',
               style: TextStyle(
                 color: settings.value.systemColors
-                    ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)
+                    ? Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.5)
                     : null,
               ),
             ),
@@ -103,7 +102,8 @@ List<Widget> getAppearanceSettings(
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(settings.value.customColorSeed).withValues(alpha: 0.4),
+                    color: Color(settings.value.customColorSeed)
+                        .withValues(alpha: 0.4),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
@@ -124,10 +124,10 @@ List<Widget> getAppearanceSettings(
                     );
                     if (color != null) {
                       await db.settings.update().write(
-                        SettingsCompanion(
-                          customColorSeed: Value(color.value),
-                        ),
-                      );
+                            SettingsCompanion(
+                              customColorSeed: Value(color.value),
+                            ),
+                          );
                     }
                   },
             trailing: settings.value.systemColors
@@ -135,7 +135,10 @@ List<Widget> getAppearanceSettings(
                 : Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.5),
                   ),
           ),
         ),

@@ -67,6 +67,8 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
         return 'assets/animations/nav_history.riv';
       case 'PlansPage':
         return 'assets/animations/nav_plans.riv';
+      case 'MusicPage':
+        return 'assets/animations/nav_music.riv';
       case 'GraphsPage':
         return 'assets/animations/nav_graphs.riv';
       case 'NotesPage':
@@ -84,6 +86,8 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
         return Icons.history_rounded;
       case 'PlansPage':
         return Icons.calendar_today_rounded;
+      case 'MusicPage':
+        return Icons.music_note;
       case 'GraphsPage':
         return Icons.insights_rounded;
       case 'NotesPage':
@@ -101,6 +105,8 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
         return 'History';
       case 'PlansPage':
         return 'Plans';
+      case 'MusicPage':
+        return 'Music';
       case 'GraphsPage':
         return 'Graphs';
       case 'NotesPage':

@@ -35,7 +35,7 @@ class Settings extends Table {
   TextColumn get strengthUnit => text()();
   BoolColumn get systemColors => boolean()();
   TextColumn get tabs => text().withDefault(
-        const Constant("HistoryPage,PlansPage,GraphsPage,NotesPage,SettingsPage"),
+        const Constant("HistoryPage,PlansPage,MusicPage,GraphsPage,NotesPage,SettingsPage"),
       )();
   TextColumn get themeMode => text()();
   IntColumn get timerDuration => integer()();
@@ -51,4 +51,8 @@ class Settings extends Table {
   IntColumn get fivethreeoneWeek => integer().withDefault(const Constant(1))();
   IntColumn get customColorSeed => integer().withDefault(const Constant(0xFF673AB7))();  // Default: deep purple
   DateTimeColumn get lastAutoBackupTime => dateTime().nullable()();
+  // Spotify integration tokens
+  TextColumn get spotifyAccessToken => text().nullable()();
+  TextColumn get spotifyRefreshToken => text().nullable()();
+  IntColumn get spotifyTokenExpiry => integer().nullable()();
 }

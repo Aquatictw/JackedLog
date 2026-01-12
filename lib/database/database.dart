@@ -438,8 +438,17 @@ class AppDatabase extends _$AppDatabase {
               );
         },
         from47To48: (Migrator m, Schema48 schema) async {
-          await m.createTable(schema.workouts);
-          await m.addColumn(schema.gymSets, schema.gymSets.workoutId);
+          await m.database.customStatement('''
+            CREATE TABLE IF NOT EXISTS workouts (
+              id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+              start_time INTEGER NOT NULL,
+              end_time INTEGER,
+              plan_id INTEGER,
+              name TEXT,
+              notes TEXT
+            )
+          ''');
+          await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN workout_id INTEGER');
           await m.createIndex(
             Index(
               'gym_sets',
@@ -453,26 +462,33 @@ class AppDatabase extends _$AppDatabase {
         from49To50: (Migrator m, Schema50 schema) async {
           await m.addColumn(schema.gymSets, schema.gymSets.warmup);
         },
-        from50To51: (Migrator m, Schema51 schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.exerciseType);
-          await m.addColumn(schema.gymSets, schema.gymSets.brandName);
-        },
-        from51To52: (Migrator m, Schema52 schema) async {
-          await m.createTable(schema.notes);
+        from50To52: (Migrator m, Schema52 schema) async {
+          await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN exercise_type TEXT');
+          await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN brand_name TEXT');
+          await m.database.customStatement('''
+            CREATE TABLE IF NOT EXISTS notes (
+              id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+              title TEXT NOT NULL,
+              content TEXT NOT NULL,
+              created INTEGER NOT NULL,
+              updated INTEGER NOT NULL,
+              color INTEGER NOT NULL
+            )
+          ''');
         },
         from52To53: (Migrator m, Schema53 schema) async {
           await m.addColumn(schema.gymSets, schema.gymSets.dropSet);
         },
         from53To54: (Migrator m, Schema54 schema) async {
-          await m.addColumn(schema.settings, schema.settings.fivethreeoneSquatTm);
-          await m.addColumn(schema.settings, schema.settings.fivethreeoneBenchTm);
-          await m.addColumn(schema.settings, schema.settings.fivethreeoneDeadliftTm);
-          await m.addColumn(schema.settings, schema.settings.fivethreeonePressTm);
-          await m.addColumn(schema.settings, schema.settings.fivethreeoneWeek);
+          await m.database.customStatement('ALTER TABLE settings ADD COLUMN fivethreeone_squat_tm REAL');
+          await m.database.customStatement('ALTER TABLE settings ADD COLUMN fivethreeone_bench_tm REAL');
+          await m.database.customStatement('ALTER TABLE settings ADD COLUMN fivethreeone_deadlift_tm REAL');
+          await m.database.customStatement('ALTER TABLE settings ADD COLUMN fivethreeone_press_tm REAL');
+          await m.database.customStatement('ALTER TABLE settings ADD COLUMN fivethreeone_week INTEGER NOT NULL DEFAULT 1');
         },
-        from54To55: (Migrator m, Schema55 schema) async {
+        from54To57: (Migrator m, Schema57 schema) async {
           await m.addColumn(schema.settings, schema.settings.customColorSeed);
-          // Create bodyweightEntries table using raw SQL since Schema55 doesn't include it yet
+          // Create bodyweightEntries table using raw SQL since Schema57 doesn't include it yet
           await m.database.customStatement('''
             CREATE TABLE IF NOT EXISTS bodyweight_entries (
               id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -503,11 +519,9 @@ class AppDatabase extends _$AppDatabase {
               );
             }
           }
-        },
-        from55To56: (Migrator m, Schema56 schema) async {
+
           await m.addColumn(schema.settings, schema.settings.lastAutoBackupTime);
-        },
-        from56To57: (Migrator m, schema) async {
+
           // Add superset columns to gym_sets table
           await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN superset_id TEXT');
           await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN superset_position INTEGER');
@@ -535,6 +549,12 @@ class AppDatabase extends _$AppDatabase {
           // Add selfieImagePath column to workouts - nullable, no default
           await m.addColumn(schema.workouts, schema.workouts.selfieImagePath);
         },
+        from59To60: (Migrator m, Schema60 schema) async {
+          // Add Spotify token columns to settings - nullable, no default
+          await m.addColumn(schema.settings, schema.settings.spotifyAccessToken);
+          await m.addColumn(schema.settings, schema.settings.spotifyRefreshToken);
+          await m.addColumn(schema.settings, schema.settings.spotifyTokenExpiry);
+        },
       ),
       beforeOpen: (details) async {
 
@@ -559,5 +579,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 59;
+  int get schemaVersion => 60;
 }
