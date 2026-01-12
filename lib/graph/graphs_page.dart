@@ -1,7 +1,8 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/drift.dart';
+import 'package:flutter/material.dart' as material;
+import 'package:flutter/material.dart';
 import 'package:jackedlog/animated_fab.dart';
-import 'package:jackedlog/constants.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/database/gym_sets.dart';
 import 'package:jackedlog/graph/add_exercise_page.dart';
@@ -11,8 +12,6 @@ import 'package:jackedlog/plan/plan_state.dart';
 import 'package:jackedlog/settings/settings_page.dart';
 import 'package:jackedlog/settings/settings_state.dart';
 import 'package:jackedlog/widgets/timer_quick_access.dart';
-import 'package:flutter/material.dart' as material;
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'bodyweight_overview_page.dart';

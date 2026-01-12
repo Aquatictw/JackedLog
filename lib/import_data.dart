@@ -5,12 +5,12 @@ import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/main.dart';
 import 'package:jackedlog/settings/settings_state.dart';
 import 'package:jackedlog/utils.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -64,7 +64,7 @@ class ImportData extends StatelessWidget {
       } else {
         await _importDatabaseNative(context);
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (!ctx.mounted) return;
 
       toast(
@@ -165,27 +165,32 @@ class ImportData extends StatelessWidget {
       // Parse workouts CSV
       String workoutsCsvContent;
       try {
-        workoutsCsvContent = utf8.decode(workoutsFile.content as List<int>, allowMalformed: false);
+        workoutsCsvContent = utf8.decode(workoutsFile.content as List<int>,
+            allowMalformed: false);
       } catch (e) {
         workoutsCsvContent = latin1.decode(workoutsFile.content as List<int>);
       }
 
-      final workoutsRows = const CsvToListConverter(eol: "\n").convert(workoutsCsvContent);
+      final workoutsRows =
+          const CsvToListConverter(eol: "\n").convert(workoutsCsvContent);
       if (workoutsRows.isEmpty) throw Exception('Workouts CSV is empty');
 
       // Parse gym sets CSV
       String setsCsvContent;
       try {
-        setsCsvContent = utf8.decode(setsFile.content as List<int>, allowMalformed: false);
+        setsCsvContent =
+            utf8.decode(setsFile.content as List<int>, allowMalformed: false);
       } catch (e) {
         setsCsvContent = latin1.decode(setsFile.content as List<int>);
       }
 
-      final setsRows = const CsvToListConverter(eol: "\n").convert(setsCsvContent);
+      final setsRows =
+          const CsvToListConverter(eol: "\n").convert(setsCsvContent);
       if (setsRows.isEmpty) throw Exception('Gym sets CSV is empty');
 
       // Check CSV format version by examining header row
-      final setsHeader = setsRows.first.map((e) => e.toString().toLowerCase()).toList();
+      final setsHeader =
+          setsRows.first.map((e) => e.toString().toLowerCase()).toList();
       final hasBodyWeightColumn = setsHeader.contains('bodyweight');
       final hasSupersetColumns = setsHeader.contains('supersetid');
       final hasSetOrderColumn = setsHeader.contains('setorder');
@@ -193,7 +198,8 @@ class ImportData extends StatelessWidget {
       // Import workouts first (skip header row)
       final workoutsToInsert = workoutsRows.skip(1).map((row) {
         if (row.length < 6) {
-          throw Exception('Workout row has insufficient columns: ${row.length}');
+          throw Exception(
+              'Workout row has insufficient columns: ${row.length}');
         }
 
         return WorkoutsCompanion(
@@ -213,7 +219,8 @@ class ImportData extends StatelessWidget {
         }
 
         final reps = _parseDouble(row[2], 'reps', setsRows.indexOf(row) + 1);
-        final weight = _parseDouble(row[3], 'weight', setsRows.indexOf(row) + 1);
+        final weight =
+            _parseDouble(row[3], 'weight', setsRows.indexOf(row) + 1);
 
         // Adjust column indices based on CSV format version
         // Old format (v54 and earlier): had bodyWeight column at index 9
@@ -228,8 +235,10 @@ class ImportData extends StatelessWidget {
           unit: Value(row[4]?.toString() ?? ''),
           created: Value(parseDate(row[5])),
           cardio: Value(parseBool(row.elementAtOrNull(6))),
-          duration: Value(double.tryParse(row.elementAtOrNull(7)?.toString() ?? '0') ?? 0),
-          distance: Value(double.tryParse(row.elementAtOrNull(8)?.toString() ?? '0') ?? 0),
+          duration: Value(
+              double.tryParse(row.elementAtOrNull(7)?.toString() ?? '0') ?? 0),
+          distance: Value(
+              double.tryParse(row.elementAtOrNull(8)?.toString() ?? '0') ?? 0),
           // Skip bodyWeight column (index 9) if present in old format
           incline: Value(_parseNullableInt(row.elementAtOrNull(9 + offset))),
           restMs: Value(_parseNullableInt(row.elementAtOrNull(10 + offset))),
@@ -237,16 +246,31 @@ class ImportData extends StatelessWidget {
           workoutId: Value(_parseNullableInt(row.elementAtOrNull(12 + offset))),
           planId: Value(_parseNullableInt(row.elementAtOrNull(13 + offset))),
           image: Value(_parseNullableString(row.elementAtOrNull(14 + offset))),
-          category: Value(_parseNullableString(row.elementAtOrNull(15 + offset))),
+          category:
+              Value(_parseNullableString(row.elementAtOrNull(15 + offset))),
           notes: Value(_parseNullableString(row.elementAtOrNull(16 + offset))),
-          sequence: Value(int.tryParse(row.elementAtOrNull(17 + offset)?.toString() ?? '0') ?? 0),
-          setOrder: Value(hasSetOrderColumn ? _parseNullableInt(row.elementAtOrNull(18 + offset)) : null),
-          warmup: Value(parseBool(row.elementAtOrNull(hasSetOrderColumn ? 19 + offset : 18 + offset))),
-          exerciseType: Value(_parseNullableString(row.elementAtOrNull(hasSetOrderColumn ? 20 + offset : 19 + offset))),
-          brandName: Value(_parseNullableString(row.elementAtOrNull(hasSetOrderColumn ? 21 + offset : 20 + offset))),
-          dropSet: Value(parseBool(row.elementAtOrNull(hasSetOrderColumn ? 22 + offset : 21 + offset))),
-          supersetId: Value(hasSupersetColumns ? _parseNullableString(row.elementAtOrNull(hasSetOrderColumn ? 23 + offset : 22 + offset)) : null),
-          supersetPosition: Value(hasSupersetColumns ? _parseNullableInt(row.elementAtOrNull(hasSetOrderColumn ? 24 + offset : 23 + offset)) : null),
+          sequence: Value(int.tryParse(
+                  row.elementAtOrNull(17 + offset)?.toString() ?? '0') ??
+              0),
+          setOrder: Value(hasSetOrderColumn
+              ? _parseNullableInt(row.elementAtOrNull(18 + offset))
+              : null),
+          warmup: Value(parseBool(row
+              .elementAtOrNull(hasSetOrderColumn ? 19 + offset : 18 + offset))),
+          exerciseType: Value(_parseNullableString(row
+              .elementAtOrNull(hasSetOrderColumn ? 20 + offset : 19 + offset))),
+          brandName: Value(_parseNullableString(row
+              .elementAtOrNull(hasSetOrderColumn ? 21 + offset : 20 + offset))),
+          dropSet: Value(parseBool(row
+              .elementAtOrNull(hasSetOrderColumn ? 22 + offset : 21 + offset))),
+          supersetId: Value(hasSupersetColumns
+              ? _parseNullableString(row.elementAtOrNull(
+                  hasSetOrderColumn ? 23 + offset : 22 + offset))
+              : null),
+          supersetPosition: Value(hasSupersetColumns
+              ? _parseNullableInt(row.elementAtOrNull(
+                  hasSetOrderColumn ? 24 + offset : 23 + offset))
+              : null),
         );
       });
 
@@ -263,7 +287,7 @@ class ImportData extends StatelessWidget {
       Navigator.pop(ctx);
 
       toast('Workout data imported successfully!');
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (!ctx.mounted) return;
 
       toast(
