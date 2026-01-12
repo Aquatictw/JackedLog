@@ -29,11 +29,22 @@ class Track {
 
   /// Create Track from Spotify SDK PlayerState
   factory Track.fromPlayerState(PlayerState playerState) {
+    // Convert Spotify URI to HTTP URL
+    String? artworkUrl;
+    final imageUri = playerState.track?.imageUri.raw;
+    if (imageUri != null && imageUri.startsWith('spotify:image:')) {
+      // Extract image ID and convert to Spotify CDN URL
+      final imageId = imageUri.replaceFirst('spotify:image:', '');
+      if (imageId.isNotEmpty) {
+        artworkUrl = 'https://i.scdn.co/image/$imageId';
+      }
+    }
+
     return Track(
       title: playerState.track?.name ?? 'Unknown Track',
       artist: playerState.track?.artist.name ?? 'Unknown Artist',
       album: playerState.track?.album.name ?? 'Unknown Album',
-      artworkUrl: playerState.track?.imageUri.raw,
+      artworkUrl: artworkUrl,
     );
   }
 
