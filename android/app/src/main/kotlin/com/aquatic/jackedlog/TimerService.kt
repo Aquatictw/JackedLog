@@ -252,12 +252,10 @@ class TimerService : Service() {
             mediaPlayer = if (alarmSound?.isNotEmpty() == true)
                 MediaPlayer.create(applicationContext, Uri.parse(alarmSound)).apply {
                     start()
-                    setOnCompletionListener { vibrator?.cancel() }
                 }
             else
                 MediaPlayer.create(applicationContext, R.raw.argon).apply {
                     start()
-                    setOnCompletionListener { vibrator?.cancel() }
                 }
         } catch (e: Exception) {
             Log.e("TimerService", "Invalid URI or non-existing file: $alarmSound", e)
