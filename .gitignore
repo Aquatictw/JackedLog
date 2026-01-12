@@ -3,13 +3,11 @@
 *.log
 *.pyc
 *.swp
-.DS_Store
 .atom/
 .build/
 .buildlog/
 .history
 .svn/
-.swiftpm/
 migrate_working_dir/
 
 # IntelliJ related
@@ -61,3 +59,6 @@ docs/
 
 # Spotify credentials (use spotify_config.dart.template to create)
 /lib/spotify/spotify_config.dart
+
+# Flutter SDK submodule (local only)
+/flutter/

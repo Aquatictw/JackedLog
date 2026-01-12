@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 
 class StatCard extends StatelessWidget {
+
+  const StatCard({
+    required this.icon, required this.label, required this.value, required this.color, super.key,
+  });
   final IconData icon;
   final String label;
   final String value;
   final Color color;
-
-  const StatCard({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +21,6 @@ class StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: color.withValues(alpha: 0.3),
-          width: 1,
         ),
       ),
       child: Column(

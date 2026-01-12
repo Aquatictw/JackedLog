@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:jackedlog/spotify/spotify_state.dart';
+import '../../spotify/spotify_state.dart';
 
 /// Horizontal scrollable section showing recently played tracks
 class RecentlyPlayedSection extends StatelessWidget {
-  final List<Track> recentlyPlayed;
 
   const RecentlyPlayedSection({
-    super.key,
-    required this.recentlyPlayed,
+    required this.recentlyPlayed, super.key,
   });
+  final List<Track> recentlyPlayed;
 
   @override
   Widget build(BuildContext context) {
@@ -67,8 +66,9 @@ class RecentlyPlayedSection extends StatelessWidget {
                                   track.artworkUrl!,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: colorScheme.surfaceContainerHighest,
+                                    return ColoredBox(
+                                      color:
+                                          colorScheme.surfaceContainerHighest,
                                       child: Icon(
                                         Icons.music_note,
                                         color: colorScheme.onSurfaceVariant
@@ -77,7 +77,7 @@ class RecentlyPlayedSection extends StatelessWidget {
                                     );
                                   },
                                 )
-                              : Container(
+                              : ColoredBox(
                                   color: colorScheme.surfaceContainerHighest,
                                   child: Icon(
                                     Icons.music_note,

@@ -1,26 +1,35 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/database/gym_sets.dart';
-import 'package:jackedlog/database/query_helpers.dart';
-import 'package:jackedlog/graph/cardio_page.dart';
-import 'package:jackedlog/graph/strength_page.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/models/set_data.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/records/record_notification.dart';
-import 'package:jackedlog/records/records_service.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/timer/timer_state.dart';
-import 'package:jackedlog/widgets/bodypart_tag.dart';
-import 'package:jackedlog/widgets/five_three_one_calculator.dart';
-import 'package:jackedlog/widgets/sets/set_row.dart';
-import 'package:jackedlog/widgets/superset/superset_badge.dart';
 import 'package:provider/provider.dart';
 
-class ExerciseSetsCard extends StatefulWidget {
+import '../constants.dart';
+import '../database/database.dart';
+import '../database/gym_sets.dart';
+import '../database/query_helpers.dart';
+import '../graph/cardio_page.dart';
+import '../graph/strength_page.dart';
+import '../main.dart';
+import '../models/set_data.dart';
+import '../records/record_notification.dart';
+import '../records/records_service.dart';
+import '../settings/settings_state.dart';
+import '../timer/timer_state.dart';
+import '../widgets/bodypart_tag.dart';
+import '../widgets/five_three_one_calculator.dart';
+import '../widgets/sets/set_row.dart';
+import '../widgets/superset/superset_badge.dart';
+import 'plan_state.dart';
+
+class ExerciseSetsCard extends StatefulWidget { // Exercise order within workout
+
+  const ExerciseSetsCard({
+    required this.exercise, required this.planId, required this.workoutId, required this.isExpanded, required this.onToggleExpand, required this.onSetCompleted, super.key,
+    this.onDeleteExercise,
+    this.exerciseNotes,
+    this.sequence = 0,
+    this.onNotesChanged,
+  });
   final PlanExercise exercise;
   final int planId;
   final int? workoutId;
@@ -30,21 +39,7 @@ class ExerciseSetsCard extends StatefulWidget {
   final VoidCallback? onDeleteExercise;
   final String? exerciseNotes;
   final ValueChanged<String>? onNotesChanged;
-  final int sequence; // Exercise order within workout
-
-  const ExerciseSetsCard({
-    super.key,
-    required this.exercise,
-    required this.planId,
-    required this.workoutId,
-    required this.isExpanded,
-    required this.onToggleExpand,
-    required this.onSetCompleted,
-    this.onDeleteExercise,
-    this.exerciseNotes,
-    this.sequence = 0,
-    this.onNotesChanged,
-  });
+  final int sequence;
 
   @override
   State<ExerciseSetsCard> createState() => _ExerciseSetsCardState();
@@ -54,7 +49,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
   List<SetData> sets = [];
   bool _initialized = false;
   String unit = 'kg';
-  double _defaultWeight = 0.0;
+  double _defaultWeight = 0;
   int _defaultReps = 8;
   String? _brandName;
   String? _exerciseType;
@@ -154,7 +149,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           isWarmup: set.warmup,
           isDropSet: set.dropSet,
           records: allRecords[set.id] ?? {},
-        ));
+        ),);
       }
 
       setState(() {
@@ -172,7 +167,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               ..addColumns([db.gymSets.id.count()])
               ..where(db.gymSets.workoutId.equals(widget.workoutId!) &
                   db.gymSets.name.equals(widget.exercise.exercise) &
-                  db.gymSets.sequence.equals(widget.sequence)))
+                  db.gymSets.sequence.equals(widget.sequence),))
             .getSingleOrNull();
 
         final startingSetOrder =
@@ -208,7 +203,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                   workoutId: Value(widget.workoutId),
                   sequence: Value(widget.sequence),
                   setOrder: Value(
-                      startingSetOrder + i), // Set position within exercise
+                      startingSetOrder + i,), // Set position within exercise
                   hidden: const Value(true), // Uncompleted
                   brandName: Value(_brandName),
                   exerciseType: Value(_exerciseType),
@@ -222,7 +217,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
             SetData(
               weight: weight,
               reps: reps,
-              completed: false,
               savedSetId: gymSet.id,
             ),
           );
@@ -243,19 +237,16 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               return SetData(
                 weight: _previousWorkingSets[i].weight,
                 reps: _previousWorkingSets[i].reps.toInt(),
-                completed: false,
               );
             } else if (_previousWorkingSets.isNotEmpty) {
               return SetData(
                 weight: _previousWorkingSets.last.weight,
                 reps: _previousWorkingSets.last.reps.toInt(),
-                completed: false,
               );
             } else {
               return SetData(
                 weight: _defaultWeight,
                 reps: _defaultReps,
-                completed: false,
               );
             }
           });
@@ -327,7 +318,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               leading:
                   Icon(Icons.note_add_outlined, color: colorScheme.primary),
               title: const Text('Add Notes'),
-              subtitle: widget.exerciseNotes?.isNotEmpty == true
+              subtitle: widget.exerciseNotes?.isNotEmpty ?? false
                   ? Text(
                       widget.exerciseNotes!,
                       maxLines: 1,
@@ -381,7 +372,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     final controller = TextEditingController(text: widget.exerciseNotes ?? '');
     final result = await showDialog<String>(
       context: parentContext,
-      useRootNavigator: true,
       builder: (dialogContext) => AlertDialog(
         title: Text('Notes for ${widget.exercise.exercise}'),
         content: TextField(
@@ -428,7 +418,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       final data = await getCardioData(
         target: exerciseData.unit,
         name: widget.exercise.exercise,
-        metric: CardioMetric.pace,
         period: Period.months3,
       );
       if (!parentContext.mounted) return;
@@ -566,7 +555,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       // Use custom rest time if set, otherwise use global default
       final restMs = _restMs ?? settings.timerDuration;
       timerState.startTimer(
-        "${widget.exercise.exercise} ($completedCount)",
+        '${widget.exercise.exercise} ($completedCount)',
         Duration(milliseconds: restMs),
         settings.alarmSound,
         settings.vibrate,
@@ -708,7 +697,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           SetData(
             weight: weight,
             reps: reps,
-            completed: false,
             isWarmup: isWarmup,
             isDropSet: isDropSet,
             savedSetId: gymSet.id,
@@ -735,7 +723,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           SetData(
             weight: weight,
             reps: reps,
-            completed: false,
             isWarmup: isWarmup,
             isDropSet: isDropSet,
           ),
@@ -857,7 +844,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       elevation: 2,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
       color: supersetColor?.withValues(
-          alpha: 0.08), // Subtle background tint for superset exercises
+          alpha: 0.08,), // Subtle background tint for superset exercises
       shape: supersetColor != null
           ? RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -963,7 +950,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                           ],
                         ),
                         // Exercise notes preview
-                        if (widget.exerciseNotes?.isNotEmpty == true) ...[
+                        if (widget.exerciseNotes?.isNotEmpty ?? false) ...[
                           const SizedBox(height: 4),
                           Row(
                             children: [
@@ -1177,7 +1164,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                           border: Border.all(
                                             color: colorScheme.tertiary
                                                 .withValues(alpha: 0.5),
-                                            width: 1,
                                           ),
                                           borderRadius:
                                               BorderRadius.circular(12),
@@ -1221,7 +1207,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                           border: Border.all(
                                             color: colorScheme.secondary
                                                 .withValues(alpha: 0.5),
-                                            width: 1,
                                           ),
                                           borderRadius:
                                               BorderRadius.circular(12),
@@ -1255,7 +1240,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                   // Add Working Set button
                                   Expanded(
                                     child: InkWell(
-                                      onTap: () => _addSet(isWarmup: false),
+                                      onTap: _addSet,
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
@@ -1265,7 +1250,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                           border: Border.all(
                                             color: colorScheme.primary
                                                 .withValues(alpha: 0.5),
-                                            width: 1,
                                           ),
                                           borderRadius:
                                               BorderRadius.circular(12),

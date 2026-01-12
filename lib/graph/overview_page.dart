@@ -2,11 +2,11 @@ import 'package:drift/drift.dart' as drift;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/widgets/stats/period_selector.dart';
-import 'package:jackedlog/widgets/stats/stat_card.dart';
-import 'package:jackedlog/workouts/workout_detail_page.dart';
+import '../database/database.dart';
+import '../main.dart';
+import '../widgets/stats/period_selector.dart';
+import '../widgets/stats/stat_card.dart';
+import '../workouts/workout_detail_page.dart';
 
 enum OverviewPeriod { week, month, months3, months6, year, allTime }
 
@@ -14,7 +14,7 @@ class OverviewPage extends StatefulWidget {
   const OverviewPage({super.key});
 
   @override
-  createState() => _OverviewPageState();
+  _OverviewPageState createState() => _OverviewPageState();
 }
 
 class _OverviewPageState extends State<OverviewPage> {
@@ -51,7 +51,7 @@ class _OverviewPageState extends State<OverviewPage> {
       final firstWorkout = await (db.workouts.select()
             ..orderBy([
               (w) => drift.OrderingTerm(
-                  expression: w.startTime, mode: drift.OrderingMode.asc)
+                  expression: w.startTime,),
             ])
             ..limit(1))
           .getSingleOrNull();
@@ -68,7 +68,7 @@ class _OverviewPageState extends State<OverviewPage> {
 
     // Load muscle volumes
     final volumeQuery = await db.customSelect(
-      """
+      '''
       SELECT
         gs.category as muscle,
         SUM(gs.weight * gs.reps) as total_volume
@@ -79,7 +79,7 @@ class _OverviewPageState extends State<OverviewPage> {
         AND gs.cardio = 0
       GROUP BY gs.category
       ORDER BY total_volume DESC
-    """,
+    ''',
       variables: [
         drift.Variable.withInt(startDate.millisecondsSinceEpoch ~/ 1000),
       ],
@@ -94,7 +94,7 @@ class _OverviewPageState extends State<OverviewPage> {
 
     // Load muscle set counts
     final setCountQuery = await db.customSelect(
-      """
+      '''
       SELECT
         gs.category as muscle,
         COUNT(*) as total_sets
@@ -105,7 +105,7 @@ class _OverviewPageState extends State<OverviewPage> {
         AND gs.cardio = 0
       GROUP BY gs.category
       ORDER BY total_sets DESC
-    """,
+    ''',
       variables: [
         drift.Variable.withInt(startDate.millisecondsSinceEpoch ~/ 1000),
       ],
@@ -146,11 +146,11 @@ class _OverviewPageState extends State<OverviewPage> {
 
     // Calculate total workouts
     final workoutsQuery = await db.customSelect(
-      """
+      '''
       SELECT COUNT(DISTINCT w.id) as workout_count
       FROM workouts w
       WHERE w.start_time >= ?
-    """,
+    ''',
       variables: [
         drift.Variable.withInt(startDate.millisecondsSinceEpoch ~/ 1000),
       ],
@@ -180,7 +180,7 @@ class _OverviewPageState extends State<OverviewPage> {
     final latestEntry = await (db.bodyweightEntries.select()
           ..orderBy([
             (e) => drift.OrderingTerm(
-                expression: e.date, mode: drift.OrderingMode.desc)
+                expression: e.date, mode: drift.OrderingMode.desc,),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -193,7 +193,7 @@ class _OverviewPageState extends State<OverviewPage> {
             ..where((e) => e.date.isSmallerOrEqualValue(startDate))
             ..orderBy([
               (e) => drift.OrderingTerm(
-                  expression: e.date, mode: drift.OrderingMode.desc)
+                  expression: e.date, mode: drift.OrderingMode.desc,),
             ])
             ..limit(1))
           .getSingleOrNull();
@@ -207,7 +207,7 @@ class _OverviewPageState extends State<OverviewPage> {
             ..where((e) => e.date.isBiggerOrEqualValue(startDate))
             ..orderBy([
               (e) => drift.OrderingTerm(
-                  expression: e.date, mode: drift.OrderingMode.asc)
+                  expression: e.date,),
             ]))
           .get();
     }
@@ -284,7 +284,7 @@ class _OverviewPageState extends State<OverviewPage> {
     );
 
     final dayData = await db.customSelect(
-      """
+      '''
       SELECT
         gs.name as exercise_name,
         gs.category,
@@ -295,7 +295,7 @@ class _OverviewPageState extends State<OverviewPage> {
         AND gs.hidden = 0
       GROUP BY gs.name
       ORDER BY gs.created
-    """,
+    ''',
       variables: [
         drift.Variable.withInt(workoutId),
       ],
@@ -424,7 +424,7 @@ class _OverviewPageState extends State<OverviewPage> {
               ),
             ),
             Divider(
-                height: 1, color: colorScheme.outline.withValues(alpha: 0.2)),
+                height: 1, color: colorScheme.outline.withValues(alpha: 0.2),),
             // Exercise list
             Flexible(
               child: ListView.builder(
@@ -447,7 +447,6 @@ class _OverviewPageState extends State<OverviewPage> {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: colorScheme.outline.withValues(alpha: 0.2),
-                        width: 1,
                       ),
                     ),
                     child: Row(
@@ -533,7 +532,7 @@ class _OverviewPageState extends State<OverviewPage> {
       case OverviewPeriod.year:
         return DateTime(now.year - 1, now.month, now.day);
       case OverviewPeriod.allTime:
-        return DateTime(1970, 1, 1); // Beginning of time
+        return DateTime(1970); // Beginning of time
     }
   }
 
@@ -589,7 +588,7 @@ class _OverviewPageState extends State<OverviewPage> {
   }
 
   Widget _buildStatsCards(ColorScheme colorScheme) {
-    final formatter = NumberFormat("#,###");
+    final formatter = NumberFormat('#,###');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -766,7 +765,6 @@ class _OverviewPageState extends State<OverviewPage> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: colorScheme.outline.withValues(alpha: 0.1),
-          width: 1,
         ),
       ),
       child: Row(
@@ -833,9 +831,9 @@ class _OverviewPageState extends State<OverviewPage> {
                         // Calculate date from most recent week backwards
                         final weeksFromNow = weekIndex;
                         final weekStart = sundayOfCurrentWeek.subtract(
-                            Duration(days: weeksFromNow * 7 + (6 - dayOfWeek)));
+                            Duration(days: weeksFromNow * 7 + (6 - dayOfWeek)),);
                         final date = DateTime(
-                            weekStart.year, weekStart.month, weekStart.day);
+                            weekStart.year, weekStart.month, weekStart.day,);
 
                         if (date.isBefore(startDate) || date.isAfter(today)) {
                           return const Padding(
@@ -959,7 +957,6 @@ class _OverviewPageState extends State<OverviewPage> {
                 ),
               ),
               titlesData: FlTitlesData(
-                show: true,
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -1002,14 +999,13 @@ class _OverviewPageState extends State<OverviewPage> {
                   ),
                 ),
                 topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                  
                 ),
                 rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                  
                 ),
               ),
               gridData: FlGridData(
-                show: true,
                 drawVerticalLine: false,
                 horizontalInterval: maxVolume / 5,
                 getDrawingHorizontalLine: (value) => FlLine(
@@ -1058,7 +1054,7 @@ class _OverviewPageState extends State<OverviewPage> {
         Row(
           children: [
             Icon(Icons.format_list_numbered,
-                color: colorScheme.secondary, size: 20),
+                color: colorScheme.secondary, size: 20,),
             const SizedBox(width: 8),
             Text(
               'Muscle Group Set Count',
@@ -1095,7 +1091,6 @@ class _OverviewPageState extends State<OverviewPage> {
                 ),
               ),
               titlesData: FlTitlesData(
-                show: true,
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -1138,14 +1133,13 @@ class _OverviewPageState extends State<OverviewPage> {
                   ),
                 ),
                 topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                  
                 ),
                 rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                  
                 ),
               ),
               gridData: FlGridData(
-                show: true,
                 drawVerticalLine: false,
                 horizontalInterval: (maxSets / 5).ceilToDouble(),
                 getDrawingHorizontalLine: (value) => FlLine(

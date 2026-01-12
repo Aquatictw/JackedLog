@@ -2,36 +2,34 @@ import 'dart:async';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:fl_chart/fl_chart.dart';
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/database/gym_sets.dart';
-import 'package:jackedlog/graph/cardio_data.dart';
-import 'package:jackedlog/graph/edit_graph_page.dart';
-import 'package:jackedlog/graph/graph_history_page.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/widgets/bodypart_tag.dart';
-import 'package:jackedlog/workouts/workout_detail_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../constants.dart';
+import '../database/database.dart';
+import '../database/gym_sets.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+import '../widgets/bodypart_tag.dart';
+import '../workouts/workout_detail_page.dart';
+import 'cardio_data.dart';
+import 'edit_graph_page.dart';
+import 'graph_history_page.dart';
+
 class CardioPage extends StatefulWidget {
+
+  const CardioPage({
+    required this.name, required this.unit, required this.data, super.key,
+    this.tabCtrl,
+  });
   final String name;
   final String unit;
   final List<CardioData> data;
   final TabController? tabCtrl;
 
-  const CardioPage({
-    super.key,
-    required this.name,
-    required this.unit,
-    required this.data,
-    this.tabCtrl,
-  });
-
   @override
-  createState() => _CardioPageState();
+  _CardioPageState createState() => _CardioPageState();
 }
 
 class _CardioPageState extends State<CardioPage> {
@@ -72,7 +70,8 @@ class _CardioPageState extends State<CardioPage> {
     final result = await (db.gymSets.select()
           ..where((tbl) => tbl.name.equals(widget.name))
           ..orderBy([
-            (u) => drift.OrderingTerm(expression: u.created, mode: drift.OrderingMode.desc),
+            (u) => drift.OrderingTerm(
+                expression: u.created, mode: drift.OrderingMode.desc,),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -87,7 +86,8 @@ class _CardioPageState extends State<CardioPage> {
     final result = await (db.gymSets.select()
           ..where((tbl) => tbl.name.equals(widget.name))
           ..orderBy([
-            (u) => drift.OrderingTerm(expression: u.created, mode: drift.OrderingMode.desc),
+            (u) => drift.OrderingTerm(
+                expression: u.created, mode: drift.OrderingMode.desc,),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -192,7 +192,7 @@ class _CardioPageState extends State<CardioPage> {
               Timer(kThemeAnimationDuration, setData);
             },
             icon: const Icon(Icons.history),
-            tooltip: "History",
+            tooltip: 'History',
           ),
           IconButton(
             onPressed: () {
@@ -204,7 +204,7 @@ class _CardioPageState extends State<CardioPage> {
               );
             },
             icon: const Icon(Icons.edit),
-            tooltip: "Edit",
+            tooltip: 'Edit',
           ),
         ],
       ),
@@ -282,19 +282,23 @@ class _CardioPageState extends State<CardioPage> {
                       children: [
                         _buildChart(settings, colorScheme),
                         // Selected value overlay (top left, ignores pointer)
-                        if (selectedIndex != null && selectedIndex! < data.length)
+                        if (selectedIndex != null &&
+                            selectedIndex! < data.length)
                           Positioned(
                             top: 8,
                             left: 56,
                             child: IgnorePointer(
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6,),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.primaryContainer.withValues(alpha: 0.95),
+                                  color: colorScheme.primaryContainer
+                                      .withValues(alpha: 0.95),
                                   borderRadius: BorderRadius.circular(8),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.1),
+                                      color:
+                                          Colors.black.withValues(alpha: 0.1),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -317,7 +321,8 @@ class _CardioPageState extends State<CardioPage> {
                                           .format(data[selectedIndex!].created),
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                                        color: colorScheme.onPrimaryContainer
+                                            .withValues(alpha: 0.7),
                                       ),
                                     ),
                                   ],
@@ -340,7 +345,8 @@ class _CardioPageState extends State<CardioPage> {
         return '${row.value.toStringAsFixed(2)} ${row.unit}/min';
       case CardioMetric.duration:
         final minutes = row.value.floor();
-        final seconds = ((row.value * 60) % 60).floor().toString().padLeft(2, '0');
+        final seconds =
+            ((row.value * 60) % 60).floor().toString().padLeft(2, '0');
         return '$minutes:$seconds';
       case CardioMetric.distance:
         return '${row.value.toStringAsFixed(2)} ${row.unit}';
@@ -352,7 +358,7 @@ class _CardioPageState extends State<CardioPage> {
   }
 
   Widget _buildChart(Setting settings, ColorScheme colorScheme) {
-    List<FlSpot> spots = [];
+    final List<FlSpot> spots = [];
     for (var i = 0; i < data.length; i++) {
       spots.add(FlSpot(i.toDouble(), data[i].value));
     }
@@ -367,7 +373,6 @@ class _CardioPageState extends State<CardioPage> {
         minY: minY - padding,
         maxY: maxY + padding,
         gridData: FlGridData(
-          show: true,
           drawVerticalLine: false,
           horizontalInterval: range > 0 ? range / 4 : 1,
           getDrawingHorizontalLine: (value) => FlLine(
@@ -376,8 +381,10 @@ class _CardioPageState extends State<CardioPage> {
           ),
         ),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(),
+          rightTitles:
+              const AxisTitles(),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -406,7 +413,7 @@ class _CardioPageState extends State<CardioPage> {
                 if (index < 0 || index >= data.length) return const SizedBox();
 
                 // Show 4-5 labels spread across the chart
-                final totalLabels = 5;
+                const totalLabels = 5;
                 final step = (data.length / totalLabels).ceil();
                 if (index % step != 0 && index != data.length - 1) {
                   return const SizedBox();
@@ -427,7 +434,6 @@ class _CardioPageState extends State<CardioPage> {
           ),
         ),
         lineTouchData: LineTouchData(
-          enabled: true,
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (_) => Colors.transparent,
             getTooltipItems: (_) => [],
@@ -453,11 +459,9 @@ class _CardioPageState extends State<CardioPage> {
               return TouchedSpotIndicatorData(
                 FlLine(
                   color: colorScheme.primary,
-                  strokeWidth: 2,
                   dashArray: [4, 4],
                 ),
                 FlDotData(
-                  show: true,
                   getDotPainter: (spot, percent, bar, index) {
                     return FlDotCirclePainter(
                       radius: 6,
@@ -474,18 +478,17 @@ class _CardioPageState extends State<CardioPage> {
         lineBarsData: [
           LineChartBarData(
             spots: spots,
-            isCurved: false,
             color: colorScheme.primary,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
-              show: true,
               getDotPainter: (spot, percent, bar, index) {
                 final isSelected = index == selectedIndex;
                 return FlDotCirclePainter(
                   radius: isSelected ? 5 : 3,
-                  color: isSelected ? colorScheme.primary : colorScheme.primary.withValues(alpha: 0.7),
-                  strokeWidth: 0,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.primary.withValues(alpha: 0.7),
                 );
               },
             ),
@@ -515,7 +518,7 @@ class _CardioPageState extends State<CardioPage> {
     if (index >= data.length) return;
     final row = data[index];
 
-    GymSet? gymSet = await (db.gymSets.select()
+    final GymSet? gymSet = await (db.gymSets.select()
           ..where(
             (tbl) =>
                 tbl.created.equals(row.created) & tbl.name.equals(widget.name),
@@ -526,7 +529,7 @@ class _CardioPageState extends State<CardioPage> {
     if (!mounted || gymSet == null || gymSet.workoutId == null) return;
 
     final workout = await (db.workouts.select()
-          ..where((w) => w.id.equals(gymSet!.workoutId!)))
+          ..where((w) => w.id.equals(gymSet.workoutId!)))
         .getSingleOrNull();
 
     if (!mounted || workout == null) return;
@@ -539,7 +542,7 @@ class _CardioPageState extends State<CardioPage> {
     Timer(kThemeAnimationDuration, setData);
   }
 
-  void setData() async {
+  Future<void> setData() async {
     final cardio = await getCardioData(
       period: period,
       metric: metric,

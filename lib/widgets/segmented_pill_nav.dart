@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:jackedlog/widgets/morphing_nav_icon.dart';
+import 'morphing_nav_icon.dart';
 
 /// Unified segmented pill navigation bar with morphing icons
 class SegmentedPillNav extends StatefulWidget {
+
+  const SegmentedPillNav({
+    required this.tabs, required this.currentIndex, required this.onTap, super.key,
+    this.onLongPress,
+  });
   final List<String> tabs;
   final int currentIndex;
   final Function(int) onTap;
   final Function(BuildContext, String)? onLongPress;
-
-  const SegmentedPillNav({
-    super.key,
-    required this.tabs,
-    required this.currentIndex,
-    required this.onTap,
-    this.onLongPress,
-  });
 
   @override
   State<SegmentedPillNav> createState() => _SegmentedPillNavState();
@@ -34,8 +31,8 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
       vsync: this,
     );
     _slideAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
+      begin: 0,
+      end: 1,
     ).animate(
       CurvedAnimation(
         parent: _slideController,
@@ -122,15 +119,16 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
     final screenWidth = MediaQuery.of(context).size.width;
-    final horizontalPadding = 20.0;
-    final pillPadding = 8.0;
-    final tabWidth = (screenWidth - (horizontalPadding * 2) - (pillPadding * 2)) /
-        widget.tabs.length;
+    const horizontalPadding = 20.0;
+    const pillPadding = 8.0;
+    final tabWidth =
+        (screenWidth - (horizontalPadding * 2) - (pillPadding * 2)) /
+            widget.tabs.length;
 
-    return Container(
+    return ColoredBox(
       color: Colors.transparent,
       child: Padding(
-        padding: EdgeInsets.only(
+        padding: const EdgeInsets.only(
           left: horizontalPadding,
           right: horizontalPadding,
           top: 8,
@@ -143,10 +141,9 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
             borderRadius: BorderRadius.circular(36),
             border: Border.all(
               color: color.outlineVariant.withValues(alpha: 0.3),
-              width: 1,
             ),
           ),
-          padding: EdgeInsets.all(pillPadding),
+          padding: const EdgeInsets.all(pillPadding),
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -154,9 +151,9 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
               AnimatedBuilder(
                 animation: _slideAnimation,
                 builder: (context, child) {
-                  double startX = _previousIndex * tabWidth;
-                  double endX = widget.currentIndex * tabWidth;
-                  double currentX =
+                  final double startX = _previousIndex * tabWidth;
+                  final double endX = widget.currentIndex * tabWidth;
+                  final double currentX =
                       startX + (endX - startX) * _slideAnimation.value;
 
                   return Positioned(
@@ -184,9 +181,9 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: widget.tabs.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  String tab = entry.value;
-                  bool isSelected = index == widget.currentIndex;
+                  final int index = entry.key;
+                  final String tab = entry.value;
+                  final bool isSelected = index == widget.currentIndex;
 
                   return Expanded(
                     child: GestureDetector(
@@ -195,7 +192,7 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
                       onLongPress: widget.onLongPress != null
                           ? () => widget.onLongPress!(context, tab)
                           : null,
-                      child: Container(
+                      child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(28),
@@ -210,7 +207,6 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
                               color: isSelected
                                   ? color.onPrimary
                                   : color.onSurface,
-                              size: 24,
                             ),
                             const SizedBox(height: 4),
                             AnimatedDefaultTextStyle(
@@ -222,7 +218,8 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
                                   .copyWith(
                                     color: isSelected
                                         ? color.onPrimary
-                                        : color.onSurface.withValues(alpha: 0.7),
+                                        : color.onSurface
+                                            .withValues(alpha: 0.7),
                                     fontWeight: isSelected
                                         ? FontWeight.w600
                                         : FontWeight.w400,

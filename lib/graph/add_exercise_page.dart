@@ -3,19 +3,20 @@ import 'dart:io';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:jackedlog/animated_fab.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:provider/provider.dart';
 
+import '../animated_fab.dart';
+import '../database/database.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+
 class AddExercisePage extends StatefulWidget {
-  final String? name;
 
   const AddExercisePage({super.key, this.name});
+  final String? name;
 
   @override
-  createState() => _AddExercisePageState();
+  _AddExercisePageState createState() => _AddExercisePageState();
 }
 
 class _AddExercisePageState extends State<AddExercisePage> {
@@ -67,7 +68,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
         title: const Text('Add Exercise'),
         elevation: 0,
       ),
-      body: Container(
+      body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -79,7 +80,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20),
           child: Form(
             key: key,
             child: ListView(
@@ -92,8 +93,8 @@ class _AddExercisePageState extends State<AddExercisePage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
+                      horizontal: 16,
+                      vertical: 8,
                     ),
                     child: TextFormField(
                       controller: nameCtrl,
@@ -108,7 +109,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                       textCapitalization: TextCapitalization.sentences,
                       autofocus: true,
                       validator: (value) =>
-                          value?.isNotEmpty == true ? null : 'Required',
+                          value?.isNotEmpty ?? false ? null : 'Required',
                     ),
                   ),
                 ),
@@ -131,8 +132,8 @@ class _AddExercisePageState extends State<AddExercisePage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
+                      horizontal: 16,
+                      vertical: 8,
                     ),
                     child: Row(
                       children: [
@@ -143,7 +144,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                             controller: minutes,
                             textInputAction: TextInputAction.next,
                             decoration: const InputDecoration(
-                              labelText: "Minutes",
+                              labelText: 'Minutes',
                               border: InputBorder.none,
                             ),
                             keyboardType: TextInputType.number,
@@ -161,7 +162,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                             controller: seconds,
                             textInputAction: TextInputAction.next,
                             decoration: const InputDecoration(
-                              labelText: "Seconds",
+                              labelText: 'Seconds',
                               border: InputBorder.none,
                             ),
                             keyboardType: TextInputType.number,
@@ -197,7 +198,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                         (type) => Expanded(
                           child: Padding(
                             padding:
-                                const EdgeInsets.symmetric(horizontal: 4.0),
+                                const EdgeInsets.symmetric(horizontal: 4),
                             child: InkWell(
                               onTap: () {
                                 setState(() {
@@ -207,7 +208,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
                                 padding:
-                                    const EdgeInsets.symmetric(vertical: 16.0),
+                                    const EdgeInsets.symmetric(vertical: 16),
                                 decoration: BoxDecoration(
                                   gradient: exerciseType == type.value
                                       ? LinearGradient(
@@ -274,8 +275,8 @@ class _AddExercisePageState extends State<AddExercisePage> {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 8.0,
+                        horizontal: 16,
+                        vertical: 8,
                       ),
                       child: TextField(
                         controller: brandNameCtrl,
@@ -318,8 +319,8 @@ class _AddExercisePageState extends State<AddExercisePage> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                              vertical: 4.0,
+                              horizontal: 16,
+                              vertical: 4,
                             ),
                             child: DropdownButtonFormField<String>(
                               decoration: InputDecoration(
@@ -364,8 +365,8 @@ class _AddExercisePageState extends State<AddExercisePage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
+                      horizontal: 16,
+                      vertical: 8,
                     ),
                     child: TextField(
                       controller: notesCtrl,
@@ -408,7 +409,6 @@ class _AddExercisePageState extends State<AddExercisePage> {
                           border: Border.all(
                             color: colorScheme.outline.withValues(alpha: 0.3),
                             width: 2,
-                            style: BorderStyle.solid,
                           ),
                         ),
                         child: Center(
@@ -517,7 +517,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
     super.dispose();
   }
 
-  void pick() async {
+  Future<void> pick() async {
     final colorScheme = Theme.of(context).colorScheme;
 
     final source = await showModalBottomSheet<ImageSource>(

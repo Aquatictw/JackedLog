@@ -1,16 +1,17 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/database/bodyweight_entries.dart';
-import 'package:jackedlog/database/database.steps.dart';
-import 'package:jackedlog/database/defaults.dart';
-import 'package:jackedlog/database/gym_sets.dart';
-import 'package:jackedlog/database/metadata.dart';
-import 'package:jackedlog/database/notes.dart';
-import 'package:jackedlog/database/plan_exercises.dart';
-import 'package:jackedlog/database/plans.dart';
-import 'package:jackedlog/database/settings.dart';
-import 'package:jackedlog/database/workouts.dart';
+
+import '../constants.dart';
+import 'bodyweight_entries.dart';
+import 'database.steps.dart';
 import 'database_connection_native.dart';
+import 'defaults.dart';
+import 'gym_sets.dart';
+import 'metadata.dart';
+import 'notes.dart';
+import 'plan_exercises.dart';
+import 'plans.dart';
+import 'settings.dart';
+import 'workouts.dart';
 
 part 'database.g.dart';
 
@@ -18,7 +19,16 @@ LazyDatabase openConnection() {
   return createNativeConnection();
 }
 
-@DriftDatabase(tables: [Plans, GymSets, Settings, PlanExercises, Metadata, Workouts, Notes, BodyweightEntries])
+@DriftDatabase(tables: [
+  Plans,
+  GymSets,
+  Settings,
+  PlanExercises,
+  Metadata,
+  Workouts,
+  Notes,
+  BodyweightEntries,
+],)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
 
@@ -30,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
         await m.createIndex(
           Index(
             'GymSets',
-            "CREATE INDEX IF NOT EXISTS gym_sets_name_created ON gym_sets(name, created);",
+            'CREATE INDEX IF NOT EXISTS gym_sets_name_created ON gym_sets(name, created);',
           ),
         );
         await m.createIndex(
@@ -80,7 +90,7 @@ class AppDatabase extends _$AppDatabase {
           await m.createIndex(
             Index(
               'GymSets',
-              "CREATE INDEX IF NOT EXISTS gym_sets_name_created ON gym_sets(name, created);",
+              'CREATE INDEX IF NOT EXISTS gym_sets_name_created ON gym_sets(name, created);',
             ),
           );
         },
@@ -125,7 +135,7 @@ class AppDatabase extends _$AppDatabase {
           await m.createIndex(
             Index(
               'GymSets',
-              "CREATE INDEX IF NOT EXISTS gym_sets_name_created ON gym_sets(name, created);",
+              'CREATE INDEX IF NOT EXISTS gym_sets_name_created ON gym_sets(name, created);',
             ),
           );
         },
@@ -133,13 +143,13 @@ class AppDatabase extends _$AppDatabase {
           await m.alterTable(TableMigration(schema.gymSets));
           final ms = const Duration(minutes: 3, seconds: 30).inMilliseconds;
           await m.database.customUpdate(
-            "UPDATE gym_sets SET rest_ms = null WHERE rest_ms = $ms",
+            'UPDATE gym_sets SET rest_ms = null WHERE rest_ms = $ms',
           );
         },
         from13To14: (m, schema) async {
           await m.alterTable(TableMigration(schema.gymSets));
           await m.database.customUpdate(
-            "UPDATE gym_sets SET max_sets = NULL WHERE max_sets = 3",
+            'UPDATE gym_sets SET max_sets = NULL WHERE max_sets = 3',
           );
         },
         from14To15: (Migrator m, Schema15 schema) async {},
@@ -175,7 +185,7 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(schema.gymSets, schema.gymSets.planId);
         },
         from17To18: (Migrator m, Schema18 schema) async {
-          final plans = await (schema.plans.select()).get();
+          final plans = await schema.plans.select().get();
           const maxSets = CustomExpression<int>('max_sets');
           final gymSets = await (schema.gymSets.selectOnly()
                 ..addColumns(
@@ -184,7 +194,7 @@ class AppDatabase extends _$AppDatabase {
                 ..groupBy([schema.gymSets.name]))
               .get();
 
-          List<Insertable<QueryRow>> pe = [];
+          final List<Insertable<QueryRow>> pe = [];
           for (final plan in plans) {
             final exercises = plan.read<String>('exercises').split(',');
 
@@ -267,14 +277,14 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(schema.settings, schema.settings.backupPath);
         },
         from26To27: (Migrator m, Schema27 schema) async {
-          var tabs = ['HistoryPage', 'PlansPage', 'GraphsPage', 'TimerPage'];
+          final tabs = ['HistoryPage', 'PlansPage', 'GraphsPage', 'TimerPage'];
           final settings =
               await (schema.settings.select()..limit(1)).getSingleOrNull();
 
           if (settings != null) {
-            bool showTimer = settings.read('show_timer_tab');
+            final bool showTimer = settings.read('show_timer_tab');
             if (!showTimer) tabs.remove('TimerPage');
-            bool showHistory = settings.read('show_history_tab');
+            final bool showHistory = settings.read('show_history_tab');
             if (!showHistory) tabs.remove('HistoryPage');
           }
 
@@ -374,8 +384,8 @@ class AppDatabase extends _$AppDatabase {
         from40To41: (Migrator m, Schema41 schema) async {
           await schema.settings.update().write(
                 const RawValuesInsertable({
-                  'strength_unit': Variable("last-entry"),
-                  'cardio_unit': Variable("last-entry"),
+                  'strength_unit': Variable('last-entry'),
+                  'cardio_unit': Variable('last-entry'),
                 }),
               );
         },
@@ -391,7 +401,7 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(schema.settings, schema.settings.scrollableTabs);
         },
         from43To44: (Migrator m, Schema44 schema) async {
-          final plans = await (schema.plans.select()).get();
+          final plans = await schema.plans.select().get();
           await batch(
             (b) {
               for (final plan in plans) {
@@ -448,7 +458,8 @@ class AppDatabase extends _$AppDatabase {
               notes TEXT
             )
           ''');
-          await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN workout_id INTEGER');
+          await m.database.customStatement(
+              'ALTER TABLE gym_sets ADD COLUMN workout_id INTEGER',);
           await m.createIndex(
             Index(
               'gym_sets',
@@ -463,8 +474,10 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(schema.gymSets, schema.gymSets.warmup);
         },
         from50To52: (Migrator m, Schema52 schema) async {
-          await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN exercise_type TEXT');
-          await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN brand_name TEXT');
+          await m.database.customStatement(
+              'ALTER TABLE gym_sets ADD COLUMN exercise_type TEXT',);
+          await m.database.customStatement(
+              'ALTER TABLE gym_sets ADD COLUMN brand_name TEXT',);
           await m.database.customStatement('''
             CREATE TABLE IF NOT EXISTS notes (
               id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -480,11 +493,16 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(schema.gymSets, schema.gymSets.dropSet);
         },
         from53To54: (Migrator m, Schema54 schema) async {
-          await m.database.customStatement('ALTER TABLE settings ADD COLUMN fivethreeone_squat_tm REAL');
-          await m.database.customStatement('ALTER TABLE settings ADD COLUMN fivethreeone_bench_tm REAL');
-          await m.database.customStatement('ALTER TABLE settings ADD COLUMN fivethreeone_deadlift_tm REAL');
-          await m.database.customStatement('ALTER TABLE settings ADD COLUMN fivethreeone_press_tm REAL');
-          await m.database.customStatement('ALTER TABLE settings ADD COLUMN fivethreeone_week INTEGER NOT NULL DEFAULT 1');
+          await m.database.customStatement(
+              'ALTER TABLE settings ADD COLUMN fivethreeone_squat_tm REAL',);
+          await m.database.customStatement(
+              'ALTER TABLE settings ADD COLUMN fivethreeone_bench_tm REAL',);
+          await m.database.customStatement(
+              'ALTER TABLE settings ADD COLUMN fivethreeone_deadlift_tm REAL',);
+          await m.database.customStatement(
+              'ALTER TABLE settings ADD COLUMN fivethreeone_press_tm REAL',);
+          await m.database.customStatement(
+              'ALTER TABLE settings ADD COLUMN fivethreeone_week INTEGER NOT NULL DEFAULT 1',);
         },
         from54To57: (Migrator m, Schema57 schema) async {
           await m.addColumn(schema.settings, schema.settings.customColorSeed);
@@ -520,11 +538,14 @@ class AppDatabase extends _$AppDatabase {
             }
           }
 
-          await m.addColumn(schema.settings, schema.settings.lastAutoBackupTime);
+          await m.addColumn(
+              schema.settings, schema.settings.lastAutoBackupTime,);
 
           // Add superset columns to gym_sets table
-          await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN superset_id TEXT');
-          await m.database.customStatement('ALTER TABLE gym_sets ADD COLUMN superset_position INTEGER');
+          await m.database.customStatement(
+              'ALTER TABLE gym_sets ADD COLUMN superset_id TEXT',);
+          await m.database.customStatement(
+              'ALTER TABLE gym_sets ADD COLUMN superset_position INTEGER',);
         },
         from57To58: (Migrator m, Schema58 schema) async {
           // Add setOrder column - nullable, no default
@@ -551,13 +572,15 @@ class AppDatabase extends _$AppDatabase {
         },
         from59To60: (Migrator m, Schema60 schema) async {
           // Add Spotify token columns to settings - nullable, no default
-          await m.addColumn(schema.settings, schema.settings.spotifyAccessToken);
-          await m.addColumn(schema.settings, schema.settings.spotifyRefreshToken);
-          await m.addColumn(schema.settings, schema.settings.spotifyTokenExpiry);
+          await m.addColumn(
+              schema.settings, schema.settings.spotifyAccessToken,);
+          await m.addColumn(
+              schema.settings, schema.settings.spotifyRefreshToken,);
+          await m.addColumn(
+              schema.settings, schema.settings.spotifyTokenExpiry,);
         },
       ),
       beforeOpen: (details) async {
-
         // Ensure bodyweight_entries table exists (safety check for migration issues)
         await customStatement('''
           CREATE TABLE IF NOT EXISTS bodyweight_entries (
@@ -570,7 +593,8 @@ class AppDatabase extends _$AppDatabase {
 
         // Drop notes column if it exists (from earlier version)
         try {
-          await customStatement('ALTER TABLE bodyweight_entries DROP COLUMN notes');
+          await customStatement(
+              'ALTER TABLE bodyweight_entries DROP COLUMN notes',);
         } catch (e) {
           // Column might not exist, ignore error
         }

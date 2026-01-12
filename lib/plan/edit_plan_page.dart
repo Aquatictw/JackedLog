@@ -1,31 +1,32 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
-import 'package:jackedlog/animated_fab.dart';
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/day_selector.dart';
-import 'package:jackedlog/graph/add_exercise_page.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/exercise_tile.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../animated_fab.dart';
+import '../constants.dart';
+import '../database/database.dart';
+import '../day_selector.dart';
+import '../graph/add_exercise_page.dart';
+import '../main.dart';
+import '../utils.dart';
+import 'exercise_tile.dart';
+import 'plan_state.dart';
+
 class EditPlanPage extends StatefulWidget {
-  final PlansCompanion plan;
 
   const EditPlanPage({required this.plan, super.key});
+  final PlansCompanion plan;
 
   @override
-  createState() => _EditPlanPageState();
+  _EditPlanPageState createState() => _EditPlanPageState();
 }
 
 class _EditPlanPageState extends State<EditPlanPage> {
   late List<bool> days;
-  late var exercises = context.read<PlanState>().exercises;
+  late List<PlanExercisesCompanion> exercises = context.read<PlanState>().exercises;
 
   bool showOff = true;
   String search = '';
@@ -48,10 +49,10 @@ class _EditPlanPageState extends State<EditPlanPage> {
     if (match.isEmpty)
       return [
         ListTile(
-          title: const Text("Nothing found"),
-          subtitle: Text("Tap to create $search"),
+          title: const Text('Nothing found'),
+          subtitle: Text('Tap to create $search'),
           onTap: () async {
-            String? exerciseName = await Navigator.of(context).push(
+            final String? exerciseName = await Navigator.of(context).push(
               material.MaterialPageRoute(
                 builder: (context) => AddExercisePage(
                   name: search,
@@ -92,11 +93,11 @@ class _EditPlanPageState extends State<EditPlanPage> {
       (value) => value.exercises,
     );
 
-    var title = widget.plan.days.value.replaceAll(",", ", ");
+    var title = widget.plan.days.value.replaceAll(',', ', ');
     if (title.isNotEmpty)
       title = title[0].toUpperCase() + title.substring(1).toLowerCase();
     else
-      title = "Add plan";
+      title = 'Add plan';
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -104,7 +105,7 @@ class _EditPlanPageState extends State<EditPlanPage> {
         title: Text(title),
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: ListView(
           children: [
             TextField(
@@ -115,15 +116,15 @@ class _EditPlanPageState extends State<EditPlanPage> {
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(
-              height: 16.0,
+              height: 16,
             ),
             DaySelector(daySwitches: days),
             const SizedBox(height: 8),
             material.Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(8),
               child: SearchBar(
                 leading: const material.Padding(
-                  padding: EdgeInsets.all(8.0),
+                  padding: EdgeInsets.all(8),
                   child: Icon(Icons.search),
                 ),
                 textCapitalization: TextCapitalization.sentences,
@@ -154,7 +155,7 @@ class _EditPlanPageState extends State<EditPlanPage> {
       ),
       floatingActionButton: AnimatedFab(
         onPressed: save,
-        label: const Text("Save"),
+        label: const Text('Save'),
         icon: const Icon(Icons.save),
       ),
     );
@@ -172,9 +173,9 @@ class _EditPlanPageState extends State<EditPlanPage> {
   void initState() {
     super.initState();
 
-    titleCtrl.text = widget.plan.title.value ?? "";
+    titleCtrl.text = widget.plan.title.value ?? '';
     final list = widget.plan.days.value.split(',');
-    days = weekdays.map((day) => list.contains(day)).toList();
+    days = weekdays.map(list.contains).toList();
   }
 
   Future<void> save() async {
@@ -187,7 +188,7 @@ class _EditPlanPageState extends State<EditPlanPage> {
     if (exercises.where((exercise) => exercise.enabled.value).isEmpty)
       return toast('Select exercises');
 
-    var newPlan = PlansCompanion.insert(
+    final newPlan = PlansCompanion.insert(
       days: selected.join(','),
       title: Value(titleCtrl.text),
     );

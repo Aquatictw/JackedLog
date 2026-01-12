@@ -1,34 +1,29 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/edit_plan_page.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/plan/start_plan_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
-import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants.dart';
+import '../database/database.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+import '../utils.dart';
+import '../workouts/workout_state.dart';
+import 'edit_plan_page.dart';
+import 'plan_state.dart';
+import 'start_plan_page.dart';
+
 class PlanTile extends StatefulWidget {
+
+  const PlanTile({
+    required this.plan, required this.weekday, required this.index, required this.navigatorKey, required this.onSelect, required this.selected, super.key,
+  });
   final Plan plan;
   final String weekday;
   final int index;
   final GlobalKey<NavigatorState> navigatorKey;
   final Function(int) onSelect;
   final Set<int> selected;
-
-  const PlanTile({
-    super.key,
-    required this.plan,
-    required this.weekday,
-    required this.index,
-    required this.navigatorKey,
-    required this.onSelect,
-    required this.selected,
-  });
 
   @override
   State<PlanTile> createState() => _PlanTileState();
@@ -49,7 +44,7 @@ class _PlanTileState extends State<PlanTile> {
           ..orderBy(
             [
               (u) =>
-                  OrderingTerm(expression: u.sequence, mode: OrderingMode.asc),
+                  OrderingTerm(expression: u.sequence),
             ],
           ))
         .watch();
@@ -57,8 +52,8 @@ class _PlanTileState extends State<PlanTile> {
 
   @override
   Widget build(BuildContext context) {
-    Widget title = const Text("Daily");
-    if (widget.plan.title?.isNotEmpty == true) {
+    Widget title = const Text('Daily');
+    if (widget.plan.title?.isNotEmpty ?? false) {
       final today = widget.plan.days.split(',').contains(widget.weekday);
       title = Text(
         widget.plan.title!,
@@ -93,7 +88,7 @@ class _PlanTileState extends State<PlanTile> {
           ),
           child: Center(
             child: Text(
-              widget.plan.title?.isNotEmpty == true
+              widget.plan.title?.isNotEmpty ?? false
                   ? widget.plan.title![0]
                   : widget.plan.days[0].toUpperCase(),
               style: const TextStyle(
@@ -128,7 +123,6 @@ class _PlanTileState extends State<PlanTile> {
           color: widget.selected.contains(widget.plan.id)
               ? colorScheme.primary.withValues(alpha: 0.3)
               : colorScheme.outlineVariant.withValues(alpha: 0.3),
-          width: 1,
         ),
       ),
       child: Column(
@@ -184,18 +178,18 @@ class _PlanTileState extends State<PlanTile> {
 
                 if (trailing == PlanTrailing.count)
                   return Text(
-                    "${count.total}",
+                    '${count.total}',
                     style: const TextStyle(fontSize: 16),
                   );
 
                 if (trailing == PlanTrailing.percent)
                   return Text(
-                    "${((count.total) / count.maxSets * 100).toStringAsFixed(2)}%",
+                    '${((count.total) / count.maxSets * 100).toStringAsFixed(2)}%',
                     style: const TextStyle(fontSize: 16),
                   );
                 else
                   return Text(
-                    "${count.total} / ${count.maxSets}",
+                    '${count.total} / ${count.maxSets}',
                     style: const TextStyle(fontSize: 16),
                   );
               },
@@ -220,7 +214,8 @@ class _PlanTileState extends State<PlanTile> {
                               plan: workoutState.activePlan!,
                             ),
                             settings: RouteSettings(
-                              name: 'StartPlanPage_${workoutState.activePlan!.id}',
+                              name:
+                                  'StartPlanPage_${workoutState.activePlan!.id}',
                             ),
                           ),
                         );
@@ -274,7 +269,8 @@ class _PlanTileState extends State<PlanTile> {
                                         plan: workoutState.activePlan!,
                                       ),
                                       settings: RouteSettings(
-                                        name: 'StartPlanPage_${workoutState.activePlan!.id}',
+                                        name:
+                                            'StartPlanPage_${workoutState.activePlan!.id}',
                                       ),
                                     ),
                                   );
@@ -350,7 +346,7 @@ class _PlanTileState extends State<PlanTile> {
   }
 
   List<InlineSpan> _getChildren(BuildContext context) {
-    List<InlineSpan> result = [];
+    final List<InlineSpan> result = [];
 
     final split = widget.plan.days.split(',');
     for (int index = 0; index < split.length; index++) {
@@ -370,7 +366,7 @@ class _PlanTileState extends State<PlanTile> {
       if (index < split.length - 1)
         result.add(
           TextSpan(
-            text: ", ",
+            text: ', ',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
         );

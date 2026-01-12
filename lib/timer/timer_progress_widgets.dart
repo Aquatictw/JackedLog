@@ -1,11 +1,12 @@
 import 'dart:math' as math;
 
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/timer/timer_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../settings/settings_state.dart';
+import '../utils.dart';
+import 'timer_state.dart';
 
 class TimerCircularProgressIndicator extends StatefulWidget {
   const TimerCircularProgressIndicator({super.key});
@@ -164,12 +165,11 @@ class _TimerProgressIndicatorState extends State<TimerProgressIndicator>
         }
 
         return Visibility(
-          visible: true,
           child: TweenAnimationBuilder<double>(
             key: animationKey,
             tween: Tween<double>(
               begin: 1.0 - currentProgress,
-              end: 0.0,
+              end: 0,
             ),
             duration: remaining,
             builder: (context, value, child) {
@@ -185,13 +185,13 @@ class _TimerProgressIndicatorState extends State<TimerProgressIndicator>
 }
 
 class _TimerCircularProgressIndicatorTile extends StatelessWidget {
-  final double value;
-  final TimerState timerState;
 
   const _TimerCircularProgressIndicatorTile({
     required this.value,
     required this.timerState,
   });
+  final double value;
+  final TimerState timerState;
 
   @override
   Widget build(BuildContext context) {
@@ -200,7 +200,7 @@ class _TimerCircularProgressIndicatorTile extends StatelessWidget {
     const double buttonSize = 24;
 
     final angle = (-math.pi / 2) - (2 * math.pi * (1 - value));
-    const radius = (circleSize / 2);
+    const radius = circleSize / 2;
     final buttonX = radius * math.cos(angle);
     final buttonY = radius * math.sin(angle);
 
@@ -286,11 +286,11 @@ class _TimerCircularProgressIndicatorTile extends StatelessWidget {
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const SizedBox(height: 20.0),
+            const SizedBox(height: 20),
             Text(
               generateTitleText(timerState.timer.getRemaining()),
               style: TextStyle(
-                fontSize: 50.0,
+                fontSize: 50,
                 color: Theme.of(context).textTheme.bodyLarge!.color,
                 fontWeight: FontWeight.bold,
               ),
@@ -314,8 +314,8 @@ class _TimerCircularProgressIndicatorTile extends StatelessWidget {
   }
 
   String generateTitleText(Duration remaining) {
-    final minutes = (remaining.inMinutes).toString().padLeft(2, '0');
+    final minutes = remaining.inMinutes.toString().padLeft(2, '0');
     final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
-    return "$minutes:$seconds";
+    return '$minutes:$seconds';
   }
 }

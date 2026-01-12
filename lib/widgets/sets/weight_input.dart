@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
 
 class WeightInput extends StatefulWidget {
+
+  const WeightInput({
+    required this.value, required this.unit, required this.completed, required this.accentColor, required this.onChanged, super.key,
+    this.enabled = true,
+  });
   final double value;
   final String unit;
   final bool enabled;
   final bool completed;
   final Color accentColor;
   final ValueChanged<double> onChanged;
-
-  const WeightInput({
-    super.key,
-    required this.value,
-    required this.unit,
-    this.enabled = true,
-    required this.completed,
-    required this.accentColor,
-    required this.onChanged,
-  });
 
   @override
   State<WeightInput> createState() => _WeightInputState();
@@ -92,7 +87,6 @@ class _WeightInputState extends State<WeightInput> {
           borderSide: widget.completed
               ? BorderSide(
                   color: widget.accentColor.withValues(alpha: 0.3),
-                  width: 1,
                 )
               : BorderSide.none,
         ),
@@ -101,7 +95,6 @@ class _WeightInputState extends State<WeightInput> {
           borderSide: widget.completed
               ? BorderSide(
                   color: widget.accentColor.withValues(alpha: 0.3),
-                  width: 1,
                 )
               : BorderSide.none,
         ),

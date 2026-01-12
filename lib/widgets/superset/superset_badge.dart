@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:jackedlog/widgets/superset/superset_utils.dart';
+import 'superset_utils.dart';
 
 /// A badge that displays superset label (A1, A2, B1, B2, etc.)
-class SupersetBadge extends StatelessWidget {
-  final int supersetIndex; // 0-based (A=0, B=1, etc.)
-  final int position; // 0-based position within superset
-  final bool isCompact; // Compact mode for smaller displays
+class SupersetBadge extends StatelessWidget { // Compact mode for smaller displays
 
   const SupersetBadge({
-    super.key,
-    required this.supersetIndex,
-    required this.position,
+    required this.supersetIndex, required this.position, super.key,
     this.isCompact = false,
   });
+  final int supersetIndex; // 0-based (A=0, B=1, etc.)
+  final int position; // 0-based position within superset
+  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final label = getSupersetLabel(supersetIndex, position);
     final backgroundColor = getSupersetColor(context, supersetIndex);
     final textColor = getSupersetTextColor(context, supersetIndex);
@@ -75,17 +72,14 @@ class SupersetBadge extends StatelessWidget {
 }
 
 /// A horizontal indicator bar showing all exercises in a superset
-class SupersetIndicator extends StatelessWidget {
-  final int supersetIndex;
-  final int totalExercises;
-  final int currentPosition; // 0-based
+class SupersetIndicator extends StatelessWidget { // 0-based
 
   const SupersetIndicator({
-    super.key,
-    required this.supersetIndex,
-    required this.totalExercises,
-    required this.currentPosition,
+    required this.supersetIndex, required this.totalExercises, required this.currentPosition, super.key,
   });
+  final int supersetIndex;
+  final int totalExercises;
+  final int currentPosition;
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +92,6 @@ class SupersetIndicator extends StatelessWidget {
         color: backgroundColor.withValues(alpha: 0.15),
         border: Border.all(
           color: backgroundColor.withValues(alpha: 0.3),
-          width: 1,
         ),
         borderRadius: BorderRadius.circular(8),
       ),

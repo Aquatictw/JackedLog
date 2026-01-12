@@ -1,5 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:jackedlog/database/database.dart';
+import '../database/database.dart';
 
 /// Calculates a moving average over a specified window of days.
 ///
@@ -15,8 +15,7 @@ List<FlSpot> calculateMovingAverage(
   if (entries.isEmpty) return [];
 
   // Ensure entries are sorted by date ascending
-  final sorted = entries.toList()
-    ..sort((a, b) => a.date.compareTo(b.date));
+  final sorted = entries.toList()..sort((a, b) => a.date.compareTo(b.date));
 
   final List<FlSpot> result = [];
 
@@ -36,7 +35,7 @@ List<FlSpot> calculateMovingAverage(
     // Calculate average if we have at least one entry (the current one)
     if (windowEntries.isNotEmpty) {
       final sum = windowEntries.fold<double>(
-        0.0,
+        0,
         (sum, entry) => sum + entry.weight,
       );
       final average = sum / windowEntries.length;
@@ -55,7 +54,7 @@ double? calculateAverageWeight(List<BodyweightEntry> entries) {
   if (entries.isEmpty) return null;
 
   final sum = entries.fold<double>(
-    0.0,
+    0,
     (sum, entry) => sum + entry.weight,
   );
 
@@ -70,8 +69,7 @@ double? calculateWeightChange(List<BodyweightEntry> entries) {
   if (entries.length < 2) return null;
 
   // Ensure entries are sorted by date
-  final sorted = entries.toList()
-    ..sort((a, b) => a.date.compareTo(b.date));
+  final sorted = entries.toList()..sort((a, b) => a.date.compareTo(b.date));
 
   return sorted.last.weight - sorted.first.weight;
 }

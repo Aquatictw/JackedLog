@@ -1,19 +1,20 @@
-import 'package:jackedlog/animated_fab.dart';
-import 'package:jackedlog/settings/settings_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/timer/timer_progress_widgets.dart';
-import 'package:jackedlog/timer/timer_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../animated_fab.dart';
+import '../settings/settings_page.dart';
+import '../settings/settings_state.dart';
+import 'timer_progress_widgets.dart';
+import 'timer_state.dart';
+
 class TimerPage extends StatefulWidget {
+
+  const TimerPage({super.key, this.total, this.progress});
   final int? total;
   final int? progress;
 
-  const TimerPage({super.key, this.total, this.progress});
-
   @override
-  createState() => TimerPageState();
+  TimerPageState createState() => TimerPageState();
 }
 
 class TimerPageState extends State<TimerPage>
@@ -52,15 +53,15 @@ class TimerPageState extends State<TimerPage>
 }
 
 class _TimerPageWidget extends StatelessWidget {
-  final TimerState timerState;
-  final int? total;
-  final int? progress;
 
   const _TimerPageWidget({
     required this.timerState,
     this.total,
     this.progress,
   });
+  final TimerState timerState;
+  final int? total;
+  final int? progress;
 
   @override
   Widget build(BuildContext context) {
@@ -95,9 +96,9 @@ class _TimerPageWidget extends StatelessWidget {
         },
         child: timerState.timer.isRunning()
             ? AnimatedFab(
-                onPressed: () async => await timerState.stopTimer(),
+                onPressed: () async => timerState.stopTimer(),
                 icon: const Icon(Icons.stop),
-                label: const Text("Stop"),
+                label: const Text('Stop'),
               )
             : const SizedBox(),
       ),

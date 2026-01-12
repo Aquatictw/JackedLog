@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:jackedlog/spotify/spotify_service.dart';
-import 'package:jackedlog/spotify/spotify_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:provider/provider.dart';
 import 'package:spotify_sdk/models/player_options.dart' as player_options;
+
+import '../../spotify/spotify_service.dart';
+import '../../spotify/spotify_state.dart';
+import '../../utils.dart';
 
 /// Player controls widget for Spotify playback
 /// Displays primary control buttons: shuffle, previous, play/pause, next, repeat
@@ -156,7 +157,7 @@ class _PlayerControlsState extends State<PlayerControls> {
         children: [
           // Shuffle button
           IconButton(
-            icon: Icon(Icons.shuffle_rounded),
+            icon: const Icon(Icons.shuffle_rounded),
             iconSize: 28,
             color: controlsEnabled
                 ? (isShuffling
@@ -174,7 +175,7 @@ class _PlayerControlsState extends State<PlayerControls> {
 
           // Previous track button
           IconButton(
-            icon: Icon(Icons.skip_previous_rounded),
+            icon: const Icon(Icons.skip_previous_rounded),
             iconSize: 36,
             color: controlsEnabled
                 ? colorScheme.onSurface
@@ -213,7 +214,7 @@ class _PlayerControlsState extends State<PlayerControls> {
 
           // Next track button
           IconButton(
-            icon: Icon(Icons.skip_next_rounded),
+            icon: const Icon(Icons.skip_next_rounded),
             iconSize: 36,
             color: controlsEnabled
                 ? colorScheme.onSurface

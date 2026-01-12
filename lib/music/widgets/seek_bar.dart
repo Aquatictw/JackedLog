@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:jackedlog/spotify/spotify_service.dart';
-import 'package:jackedlog/spotify/spotify_state.dart';
 import 'package:provider/provider.dart';
+
+import '../../spotify/spotify_service.dart';
+import '../../spotify/spotify_state.dart';
 
 /// Seek bar widget for Spotify playback position control
 /// Displays current position, total duration, and interactive slider
@@ -17,7 +18,6 @@ class _SeekBarState extends State<SeekBar> {
 
   // Local position tracking for smooth UI during seeking
   int? _localPositionMs;
-  bool _isSeeking = false;
 
   @override
   Widget build(BuildContext context) {
@@ -86,9 +86,7 @@ class _SeekBarState extends State<SeekBar> {
 
   /// Called when user starts dragging the slider
   void _onSliderChangeStart(double value) {
-    setState(() {
-      _isSeeking = true;
-    });
+    // Mark that seeking has started (no state needed currently)
   }
 
   /// Called while user is dragging the slider
@@ -104,7 +102,7 @@ class _SeekBarState extends State<SeekBar> {
 
   /// Called when user finishes dragging the slider
   /// Commits the seek operation to Spotify
-  void _onSliderChangeEnd(double value) async {
+  Future<void> _onSliderChangeEnd(double value) async {
     final spotifyState = context.read<SpotifyState>();
     final durationMs = spotifyState.durationMs;
     final targetPositionMs = (value * durationMs).round();
@@ -117,7 +115,6 @@ class _SeekBarState extends State<SeekBar> {
     }
 
     setState(() {
-      _isSeeking = false;
       _localPositionMs = null;
     });
   }

@@ -2,14 +2,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 class ArtisticColorPicker extends StatefulWidget {
-  final Color initialColor;
-  final Function(Color) onColorChanged;
 
   const ArtisticColorPicker({
-    super.key,
-    required this.initialColor,
-    required this.onColorChanged,
+    required this.initialColor, required this.onColorChanged, super.key,
   });
+  final Color initialColor;
+  final Function(Color) onColorChanged;
 
   @override
   State<ArtisticColorPicker> createState() => _ArtisticColorPickerState();
@@ -54,7 +52,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
 
   void _updateFromHSL() {
     final color =
-        HSLColor.fromAHSL(1.0, _hue, _saturation, _lightness).toColor();
+        HSLColor.fromAHSL(1, _hue, _saturation, _lightness).toColor();
     _updateColor(color);
   }
 
@@ -161,7 +159,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
     final textColor = luminance > 0.5 ? Colors.black : Colors.white;
 
     return Expanded(
-      child: Container(
+      child: ColoredBox(
         color: color,
         child: Center(
           child: Text(
@@ -246,9 +244,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: entry.value.map((color) {
-                return _buildColorChip(color);
-              }).toList(),
+              children: entry.value.map(_buildColorChip).toList(),
             ),
             const SizedBox(height: 16),
           ],
@@ -258,7 +254,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
   }
 
   Widget _buildColorChip(Color color) {
-    final isSelected = _selectedColor.value == color.value;
+    final isSelected = _selectedColor.toARGB32() == color.toARGB32();
 
     return InkWell(
       onTap: () => _updateColor(color),
@@ -283,9 +279,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
             ),
           ],
         ),
-        child: isSelected
-            ? const Icon(Icons.check, color: Colors.white)
-            : null,
+        child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
       ),
     );
   }
@@ -321,7 +315,6 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
           ),
           child: Slider(
             value: _hue,
-            min: 0,
             max: 360,
             onChanged: (value) {
               setState(() {
@@ -373,8 +366,6 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
           ),
           child: Slider(
             value: _saturation,
-            min: 0,
-            max: 1,
             onChanged: (value) {
               setState(() {
                 _saturation = value;
@@ -389,9 +380,9 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
   }
 
   Widget _buildSaturationGradientBar() {
-    final baseColor = HSLColor.fromAHSL(1.0, _hue, 0, _lightness).toColor();
+    final baseColor = HSLColor.fromAHSL(1, _hue, 0, _lightness).toColor();
     final saturatedColor =
-        HSLColor.fromAHSL(1.0, _hue, 1, _lightness).toColor();
+        HSLColor.fromAHSL(1, _hue, 1, _lightness).toColor();
 
     return Container(
       height: 12,
@@ -421,8 +412,6 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
           ),
           child: Slider(
             value: _lightness,
-            min: 0,
-            max: 1,
             onChanged: (value) {
               setState(() {
                 _lightness = value;
@@ -437,8 +426,8 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
   }
 
   Widget _buildLightnessGradientBar() {
-    final darkColor = HSLColor.fromAHSL(1.0, _hue, _saturation, 0).toColor();
-    final lightColor = HSLColor.fromAHSL(1.0, _hue, _saturation, 1).toColor();
+    final darkColor = HSLColor.fromAHSL(1, _hue, _saturation, 0).toColor();
+    final lightColor = HSLColor.fromAHSL(1, _hue, _saturation, 1).toColor();
 
     return Container(
       height: 12,
@@ -453,7 +442,8 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
   }
 
   Widget _buildColorCodeDisplay() {
-    final hex = '#${_selectedColor.value.toRadixString(16).substring(2).toUpperCase()}';
+    final hex =
+        '#${_selectedColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -488,7 +478,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               Text(
-                '${_selectedColor.red}, ${_selectedColor.green}, ${_selectedColor.blue}',
+                '${(_selectedColor.r * 255.0).round().clamp(0, 255)}, ${(_selectedColor.g * 255.0).round().clamp(0, 255)}, ${(_selectedColor.b * 255.0).round().clamp(0, 255)}',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontFamily: 'monospace',
                     ),
@@ -512,9 +502,9 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
       itemBuilder: (context, index) {
         final hue = index.toDouble();
         final colors = [
-          HSLColor.fromAHSL(1.0, hue, 0.7, 0.3).toColor(),
-          HSLColor.fromAHSL(1.0, hue, 0.8, 0.5).toColor(),
-          HSLColor.fromAHSL(1.0, hue, 0.9, 0.6).toColor(),
+          HSLColor.fromAHSL(1, hue, 0.7, 0.3).toColor(),
+          HSLColor.fromAHSL(1, hue, 0.8, 0.5).toColor(),
+          HSLColor.fromAHSL(1, hue, 0.9, 0.6).toColor(),
         ];
 
         return GestureDetector(
@@ -528,7 +518,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
               ),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: _selectedColor.value == colors[index % 3].value
+                color: _selectedColor.toARGB32() == colors[index % 3].toARGB32()
                     ? Colors.white
                     : Colors.transparent,
                 width: 2,

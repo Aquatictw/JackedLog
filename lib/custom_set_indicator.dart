@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 
 class CustomSetIndicator extends StatelessWidget {
   const CustomSetIndicator({
-    super.key,
-    required this.count,
-    required this.max,
+    required this.count, required this.max, super.key,
   });
   final int count;
   final int max;
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> items = [];
+    final List<Widget> items = [];
     for (int i = 0; i < max; i++) {
       items.add(
         Expanded(

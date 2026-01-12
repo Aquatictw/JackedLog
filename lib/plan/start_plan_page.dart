@@ -1,35 +1,31 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/database/query_helpers.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/exercise_sets_card.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/widgets/plate_calculator.dart';
-import 'package:jackedlog/widgets/superset/superset_manager_dialog.dart';
-import 'package:jackedlog/widgets/workout/add_exercise_card.dart';
-import 'package:jackedlog/widgets/workout/exercise_picker_modal.dart';
-import 'package:jackedlog/widgets/workout/notes_section.dart';
-import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:provider/provider.dart';
 
+import '../database/database.dart';
+import '../database/query_helpers.dart';
+import '../main.dart';
+import '../widgets/plate_calculator.dart';
+import '../widgets/superset/superset_manager_dialog.dart';
+import '../widgets/workout/add_exercise_card.dart';
+import '../widgets/workout/exercise_picker_modal.dart';
+import '../widgets/workout/notes_section.dart';
+import '../workouts/workout_state.dart';
+import 'exercise_sets_card.dart';
+import 'plan_state.dart';
+
 class StartPlanPage extends StatefulWidget {
+
+  const StartPlanPage({required this.plan, super.key});
   final Plan plan;
 
-  const StartPlanPage({super.key, required this.plan});
-
   @override
-  createState() => _StartPlanPageState();
+  _StartPlanPageState createState() => _StartPlanPageState();
 }
 
 // Represents an exercise item in the workout (either from plan or ad-hoc)
-class _ExerciseItem {
-  final bool isPlanExercise;
-  final int? planExerciseId;
-  final String? adHocName;
-  final String uniqueId;
-  int sequence; // Preserve sequence number, mutable for reordering
+class _ExerciseItem { // Preserve sequence number, mutable for reordering
 
   _ExerciseItem.plan(PlanExercise exercise, {required this.sequence})
       : isPlanExercise = true,
@@ -43,6 +39,11 @@ class _ExerciseItem {
         planExerciseId = null,
         adHocName = name,
         uniqueId = 'adhoc_${name}_${DateTime.now().microsecondsSinceEpoch}';
+  final bool isPlanExercise;
+  final int? planExerciseId;
+  final String? adHocName;
+  final String uniqueId;
+  int sequence;
 
   String get key => uniqueId;
 }
@@ -50,7 +51,7 @@ class _ExerciseItem {
 class _StartPlanPageState extends State<StartPlanPage> {
   int? workoutId;
   late Stream<List<PlanExercise>> stream;
-  late String title = widget.plan.days.replaceAll(",", ", ");
+  late String title = widget.plan.days.replaceAll(',', ', ');
   Set<String> expandedExercises = {}; // Now uses string keys
   final TextEditingController _notesController = TextEditingController();
   bool _showNotes = false;
@@ -65,9 +66,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
   @override
   void initState() {
     super.initState();
-    title = widget.plan.title?.isNotEmpty == true
+    title = widget.plan.title?.isNotEmpty ?? false
         ? widget.plan.title!
-        : widget.plan.days.replaceAll(",", ", ");
+        : widget.plan.days.replaceAll(',', ', ');
 
     // Listen for workout state changes to pop when workout ends
     _workoutState = context.read<WorkoutState>();
@@ -93,7 +94,6 @@ class _StartPlanPageState extends State<StartPlanPage> {
               [
                 (u) => OrderingTerm(
                       expression: u.sequence,
-                      mode: OrderingMode.asc,
                     ),
               ],
             ))
@@ -145,7 +145,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
     if (mounted) {
       setState(() {
-        _planExercisesMap = {for (var e in planExercises) e.id: e};
+        _planExercisesMap = {for (final e in planExercises) e.id: e};
         _exerciseOrder = [];
 
         if (existingSets.isEmpty) {
@@ -209,7 +209,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 .firstOrNull;
             if (planExercise != null) {
               _exerciseOrder.add(
-                  _ExerciseItem.plan(planExercise, sequence: group.minSeq));
+                  _ExerciseItem.plan(planExercise, sequence: group.minSeq),);
             } else {
               _exerciseOrder
                   .add(_ExerciseItem.adHoc(group.name, sequence: group.minSeq));
@@ -222,7 +222,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
                       s.name == group.name &&
                       s.sequence >= group.minSeq &&
                       s.sequence <= group.maxSeq &&
-                      s.notes?.isNotEmpty == true,
+                      (s.notes?.isNotEmpty ?? false),
                 )
                 .firstOrNull;
 
@@ -388,7 +388,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
         final exercises = snapshot.data!;
         // Update plan exercises map with latest data
-        _planExercisesMap = {for (var e in exercises) e.id: e};
+        _planExercisesMap = {for (final e in exercises) e.id: e};
 
         return Scaffold(
           appBar: AppBar(
@@ -565,7 +565,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
                   weight: 0,
                   unit: 'kg',
                   created: DateTime.now(),
-                  workoutId: Value(workoutId!),
+                  workoutId: Value(workoutId),
                   hidden: const Value(true), // Hide from history
                   sequence: const Value(-1), // Special sequence for tombstones
                 ),
@@ -655,7 +655,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
                   weight: 0,
                   unit: 'kg',
                   created: DateTime.now(),
-                  workoutId: Value(workoutId!),
+                  workoutId: Value(workoutId),
                   hidden: const Value(true), // Hide from history
                   sequence: const Value(-1), // Special sequence for tombstones
                 ),
@@ -750,18 +750,14 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
 // Clean reorderable tile for exercise reorder mode
 class _ReorderableExerciseTile extends StatelessWidget {
+
+  const _ReorderableExerciseTile({
+    required this.index, required this.exerciseName, required this.isAdHoc, required this.colorScheme, super.key,
+  });
   final int index;
   final String exerciseName;
   final bool isAdHoc;
   final ColorScheme colorScheme;
-
-  const _ReorderableExerciseTile({
-    super.key,
-    required this.index,
-    required this.exerciseName,
-    required this.isAdHoc,
-    required this.colorScheme,
-  });
 
   @override
   Widget build(BuildContext context) {

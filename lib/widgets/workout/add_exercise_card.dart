@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class AddExerciseCard extends StatelessWidget {
-  final VoidCallback onTap;
 
-  const AddExerciseCard({super.key, required this.onTap});
+  const AddExerciseCard({required this.onTap, super.key});
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,6 @@ class AddExerciseCard extends StatelessWidget {
               border: Border.all(
                 color: colorScheme.primary.withValues(alpha: 0.3),
                 width: 2,
-                strokeAlign: BorderSide.strokeAlignInside,
               ),
               gradient: LinearGradient(
                 colors: [

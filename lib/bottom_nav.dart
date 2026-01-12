@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 
 class BottomNav extends StatefulWidget {
+
+  const BottomNav({
+    required this.tabs, required this.currentIndex, required this.onTap, super.key,
+    this.onLongPress,
+  });
   final List<String> tabs;
   final int currentIndex;
   final Function(int) onTap;
   final Function(BuildContext, String)? onLongPress;
-
-  const BottomNav({
-    super.key,
-    required this.tabs,
-    required this.currentIndex,
-    required this.onTap,
-    this.onLongPress,
-  });
 
   @override
   State<BottomNav> createState() => _BottomNavState();
@@ -31,8 +28,8 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
       vsync: this,
     );
     _slideAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
+      begin: 0,
+      end: 1,
     ).animate(
       CurvedAnimation(
         parent: _slideController,
@@ -62,7 +59,7 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
 
-    return Container(
+    return ColoredBox(
       color: Colors.transparent,
       child: Padding(
         padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 16),
@@ -72,11 +69,11 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
             AnimatedBuilder(
               animation: _slideAnimation,
               builder: (context, child) {
-                double tabWidth = (MediaQuery.of(context).size.width - 40) /
+                final double tabWidth = (MediaQuery.of(context).size.width - 40) /
                     widget.tabs.length;
-                double startX = _previousIndex * tabWidth;
-                double endX = widget.currentIndex * tabWidth;
-                double currentX =
+                final double startX = _previousIndex * tabWidth;
+                final double endX = widget.currentIndex * tabWidth;
+                final double currentX =
                     startX + (endX - startX) * _slideAnimation.value;
 
                 return Positioned(
@@ -102,9 +99,9 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: widget.tabs.asMap().entries.map((entry) {
-                int index = entry.key;
-                String tab = entry.value;
-                bool isSelected = index == widget.currentIndex;
+                final int index = entry.key;
+                final String tab = entry.value;
+                final bool isSelected = index == widget.currentIndex;
 
                 return Expanded(
                   child: GestureDetector(
@@ -168,7 +165,7 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
               animation: _slideAnimation,
               builder: (context, child) {
                 if (_slideAnimation.isAnimating) {
-                  bool isMovingRight = widget.currentIndex > _previousIndex;
+                  final bool isMovingRight = widget.currentIndex > _previousIndex;
                   return Positioned(
                     top: 35,
                     left: isMovingRight ? null : 20,

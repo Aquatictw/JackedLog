@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:ui';
 
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/timer/timer_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+import '../settings/settings_state.dart';
+import 'timer_state.dart';
 
 class RestTimerBar extends StatefulWidget {
   const RestTimerBar({super.key});
@@ -130,7 +130,7 @@ class _RestTimerBarState extends State<RestTimerBar>
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                margin: const EdgeInsets.only(left: 16, top: 2, bottom: 0),
+                margin: const EdgeInsets.only(left: 16, top: 2),
                 padding: EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: _isExpanded ? 12 : 10,
@@ -142,13 +142,11 @@ class _RestTimerBarState extends State<RestTimerBar>
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: (isUrgent
-                              ? colorScheme.error
-                              : colorScheme.tertiary)
-                          .withValues(alpha: 0.3),
+                      color:
+                          (isUrgent ? colorScheme.error : colorScheme.tertiary)
+                              .withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
-                      spreadRadius: 0,
                     ),
                   ],
                 ),
@@ -173,9 +171,7 @@ class _RestTimerBarState extends State<RestTimerBar>
                                 : colorScheme.onTertiaryContainer,
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            fontFeatures: const [
-                              FontFeature.tabularFigures()
-                            ],
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -246,13 +242,13 @@ class _RestTimerBarState extends State<RestTimerBar>
 }
 
 class _MiniCircularProgress extends StatelessWidget {
-  final double progress;
-  final bool isUrgent;
 
   const _MiniCircularProgress({
     required this.progress,
     required this.isUrgent,
   });
+  final double progress;
+  final bool isUrgent;
 
   @override
   Widget build(BuildContext context) {
@@ -269,7 +265,7 @@ class _MiniCircularProgress extends StatelessWidget {
             width: 36,
             height: 36,
             child: CircularProgressIndicator(
-              value: 1.0,
+              value: 1,
               strokeWidth: 3,
               backgroundColor: Colors.transparent,
               valueColor: AlwaysStoppedAnimation(
@@ -313,10 +309,6 @@ class _MiniCircularProgress extends StatelessWidget {
 }
 
 class _TimeAdjustButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onPressed;
-  final bool isUrgent;
-  final bool isAdd;
 
   const _TimeAdjustButton({
     required this.label,
@@ -324,6 +316,10 @@ class _TimeAdjustButton extends StatelessWidget {
     required this.isUrgent,
     this.isAdd = false,
   });
+  final String label;
+  final VoidCallback onPressed;
+  final bool isUrgent;
+  final bool isAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -362,11 +358,6 @@ class _TimeAdjustButton extends StatelessWidget {
 }
 
 class _CompactActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
-  final bool isUrgent;
-  final bool isDestructive;
 
   const _CompactActionButton({
     required this.icon,
@@ -375,6 +366,11 @@ class _CompactActionButton extends StatelessWidget {
     required this.isUrgent,
     this.isDestructive = false,
   });
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  final bool isUrgent;
+  final bool isDestructive;
 
   @override
   Widget build(BuildContext context) {

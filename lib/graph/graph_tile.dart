@@ -1,28 +1,25 @@
 import 'dart:io';
 
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/database/gym_sets.dart';
-import 'package:jackedlog/graph/cardio_page.dart';
-import 'package:jackedlog/graph/strength_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/widgets/bodypart_tag.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../constants.dart';
+import '../database/gym_sets.dart';
+import '../settings/settings_state.dart';
+import '../widgets/bodypart_tag.dart';
+import 'cardio_page.dart';
+import 'strength_page.dart';
+
 class GraphTile extends StatelessWidget {
+
+  const GraphTile({
+    required this.selected, required this.onSelect, required this.exercise, required this.tabCtrl, super.key,
+  });
   final GraphExercise exercise;
   final Set<String> selected;
   final Function(String) onSelect;
   final TabController tabCtrl;
-
-  const GraphTile({
-    super.key,
-    required this.selected,
-    required this.onSelect,
-    required this.exercise,
-    required this.tabCtrl,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +41,7 @@ class GraphTile extends StatelessWidget {
           },
         ),
       );
-    } else if (showImages && exercise.image?.isNotEmpty == true) {
+    } else if (showImages && (exercise.image?.isNotEmpty ?? false)) {
       leading = GestureDetector(
         onTap: () => onSelect(exercise.name),
         child: ClipRRect(
@@ -94,7 +91,6 @@ class GraphTile extends StatelessWidget {
           color: selected.contains(exercise.name)
               ? colorScheme.primary.withValues(alpha: 0.3)
               : Colors.transparent,
-          width: 1,
         ),
       ),
       child: ListTile(
@@ -181,7 +177,6 @@ class GraphTile extends StatelessWidget {
             final data = await getCardioData(
               target: exercise.unit,
               name: exercise.name,
-              metric: CardioMetric.pace,
               period: Period.months3,
             );
             if (!context.mounted) return;

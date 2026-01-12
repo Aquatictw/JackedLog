@@ -1,11 +1,12 @@
-import 'package:jackedlog/delete_records_button.dart';
-import 'package:jackedlog/export_data.dart';
 import 'package:flutter/material.dart';
 
-class FailedMigrationsPage extends StatelessWidget {
-  final Object error;
+import '../delete_records_button.dart';
+import '../export_data.dart';
 
-  const FailedMigrationsPage({super.key, required this.error});
+class FailedMigrationsPage extends StatelessWidget {
+
+  const FailedMigrationsPage({required this.error, super.key});
+  final Object error;
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +14,7 @@ class FailedMigrationsPage extends StatelessWidget {
       home: Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
-          title: const Text("Failed migrations"),
+          title: const Text('Failed migrations'),
           leading: const Icon(Icons.error),
         ),
         body: Padding(
@@ -22,14 +23,14 @@ class FailedMigrationsPage extends StatelessWidget {
             children: [
               const ListTile(
                 title: Text(
-                  "Something went wrong when creating/upgrading your database. Usually this can be fixed by deleting & re-creating your records.",
+                  'Something went wrong when creating/upgrading your database. Usually this can be fixed by deleting & re-creating your records.',
                 ),
               ),
               SizedBox(
                 height: 300,
                 child: SingleChildScrollView(
                   child: ListTile(
-                    title: const Text("Error message:"),
+                    title: const Text('Error message:'),
                     subtitle: Text(error.toString()),
                   ),
                 ),

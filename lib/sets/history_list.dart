@@ -1,29 +1,25 @@
 import 'dart:io';
 
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/sets/edit_set_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../database/database.dart';
+import '../settings/settings_state.dart';
+import '../utils.dart';
+import 'edit_set_page.dart';
+
 class HistoryList extends StatefulWidget {
+
+  const HistoryList({
+    required this.sets, required this.onSelect, required this.selected, required this.onNext, required this.scroll, super.key,
+  });
   final List<GymSet> sets;
   final ScrollController scroll;
   final Function(int) onSelect;
   final Set<int> selected;
   final Function onNext;
-
-  const HistoryList({
-    super.key,
-    required this.sets,
-    required this.onSelect,
-    required this.selected,
-    required this.onNext,
-    required this.scroll,
-  });
 
   @override
   State<HistoryList> createState() => _HistoryListState();
@@ -51,7 +47,7 @@ class _HistoryListState extends State<HistoryList> {
         )
         .toList();
 
-    for (var setToRemove in toRemove) {
+    for (final setToRemove in toRemove) {
       final index = _current.indexOf(setToRemove);
       if (index != -1) {
         final removedSet = _current.removeAt(index);
@@ -63,7 +59,6 @@ class _HistoryListState extends State<HistoryList> {
             index,
             context.read<SettingsState>().value.showImages,
           ),
-          duration: const Duration(milliseconds: 300),
         );
       }
     }
@@ -74,7 +69,7 @@ class _HistoryListState extends State<HistoryList> {
         )
         .toList();
 
-    for (var setToAdd in toAdd) {
+    for (final setToAdd in toAdd) {
       final insertIndex = widget.sets.indexOf(setToAdd);
       if (insertIndex >= 0 && insertIndex <= _current.length) {
         _current.insert(insertIndex, setToAdd);
@@ -90,13 +85,13 @@ class _HistoryListState extends State<HistoryList> {
     bool showImages,
   ) {
     final offsetAnimation = Tween<Offset>(
-      begin: const Offset(0.0, -1.0),
-      end: const Offset(0.0, 0.0),
+      begin: const Offset(0, -1),
+      end: Offset.zero,
     ).chain(CurveTween(curve: Curves.easeInOut)).animate(animation);
 
     final sizeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
+      begin: 0,
+      end: 1,
     ).chain(CurveTween(curve: Curves.easeInOut)).animate(animation);
 
     return SizeTransition(
@@ -180,13 +175,13 @@ class _HistoryListState extends State<HistoryList> {
       child: leading,
     );
 
-    String trailing = "$weight ${gymSet.unit} x $reps";
+    String trailing = '$weight ${gymSet.unit} x $reps';
     if (gymSet.cardio &&
         (gymSet.unit == 'kg' || gymSet.unit == 'lb' || gymSet.unit == 'stone'))
-      trailing = "$weight ${gymSet.unit} / $minutes:$seconds $incline";
+      trailing = '$weight ${gymSet.unit} / $minutes:$seconds $incline';
     else if (gymSet.cardio &&
         (gymSet.unit == 'km' || gymSet.unit == 'mi' || gymSet.unit == 'kcal'))
-      trailing = "$distance ${gymSet.unit} / $minutes:$seconds $incline";
+      trailing = '$distance ${gymSet.unit} / $minutes:$seconds $incline';
 
     return Column(
       children: [
@@ -217,7 +212,6 @@ class _HistoryListState extends State<HistoryList> {
               color: widget.selected.contains(gymSet.id)
                   ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
                   : Colors.transparent,
-              width: 1,
             ),
           ),
           child: ListTile(
@@ -228,9 +222,13 @@ class _HistoryListState extends State<HistoryList> {
                 if (gymSet.warmup) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.7),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .tertiaryContainer
+                          .withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
@@ -257,9 +255,13 @@ class _HistoryListState extends State<HistoryList> {
                 if (gymSet.dropSet) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .secondaryContainer
+                          .withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
@@ -283,12 +285,17 @@ class _HistoryListState extends State<HistoryList> {
                     ),
                   ),
                 ],
-                if (gymSet.brandName != null && gymSet.brandName!.isNotEmpty) ...[
+                if (gymSet.brandName != null &&
+                    gymSet.brandName!.isNotEmpty) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(

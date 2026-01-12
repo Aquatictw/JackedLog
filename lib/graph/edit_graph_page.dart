@@ -4,21 +4,22 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:jackedlog/animated_fab.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:provider/provider.dart';
 
+import '../animated_fab.dart';
+import '../database/database.dart';
+import '../main.dart';
+import '../plan/plan_state.dart';
+import '../settings/settings_state.dart';
+import '../utils.dart';
+
 class EditGraphPage extends StatefulWidget {
-  final String name;
 
   const EditGraphPage({required this.name, super.key});
+  final String name;
 
   @override
-  createState() => _EditGraphPageState();
+  _EditGraphPageState createState() => _EditGraphPageState();
 }
 
 class _EditGraphPageState extends State<EditGraphPage> {
@@ -61,10 +62,10 @@ class _EditGraphPageState extends State<EditGraphPage> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Text("Update ${widget.name}"),
+        title: Text('Update ${widget.name}'),
         elevation: 0,
       ),
-      body: Container(
+      body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -76,7 +77,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20),
           child: Form(
             key: key,
             child: ListView(
@@ -89,14 +90,14 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
+                      horizontal: 16,
+                      vertical: 8,
                     ),
                     child: TextField(
                       controller: name,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: "Exercise Name",
+                        labelText: 'Exercise Name',
                         border: InputBorder.none,
                         icon: Icon(
                           Icons.label_outline,
@@ -126,8 +127,8 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
+                      horizontal: 16,
+                      vertical: 8,
                     ),
                     child: Row(
                       children: [
@@ -138,7 +139,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                             controller: minutes,
                             textInputAction: TextInputAction.next,
                             decoration: const InputDecoration(
-                              labelText: "Minutes",
+                              labelText: 'Minutes',
                               border: InputBorder.none,
                             ),
                             keyboardType: material.TextInputType.number,
@@ -157,7 +158,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                             controller: seconds,
                             textInputAction: TextInputAction.next,
                             decoration: const InputDecoration(
-                              labelText: "Seconds",
+                              labelText: 'Seconds',
                               border: InputBorder.none,
                             ),
                             keyboardType: material.TextInputType.number,
@@ -196,7 +197,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                         (type) => Expanded(
                           child: Padding(
                             padding:
-                                const EdgeInsets.symmetric(horizontal: 4.0),
+                                const EdgeInsets.symmetric(horizontal: 4),
                             child: InkWell(
                               onTap: () {
                                 setState(() {
@@ -206,7 +207,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
                                 padding:
-                                    const EdgeInsets.symmetric(vertical: 16.0),
+                                    const EdgeInsets.symmetric(vertical: 16),
                                 decoration: BoxDecoration(
                                   gradient: exerciseType == type.value
                                       ? LinearGradient(
@@ -273,8 +274,8 @@ class _EditGraphPageState extends State<EditGraphPage> {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 8.0,
+                        horizontal: 16,
+                        vertical: 8,
                       ),
                       child: TextField(
                         controller: brandNameCtrl,
@@ -317,8 +318,8 @@ class _EditGraphPageState extends State<EditGraphPage> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                              vertical: 4.0,
+                              horizontal: 16,
+                              vertical: 4,
                             ),
                             child: DropdownButtonFormField<String>(
                               decoration: InputDecoration(
@@ -363,8 +364,8 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
+                      horizontal: 16,
+                      vertical: 8,
                     ),
                     child: TextField(
                       controller: notesCtrl,
@@ -413,7 +414,6 @@ class _EditGraphPageState extends State<EditGraphPage> {
                                   color: colorScheme.outline
                                       .withValues(alpha: 0.3),
                                   width: 2,
-                                  style: BorderStyle.solid,
                                 ),
                               ),
                               child: Center(
@@ -510,14 +510,14 @@ class _EditGraphPageState extends State<EditGraphPage> {
       ),
       floatingActionButton: AnimatedFab(
         onPressed: save,
-        label: const Text("Update"),
+        label: const Text('Update'),
         icon: const Icon(Icons.sync),
       ),
     );
   }
 
   @override
-  dispose() {
+  void dispose() {
     name.dispose();
     minutes.dispose();
     seconds.dispose();
@@ -594,7 +594,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
         );
   }
 
-  void pick() async {
+  Future<void> pick() async {
     final colorScheme = Theme.of(context).colorScheme;
 
     final source = await showModalBottomSheet<ImageSource>(

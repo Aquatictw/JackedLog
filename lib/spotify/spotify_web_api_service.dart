@@ -4,14 +4,14 @@ import 'package:http/http.dart' as http;
 /// Service for Spotify Web API REST calls
 /// Uses OAuth token from App Remote SDK for authentication
 class SpotifyWebApiService {
-  static final SpotifyWebApiService _instance =
-      SpotifyWebApiService._internal();
   factory SpotifyWebApiService() => _instance;
   SpotifyWebApiService._internal();
+  static final SpotifyWebApiService _instance =
+      SpotifyWebApiService._internal();
 
   /// Set the access token to use for API requests
   /// Should be called with token from SpotifyService after connection
-  void setAccessToken(String token) {
+  set accessToken(String token) {
     _currentToken = token;
   }
 
@@ -95,7 +95,8 @@ class SpotifyWebApiService {
       final track = item['track'];
       return {
         'title': track['name'] ?? 'Unknown Track',
-        'artist': (track['artists'] as List?)?.first['name'] ?? 'Unknown Artist',
+        'artist':
+            (track['artists'] as List?)?.first['name'] ?? 'Unknown Artist',
         'album': track['album']?['name'] ?? 'Unknown Album',
         'artworkUrl': (track['album']?['images'] as List?)?.first['url'],
         'playedAt': item['played_at'],

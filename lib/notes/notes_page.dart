@@ -1,10 +1,11 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/notes/note_editor_page.dart';
-import 'package:jackedlog/widgets/training_max_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+import '../database/database.dart';
+import '../main.dart';
+import '../widgets/training_max_editor.dart';
+import 'note_editor_page.dart';
 
 class NotesPage extends StatefulWidget {
   const NotesPage({super.key});
@@ -105,7 +106,7 @@ class _NotesPageState extends State<NotesPage> {
       ),
     );
 
-    if (confirm == true) {
+    if (confirm ?? false) {
       await (db.notes.delete()..where((n) => n.id.equals(note.id))).go();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -130,7 +131,7 @@ class _NotesPageState extends State<NotesPage> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -164,7 +165,8 @@ class _NotesPageState extends State<NotesPage> {
       body: StreamBuilder<List<Note>>(
         stream: (db.notes.select()
               ..orderBy([
-                (n) => OrderingTerm(expression: n.updated, mode: OrderingMode.desc)
+                (n) =>
+                    OrderingTerm(expression: n.updated, mode: OrderingMode.desc),
               ]))
             .watch(),
         builder: (context, snapshot) {
@@ -205,14 +207,21 @@ class _NotesPageState extends State<NotesPage> {
                         Icon(
                           Icons.search_off_outlined,
                           size: 80,
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          "No notes found",
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                              ),
+                          'No notes found',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.5),
+                                  ),
                         ),
                       ],
                     ),
@@ -241,20 +250,27 @@ class _NotesPageState extends State<NotesPage> {
                         Icon(
                           Icons.note_add_outlined,
                           size: 80,
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          "No notes yet",
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                              ),
+                          'No notes yet',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.5),
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         TextButton.icon(
                           onPressed: _createNote,
                           icon: const Icon(Icons.add),
-                          label: const Text("Create your first note"),
+                          label: const Text('Create your first note'),
                         ),
                       ],
                     ),
@@ -305,13 +321,12 @@ class _NotesPageState extends State<NotesPage> {
   }
 }
 
-
 class _TrainingMaxBanner extends StatelessWidget {
-  final VoidCallback onTap;
 
   const _TrainingMaxBanner({
     required this.onTap,
   });
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -372,7 +387,8 @@ class _TrainingMaxBanner extends StatelessWidget {
                         'Calculate weights for your program',
                         style: TextStyle(
                           fontSize: 13,
-                          color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                          color: colorScheme.onPrimaryContainer
+                              .withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -393,10 +409,6 @@ class _TrainingMaxBanner extends StatelessWidget {
 }
 
 class _NoteCard extends StatelessWidget {
-  final Note note;
-  final Color color;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
 
   const _NoteCard({
     required this.note,
@@ -404,6 +416,10 @@ class _NoteCard extends StatelessWidget {
     required this.onTap,
     required this.onDelete,
   });
+  final Note note;
+  final Color color;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -464,7 +480,7 @@ class _NoteCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.access_time,
                     size: 12,
                     color: Colors.black54,

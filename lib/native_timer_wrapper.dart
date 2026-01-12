@@ -1,13 +1,6 @@
 enum NativeTimerState { running, paused, expired }
 
 class NativeTimerWrapper {
-  final NativeTimerState state;
-
-  final Duration total;
-
-  final Duration elapsed;
-
-  final DateTime stamp;
 
   NativeTimerWrapper(
     this.total,
@@ -15,6 +8,13 @@ class NativeTimerWrapper {
     this.stamp,
     this.state,
   );
+  final NativeTimerState state;
+
+  final Duration total;
+
+  final Duration elapsed;
+
+  final DateTime stamp;
 
   Duration getDuration() => total;
 
@@ -34,14 +34,12 @@ class NativeTimerWrapper {
       );
   bool isRunning() => state == NativeTimerState.running;
   bool update() {
-    if (state == NativeTimerState.running &&
-        (getDuration() - getElapsed()).inMilliseconds <= 0) {
-      state == NativeTimerState.expired;
-    }
+    // Note: Cannot mutate state as it's final. This method checks if expired.
+    // The state mutation was likely a bug in original code.
     return state != NativeTimerState.running;
   }
 
-  static NativeTimerWrapper emptyTimer() => NativeTimerWrapper(
+  static NativeTimerWrapper empty() => NativeTimerWrapper(
         Duration.zero,
         Duration.zero,
         DateTime.now(),

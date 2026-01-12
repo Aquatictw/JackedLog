@@ -1,17 +1,17 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
 import 'package:flutter/material.dart';
 
+import '../database/database.dart';
+import '../main.dart';
+
 class NoteEditorPage extends StatefulWidget {
-  final Note? note;
-  final int colorIndex;
 
   const NoteEditorPage({
-    super.key,
+    required this.colorIndex, super.key,
     this.note,
-    required this.colorIndex,
   });
+  final Note? note;
+  final int colorIndex;
 
   @override
   State<NoteEditorPage> createState() => _NoteEditorPageState();
@@ -40,7 +40,8 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.note?.title ?? '');
-    _contentController = TextEditingController(text: widget.note?.content ?? '');
+    _contentController =
+        TextEditingController(text: widget.note?.content ?? '');
 
     // Check if it's a custom color or preset index
     final colorValue = widget.note?.color ?? widget.colorIndex;
@@ -82,7 +83,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
 
     final now = DateTime.now();
     // Save custom color value or preset index
-    final colorValue = _customColor?.value ?? _selectedColorIndex;
+    final colorValue = _customColor?.toARGB32() ?? _selectedColorIndex;
 
     if (widget.note == null) {
       // Create new note
@@ -94,13 +95,15 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
         color: Value(colorValue),
       );
       final id = await db.notes.insertOne(companion);
-      final note = await (db.notes.select()..where((n) => n.id.equals(id))).getSingle();
+      final note =
+          await (db.notes.select()..where((n) => n.id.equals(id))).getSingle();
       if (mounted) {
         Navigator.pop(context, note);
       }
     } else {
       // Update existing note
-      await (db.notes.update()..where((n) => n.id.equals(widget.note!.id))).write(
+      await (db.notes.update()..where((n) => n.id.equals(widget.note!.id)))
+          .write(
         NotesCompanion(
           title: Value(title.isEmpty ? 'Untitled' : title),
           content: Value(content),
@@ -108,7 +111,9 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           color: Value(colorValue),
         ),
       );
-      final note = await (db.notes.select()..where((n) => n.id.equals(widget.note!.id))).getSingle();
+      final note = await (db.notes.select()
+            ..where((n) => n.id.equals(widget.note!.id)))
+          .getSingle();
       if (mounted) {
         Navigator.pop(context, note);
       }
@@ -124,7 +129,8 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Save changes?'),
-        content: const Text('You have unsaved changes. Do you want to save them?'),
+        content:
+            const Text('You have unsaved changes. Do you want to save them?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -138,7 +144,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       ),
     );
 
-    if (shouldSave == true) {
+    if (shouldSave ?? false) {
       await _saveNote();
       return false;
     }
@@ -146,7 +152,9 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     return shouldSave == false;
   }
 
-  Color get _currentColor => _customColor ?? _noteColors[_selectedColorIndex >= 0 ? _selectedColorIndex : 0];
+  Color get _currentColor =>
+      _customColor ??
+      _noteColors[_selectedColorIndex >= 0 ? _selectedColorIndex : 0];
 
   Future<void> _showCustomColorPicker() async {
     final result = await showDialog<Color>(
@@ -167,8 +175,17 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        if (await _onWillPop()) {
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
       child: Scaffold(
         backgroundColor: _currentColor,
         appBar: AppBar(
@@ -212,7 +229,8 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                       height: 40,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
-                        itemCount: _noteColors.length + 1, // +1 for custom color button
+                        itemCount: _noteColors.length +
+                            1, // +1 for custom color button
                         itemBuilder: (context, index) {
                           // Custom color picker button
                           if (index == _noteColors.length) {
@@ -229,7 +247,9 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                                     color: _customColor ?? Colors.grey[300],
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: isSelected ? Colors.black87 : Colors.black26,
+                                      color: isSelected
+                                          ? Colors.black87
+                                          : Colors.black26,
                                       width: isSelected ? 3 : 1,
                                     ),
                                   ),
@@ -244,7 +264,8 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                           }
 
                           // Preset color options
-                          final isSelected = index == _selectedColorIndex && _customColor == null;
+                          final isSelected = index == _selectedColorIndex &&
+                              _customColor == null;
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: InkWell(
@@ -263,7 +284,9 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                                   color: _noteColors[index],
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: isSelected ? Colors.black87 : Colors.black26,
+                                    color: isSelected
+                                        ? Colors.black87
+                                        : Colors.black26,
                                     width: isSelected ? 3 : 1,
                                   ),
                                 ),
@@ -306,7 +329,6 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.zero,
                       ),
-                      maxLines: 1,
                     ),
                     const SizedBox(height: 4),
                     const Divider(color: Colors.black26),
@@ -343,12 +365,13 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
 }
 
 class _SimpleColorPickerDialog extends StatefulWidget {
-  final Color initialColor;
 
   const _SimpleColorPickerDialog({required this.initialColor});
+  final Color initialColor;
 
   @override
-  State<_SimpleColorPickerDialog> createState() => _SimpleColorPickerDialogState();
+  State<_SimpleColorPickerDialog> createState() =>
+      _SimpleColorPickerDialogState();
 }
 
 class _SimpleColorPickerDialogState extends State<_SimpleColorPickerDialog> {
@@ -394,13 +417,27 @@ class _SimpleColorPickerDialogState extends State<_SimpleColorPickerDialog> {
               },
               gradient: LinearGradient(
                 colors: [
-                  HSLColor.fromAHSL(1, 0, _hslColor.saturation, _hslColor.lightness).toColor(),
-                  HSLColor.fromAHSL(1, 60, _hslColor.saturation, _hslColor.lightness).toColor(),
-                  HSLColor.fromAHSL(1, 120, _hslColor.saturation, _hslColor.lightness).toColor(),
-                  HSLColor.fromAHSL(1, 180, _hslColor.saturation, _hslColor.lightness).toColor(),
-                  HSLColor.fromAHSL(1, 240, _hslColor.saturation, _hslColor.lightness).toColor(),
-                  HSLColor.fromAHSL(1, 300, _hslColor.saturation, _hslColor.lightness).toColor(),
-                  HSLColor.fromAHSL(1, 360, _hslColor.saturation, _hslColor.lightness).toColor(),
+                  HSLColor.fromAHSL(
+                          1, 0, _hslColor.saturation, _hslColor.lightness,)
+                      .toColor(),
+                  HSLColor.fromAHSL(
+                          1, 60, _hslColor.saturation, _hslColor.lightness,)
+                      .toColor(),
+                  HSLColor.fromAHSL(
+                          1, 120, _hslColor.saturation, _hslColor.lightness,)
+                      .toColor(),
+                  HSLColor.fromAHSL(
+                          1, 180, _hslColor.saturation, _hslColor.lightness,)
+                      .toColor(),
+                  HSLColor.fromAHSL(
+                          1, 240, _hslColor.saturation, _hslColor.lightness,)
+                      .toColor(),
+                  HSLColor.fromAHSL(
+                          1, 300, _hslColor.saturation, _hslColor.lightness,)
+                      .toColor(),
+                  HSLColor.fromAHSL(
+                          1, 360, _hslColor.saturation, _hslColor.lightness,)
+                      .toColor(),
                 ],
               ),
             ),
@@ -417,8 +454,10 @@ class _SimpleColorPickerDialogState extends State<_SimpleColorPickerDialog> {
               },
               gradient: LinearGradient(
                 colors: [
-                  HSLColor.fromAHSL(1, _hslColor.hue, 0, _hslColor.lightness).toColor(),
-                  HSLColor.fromAHSL(1, _hslColor.hue, 1, _hslColor.lightness).toColor(),
+                  HSLColor.fromAHSL(1, _hslColor.hue, 0, _hslColor.lightness)
+                      .toColor(),
+                  HSLColor.fromAHSL(1, _hslColor.hue, 1, _hslColor.lightness)
+                      .toColor(),
                 ],
               ),
             ),
@@ -435,9 +474,12 @@ class _SimpleColorPickerDialogState extends State<_SimpleColorPickerDialog> {
               },
               gradient: LinearGradient(
                 colors: [
-                  HSLColor.fromAHSL(1, _hslColor.hue, _hslColor.saturation, 0).toColor(),
-                  HSLColor.fromAHSL(1, _hslColor.hue, _hslColor.saturation, 0.5).toColor(),
-                  HSLColor.fromAHSL(1, _hslColor.hue, _hslColor.saturation, 1).toColor(),
+                  HSLColor.fromAHSL(1, _hslColor.hue, _hslColor.saturation, 0)
+                      .toColor(),
+                  HSLColor.fromAHSL(1, _hslColor.hue, _hslColor.saturation, 0.5)
+                      .toColor(),
+                  HSLColor.fromAHSL(1, _hslColor.hue, _hslColor.saturation, 1)
+                      .toColor(),
                 ],
               ),
             ),

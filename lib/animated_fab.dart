@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 
 class AnimatedFab extends StatefulWidget {
+
+  const AnimatedFab({
+    required this.onPressed, required this.label, required this.icon, super.key,
+    this.scroll,
+  });
   final Function onPressed;
   final Widget label;
   final ScrollController? scroll;
   final Widget? icon;
-
-  const AnimatedFab({
-    super.key,
-    required this.onPressed,
-    required this.label,
-    this.scroll,
-    required this.icon,
-  });
 
   @override
   State<AnimatedFab> createState() => _AnimatedFabState();

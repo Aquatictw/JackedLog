@@ -1,25 +1,24 @@
 import 'package:drift/drift.dart' hide Column;
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/workouts/workout_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../database/database.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+import '../workouts/workout_detail_page.dart';
+
 class GraphHistoryPage extends StatefulWidget {
+
+  const GraphHistoryPage({
+    required this.name, required this.gymSets, super.key,
+  });
   final String name;
   final List<GymSet> gymSets;
 
-  const GraphHistoryPage({
-    super.key,
-    required this.name,
-    required this.gymSets,
-  });
-
   @override
-  createState() => _GraphHistoryPageState();
+  _GraphHistoryPageState createState() => _GraphHistoryPageState();
 }
 
 class _GraphHistoryPageState extends State<GraphHistoryPage> {
@@ -48,16 +47,17 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
                     Icon(
                       Icons.fitness_center,
                       size: 64,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      color:
+                          colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "No workouts yet",
+                      'No workouts yet',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Start tracking ${widget.name} to see your workout history here",
+                      'Start tracking ${widget.name} to see your workout history here',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
@@ -128,7 +128,6 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: colorScheme.outline.withValues(alpha: 0.2),
-                width: 1,
               ),
             ),
             child: Column(
@@ -139,7 +138,8 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                        color:
+                            colorScheme.primaryContainer.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -181,7 +181,9 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Divider(height: 1, color: colorScheme.outline.withValues(alpha: 0.2)),
+                Divider(
+                    height: 1,
+                    color: colorScheme.outline.withValues(alpha: 0.2),),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -243,9 +245,10 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
     loadWorkouts();
   }
 
-  void loadWorkouts() async {
+  Future<void> loadWorkouts() async {
     // Get all workouts containing this exercise
-    final result = await db.customSelect("""
+    final result = await db.customSelect(
+      '''
       SELECT
         w.id as workout_id,
         w.name as workout_name,
@@ -270,12 +273,14 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
       GROUP BY w.id
       ORDER BY w.start_time DESC
       LIMIT ?
-    """, variables: [
-      Variable.withString(widget.name),
-      Variable.withString(widget.name),
-      Variable.withString(widget.name),
-      Variable.withInt(limit),
-    ],).get();
+    ''',
+      variables: [
+        Variable.withString(widget.name),
+        Variable.withString(widget.name),
+        Variable.withString(widget.name),
+        Variable.withInt(limit),
+      ],
+    ).get();
 
     setState(() {
       workouts = result.map((row) {
@@ -295,12 +300,6 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
 }
 
 class WorkoutSummary {
-  final int workoutId;
-  final String? workoutName;
-  final DateTime created;
-  final int sets;
-  final double bestWeight;
-  final double bestReps;
 
   WorkoutSummary({
     required this.workoutId,
@@ -310,4 +309,10 @@ class WorkoutSummary {
     required this.bestWeight,
     required this.bestReps,
   });
+  final int workoutId;
+  final String? workoutName;
+  final DateTime created;
+  final int sets;
+  final double bestWeight;
+  final double bestReps;
 }

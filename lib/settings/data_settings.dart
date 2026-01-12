@@ -1,11 +1,12 @@
-import 'package:jackedlog/backup/auto_backup_settings.dart';
-import 'package:jackedlog/delete_records_button.dart';
-import 'package:jackedlog/export_data.dart';
-import 'package:jackedlog/import_data.dart';
-import 'package:jackedlog/import_hevy.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../backup/auto_backup_settings.dart';
+import '../delete_records_button.dart';
+import '../export_data.dart';
+import '../import_data.dart';
+import '../import_hevy.dart';
+import 'settings_state.dart';
 
 List<Widget> getDataSettings(
   String term,
@@ -35,7 +36,7 @@ class DataSettings extends StatelessWidget {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text("Data management"),
+        title: const Text('Data management'),
       ),
       body: ListView(
         children: getDataSettings('', settings, context),

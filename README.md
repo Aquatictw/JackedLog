@@ -27,7 +27,7 @@
 - **🎊 PR Celebrations**: Automatic detection with animated confetti when you hit new maxes.
 - **📊 Advanced Analytics**: Training heatmaps, muscle group charts, and progressive overload tracking.
 - **🎨 Full Customization**: Artistic color picker lets you personalize the entire app theme.
-- **📱 Cross-Platform**: Android, iOS, Linux, macOS, Windows—your data follows you everywhere.
+- **📱 Android Native**: Optimized for Android devices with offline-first architecture.
 
 ---
 

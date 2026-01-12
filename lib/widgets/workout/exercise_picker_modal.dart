@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
-import 'package:jackedlog/graph/add_exercise_page.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/widgets/bodypart_tag.dart';
+import '../../graph/add_exercise_page.dart';
+import '../../main.dart';
+import '../bodypart_tag.dart';
 
 class ExercisePickerModal extends StatefulWidget {
   const ExercisePickerModal({super.key});
@@ -24,7 +24,7 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
   }
 
   Future<void> _loadExercises() async {
-    final workoutCountCol = const CustomExpression<int>(
+    const workoutCountCol = CustomExpression<int>(
       'COUNT(DISTINCT workout_id)',
     );
 
@@ -37,7 +37,7 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
           ])
           ..orderBy([
             OrderingTerm(expression: workoutCountCol, mode: OrderingMode.desc),
-            OrderingTerm(expression: db.gymSets.name, mode: OrderingMode.asc),
+            OrderingTerm(expression: db.gymSets.name),
           ])
           ..groupBy([db.gymSets.name]))
         .get();
@@ -96,11 +96,10 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
       snap: true,
       snapSizes: const [0.95],
       builder: (context, scrollController) {
-        return Container(
+        return DecoratedBox(
           decoration: BoxDecoration(
             color: colorScheme.surface,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           ),
           child: Column(
             children: [
@@ -146,7 +145,6 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: TextField(
-                  autofocus: false,
                   decoration: InputDecoration(
                     hintText: 'Search exercises...',
                     prefixIcon: const Icon(Icons.search, size: 20),
@@ -163,7 +161,7 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
                     filled: true,
                     fillColor: colorScheme.surfaceContainerHighest,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 12),
+                        horizontal: 12, vertical: 12,),
                     isDense: true,
                   ),
                   onChanged: (value) => setState(() => _search = value),
@@ -223,12 +221,14 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
               ),
               // Divider with text
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Row(
                   children: [
                     Expanded(
                       child: Divider(
-                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        color:
+                            colorScheme.outlineVariant.withValues(alpha: 0.5),
                       ),
                     ),
                     Padding(
@@ -246,7 +246,8 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
                     ),
                     Expanded(
                       child: Divider(
-                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        color:
+                            colorScheme.outlineVariant.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -327,7 +328,7 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
                                       const SizedBox(width: 5),
                                       BodypartTag(
                                           bodypart: exercise.category,
-                                          fontSize: 9),
+                                          fontSize: 9,),
                                     ],
                                     if (exercise.brandName != null &&
                                         exercise.brandName!.isNotEmpty) ...[
@@ -340,7 +341,8 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
                                         decoration: BoxDecoration(
                                           color: colorScheme.secondaryContainer
                                               .withValues(alpha: 0.7),
-                                          borderRadius: BorderRadius.circular(5),
+                                          borderRadius:
+                                              BorderRadius.circular(5),
                                         ),
                                         child: Text(
                                           exercise.brandName!,

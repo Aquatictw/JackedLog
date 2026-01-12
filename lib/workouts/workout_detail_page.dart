@@ -4,26 +4,27 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/database/gym_sets.dart';
-import 'package:jackedlog/graph/cardio_page.dart';
-import 'package:jackedlog/graph/strength_page.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/start_plan_page.dart';
-import 'package:jackedlog/records/record_notification.dart';
-import 'package:jackedlog/records/records_service.dart';
-import 'package:jackedlog/sets/edit_set_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
-import 'package:jackedlog/widgets/bodypart_tag.dart';
-import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:provider/provider.dart';
 
-class WorkoutDetailPage extends StatefulWidget {
-  final Workout workout;
+import '../constants.dart';
+import '../database/database.dart';
+import '../database/gym_sets.dart';
+import '../graph/cardio_page.dart';
+import '../graph/strength_page.dart';
+import '../main.dart';
+import '../plan/start_plan_page.dart';
+import '../records/record_notification.dart';
+import '../records/records_service.dart';
+import '../sets/edit_set_page.dart';
+import '../settings/settings_state.dart';
+import '../utils.dart';
+import '../widgets/bodypart_tag.dart';
+import 'workout_state.dart';
 
-  const WorkoutDetailPage({super.key, required this.workout});
+class WorkoutDetailPage extends StatefulWidget {
+
+  const WorkoutDetailPage({required this.workout, super.key});
+  final Workout workout;
 
   @override
   State<WorkoutDetailPage> createState() => _WorkoutDetailPageState();
@@ -44,15 +45,14 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           ..where((s) =>
               s.workoutId.equals(widget.workout.id) &
               s.hidden.equals(false) &
-              s.sequence.isBiggerOrEqualValue(0))
+              s.sequence.isBiggerOrEqualValue(0),)
           ..orderBy([
             // Order by sequence first (exercise position)
-            (s) => OrderingTerm(expression: s.sequence, mode: OrderingMode.asc),
+            (s) => OrderingTerm(expression: s.sequence),
             // Then by setOrder if available, fallback to created timestamp
             (s) => OrderingTerm(
                   expression: const CustomExpression<int>(
-                      "COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))"),
-                  mode: OrderingMode.asc,
+                      'COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))',),
                 ),
           ]))
         .watch();
@@ -115,7 +115,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                     sets: currentSets,
                     minSeq: currentMinSeq!,
                     maxSeq: currentMaxSeq!,
-                  ));
+                  ),);
                 }
                 // Start new group
                 currentExercise = set.name;
@@ -136,7 +136,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 sets: currentSets,
                 minSeq: currentMinSeq!,
                 maxSeq: currentMaxSeq!,
-              ));
+              ),);
             }
           }
 
@@ -299,10 +299,10 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               // Stats section
               SliverToBoxAdapter(
                 child: _buildStatsSection(
-                    sets, totalVolume, uniqueExerciseNames, _recordsMap.length),
+                    sets, totalVolume, uniqueExerciseNames, _recordsMap.length,),
               ),
               // Notes section
-              if (widget.workout.notes?.isNotEmpty == true)
+              if (widget.workout.notes?.isNotEmpty ?? false)
                 SliverToBoxAdapter(
                   child: _buildNotesSection(),
                 ),
@@ -346,7 +346,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   Widget _buildDefaultGradientBackground(ColorScheme colorScheme) {
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -429,7 +429,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   Widget _buildStatsSection(List<GymSet> sets, double totalVolume,
-      int exerciseCount, int recordCount) {
+      int exerciseCount, int recordCount,) {
     final colorScheme = Theme.of(context).colorScheme;
     final duration = widget.workout.endTime != null
         ? widget.workout.endTime!.difference(widget.workout.startTime)
@@ -489,7 +489,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   Widget _buildStatItem(IconData icon, String value, String label,
-      {bool isHighlighted = false}) {
+      {bool isHighlighted = false,}) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
@@ -632,7 +632,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
     final children = <Widget>[
       // Show exercise notes if present
-      if (exerciseNotes?.isNotEmpty == true)
+      if (exerciseNotes?.isNotEmpty ?? false)
         Container(
           margin: const EdgeInsets.fromLTRB(72, 0, 16, 8),
           padding: const EdgeInsets.all(12),
@@ -678,7 +678,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           if (set.dropSet) {
             dropSetNumber++;
             return _buildSetTile(set, dropSetNumber,
-                isDropSet: true, records: setRecords);
+                isDropSet: true, records: setRecords,);
           } else if (!set.warmup) {
             workingSetNumber++;
             return _buildSetTile(set, workingSetNumber, records: setRecords);
@@ -782,11 +782,11 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             ],
           ],
         ),
-        subtitle: exerciseNotes?.isNotEmpty == true
+        subtitle: exerciseNotes?.isNotEmpty ?? false
             ? Row(
                 children: [
                   Icon(Icons.note,
-                      size: 14, color: Theme.of(context).colorScheme.primary),
+                      size: 14, color: Theme.of(context).colorScheme.primary,),
                   const SizedBox(width: 4),
                   Text('${sets.length} sets'),
                 ],
@@ -817,7 +817,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             bottomRight:
                 isLastInSuperset ? const Radius.circular(12) : Radius.zero,
           ),
-          child: Container(
+          child: DecoratedBox(
             decoration: BoxDecoration(
               // Subtle background tint
               color: supersetColor.withValues(alpha: 0.05),
@@ -831,7 +831,6 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 top: !isFirstInSuperset
                     ? BorderSide(
                         color: supersetColor.withValues(alpha: 0.2),
-                        width: 1,
                       )
                     : BorderSide.none,
               ),
@@ -840,7 +839,6 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 BoxShadow(
                   color: supersetColor.withValues(alpha: 0.1),
                   blurRadius: 8,
-                  spreadRadius: 0,
                   offset: const Offset(-2, 0),
                 ),
               ],
@@ -876,7 +874,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   Widget _buildSetTile(GymSet set, int setNumber,
-      {bool isDropSet = false, Set<RecordType> records = const {}}) {
+      {bool isDropSet = false, Set<RecordType> records = const {},}) {
     final reps = toString(set.reps);
     final weight = toString(set.weight);
     final minutes = set.duration.floor();
@@ -954,7 +952,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                       : hasRecords
                           ? TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: colorScheme.onSurface)
+                              color: colorScheme.onSurface,)
                           : null,
                 ),
               ),
@@ -992,7 +990,6 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
                         color: color.withValues(alpha: 0.4),
-                        width: 1,
                       ),
                     ),
                     child: Text(
@@ -1021,7 +1018,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   Future<void> _showExerciseMenu(
-      BuildContext parentContext, String exerciseName) async {
+      BuildContext parentContext, String exerciseName,) async {
     final colorScheme = Theme.of(parentContext).colorScheme;
 
     await showModalBottomSheet(
@@ -1075,7 +1072,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   Future<void> _jumpToGraph(
-      BuildContext parentContext, String exerciseName) async {
+      BuildContext parentContext, String exerciseName,) async {
     // Get the exercise data to determine if it's cardio or strength
     final exerciseData = await (db.gymSets.select()
           ..where((tbl) => tbl.name.equals(exerciseName))
@@ -1091,7 +1088,6 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       final data = await getCardioData(
         target: exerciseData.unit,
         name: exerciseName,
-        metric: CardioMetric.pace,
         period: Period.months3,
       );
       if (!parentContext.mounted) return;
@@ -1124,15 +1120,6 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         ),
       );
     }
-  }
-
-  void _navigateToEditSet(BuildContext context, GymSet set) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditSetPage(gymSet: set),
-      ),
-    );
   }
 
   Future<void> _resumeWorkout(BuildContext context) async {
@@ -1280,7 +1267,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     await (db.workouts.update()..where((w) => w.id.equals(widget.workout.id)))
         .write(WorkoutsCompanion(
       selfieImagePath: Value(imagePath),
-    ));
+    ),);
 
     await _reloadWorkout();
   }
@@ -1289,7 +1276,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     await (db.workouts.update()..where((w) => w.id.equals(widget.workout.id)))
         .write(const WorkoutsCompanion(
       selfieImagePath: Value(null),
-    ));
+    ),);
 
     await _reloadWorkout();
   }
@@ -1315,7 +1302,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       ),
     );
 
-    if (confirmed == true && context.mounted) {
+    if ((confirmed ?? false) && context.mounted) {
       // Delete selfie file if it exists
       if (currentWorkout.selfieImagePath != null) {
         try {

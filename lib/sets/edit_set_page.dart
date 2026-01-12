@@ -3,29 +3,30 @@ import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:jackedlog/animated_fab.dart';
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/database/gym_sets.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/records/records_service.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/timer/timer_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../animated_fab.dart';
+import '../constants.dart';
+import '../database/database.dart';
+import '../database/gym_sets.dart';
+import '../main.dart';
+import '../plan/plan_state.dart';
+import '../records/records_service.dart';
+import '../settings/settings_state.dart';
+import '../timer/timer_state.dart';
+import '../utils.dart';
+
 class EditSetPage extends StatefulWidget {
+
+  const EditSetPage({required this.gymSet, super.key});
   final GymSet gymSet;
 
-  const EditSetPage({super.key, required this.gymSet});
-
   @override
-  createState() => _EditSetPageState();
+  _EditSetPageState createState() => _EditSetPageState();
 }
 
 class _EditSetPageState extends State<EditSetPage> {
@@ -41,7 +42,7 @@ class _EditSetPageState extends State<EditSetPage> {
   final distNode = FocusNode();
   final key = GlobalKey<FormState>();
 
-  var categoryCtrl = TextEditingController();
+  material.TextEditingController categoryCtrl = TextEditingController();
   DateTime created = DateTime.now().toLocal();
   TextEditingController? nameCtrl;
   List<String> options = [];
@@ -53,7 +54,7 @@ class _EditSetPageState extends State<EditSetPage> {
   late bool cardio;
   late String name;
 
-  void onSelected(String option) async {
+  Future<void> onSelected(String option) async {
     final last = await (db.gymSets.select()
           ..where((tbl) => tbl.name.equals(option) & tbl.hidden.equals(false))
           ..orderBy(
@@ -106,7 +107,7 @@ class _EditSetPageState extends State<EditSetPage> {
   Widget buildDeleteButton() {
     return IconButton(
       icon: const Icon(Icons.delete),
-      onPressed: () => showDeleteDialog(),
+      onPressed: showDeleteDialog,
     );
   }
 
@@ -144,7 +145,7 @@ class _EditSetPageState extends State<EditSetPage> {
 
   Widget buildBody() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16),
       child: Form(
         key: key,
         child: Consumer<SettingsState>(
@@ -158,24 +159,24 @@ class _EditSetPageState extends State<EditSetPage> {
             return ListView(
               children: [
                 autocomplete(),
-                const SizedBox(height: 8.0),
+                const SizedBox(height: 8),
                 ...exerciseFields(),
-                const SizedBox(height: 8.0),
+                const SizedBox(height: 8),
                 if (showUnits) ...[
                   unitSelector(),
-                  const SizedBox(height: 8.0),
+                  const SizedBox(height: 8),
                 ],
                 if (showCategories) ...[
                   categorySelector(),
-                  const SizedBox(height: 8.0),
+                  const SizedBox(height: 8),
                 ],
                 if (showNotes) ...[
                   notesField(),
-                  const SizedBox(height: 8.0),
+                  const SizedBox(height: 8),
                 ],
                 dateSelector(),
                 if (showImages) ...[
-                  const SizedBox(height: 8.0),
+                  const SizedBox(height: 8),
                   imageField(),
                 ],
               ],
@@ -197,9 +198,9 @@ class _EditSetPageState extends State<EditSetPage> {
   List<Widget> buildStrengthFields() {
     return [
       buildRepsField(),
-      SizedBox(height: 8.0),
+      const SizedBox(height: 8),
       buildWeightField(),
-      SizedBox(height: 8.0),
+      const SizedBox(height: 8),
       buildORMField(),
     ];
   }
@@ -253,9 +254,9 @@ class _EditSetPageState extends State<EditSetPage> {
   List<Widget> buildCardioFields() {
     return [
       buildDistanceField(),
-      SizedBox(height: 8.0),
+      const SizedBox(height: 8),
       duration(),
-      SizedBox(height: 8.0),
+      const SizedBox(height: 8),
       buildInclineField(),
     ];
   }
@@ -327,7 +328,7 @@ class _EditSetPageState extends State<EditSetPage> {
           builder: (context, snapshot) {
             return Autocomplete<String>(
               initialValue: TextEditingValue(
-                text: widget.gymSet.category ?? "",
+                text: widget.gymSet.category ?? '',
               ),
               optionsBuilder: (TextEditingValue textEditingValue) {
                 if (snapshot.data == null) return [];
@@ -396,7 +397,7 @@ class _EditSetPageState extends State<EditSetPage> {
               : DateFormat(longDateFormat).format(created),
         ),
         trailing: const Icon(Icons.calendar_today),
-        onTap: () => selectDate(),
+        onTap: selectDate,
       ),
       selector: (context, settings) => settings.value.longDateFormat,
     );
@@ -405,7 +406,7 @@ class _EditSetPageState extends State<EditSetPage> {
   Widget buildSaveButton() {
     return AnimatedFab(
       onPressed: save,
-      label: const Text("Save"),
+      label: const Text('Save'),
       icon: const Icon(Icons.save),
     );
   }
@@ -428,7 +429,7 @@ class _EditSetPageState extends State<EditSetPage> {
                 Tooltip(
                   message: 'Long-press to delete',
                   child: GestureDetector(
-                    onTap: () => pick(),
+                    onTap: pick,
                     onLongPress: () => setState(() {
                       image = null;
                     }),
@@ -438,7 +439,7 @@ class _EditSetPageState extends State<EditSetPage> {
                           TextButton.icon(
                         label: const Text('Image error'),
                         icon: const Icon(Icons.error),
-                        onPressed: () => pick(),
+                        onPressed: pick,
                       ),
                     ),
                   ),
@@ -459,9 +460,7 @@ class _EditSetPageState extends State<EditSetPage> {
           child: TextFormField(
             controller: minutes,
             decoration: const InputDecoration(labelText: 'Minutes'),
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: false,
-            ),
+            keyboardType: TextInputType.number,
             onTap: () => selectAll(minutes),
             textInputAction: TextInputAction.next,
             onFieldSubmitted: (value) => selectAll(seconds),
@@ -472,14 +471,12 @@ class _EditSetPageState extends State<EditSetPage> {
             },
           ),
         ),
-        const SizedBox(width: 8.0),
+        const SizedBox(width: 8),
         Expanded(
           child: TextFormField(
             controller: seconds,
             decoration: const InputDecoration(labelText: 'Seconds'),
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: false,
-            ),
+            keyboardType: TextInputType.number,
             onTap: () => selectAll(seconds),
             textInputAction: TextInputAction.next,
             onFieldSubmitted: (value) => selectAll(incline),
@@ -499,7 +496,7 @@ class _EditSetPageState extends State<EditSetPage> {
       optionsBuilder: (textEditingValue) {
         final searchTerms = textEditingValue.text
             .toLowerCase()
-            .split(" ")
+            .split(' ')
             .where((term) => term.isNotEmpty);
         Iterable<String> opts = options;
 
@@ -508,7 +505,7 @@ class _EditSetPageState extends State<EditSetPage> {
         }
         return opts;
       },
-      onSelected: (option) => onSelected(option),
+      onSelected: onSelected,
       initialValue: TextEditingValue(text: name),
       fieldViewBuilder: (
         BuildContext context,
@@ -571,8 +568,8 @@ class _EditSetPageState extends State<EditSetPage> {
     });
   }
 
-  void pick() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+  Future<void> pick() async {
+    final FilePickerResult? result = await FilePicker.platform.pickFiles();
     if (result?.files.single == null) return;
 
     setState(() {
@@ -614,7 +611,7 @@ class _EditSetPageState extends State<EditSetPage> {
       planState.updateDefaults();
       return Navigator.of(context).pop();
     } else {
-      var insert = gymSet.toCompanion(false).copyWith(id: const Value.absent());
+      final insert = gymSet.toCompanion(false).copyWith(id: const Value.absent());
       await db.into(db.gymSets).insert(insert);
       // Clear PR cache since a set was inserted
       clearPRCache();
@@ -677,41 +674,41 @@ class _EditSetPageState extends State<EditSetPage> {
     if (parsedReps == null || parsedWeight == null) return;
     if (parsedReps > 0)
       orm.text =
-          "${(double.parse(weight.text) / (1.0278 - (0.0278 * double.parse(reps.text)))).toStringAsFixed(2)} $unit";
+          '${(double.parse(weight.text) / (1.0278 - (0.0278 * double.parse(reps.text)))).toStringAsFixed(2)} $unit';
     else
       orm.text =
-          "${(double.parse(weight.text) * (1.0278 - (0.0278 * double.parse(reps.text)))).toStringAsFixed(2)} $unit";
+          '${(double.parse(weight.text) * (1.0278 - (0.0278 * double.parse(reps.text)))).toStringAsFixed(2)} $unit';
   }
 
   List<DropdownMenuItem<String>> getUnitItems() {
     return const [
       DropdownMenuItem(
         value: 'kg',
-        child: Text("Kilograms (kg)"),
+        child: Text('Kilograms (kg)'),
       ),
       DropdownMenuItem(
         value: 'lb',
-        child: Text("Pounds (lb)"),
+        child: Text('Pounds (lb)'),
       ),
       DropdownMenuItem(
         value: 'stone',
-        child: Text("Stone"),
+        child: Text('Stone'),
       ),
       DropdownMenuItem(
         value: 'km',
-        child: Text("Kilometers (km)"),
+        child: Text('Kilometers (km)'),
       ),
       DropdownMenuItem(
         value: 'mi',
-        child: Text("Miles (mi)"),
+        child: Text('Miles (mi)'),
       ),
       DropdownMenuItem(
         value: 'm',
-        child: Text("Meters (m)"),
+        child: Text('Meters (m)'),
       ),
       DropdownMenuItem(
         value: 'kcal',
-        child: Text("Kilocalories (kcal)"),
+        child: Text('Kilocalories (kcal)'),
       ),
     ];
   }

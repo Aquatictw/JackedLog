@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:jackedlog/widgets/sets/reps_button.dart';
+import 'reps_button.dart';
 
 class RepsInput extends StatefulWidget {
+
+  const RepsInput({
+    required this.value, required this.completed, required this.accentColor, required this.onChanged, super.key,
+    this.enabled = true,
+  });
   final int value;
   final bool enabled;
   final bool completed;
   final Color accentColor;
   final ValueChanged<int> onChanged;
-
-  const RepsInput({
-    super.key,
-    required this.value,
-    this.enabled = true,
-    required this.completed,
-    required this.accentColor,
-    required this.onChanged,
-  });
 
   @override
   State<RepsInput> createState() => _RepsInputState();
@@ -25,7 +21,6 @@ class RepsInput extends StatefulWidget {
 class _RepsInputState extends State<RepsInput> {
   late TextEditingController _controller;
   late FocusNode _focusNode;
-  bool _hasFocus = false;
 
   @override
   void initState() {
@@ -37,7 +32,7 @@ class _RepsInputState extends State<RepsInput> {
 
   void _onFocusChange() {
     setState(() {
-      _hasFocus = _focusNode.hasFocus;
+      // Focus state tracked by _focusNode directly
     });
   }
 
@@ -61,7 +56,7 @@ class _RepsInputState extends State<RepsInput> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: widget.completed
             ? widget.accentColor.withValues(alpha: 0.1)
@@ -70,7 +65,6 @@ class _RepsInputState extends State<RepsInput> {
         border: widget.completed
             ? Border.all(
                 color: widget.accentColor.withValues(alpha: 0.3),
-                width: 1,
               )
             : null,
       ),

@@ -5,10 +5,11 @@ import 'package:csv/csv.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
+import 'main.dart';
+import 'utils.dart';
 
 class ExportData extends StatelessWidget {
   const ExportData({
@@ -42,10 +43,10 @@ class ExportData extends StatelessWidget {
                           'endTime',
                           'planId',
                           'name',
-                          'notes'
+                          'notes',
                         ],
                       ];
-                      for (var workout in workouts) {
+                      for (final workout in workouts) {
                         workoutsData.add([
                           workout.id,
                           workout.startTime.toIso8601String(),
@@ -55,7 +56,7 @@ class ExportData extends StatelessWidget {
                           workout.notes ?? '',
                         ]);
                       }
-                      final workoutsCsv = const ListToCsvConverter(eol: "\n")
+                      final workoutsCsv = const ListToCsvConverter(eol: '\n')
                           .convert(workoutsData);
 
                       // Export gym sets table
@@ -89,7 +90,7 @@ class ExportData extends StatelessWidget {
                           'supersetPosition',
                         ]
                       ];
-                      for (var gymSet in gymSets) {
+                      for (final gymSet in gymSets) {
                         setsData.add([
                           gymSet.id,
                           gymSet.name,
@@ -119,7 +120,7 @@ class ExportData extends StatelessWidget {
                         ]);
                       }
                       final setsCsv =
-                          const ListToCsvConverter(eol: "\n").convert(setsData);
+                          const ListToCsvConverter(eol: '\n').convert(setsData);
 
                       // Create ZIP archive
                       final archive = Archive();
@@ -161,15 +162,12 @@ class ExportData extends StatelessWidget {
                       final file =
                           File(p.join(dbFolder.path, 'jackedlog.sqlite'));
                       final bytes = await file.readAsBytes();
-                      final result = await FilePicker.platform.saveFile(
+                      await FilePicker.platform.saveFile(
                         fileName: 'jackedlog.sqlite',
                         bytes: bytes,
                         type: FileType.custom,
                         allowedExtensions: ['sqlite'],
                       );
-                      if (Platform.isMacOS ||
-                          Platform.isWindows ||
-                          Platform.isLinux) await file.copy(result!);
                     },
                   ),
                 ],

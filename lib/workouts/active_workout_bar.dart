@@ -1,12 +1,13 @@
 import 'dart:async';
 
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/plan/start_plan_page.dart';
-import 'package:jackedlog/timer/timer_state.dart';
-import 'package:jackedlog/workouts/selfie_capture_dialog.dart';
-import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../database/database.dart';
+import '../plan/start_plan_page.dart';
+import '../timer/timer_state.dart';
+import 'selfie_capture_dialog.dart';
+import 'workout_state.dart';
 
 class ActiveWorkoutBar extends StatefulWidget {
   const ActiveWorkoutBar({super.key});
@@ -58,7 +59,8 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
     }
   }
 
-  Future<void> _navigateToWorkout(GlobalKey<NavigatorState>? navKey, Plan plan) async {
+  Future<void> _navigateToWorkout(
+      GlobalKey<NavigatorState>? navKey, Plan plan,) async {
     // Wait for navigator to be ready (up to 2 seconds)
     int attempts = 0;
     while (navKey?.currentState == null && attempts < 20) {
@@ -176,8 +178,8 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                     Text(
                       _formatDuration(_elapsed),
                       style: TextStyle(
-                        color:
-                            colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                        color: colorScheme.onPrimaryContainer
+                            .withValues(alpha: 0.7),
                         fontSize: 12,
                       ),
                     ),
@@ -189,7 +191,6 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                 onPressed: () async {
                   final confirmed = await showDialog<bool>(
                     context: context,
-                    useRootNavigator: true,
                     builder: (context) => AlertDialog(
                       title: const Text('Discard Workout?'),
                       content: const Text(
@@ -210,7 +211,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                       ],
                     ),
                   );
-                  if (confirmed == true) {
+                  if (confirmed ?? false) {
                     final timerState = context.read<TimerState>();
                     await timerState.stopTimer();
                     await workoutState.discardWorkout();
@@ -229,7 +230,6 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                 onPressed: () async {
                   final confirmed = await showDialog<bool>(
                     context: context,
-                    useRootNavigator: true,
                     builder: (context) => AlertDialog(
                       title: const Text('End Workout?'),
                       content: const Text(
@@ -248,7 +248,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                     ),
                   );
 
-                  if (confirmed == true && context.mounted) {
+                  if ((confirmed ?? false) && context.mounted) {
                     final timerState = context.read<TimerState>();
                     await timerState.stopTimer();
 
@@ -260,7 +260,8 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
 
                     // Stop workout with optional selfie
                     if (context.mounted) {
-                      await workoutState.stopWorkout(selfieImagePath: selfiePath);
+                      await workoutState.stopWorkout(
+                          selfieImagePath: selfiePath,);
                     }
                   }
                 },

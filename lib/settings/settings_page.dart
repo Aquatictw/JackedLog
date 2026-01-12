@@ -1,23 +1,24 @@
 import 'package:audioplayers/audioplayers.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/settings/appearance_settings.dart';
-import 'package:jackedlog/settings/data_settings.dart';
-import 'package:jackedlog/settings/format_settings.dart';
-import 'package:jackedlog/settings/plan_settings.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/settings/spotify_settings.dart';
-import 'package:jackedlog/settings/tab_settings.dart';
-import 'package:jackedlog/settings/timer_settings.dart';
-import 'package:jackedlog/settings/workout_settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../database/database.dart';
+import 'appearance_settings.dart';
+import 'data_settings.dart';
+import 'format_settings.dart';
+import 'plan_settings.dart';
+import 'settings_state.dart';
+import 'spotify_settings.dart';
+import 'tab_settings.dart';
+import 'timer_settings.dart';
+import 'workout_settings.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  createState() => _SettingsPageState();
+  _SettingsPageState createState() => _SettingsPageState();
 }
 
 class _SettingsPageState extends State<SettingsPage>
@@ -84,7 +85,7 @@ class _SettingsPageState extends State<SettingsPage>
     if (filtered.isEmpty)
       filtered = [
         const ListTile(
-          title: Text("No settings found"),
+          title: Text('No settings found'),
         ),
       ];
 
@@ -94,14 +95,14 @@ class _SettingsPageState extends State<SettingsPage>
         title: const Text('Settings'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8),
         child: Column(
           children: <Widget>[
             SearchBar(
-              hintText: "Search...",
+              hintText: 'Search...',
               controller: searchCtrl,
               padding: WidgetStateProperty.all(
-                const EdgeInsets.symmetric(horizontal: 16.0),
+                const EdgeInsets.symmetric(horizontal: 16),
               ),
               onChanged: (_) {
                 setState(() {});
@@ -109,7 +110,7 @@ class _SettingsPageState extends State<SettingsPage>
               leading: const Icon(Icons.search),
             ),
             const SizedBox(
-              height: 8.0,
+              height: 8,
             ),
             Expanded(
               child: ListView(
@@ -118,7 +119,7 @@ class _SettingsPageState extends State<SettingsPage>
                     : [
                         ListTile(
                           leading: const Icon(Icons.color_lens),
-                          title: const Text("Appearance"),
+                          title: const Text('Appearance'),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const AppearanceSettings(),
@@ -127,7 +128,7 @@ class _SettingsPageState extends State<SettingsPage>
                         ),
                         ListTile(
                           leading: const Icon(Icons.storage),
-                          title: const Text("Data management"),
+                          title: const Text('Data management'),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const DataSettings(),
@@ -136,7 +137,7 @@ class _SettingsPageState extends State<SettingsPage>
                         ),
                         ListTile(
                           leading: const Icon(Icons.format_bold),
-                          title: const Text("Formats"),
+                          title: const Text('Formats'),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const FormatSettings(),
@@ -145,7 +146,7 @@ class _SettingsPageState extends State<SettingsPage>
                         ),
                         ListTile(
                           leading: const Icon(Icons.calendar_today),
-                          title: const Text("Plans"),
+                          title: const Text('Plans'),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const PlanSettings(),
@@ -154,7 +155,7 @@ class _SettingsPageState extends State<SettingsPage>
                         ),
                         ListTile(
                           leading: const Icon(Icons.tab_sharp),
-                          title: const Text("Tabs"),
+                          title: const Text('Tabs'),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const TabSettings(),
@@ -163,7 +164,7 @@ class _SettingsPageState extends State<SettingsPage>
                         ),
                         ListTile(
                           leading: const Icon(Icons.timer),
-                          title: const Text("Timers"),
+                          title: const Text('Timers'),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const TimerSettings(),
@@ -172,7 +173,7 @@ class _SettingsPageState extends State<SettingsPage>
                         ),
                         ListTile(
                           leading: const Icon(Icons.fitness_center),
-                          title: const Text("Workouts"),
+                          title: const Text('Workouts'),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const WorkoutSettings(),
@@ -181,7 +182,7 @@ class _SettingsPageState extends State<SettingsPage>
                         ),
                         ListTile(
                           leading: const Icon(Icons.music_note),
-                          title: const Text("Spotify"),
+                          title: const Text('Spotify'),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const SpotifySettings(),

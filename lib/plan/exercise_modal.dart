@@ -1,32 +1,28 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/drift.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/plan/swap_workout.dart';
-import 'package:jackedlog/sets/edit_set_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/timer/timer_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../database/database.dart';
+import '../main.dart';
+import '../sets/edit_set_page.dart';
+import '../settings/settings_state.dart';
+import '../timer/timer_state.dart';
+import '../utils.dart';
+import 'plan_state.dart';
+import 'swap_workout.dart';
+
 class ExerciseModal extends StatefulWidget {
+
+  const ExerciseModal({
+    required this.exercise, required this.hasData, required this.onSelect, required this.planId, required this.onMax, super.key,
+  });
   final String exercise;
   final bool hasData;
   final Function() onSelect;
   final Function() onMax;
   final int planId;
-
-  const ExerciseModal({
-    super.key,
-    required this.exercise,
-    required this.hasData,
-    required this.onSelect,
-    required this.planId,
-    required this.onMax,
-  });
 
   @override
   State<ExerciseModal> createState() => _ExerciseModalState();
@@ -81,13 +77,11 @@ class _ExerciseModalState extends State<ExerciseModal> {
                               settings.value.warmupSets,
                           builder: (context, value, child) => TextField(
                             controller: warmup,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: false,
-                            ),
+                            keyboardType: TextInputType.number,
                             onTap: () => selectAll(warmup),
                             onChanged: changeWarmup,
                             decoration: InputDecoration(
-                              labelText: "Warmup sets",
+                              labelText: 'Warmup sets',
                               border: const OutlineInputBorder(),
                               hintText: (value ?? 0).toString(),
                             ),
@@ -99,13 +93,11 @@ class _ExerciseModalState extends State<ExerciseModal> {
                               settings.value.maxSets,
                           builder: (context, value, child) => TextField(
                             controller: max,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: false,
-                            ),
+                            keyboardType: TextInputType.number,
                             onTap: () => selectAll(max),
                             onChanged: changeMax,
                             decoration: InputDecoration(
-                              labelText: "Working sets (max: 20)",
+                              labelText: 'Working sets (max: 20)',
                               border: const OutlineInputBorder(),
                               hintText: value.toString(),
                             ),
@@ -134,7 +126,7 @@ class _ExerciseModalState extends State<ExerciseModal> {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      label: const Text("OK"),
+                      label: const Text('OK'),
                       icon: const Icon(Icons.check),
                     ),
                   ],

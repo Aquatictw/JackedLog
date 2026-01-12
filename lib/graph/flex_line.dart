@@ -1,12 +1,22 @@
 import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../settings/settings_state.dart';
+
 class FlexLine extends StatelessWidget {
+
+  const FlexLine({
+    required this.spots, required this.tooltipData, required this.data, super.key,
+    this.touchLine,
+    this.hideBottom,
+    this.hideLeft,
+    this.showTrendLine = true,
+    this.timeBasedXAxis = false,
+  });
   final List<FlSpot> spots;
   final List<dynamic> data;
   final bool? hideBottom;
@@ -19,37 +29,25 @@ class FlexLine extends StatelessWidget {
     LineTouchResponse? touchResponse,
   )? touchLine;
 
-  const FlexLine({
-    super.key,
-    required this.spots,
-    required this.tooltipData,
-    required this.data,
-    this.touchLine,
-    this.hideBottom,
-    this.hideLeft,
-    this.showTrendLine = true,
-    this.timeBasedXAxis = false,
-  });
-
   // Calculate linear regression trend line
   List<FlSpot> _calculateTrendLine(List<FlSpot> spots) {
     if (spots.length < 2) return [];
 
     double sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-    int n = spots.length;
+    final int n = spots.length;
 
-    for (FlSpot spot in spots) {
+    for (final FlSpot spot in spots) {
       sumX += spot.x;
       sumY += spot.y;
       sumXY += spot.x * spot.y;
       sumXX += spot.x * spot.x;
     }
 
-    double slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    double intercept = (sumY - slope * sumX) / n;
+    final double slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    final double intercept = (sumY - slope * sumX) / n;
 
-    double startX = spots.first.x;
-    double endX = spots.last.x;
+    final double startX = spots.first.x;
+    final double endX = spots.last.x;
 
     return [
       FlSpot(startX, slope * startX + intercept),
@@ -68,9 +66,9 @@ class FlexLine extends StatelessWidget {
       fontSize: 16,
     );
     Widget text;
-    double screen = MediaQuery.of(context).size.width;
-    double label = 120;
-    int count = max(2, (screen / label).floor());
+    final double screen = MediaQuery.of(context).size.width;
+    const double label = 120;
+    final int count = max(2, (screen / label).floor());
 
     if (timeBasedXAxis) {
       if (spots.isEmpty) {
@@ -91,7 +89,7 @@ class FlexLine extends StatelessWidget {
         if (minDiff <= spacing / 2 &&
             nearestIndex >= 0 &&
             nearestIndex < data.length) {
-          DateTime created = data[nearestIndex].created;
+          final DateTime created = data[nearestIndex].created;
           text = Text(
             DateFormat(format).format(created),
             style: style,
@@ -101,12 +99,12 @@ class FlexLine extends StatelessWidget {
         }
       }
     } else {
-      List<int> indices = List.generate(count, (index) {
+      final List<int> indices = List.generate(count, (index) {
         return ((data.length - 1) * index / (count - 1)).round();
       });
 
       if (indices.contains(value.toInt())) {
-        DateTime created = data[value.toInt()].created;
+        final DateTime created = data[value.toInt()].created;
         text = Text(
           DateFormat(format).format(created),
           style: style,
@@ -124,7 +122,7 @@ class FlexLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<Color> colors = [
+    final List<Color> colors = [
       Theme.of(context).colorScheme.primary,
       Theme.of(context).colorScheme.surface,
     ];
@@ -139,18 +137,18 @@ class FlexLine extends StatelessWidget {
         : spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
 
     // If range is very small (decimal-only data), expand it to prevent tiny intervals
-    double range = maxY - minY;
+    final double range = maxY - minY;
     if (range < 1.0) {
       // Ensure at least a range of 1.0 to avoid problematic decimal intervals
-      double center = (maxY + minY) / 2;
+      final double center = (maxY + minY) / 2;
       minY = center - 0.5;
       maxY = center + 0.5;
     }
 
-    List<FlSpot> trendSpots =
-        showTrendLine == true ? _calculateTrendLine(spots) : [];
+    final List<FlSpot> trendSpots =
+        showTrendLine ?? false ? _calculateTrendLine(spots) : [];
 
-    List<LineChartBarData> lineBarsData = [
+    final List<LineChartBarData> lineBarsData = [
       LineChartBarData(
         spots: spots,
         isCurved: settings.curveLines,
@@ -172,19 +170,17 @@ class FlexLine extends StatelessWidget {
       ),
     ];
 
-    if (showTrendLine == true && trendSpots.isNotEmpty) {
+    if ((showTrendLine ?? false) && trendSpots.isNotEmpty) {
       lineBarsData.add(
         LineChartBarData(
           spots: trendSpots,
-          isCurved: false,
           color: Theme.of(context).colorScheme.secondary,
-          barWidth: 2,
           isStrokeCapRound: true,
           dotData: const FlDotData(
             show: false,
           ),
           dashArray: [5, 5],
-          belowBarData: BarAreaData(show: false),
+          belowBarData: BarAreaData(),
         ),
       );
     }
@@ -192,9 +188,9 @@ class FlexLine extends StatelessWidget {
     // Determine interval for bottom titles
     double? bottomInterval;
     if (timeBasedXAxis && spots.length > 1) {
-      double screen = MediaQuery.of(context).size.width;
-      double label = 120;
-      int count = max(2, (screen / label).floor());
+      final double screen = MediaQuery.of(context).size.width;
+      const double label = 120;
+      final int count = max(2, (screen / label).floor());
       bottomInterval = (spots.last.x - spots.first.x) / (count - 1);
     } else {
       bottomInterval = 1;
@@ -207,10 +203,10 @@ class FlexLine extends StatelessWidget {
         maxY: maxY,
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
+            
           ),
           rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
+            
           ),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
@@ -233,7 +229,6 @@ class FlexLine extends StatelessWidget {
           ),
         ),
         lineTouchData: LineTouchData(
-          enabled: true,
           touchCallback: touchLine != null
               ? (event, touchResponse) => touchLine!(event, touchResponse)
               : null,

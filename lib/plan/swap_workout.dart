@@ -1,15 +1,16 @@
 import 'package:drift/drift.dart' as drift;
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/plan_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../database/database.dart';
+import '../main.dart';
+import 'plan_state.dart';
+
 class SwapWorkout extends StatefulWidget {
+
+  const SwapWorkout({required this.exercise, required this.planId, super.key});
   final String exercise;
   final int planId;
-
-  const SwapWorkout({super.key, required this.exercise, required this.planId});
 
   @override
   State<SwapWorkout> createState() => _SwapWorkoutState();
@@ -57,7 +58,7 @@ class _SwapWorkoutState extends State<SwapWorkout> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
             child: TextField(
               controller: _searchController,
               decoration: const InputDecoration(

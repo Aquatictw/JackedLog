@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/database/database.dart';
+import 'database.dart';
 
 const defaultExercises = [
   ('Arnold press', 'Shoulders'),

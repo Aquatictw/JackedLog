@@ -1,18 +1,19 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/animated_fab.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../animated_fab.dart';
+import '../database/database.dart';
+import '../main.dart';
+import '../utils.dart';
+import 'settings_state.dart';
 
 class TabSettings extends StatefulWidget {
   const TabSettings({super.key});
 
   @override
-  createState() => _TabSettingsState();
+  _TabSettingsState createState() => _TabSettingsState();
 }
 
 typedef TabSetting = ({
@@ -56,17 +57,17 @@ class _TabSettingsState extends State<TabSettings> {
     final settings = context.watch<SettingsState>();
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(title: const Text("Tabs")),
+      appBar: AppBar(title: const Text('Tabs')),
       body: Padding(
         padding: const EdgeInsets.all(8),
         child: material.Column(
           children: [
             ListTile(
-              title: material.Row(
+              title: const material.Row(
                 children: [
-                  const Icon(Icons.swipe),
+                  Icon(Icons.swipe),
                   SizedBox(width: 8),
-                  const Text("Swipe between tabs"),
+                  Text('Swipe between tabs'),
                 ],
               ),
               onTap: () => db.settings.update().write(
@@ -108,11 +109,11 @@ class _TabSettingsState extends State<TabSettings> {
                         value: tab.enabled,
                         onChanged: (value) => setTab(tab.name, value),
                       ),
-                      title: material.Row(
+                      title: const material.Row(
                         children: [
-                          const Icon(Icons.history),
+                          Icon(Icons.history),
                           SizedBox(width: 8),
-                          const Text("History"),
+                          Text('History'),
                         ],
                       ),
                       trailing: ReorderableDragStartListener(
@@ -128,11 +129,11 @@ class _TabSettingsState extends State<TabSettings> {
                         value: tab.enabled,
                         onChanged: (value) => setTab(tab.name, value),
                       ),
-                      title: material.Row(
+                      title: const material.Row(
                         children: [
-                          const Icon(Icons.calendar_today_outlined),
+                          Icon(Icons.calendar_today_outlined),
                           SizedBox(width: 8),
-                          const Text("Plans"),
+                          Text('Plans'),
                         ],
                       ),
                       trailing: ReorderableDragStartListener(
@@ -148,11 +149,11 @@ class _TabSettingsState extends State<TabSettings> {
                         value: tab.enabled,
                         onChanged: (value) => setTab(tab.name, value),
                       ),
-                      title: material.Row(
+                      title: const material.Row(
                         children: [
-                          const Icon(Icons.music_note),
+                          Icon(Icons.music_note),
                           SizedBox(width: 8),
-                          const Text("Music"),
+                          Text('Music'),
                         ],
                       ),
                       trailing: ReorderableDragStartListener(
@@ -168,11 +169,11 @@ class _TabSettingsState extends State<TabSettings> {
                         value: tab.enabled,
                         onChanged: (value) => setTab(tab.name, value),
                       ),
-                      title: material.Row(
+                      title: const material.Row(
                         children: [
-                          const Icon(Icons.insights_rounded),
+                          Icon(Icons.insights_rounded),
                           SizedBox(width: 8),
-                          const Text("Graphs"),
+                          Text('Graphs'),
                         ],
                       ),
                       trailing: ReorderableDragStartListener(
@@ -188,11 +189,11 @@ class _TabSettingsState extends State<TabSettings> {
                         value: tab.enabled,
                         onChanged: (value) => setTab(tab.name, value),
                       ),
-                      title: material.Row(
+                      title: const material.Row(
                         children: [
-                          const Icon(Icons.note),
+                          Icon(Icons.note),
                           SizedBox(width: 8),
-                          const Text("Notes"),
+                          Text('Notes'),
                         ],
                       ),
                       trailing: ReorderableDragStartListener(
@@ -208,11 +209,11 @@ class _TabSettingsState extends State<TabSettings> {
                         value: tab.enabled,
                         onChanged: (value) => setTab(tab.name, value),
                       ),
-                      title: material.Row(
+                      title: const material.Row(
                         children: [
-                          const Icon(Icons.settings),
+                          Icon(Icons.settings),
                           SizedBox(width: 8),
-                          const Text("Settings"),
+                          Text('Settings'),
                         ],
                       ),
                       trailing: ReorderableDragStartListener(
@@ -221,7 +222,7 @@ class _TabSettingsState extends State<TabSettings> {
                       ),
                     );
                   } else
-                    return ErrorWidget("Invalid tab settings.");
+                    return ErrorWidget('Invalid tab settings.');
                 },
                 itemCount: tabs.length,
               ),
@@ -231,7 +232,7 @@ class _TabSettingsState extends State<TabSettings> {
       ),
       floatingActionButton: AnimatedFab(
         onPressed: () async {
-          await (db.settings.update().write(
+          await db.settings.update().write(
                 SettingsCompanion(
                   tabs: Value(
                     tabs
@@ -240,11 +241,11 @@ class _TabSettingsState extends State<TabSettings> {
                         .join(','),
                   ),
                 ),
-              ));
+              );
           if (context.mounted) Navigator.of(context).pop();
         },
         icon: const Icon(Icons.save),
-        label: const Text("Save"),
+        label: const Text('Save'),
       ),
     );
   }

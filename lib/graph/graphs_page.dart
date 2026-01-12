@@ -2,29 +2,29 @@ import 'package:drift/drift.dart' as drift;
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
-import 'package:jackedlog/animated_fab.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/database/gym_sets.dart';
-import 'package:jackedlog/graph/add_exercise_page.dart';
-import 'package:jackedlog/graphs_filters.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/settings/settings_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/widgets/timer_quick_access.dart';
 import 'package:provider/provider.dart';
 
+import '../animated_fab.dart';
+import '../database/database.dart';
+import '../database/gym_sets.dart';
+import '../graphs_filters.dart';
+import '../main.dart';
+import '../plan/plan_state.dart';
+import '../settings/settings_page.dart';
+import '../settings/settings_state.dart';
+import '../widgets/timer_quick_access.dart';
+import 'add_exercise_page.dart';
 import 'bodyweight_overview_page.dart';
 import 'graph_tile.dart';
 import 'overview_page.dart';
 
 class GraphsPage extends StatefulWidget {
+
+  const GraphsPage({required this.tabController, super.key});
   final TabController tabController;
 
-  const GraphsPage({super.key, required this.tabController});
-
   @override
-  createState() => GraphsPageState();
+  GraphsPageState createState() => GraphsPageState();
 }
 
 class GraphsPageState extends State<GraphsPage>
@@ -77,12 +77,10 @@ class GraphsPageState extends State<GraphsPage>
     );
   }
 
-  void onDelete() async {
+  Future<void> onDelete() async {
     final state = context.read<PlanState>();
     final copy = selected.toList();
-    setState(() {
-      selected.clear();
-    });
+    setState(selected.clear);
 
     await (db.delete(db.gymSets)..where((tbl) => tbl.name.isIn(copy))).go();
 
@@ -96,8 +94,6 @@ class GraphsPageState extends State<GraphsPage>
   }
 
   Scaffold graphsPage() {
-    final settings = context.watch<SettingsState>().value;
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -108,20 +104,18 @@ class GraphsPageState extends State<GraphsPage>
             ? null
             : IconButton(
                 icon: const Icon(Icons.close),
-                onPressed: () => setState(() {
-                  selected.clear();
-                }),
+                onPressed: () => setState(selected.clear),
               ),
         actions: [
           if (selected.isEmpty) ...[
             IconButton(
               icon: const Icon(Icons.timer),
-              tooltip: "Timer",
+              tooltip: 'Timer',
               onPressed: () => showTimerQuickAccess(context),
             ),
             IconButton(
               icon: const Icon(Icons.monitor_weight),
-              tooltip: "Bodyweight Tracking",
+              tooltip: 'Bodyweight Tracking',
               onPressed: () {
                 Navigator.push(
                   context,
@@ -133,7 +127,7 @@ class GraphsPageState extends State<GraphsPage>
             ),
             IconButton(
               icon: const Icon(Icons.dashboard),
-              tooltip: "Overview",
+              tooltip: 'Overview',
               onPressed: () {
                 Navigator.push(
                   context,
@@ -147,7 +141,7 @@ class GraphsPageState extends State<GraphsPage>
           if (selected.isNotEmpty) ...[
             IconButton(
               icon: const Icon(Icons.delete),
-              tooltip: "Delete selected",
+              tooltip: 'Delete selected',
               onPressed: () {
                 showDialog(
                   context: context,
@@ -180,7 +174,7 @@ class GraphsPageState extends State<GraphsPage>
           ],
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
-            tooltip: "More options",
+            tooltip: 'More options',
             onSelected: (value) async {
               switch (value) {
                 case 'select_all':
@@ -256,7 +250,7 @@ class GraphsPageState extends State<GraphsPage>
 
           final searchTerms =
               search.toLowerCase().split(' ').where((t) => t.isNotEmpty);
-          var filteredStream = snapshot.data!.where((gymSet) {
+          final filteredStream = snapshot.data!.where((gymSet) {
             // Filter by category
             if (category != null && gymSet.category != category) {
               return false;
@@ -320,7 +314,7 @@ class GraphsPageState extends State<GraphsPage>
               if (gymSets.isEmpty)
                 const Expanded(
                   child: Center(
-                    child: Text("No exercises found"),
+                    child: Text('No exercises found'),
                   ),
                 ),
               if (gymSets.isNotEmpty)
@@ -423,7 +417,7 @@ class GraphsPageState extends State<GraphsPage>
         final progressMultiplier = (6 - monthOffset) * 4 + dayIndex;
 
         // Cycle through exercise groups
-        final groupIndex = (workoutCount % exerciseGroups.length);
+        final groupIndex = workoutCount % exerciseGroups.length;
         final group = exerciseGroups[groupIndex];
 
         for (var exerciseIndex = 0;
@@ -478,12 +472,12 @@ class GraphsPageState extends State<GraphsPage>
             await db.gymSets.insertOne(
               GymSetsCompanion.insert(
                 name: heavyExercises[i]['name']!,
-                reps: 1.0,
+                reps: 1,
                 weight: 120.0 + (progressMultiplier * 5.0) + (i * 10.0),
                 unit: 'kg',
                 created: workoutDate.add(Duration(minutes: 60 + i * 10)),
                 workoutId: Value(workoutId),
-                category: Value(heavyExercises[i]['category']!),
+                category: Value(heavyExercises[i]['category']),
               ),
             );
             totalSets++;
@@ -507,7 +501,7 @@ class GraphsPageState extends State<GraphsPage>
   }
 
   material.ListView graphList(List<GraphExercise> gymSets) {
-    var itemCount = gymSets.length + 1;
+    final itemCount = gymSets.length + 1;
 
     return ListView.builder(
       itemCount: itemCount,

@@ -1,22 +1,19 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/widgets/superset/superset_utils.dart';
+import '../../database/database.dart';
+import '../../main.dart';
+import 'superset_utils.dart';
 
 /// Dialog for creating a superset from selected exercises
 class SupersetManagerDialog extends StatefulWidget {
+
+  const SupersetManagerDialog({
+    required this.exercises, required this.workoutId, required this.onSupersetCreated, super.key,
+  });
   final List<({String name, int sequence})>
       exercises; // All exercises in workout
   final int workoutId;
   final VoidCallback onSupersetCreated;
-
-  const SupersetManagerDialog({
-    super.key,
-    required this.exercises,
-    required this.workoutId,
-    required this.onSupersetCreated,
-  });
 
   @override
   State<SupersetManagerDialog> createState() => _SupersetManagerDialogState();

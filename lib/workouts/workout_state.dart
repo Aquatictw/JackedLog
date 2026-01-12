@@ -1,12 +1,16 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../database/database.dart';
+import '../main.dart';
+
 class WorkoutState extends ChangeNotifier {
+
+  WorkoutState() {
+    _loadActiveWorkout();
+  }
   Workout? _activeWorkout;
   Plan? _activePlan;
   GlobalKey<NavigatorState>? _plansNavigatorKey;
@@ -29,16 +33,13 @@ class WorkoutState extends ChangeNotifier {
     _plansTabIndex = plansIndex;
   }
 
-  WorkoutState() {
-    _loadActiveWorkout();
-  }
-
   Future<void> _loadActiveWorkout() async {
     // Find workout that has no endTime (still ongoing)
     final workout = await (db.workouts.select()
           ..where((w) => w.endTime.isNull())
           ..orderBy([
-            (w) => OrderingTerm(expression: w.startTime, mode: OrderingMode.desc)
+            (w) =>
+                OrderingTerm(expression: w.startTime, mode: OrderingMode.desc),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -67,8 +68,9 @@ class WorkoutState extends ChangeNotifier {
       return null; // Cannot start a new workout while one is active
     }
 
-    final workoutName =
-        plan.title?.isNotEmpty == true ? plan.title! : plan.days.replaceAll(",", ", ");
+    final workoutName = plan.title?.isNotEmpty ?? false
+        ? plan.title!
+        : plan.days.replaceAll(',', ', ');
 
     final workout = await db.into(db.workouts).insertReturning(
           WorkoutsCompanion.insert(
@@ -89,9 +91,9 @@ class WorkoutState extends ChangeNotifier {
 
     await (db.workouts.update()..where((w) => w.id.equals(_activeWorkout!.id)))
         .write(WorkoutsCompanion(
-          endTime: Value(DateTime.now().toLocal()),
-          selfieImagePath: Value(selfieImagePath),
-        ));
+      endTime: Value(DateTime.now().toLocal()),
+      selfieImagePath: Value(selfieImagePath),
+    ),);
 
     _activeWorkout = null;
     _activePlan = null;
@@ -119,8 +121,7 @@ class WorkoutState extends ChangeNotifier {
         .go();
 
     // Delete the workout itself
-    await (db.workouts.delete()
-          ..where((w) => w.id.equals(_activeWorkout!.id)))
+    await (db.workouts.delete()..where((w) => w.id.equals(_activeWorkout!.id)))
         .go();
 
     _activeWorkout = null;
@@ -160,9 +161,9 @@ class WorkoutState extends ChangeNotifier {
     // Update the workout with new startTime and cleared endTime
     await (db.workouts.update()..where((w) => w.id.equals(workout.id)))
         .write(WorkoutsCompanion(
-          startTime: Value(newStartTime),
-          endTime: Value(null),
-        ));
+      startTime: Value(newStartTime),
+      endTime: const Value(null),
+    ),);
 
     // Load the updated workout
     final updatedWorkout = await (db.workouts.select()

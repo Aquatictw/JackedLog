@@ -1,23 +1,24 @@
 import 'package:drift/drift.dart' as drift;
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/plan/edit_plan_page.dart';
-import 'package:jackedlog/plan/plan_state.dart';
-import 'package:jackedlog/plan/plans_list.dart';
-import 'package:jackedlog/plan/start_plan_page.dart';
-import 'package:jackedlog/settings/settings_page.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
-import 'package:jackedlog/widgets/timer_quick_access.dart';
-import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-class PlansPage extends StatefulWidget {
-  final TabController tabController;
+import '../database/database.dart';
+import '../main.dart';
+import '../settings/settings_page.dart';
+import '../settings/settings_state.dart';
+import '../utils.dart';
+import '../widgets/timer_quick_access.dart';
+import '../workouts/workout_state.dart';
+import 'edit_plan_page.dart';
+import 'plan_state.dart';
+import 'plans_list.dart';
+import 'start_plan_page.dart';
 
-  const PlansPage({super.key, required this.tabController});
+class PlansPage extends StatefulWidget {
+
+  const PlansPage({required this.tabController, super.key});
+  final TabController tabController;
 
   @override
   State<PlansPage> createState() => PlansPageState();
@@ -63,12 +64,12 @@ class PlansPageState extends State<PlansPage>
 }
 
 class _PlansPageWidget extends StatefulWidget {
-  final GlobalKey<NavigatorState> navKey;
 
   const _PlansPageWidget({required this.navKey});
+  final GlobalKey<NavigatorState> navKey;
 
   @override
-  createState() => _PlansPageWidgetState();
+  _PlansPageWidgetState createState() => _PlansPageWidgetState();
 }
 
 class _PlansPageWidgetState extends State<_PlansPageWidget> {
@@ -219,7 +220,8 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
                       'Start with an empty workout',
                       style: TextStyle(
                         fontSize: 13,
-                        color: colorScheme.onSecondaryContainer.withValues(alpha: 0.7),
+                        color: colorScheme.onSecondaryContainer
+                            .withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -252,21 +254,19 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
             ? null
             : IconButton(
                 icon: const Icon(Icons.close),
-                onPressed: () => setState(() {
-                  selected.clear();
-                }),
+                onPressed: () => setState(selected.clear),
               ),
         actions: [
           if (selected.isEmpty)
             IconButton(
               icon: const Icon(Icons.timer),
-              tooltip: "Timer",
+              tooltip: 'Timer',
               onPressed: () => showTimerQuickAccess(context),
             ),
           if (selected.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete),
-              tooltip: "Delete selected",
+              tooltip: 'Delete selected',
               onPressed: () {
                 showDialog(
                   context: context,
@@ -289,10 +289,9 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
                             Navigator.pop(dialogContext);
                             final state = context.read<PlanState>();
                             final copy = selected.toList();
-                            setState(() {
-                              selected.clear();
-                            });
-                            await db.plans.deleteWhere((tbl) => tbl.id.isIn(copy));
+                            setState(selected.clear);
+                            await db.plans
+                                .deleteWhere((tbl) => tbl.id.isIn(copy));
                             state.updatePlans(null);
                             await db.planExercises
                                 .deleteWhere((tbl) => tbl.planId.isIn(copy));
@@ -310,7 +309,7 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
             backgroundColor: colorScheme.primary,
             child: PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
-              tooltip: "Show menu",
+              tooltip: 'Show menu',
               onSelected: (value) async {
                 switch (value) {
                   case 'add':
@@ -365,18 +364,16 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
                         await state?.setExercises(plan.toCompanion(false));
                         final exercises = state?.exercises
                             .where((pe) => pe.enabled.value)
-                            .map((pe) => "- ${pe.exercise.value}")
+                            .map((pe) => '- ${pe.exercise.value}')
                             .join('\n');
 
-                        return "$days:\n$exercises";
+                        return '$days:\n$exercises';
                       }),
                     );
 
                     await SharePlus.instance
                         .share(ShareParams(text: summaries.join('\n\n')));
-                    setState(() {
-                      selected.clear();
-                    });
+                    setState(selected.clear);
                     break;
                   case 'settings':
                     await Navigator.push(

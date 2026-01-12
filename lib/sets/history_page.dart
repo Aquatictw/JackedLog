@@ -1,36 +1,37 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/app_search.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/filters.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/sets/edit_sets_page.dart';
-import 'package:jackedlog/sets/history_collapsed.dart';
-import 'package:jackedlog/sets/history_list.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
-import 'package:jackedlog/workouts/workouts_list.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../app_search.dart';
+import '../database/database.dart';
+import '../filters.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+import '../utils.dart';
+import '../workouts/workouts_list.dart';
+import 'edit_sets_page.dart';
+import 'history_collapsed.dart';
+import 'history_list.dart';
+
 enum HistoryView { workouts, sets }
 
 class HistoryDay {
+
+  HistoryDay({required this.name, required this.gymSets, required this.day});
   final String name;
   final List<GymSet> gymSets;
   final DateTime day;
-
-  HistoryDay({required this.name, required this.gymSets, required this.day});
 }
 
 class HistoryPage extends StatefulWidget {
+
+  const HistoryPage({required this.tabController, super.key});
   final TabController tabController;
 
-  const HistoryPage({super.key, required this.tabController});
-
   @override
-  createState() => HistoryPageState();
+  HistoryPageState createState() => HistoryPageState();
 }
 
 class HistoryPageState extends State<HistoryPage>
@@ -65,12 +66,12 @@ class HistoryPageState extends State<HistoryPage>
 }
 
 class _HistoryPageWidget extends StatefulWidget {
-  final GlobalKey<NavigatorState> navigatorKey;
 
   const _HistoryPageWidget({required this.navigatorKey});
+  final GlobalKey<NavigatorState> navigatorKey;
 
   @override
-  createState() => _HistoryPageWidgetState();
+  _HistoryPageWidgetState createState() => _HistoryPageWidgetState();
 }
 
 class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
@@ -124,7 +125,7 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
                 final workouts = await (db.workouts.select()
                       ..orderBy([
                         (w) => OrderingTerm(
-                            expression: w.startTime, mode: OrderingMode.desc),
+                            expression: w.startTime, mode: OrderingMode.desc,),
                       ])
                       ..limit(limit))
                     .get();
@@ -214,11 +215,11 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
                           final summaries = gymSets
                               .map(
                                 (gymSet) =>
-                                    "${toString(gymSet.weight)}${gymSet.unit} x ${toString(gymSet.reps)} ${gymSet.name}",
+                                    '${toString(gymSet.weight)}${gymSet.unit} x ${toString(gymSet.reps)} ${gymSet.name}',
                               )
                               .join(', ');
-                          await SharePlus.instance
-                              .share(ShareParams(text: "I just did $summaries"));
+                          await SharePlus.instance.share(
+                              ShareParams(text: 'I just did $summaries'),);
                           setState(() {
                             selected.clear();
                           });
@@ -243,8 +244,8 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
                         },
                         onSelect: () => setState(() {
                           if (snapshot.data == null) return;
-                          selected
-                              .addAll(snapshot.data!.map((gymSet) => gymSet.id));
+                          selected.addAll(
+                              snapshot.data!.map((gymSet) => gymSet.id),);
                         }),
                         selected: selected,
                         onEdit: () => Navigator.push(
@@ -256,11 +257,11 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
                           ),
                         ),
                       ),
-                      if (snapshot.data?.isEmpty == true)
+                      if (snapshot.data?.isEmpty ?? false)
                         const ListTile(
-                          title: Text("No entries yet"),
+                          title: Text('No entries yet'),
                           subtitle: Text(
-                            "Complete some sets to see them here",
+                            'Complete some sets to see them here',
                           ),
                         ),
                       if (snapshot.hasError)
@@ -361,14 +362,14 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
   }
 
   List<HistoryDay> getHistoryDays(List<GymSet> gymSets) {
-    List<HistoryDay> historyDays = [];
+    final List<HistoryDay> historyDays = [];
     for (final gymSet in gymSets) {
       final day = DateUtils.dateOnly(gymSet.created);
       // Group by day, workout, AND exercise name to properly group sets
       final index = historyDays.indexWhere((hd) =>
           isSameDay(hd.day, day) &&
           hd.name == gymSet.name &&
-          hd.gymSets.first.workoutId == gymSet.workoutId);
+          hd.gymSets.first.workoutId == gymSet.workoutId,);
       if (index == -1)
         historyDays.add(
           HistoryDay(name: gymSet.name, gymSets: [gymSet], day: day),
@@ -387,7 +388,7 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
 
   void setStream() {
     final terms =
-        search.toLowerCase().split(" ").where((term) => term.isNotEmpty);
+        search.toLowerCase().split(' ').where((term) => term.isNotEmpty);
 
     var query = (db.gymSets.select()
       ..orderBy(

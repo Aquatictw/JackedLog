@@ -1,19 +1,19 @@
 import 'dart:io';
 
-import 'package:jackedlog/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'main.dart';
+
 class DeleteDatabaseButton extends StatelessWidget {
-  final BuildContext ctx;
 
   const DeleteDatabaseButton({
-    super.key,
-    required this.ctx,
+    required this.ctx, super.key,
   });
+  final BuildContext ctx;
 
   @override
   Widget build(BuildContext context) {
@@ -39,18 +39,15 @@ class DeleteDatabaseButton extends StatelessWidget {
                   label: const Text('Delete'),
                   icon: const Icon(Icons.delete),
                   onPressed: () async {
-                    final dbFolder =
-                        await getApplicationDocumentsDirectory();
+                    final dbFolder = await getApplicationDocumentsDirectory();
                     final file = File(
                       p.join(dbFolder.path, 'jackedlog.sqlite'),
                     );
                     await db.close();
                     await db.executor.close();
                     await file.delete();
-                    if (defaultTargetPlatform ==
-                            TargetPlatform.iOS ||
-                        defaultTargetPlatform ==
-                            TargetPlatform.android)
+                    if (defaultTargetPlatform == TargetPlatform.iOS ||
+                        defaultTargetPlatform == TargetPlatform.android)
                       SystemNavigator.pop();
                     else
                       exit(0);

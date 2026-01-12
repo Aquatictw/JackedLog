@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
+import '../database/database.dart';
+import '../main.dart';
 
 // Cache for batch workout record counts
 final _prCache = <String, ({Map<int, int> counts, DateTime cachedAt})>{};
@@ -25,17 +25,16 @@ enum RecordType {
 
 /// Represents a personal record achievement
 class RecordAchievement {
-  final RecordType type;
-  final double newValue;
-  final double? previousValue;
-  final String unit;
 
   const RecordAchievement({
     required this.type,
     required this.newValue,
-    this.previousValue,
-    required this.unit,
+    required this.unit, this.previousValue,
   });
+  final RecordType type;
+  final double newValue;
+  final double? previousValue;
+  final String unit;
 
   String get displayName {
     switch (type) {
@@ -110,31 +109,30 @@ Future<List<RecordAchievement>> checkForRecords({
     variables.add(Variable.withInt(excludeSetId));
   }
 
-  final result = await db.customSelect(
-    bestQuery,
-    variables: variables,
-  ).getSingleOrNull();
+  final result = await db
+      .customSelect(
+        bestQuery,
+        variables: variables,
+      )
+      .getSingleOrNull();
 
   if (result == null) {
     // First set for this exercise - all records!
     achievements.add(RecordAchievement(
       type: RecordType.bestWeight,
       newValue: weight,
-      previousValue: null,
       unit: unit,
-    ));
+    ),);
     achievements.add(RecordAchievement(
       type: RecordType.best1RM,
       newValue: calculate1RM(weight, reps),
-      previousValue: null,
       unit: unit,
-    ));
+    ),);
     achievements.add(RecordAchievement(
       type: RecordType.bestVolume,
       newValue: calculateVolume(weight, reps),
-      previousValue: null,
       unit: unit,
-    ));
+    ),);
     return achievements;
   }
 
@@ -149,7 +147,7 @@ Future<List<RecordAchievement>> checkForRecords({
       newValue: weight,
       previousValue: previousBestWeight,
       unit: unit,
-    ));
+    ),);
   }
 
   final current1RM = calculate1RM(weight, reps);
@@ -159,7 +157,7 @@ Future<List<RecordAchievement>> checkForRecords({
       newValue: current1RM,
       previousValue: previousBest1RM,
       unit: unit,
-    ));
+    ),);
   }
 
   final currentVolume = calculateVolume(weight, reps);
@@ -169,7 +167,7 @@ Future<List<RecordAchievement>> checkForRecords({
       newValue: currentVolume,
       previousValue: previousBestVolume,
       unit: unit,
-    ));
+    ),);
   }
 
   return achievements;
@@ -186,7 +184,7 @@ Future<Set<RecordType>> getSetRecords({
   final records = <RecordType>{};
 
   // Get current best values for this exercise (excluding this set)
-  final bestQuery = '''
+  const bestQuery = '''
     SELECT
       MAX(weight) as best_weight,
       MAX(CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END) as best_1rm,
@@ -235,7 +233,7 @@ Future<Set<RecordType>> getSetRecords({
 }
 
 /// Get all sets with records for a specific workout
-/// Returns a map of setId -> Set<RecordType>
+/// Returns a map of setId -> `Set<RecordType>`
 Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
   final recordsMap = <int, Set<RecordType>>{};
 
@@ -244,7 +242,7 @@ Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
         ..where((s) =>
             s.workoutId.equals(workoutId) &
             s.hidden.equals(false) &
-            s.cardio.equals(false)))
+            s.cardio.equals(false),))
       .get();
 
   // Group sets by exercise name
@@ -259,7 +257,7 @@ Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
     final exerciseSets = entry.value;
 
     // Get all-time bests for this exercise
-    final bestQuery = '''
+    const bestQuery = '''
       SELECT
         MAX(weight) as best_weight,
         MAX(CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END) as best_1rm,
@@ -291,20 +289,26 @@ Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
           ..where((s) =>
               s.name.equals(exerciseName) &
               s.hidden.equals(false) &
-              s.cardio.equals(false)))
+              s.cardio.equals(false),))
         .get();
 
     for (final set in allExerciseSets) {
       if (set.weight == bestWeight && bestWeight > 0) {
-        minIdForWeight = minIdForWeight == null ? set.id : (set.id < minIdForWeight ? set.id : minIdForWeight);
+        minIdForWeight = minIdForWeight == null
+            ? set.id
+            : (set.id < minIdForWeight ? set.id : minIdForWeight);
       }
       final set1RM = calculate1RM(set.weight, set.reps);
       if (set1RM == best1RM && best1RM > 0) {
-        minIdForRM = minIdForRM == null ? set.id : (set.id < minIdForRM ? set.id : minIdForRM);
+        minIdForRM = minIdForRM == null
+            ? set.id
+            : (set.id < minIdForRM ? set.id : minIdForRM);
       }
       final setVolume = calculateVolume(set.weight, set.reps);
       if (setVolume == bestVolume && bestVolume > 0) {
-        minIdForVolume = minIdForVolume == null ? set.id : (set.id < minIdForVolume ? set.id : minIdForVolume);
+        minIdForVolume = minIdForVolume == null
+            ? set.id
+            : (set.id < minIdForVolume ? set.id : minIdForVolume);
       }
     }
 
@@ -344,7 +348,8 @@ Future<bool> workoutHasRecords(int workoutId) async {
 /// Get the count of records in a workout
 Future<int> getWorkoutRecordCount(int workoutId) async {
   final records = await getWorkoutRecords(workoutId);
-  return records.values.fold<int>(0, (sum, recordSet) => sum + recordSet.length);
+  return records.values
+      .fold<int>(0, (sum, recordSet) => sum + recordSet.length);
 }
 
 /// Get record counts for multiple workouts efficiently
@@ -378,16 +383,17 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
         ..where((s) =>
             s.workoutId.isIn(workoutIds) &
             s.hidden.equals(false) &
-            s.cardio.equals(false)))
+            s.cardio.equals(false),))
       .get();
 
   // Group by exercise name to get all-time bests
   final exerciseNames = workoutSets.map((s) => s.name).toSet();
-  final exerciseBests = <String, ({double weight, double rm1, double volume})>{};
+  final exerciseBests =
+      <String, ({double weight, double rm1, double volume})>{};
 
   // Get all-time bests for each exercise in a single batch
   for (final exerciseName in exerciseNames) {
-    final bestQuery = '''
+    const bestQuery = '''
       SELECT
         MAX(weight) as best_weight,
         MAX(CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END) as best_1rm,
@@ -413,7 +419,8 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
   }
 
   // Find minimum set IDs for each record type per exercise (tie-breaking)
-  final recordHolders = <String, ({int? weightId, int? rm1Id, int? volumeId})>{};
+  final recordHolders =
+      <String, ({int? weightId, int? rm1Id, int? volumeId})>{};
 
   for (final exerciseName in exerciseNames) {
     final bests = exerciseBests[exerciseName];
@@ -424,7 +431,7 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
           ..where((s) =>
               s.name.equals(exerciseName) &
               s.hidden.equals(false) &
-              s.cardio.equals(false)))
+              s.cardio.equals(false),))
         .get();
 
     int? minIdForWeight;
@@ -433,15 +440,21 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
 
     for (final set in allSets) {
       if (set.weight == bests.weight && bests.weight > 0) {
-        minIdForWeight = minIdForWeight == null ? set.id : (set.id < minIdForWeight ? set.id : minIdForWeight);
+        minIdForWeight = minIdForWeight == null
+            ? set.id
+            : (set.id < minIdForWeight ? set.id : minIdForWeight);
       }
       final set1RM = calculate1RM(set.weight, set.reps);
       if (set1RM == bests.rm1 && bests.rm1 > 0) {
-        minIdForRM = minIdForRM == null ? set.id : (set.id < minIdForRM ? set.id : minIdForRM);
+        minIdForRM = minIdForRM == null
+            ? set.id
+            : (set.id < minIdForRM ? set.id : minIdForRM);
       }
       final setVolume = calculateVolume(set.weight, set.reps);
       if (setVolume == bests.volume && bests.volume > 0) {
-        minIdForVolume = minIdForVolume == null ? set.id : (set.id < minIdForVolume ? set.id : minIdForVolume);
+        minIdForVolume = minIdForVolume == null
+            ? set.id
+            : (set.id < minIdForVolume ? set.id : minIdForVolume);
       }
     }
 

@@ -1,10 +1,11 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/widgets/artistic_color_picker.dart';
 import 'package:provider/provider.dart';
+
+import '../database/database.dart';
+import '../main.dart';
+import '../widgets/artistic_color_picker.dart';
+import 'settings_state.dart';
 
 List<Widget> getAppearanceSettings(
   BuildContext context,
@@ -14,7 +15,7 @@ List<Widget> getAppearanceSettings(
   return [
     if ('theme'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: DropdownButtonFormField<ThemeMode>(
           initialValue: ThemeMode.values
               .byName(settings.value.themeMode.replaceFirst('ThemeMode.', '')),
@@ -25,15 +26,15 @@ List<Widget> getAppearanceSettings(
           items: const [
             DropdownMenuItem(
               value: ThemeMode.system,
-              child: Text("System"),
+              child: Text('System'),
             ),
             DropdownMenuItem(
               value: ThemeMode.dark,
-              child: Text("Dark"),
+              child: Text('Dark'),
             ),
             DropdownMenuItem(
               value: ThemeMode.light,
-              child: Text("Light"),
+              child: Text('Light'),
             ),
           ],
           onChanged: (value) => db.settings.update().write(
@@ -45,7 +46,7 @@ List<Widget> getAppearanceSettings(
       ),
     if ('system color scheme'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.only(top: 8.0),
+        padding: const EdgeInsets.only(top: 8),
         child: Tooltip(
           message: 'Use the primary color of your device for the app',
           child: ListTile(
@@ -72,7 +73,7 @@ List<Widget> getAppearanceSettings(
     if ('custom color'.contains(term.toLowerCase()) ||
         'app color'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.only(top: 8.0),
+        padding: const EdgeInsets.only(top: 8),
         child: Tooltip(
           message: 'Choose a custom color for your app theme',
           child: ListTile(
@@ -125,7 +126,7 @@ List<Widget> getAppearanceSettings(
                     if (color != null) {
                       await db.settings.update().write(
                             SettingsCompanion(
-                              customColorSeed: Value(color.value),
+                              customColorSeed: Value(color.toARGB32()),
                             ),
                           );
                     }
@@ -179,10 +180,10 @@ class AppearanceSettings extends StatelessWidget {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text("Appearance"),
+        title: const Text('Appearance'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8),
         child: ListView(
           children: getAppearanceSettings(context, '', settings),
         ),

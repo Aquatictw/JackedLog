@@ -1,11 +1,12 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/animated_fab.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+
+import 'animated_fab.dart';
+import 'database/database.dart';
+import 'main.dart';
+import 'settings/settings_state.dart';
 
 class PermissionsPage extends StatefulWidget {
   const PermissionsPage({super.key});
@@ -26,15 +27,15 @@ class _PermissionsPageState extends State<PermissionsPage> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text("Missing permissions"),
+        title: const Text('Missing permissions'),
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
               const ListTile(
-                title: Text("Rest timers are on, but permissions are missing."),
+                title: Text('Rest timers are on, but permissions are missing.'),
                 subtitle: Text(
                   "If you disable rest timers, then these permissions aren't needed.",
                 ),
@@ -62,12 +63,12 @@ class _PermissionsPageState extends State<PermissionsPage> {
                 subtitle: const Text(
                   'Progress may pause if battery optimizations stay on.',
                 ),
-                onTap: () async => await requestPermission(
+                onTap: () async => requestPermission(
                   Permission.ignoreBatteryOptimizations,
                 ),
                 trailing: Switch(
                   value: ignore,
-                  onChanged: (_) async => await requestPermission(
+                  onChanged: (_) async => requestPermission(
                     Permission.ignoreBatteryOptimizations,
                   ),
                 ),
@@ -78,11 +79,11 @@ class _PermissionsPageState extends State<PermissionsPage> {
                   'Alarms cannot be accurate if this is disabled.',
                 ),
                 onTap: () async =>
-                    await requestPermission(Permission.scheduleExactAlarm),
+                    requestPermission(Permission.scheduleExactAlarm),
                 trailing: Switch(
                   value: schedule,
                   onChanged: (_) async =>
-                      await requestPermission(Permission.scheduleExactAlarm),
+                      requestPermission(Permission.scheduleExactAlarm),
                 ),
               ),
               ListTile(
@@ -91,11 +92,11 @@ class _PermissionsPageState extends State<PermissionsPage> {
                   'Timer progress is sent to the notification bar',
                 ),
                 onTap: () async =>
-                    await requestPermission(Permission.notification),
+                    requestPermission(Permission.notification),
                 trailing: Switch(
                   value: notify,
                   onChanged: (_) async =>
-                      await requestPermission(Permission.notification),
+                      requestPermission(Permission.notification),
                 ),
               ),
             ],
@@ -145,7 +146,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
                 );
           }
         },
-        label: const Text("Confirm"),
+        label: const Text('Confirm'),
         icon: const Icon(Icons.check),
       ),
     );

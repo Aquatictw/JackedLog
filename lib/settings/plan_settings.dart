@@ -1,11 +1,12 @@
 import 'package:drift/drift.dart';
-import 'package:jackedlog/constants.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../constants.dart';
+import '../database/database.dart';
+import '../main.dart';
+import '../utils.dart';
+import 'settings_state.dart';
 
 List<Widget> getPlanSettings(
   String term,
@@ -16,7 +17,7 @@ List<Widget> getPlanSettings(
   return [
     if ('warmup sets'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Tooltip(
           message: 'Warmup sets have no rest timers',
           child: TextField(
@@ -25,7 +26,7 @@ List<Widget> getPlanSettings(
               labelText: 'Warmup sets',
               hintText: '0',
             ),
-            keyboardType: const TextInputType.numberWithOptions(decimal: false),
+            keyboardType: TextInputType.number,
             onTap: () => selectAll(warmup),
             onChanged: (value) => db.settings.update().write(
                   SettingsCompanion(
@@ -37,7 +38,7 @@ List<Widget> getPlanSettings(
       ),
     if ('sets per exercise'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Tooltip(
           message: 'Default # of exercises in a plan',
           child: TextField(
@@ -45,7 +46,7 @@ List<Widget> getPlanSettings(
             decoration: const InputDecoration(
               labelText: 'Sets per exercise (max: 20)',
             ),
-            keyboardType: const TextInputType.numberWithOptions(decimal: false),
+            keyboardType: TextInputType.number,
             onTap: () => selectAll(max),
             onChanged: (value) {
               if (int.parse(value) > 0 && int.parse(value) <= 20) {
@@ -61,7 +62,7 @@ List<Widget> getPlanSettings(
       ),
     if ('plan trailing display'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Tooltip(
           message: 'Right side of list displays in Plans + Plan view',
           child: DropdownButtonFormField<PlanTrailing>(
@@ -77,7 +78,7 @@ List<Widget> getPlanSettings(
                 value: PlanTrailing.reorder,
                 child: Row(
                   children: [
-                    Text("Re-order"),
+                    Text('Re-order'),
                     SizedBox(width: 8),
                     Icon(Icons.menu, size: 18),
                   ],
@@ -87,9 +88,9 @@ List<Widget> getPlanSettings(
                 value: PlanTrailing.count,
                 child: Row(
                   children: [
-                    Text("Count"),
+                    Text('Count'),
                     SizedBox(width: 8),
-                    Text("(5)"),
+                    Text('(5)'),
                   ],
                 ),
               ),
@@ -97,9 +98,9 @@ List<Widget> getPlanSettings(
                 value: PlanTrailing.percent,
                 child: Row(
                   children: [
-                    Text("Percent"),
+                    Text('Percent'),
                     SizedBox(width: 8),
-                    Text("(50%)"),
+                    Text('(50%)'),
                   ],
                 ),
               ),
@@ -107,15 +108,15 @@ List<Widget> getPlanSettings(
                 value: PlanTrailing.ratio,
                 child: Row(
                   children: [
-                    Text("Ratio"),
+                    Text('Ratio'),
                     SizedBox(width: 8),
-                    Text("(5 / 10)"),
+                    Text('(5 / 10)'),
                   ],
                 ),
               ),
               DropdownMenuItem(
                 value: PlanTrailing.none,
-                child: Text("None"),
+                child: Text('None'),
               ),
             ],
             onChanged: (value) => db.settings.update().write(
@@ -137,7 +138,7 @@ class PlanSettings extends StatefulWidget {
 }
 
 class _PlanSettingsState extends State<PlanSettings> {
-  late var settings = context.read<SettingsState>().value;
+  late Setting settings = context.read<SettingsState>().value;
 
   late final max = TextEditingController(text: settings.maxSets.toString());
 
@@ -151,10 +152,10 @@ class _PlanSettingsState extends State<PlanSettings> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text("Plans"),
+        title: const Text('Plans'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8),
         child: ListView(
           children: getPlanSettings('', settings, max, warmup),
         ),

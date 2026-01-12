@@ -1,14 +1,15 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:fl_chart/fl_chart.dart';
-import 'package:jackedlog/database/database.dart';
-import 'package:jackedlog/main.dart';
-import 'package:jackedlog/settings/settings_state.dart';
-import 'package:jackedlog/utils/bodyweight_calculations.dart';
-import 'package:jackedlog/widgets/bodyweight_entry_dialog.dart';
-import 'package:jackedlog/widgets/bodyweight_entry_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
+import '../database/database.dart';
+import '../main.dart';
+import '../settings/settings_state.dart';
+import '../utils/bodyweight_calculations.dart';
+import '../widgets/bodyweight_entry_dialog.dart';
+import '../widgets/bodyweight_entry_tile.dart';
 
 enum BodyweightPeriod { week, month, months3, months6, year, allTime }
 
@@ -16,7 +17,7 @@ class BodyweightOverviewPage extends StatefulWidget {
   const BodyweightOverviewPage({super.key});
 
   @override
-  createState() => _BodyweightOverviewPageState();
+  _BodyweightOverviewPageState createState() => _BodyweightOverviewPageState();
 }
 
 class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
@@ -54,14 +55,12 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
           ..orderBy([
             (e) => drift.OrderingTerm(
                   expression: e.date,
-                  mode: drift.OrderingMode.asc,
-                )
+                ),
           ]))
         .get();
 
     // Calculate stats
-    final current =
-        entries.isNotEmpty ? entries.last.weight : null;
+    final current = entries.isNotEmpty ? entries.last.weight : null;
     final average = calculateAverageWeight(entries);
     final min = calculateMinWeight(entries);
     final max = calculateMaxWeight(entries);
@@ -95,7 +94,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
       case BodyweightPeriod.year:
         return DateTime(now.year - 1, now.month, now.day);
       case BodyweightPeriod.allTime:
-        return DateTime(1970, 1, 1);
+        return DateTime(1970);
     }
   }
 
@@ -121,7 +120,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
       context: context,
       builder: (context) => const BodyweightEntryDialog(),
     );
-    if (result == true) {
+    if (result ?? false) {
       _loadData();
     }
   }
@@ -131,7 +130,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
       context: context,
       builder: (context) => BodyweightEntryDialog(entry: entry),
     );
-    if (result == true) {
+    if (result ?? false) {
       _loadData();
     }
   }
@@ -185,7 +184,8 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
                   const SizedBox(height: 16),
 
                   // Moving average toggles (compact)
-                  if (periodEntries.isNotEmpty) _buildMovingAverageToggles(colorScheme),
+                  if (periodEntries.isNotEmpty)
+                    _buildMovingAverageToggles(colorScheme),
                   if (periodEntries.isNotEmpty) const SizedBox(height: 24),
 
                   // Entry history list (period-filtered)
@@ -315,7 +315,6 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: color.withValues(alpha: 0.3),
-          width: 1,
         ),
       ),
       child: Column(
@@ -429,7 +428,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
     final yMax = range > 0 ? (maxY + range * 0.1).ceilToDouble() : maxY + 1;
 
     // Build line bars data
-    List<LineChartBarData> lineBars = [
+    final List<LineChartBarData> lineBars = [
       // Main bodyweight line
       LineChartBarData(
         spots: mainSpots,
@@ -438,7 +437,6 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
         barWidth: 3,
         isStrokeCapRound: true,
         dotData: FlDotData(
-          show: true,
           getDotPainter: (spot, percent, barData, index) {
             return FlDotCirclePainter(
               radius: 4,
@@ -464,10 +462,9 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
             spots: ma14,
             isCurved: true,
             color: colorScheme.secondary,
-            barWidth: 2,
             dashArray: [5, 5],
             dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: false),
+            belowBarData: BarAreaData(),
           ),
         );
       }
@@ -481,10 +478,9 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
             spots: ma7,
             isCurved: true,
             color: colorScheme.tertiary,
-            barWidth: 2,
             dashArray: [5, 5],
             dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: false),
+            belowBarData: BarAreaData(),
           ),
         );
       }
@@ -498,10 +494,9 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
             spots: ma3,
             isCurved: true,
             color: Colors.amber,
-            barWidth: 2,
             dashArray: [5, 5],
             dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: false),
+            belowBarData: BarAreaData(),
           ),
         );
       }
@@ -541,7 +536,6 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
                 minY: yMin,
                 maxY: yMax,
                 gridData: FlGridData(
-                  show: true,
                   drawVerticalLine: false,
                   horizontalInterval: range > 10 ? 5 : (range > 5 ? 2 : 1),
                   getDrawingHorizontalLine: (value) => FlLine(
@@ -550,12 +544,11 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
                   ),
                 ),
                 titlesData: FlTitlesData(
-                  show: true,
                   rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                    
                   ),
                   topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                    
                   ),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
@@ -613,10 +606,8 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
                       return TouchedSpotIndicatorData(
                         FlLine(
                           color: colorScheme.primary.withValues(alpha: 0.3),
-                          strokeWidth: 2,
                         ),
                         FlDotData(
-                          show: true,
                           getDotPainter: (spot, percent, barData, index) {
                             return FlDotCirclePainter(
                               radius: 6,
@@ -771,12 +762,9 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
       alignment: WrapAlignment.center,
       children: [
         _buildLegendItem('Bodyweight', colorScheme.primary, solid: true),
-        if (show14DayMA)
-          _buildLegendItem('14-Day MA', colorScheme.secondary),
-        if (show7DayMA)
-          _buildLegendItem('7-Day MA', colorScheme.tertiary),
-        if (show3DayMA)
-          _buildLegendItem('3-Day MA', Colors.amber),
+        if (show14DayMA) _buildLegendItem('14-Day MA', colorScheme.secondary),
+        if (show7DayMA) _buildLegendItem('7-Day MA', colorScheme.tertiary),
+        if (show3DayMA) _buildLegendItem('3-Day MA', Colors.amber),
       ],
     );
   }
@@ -902,9 +890,9 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
 
 /// Custom painter for drawing dashed lines in the legend
 class _DashedLinePainter extends CustomPainter {
-  final Color color;
 
   _DashedLinePainter({required this.color});
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
