@@ -6,6 +6,7 @@ import 'package:jackedlog/database/failed_migrations_page.dart';
 import 'package:jackedlog/home_page.dart';
 import 'package:jackedlog/plan/plan_state.dart';
 import 'package:jackedlog/settings/settings_state.dart';
+import 'package:jackedlog/spotify/spotify_state.dart';
 import 'package:jackedlog/timer/timer_state.dart';
 import 'package:jackedlog/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,7 @@ Widget appProviders(SettingsState state) => MultiProvider(
         ChangeNotifierProvider(create: (context) => TimerState()),
         ChangeNotifierProvider(create: (context) => PlanState()),
         ChangeNotifierProvider(create: (context) => WorkoutState()),
+        ChangeNotifierProvider(create: (context) => SpotifyState()),
       ],
       child: App(),
     );
