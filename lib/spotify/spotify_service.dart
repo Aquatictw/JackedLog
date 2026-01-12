@@ -18,7 +18,14 @@ class SpotifyService {
   static const List<String> scopes = SpotifyConfig.scopes;
 
   bool _isConnected = false;
+  String? _accessToken;
+  DateTime? _tokenExpiry;
   bool get isConnected => _isConnected;
+  String? get accessToken => _accessToken;
+  bool get hasValidToken =>
+      _accessToken != null &&
+      _tokenExpiry != null &&
+      DateTime.now().isBefore(_tokenExpiry!);
 
   Future<bool> connect() async {
     try {
@@ -28,7 +35,7 @@ class SpotifyService {
 
       print('🎵 Step 1: Getting access token...');
       try {
-        final authToken = await SpotifySdk.getAccessToken(
+        _accessToken = await SpotifySdk.getAccessToken(
           clientId: clientId,
           redirectUrl: redirectUrl,
           scope: scopes.join(' '),
@@ -39,7 +46,10 @@ class SpotifyService {
             throw TimeoutException('Authentication timed out.');
           },
         );
-        print('🎵 Access token received: ${authToken.substring(0, 20)}...');
+        // Token expires in 1 hour
+        _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
+        print('🎵 Access token received: ${_accessToken!.substring(0, 20)}...');
+        print('🎵 Token expires at: $_tokenExpiry');
       } catch (e) {
         print('🎵 Access token error: $e');
         // Continue anyway - some SDK versions don't need this step
@@ -73,9 +83,13 @@ class SpotifyService {
     try {
       await SpotifySdk.disconnect();
       _isConnected = false;
+      _accessToken = null;
+      _tokenExpiry = null;
     } catch (e) {
       // Ignore disconnect errors
       _isConnected = false;
+      _accessToken = null;
+      _tokenExpiry = null;
     }
   }
 
