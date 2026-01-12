@@ -339,7 +339,7 @@ class TimerService : Service() {
             @Suppress("DEPRECATION")
             getSystemService(VIBRATOR_SERVICE) as Vibrator
         }
-        vibrator!!.vibrate(VibrationEffect.createWaveform(pattern, 2))
+        vibrator!!.vibrate(VibrationEffect.createWaveform(pattern, -1))
     }
 
     private fun notifyFinished() {
