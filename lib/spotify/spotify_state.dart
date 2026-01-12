@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:jackedlog/spotify/spotify_service.dart';
+import 'package:jackedlog/spotify/spotify_web_api_service.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:spotify_sdk/models/player_options.dart' as player_options;
 import 'package:spotify_sdk/models/player_state.dart';
@@ -80,7 +81,9 @@ class Track {
 /// Uses ChangeNotifier pattern following WorkoutState conventions
 class SpotifyState extends ChangeNotifier {
   final SpotifyService _service = SpotifyService();
+  final SpotifyWebApiService _webApiService = SpotifyWebApiService();
   Timer? _pollingTimer;
+  int _pollingTick = 0;
 
   // State properties
   ConnectionStatus _connectionStatus = ConnectionStatus.disconnected;
@@ -92,6 +95,10 @@ class SpotifyState extends ChangeNotifier {
   bool _isPaused = true;
   bool _isShuffling = false;
   player_options.RepeatMode _repeatMode = player_options.RepeatMode.off;
+  List<Track> _queue = [];
+  List<Track> _recentlyPlayed = [];
+  String? _playingFromType; // 'playlist', 'album', 'artist'
+  String? _playingFromName;
 
   // Getters
   ConnectionStatus get connectionStatus => _connectionStatus;
@@ -103,7 +110,10 @@ class SpotifyState extends ChangeNotifier {
   bool get isPaused => _isPaused;
   bool get isShuffling => _isShuffling;
   player_options.RepeatMode get repeatMode => _repeatMode;
-  List<Track> get queue => []; // Queue API not available in spotify_sdk
+  List<Track> get queue => _queue;
+  List<Track> get recentlyPlayed => _recentlyPlayed;
+  String? get playingFromType => _playingFromType;
+  String? get playingFromName => _playingFromName;
 
   /// Initialize SpotifyState and check for existing connection
   SpotifyState() {
@@ -124,9 +134,13 @@ class SpotifyState extends ChangeNotifier {
     // Cancel existing timer if any
     stopPolling();
 
+    // Reset tick counter
+    _pollingTick = 0;
+
     // Poll every 1 second
     _pollingTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
       await _pollPlayerState();
+      _pollingTick++;
     });
   }
 
@@ -144,12 +158,21 @@ class SpotifyState extends ChangeNotifier {
 
       if (playerState != null) {
         _updateFromPlayerState(playerState);
+
+        // Fetch Web API data every 5 seconds (reduce API calls)
+        if (_pollingTick % 5 == 0) {
+          _fetchWebApiData();
+        }
       } else {
         // No active playback
         _currentTrack = Track.placeholder();
         _positionMs = 0;
         _durationMs = 0;
         _isPaused = true;
+        _queue = [];
+        _recentlyPlayed = [];
+        _playingFromType = null;
+        _playingFromName = null;
         notifyListeners();
       }
     } catch (e) {
@@ -182,6 +205,43 @@ class SpotifyState extends ChangeNotifier {
     } catch (e) {
       // Ignore color extraction errors
     }
+  }
+
+  /// Fetch queue, recently played, and context from Web API
+  Future<void> _fetchWebApiData() async {
+    // Fetch queue
+    final queueData = await _webApiService.getQueue();
+    _queue = queueData.map((item) {
+      return Track(
+        title: item['title'] as String,
+        artist: item['artist'] as String,
+        album: item['album'] as String,
+        artworkUrl: item['artworkUrl'] as String?,
+      );
+    }).toList();
+
+    // Fetch recently played
+    final recentlyPlayedData = await _webApiService.getRecentlyPlayed(limit: 10);
+    _recentlyPlayed = recentlyPlayedData.map((item) {
+      return Track(
+        title: item['title'] as String,
+        artist: item['artist'] as String,
+        album: item['album'] as String,
+        artworkUrl: item['artworkUrl'] as String?,
+      );
+    }).toList();
+
+    // Fetch playback context
+    final context = await _webApiService.getPlaybackContext();
+    if (context != null) {
+      _playingFromType = context['type'];
+      _playingFromName = context['name'];
+    } else {
+      _playingFromType = null;
+      _playingFromName = null;
+    }
+
+    notifyListeners();
   }
 
   /// Update state properties from PlayerState object
@@ -242,6 +302,7 @@ class SpotifyState extends ChangeNotifier {
   Future<void> disconnect() async {
     stopPolling();
     await _service.disconnect();
+    _webApiService.clearCache();
     _connectionStatus = ConnectionStatus.disconnected;
     _errorMessage = null;
     _currentPlayerState = null;
@@ -251,6 +312,10 @@ class SpotifyState extends ChangeNotifier {
     _isPaused = true;
     _isShuffling = false;
     _repeatMode = player_options.RepeatMode.off;
+    _queue = [];
+    _recentlyPlayed = [];
+    _playingFromType = null;
+    _playingFromName = null;
     notifyListeners();
   }
 
