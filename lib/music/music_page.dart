@@ -55,45 +55,61 @@ class _MusicPageState extends State<MusicPage> {
 
     // Active playback - render full player UI
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Large album art
-                    _buildAlbumArt(context, spotifyState),
-                    const SizedBox(height: 16),
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 800),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              spotifyState.currentTrack.dominantColor?.withValues(alpha: 0.3) ??
+                  theme.colorScheme.surface,
+              theme.colorScheme.surface,
+              theme.colorScheme.surface,
+            ],
+            stops: const [0.0, 0.3, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Large album art
+                      _buildAlbumArt(context, spotifyState),
+                      const SizedBox(height: 16),
 
-                    // Track name (bold, large text)
-                    _buildTrackTitle(theme, spotifyState),
-                    const SizedBox(height: 4),
+                      // Track name (bold, large text)
+                      _buildTrackTitle(theme, spotifyState),
+                      const SizedBox(height: 4),
 
-                    // Artist name (medium gray text)
-                    _buildArtistName(theme, spotifyState),
-                    const SizedBox(height: 20),
+                      // Artist name (medium gray text)
+                      _buildArtistName(theme, spotifyState),
+                      const SizedBox(height: 20),
 
-                    // Seek bar with position/duration
-                    const SeekBar(),
-                    const SizedBox(height: 16),
+                      // Seek bar with position/duration
+                      const SeekBar(),
+                      const SizedBox(height: 16),
 
-                    // Player controls (shuffle, previous, play/pause, next, repeat)
-                    const PlayerControls(),
-                    const SizedBox(height: 16),
+                      // Player controls (shuffle, previous, play/pause, next, repeat)
+                      const PlayerControls(),
+                      const SizedBox(height: 16),
 
-                    // View Queue button
-                    _buildViewQueueButton(context),
+                      // View Queue button
+                      _buildViewQueueButton(context),
 
-                    // Add bottom padding to clear navigation bar
-                    const SizedBox(height: 96),
-                  ],
+                      // Add bottom padding to clear navigation bar
+                      const SizedBox(height: 96),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
