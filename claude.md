@@ -81,7 +81,7 @@ JackedLog is a Flutter/Dart fitness tracking mobile app (cross-platform: Android
 
 ## Database Architecture
 
-### Current Schema (v58)
+### Current Schema (v60)
 
 #### Tables
 
@@ -103,6 +103,7 @@ JackedLog is a Flutter/Dart fitness tracking mobile app (cross-platform: Android
    - Theme: `themeMode`, `systemColors`, `customColorSeed` (default: 0xFF673AB7)
    - 5/3/1: `fivethreeoneWeek`, `fivethreeoneSquatTm`, `fivethreeoneBenchTm`, `fivethreeoneDeadliftTm`, `fivethreeonePressTm`
    - Default tabs: `"HistoryPage,PlansPage,GraphsPage,NotesPage,SettingsPage"`
+   - Spotify: `spotifyClientId`, `spotifyRedirectUri` (both TEXT, nullable)
 
 6. **Notes** - `id`, `title`, `content`, `created`, `updated`, `color`
 
@@ -133,6 +134,11 @@ Workout Session → Exercises → Sets
 | `lib/graph/overview_page.dart`               | Stats, heatmap, muscle charts, bodyweight             |
 | `lib/widgets/five_three_one_calculator.dart` | 5/3/1 calculator                                      |
 | `lib/widgets/artistic_color_picker.dart`     | Custom color picker                                   |
+| `lib/spotify/spotify_service.dart`           | Spotify OAuth and SDK integration                     |
+| `lib/spotify/spotify_state.dart`             | Spotify state provider with 500ms polling             |
+| `lib/spotify/spotify_web_api_service.dart`   | Spotify REST API client                               |
+| `lib/music/music_page.dart`                  | Music player UI with dynamic backgrounds              |
+| `lib/settings/spotify_settings.dart`         | Spotify configuration page                            |
 
 ## Core Features
 
@@ -183,6 +189,32 @@ Loads last set for defaults (weight, reps, brandName, exerciseType, restMs) → 
 - Stats cards: Workouts, Volume, Streak, Top Muscle, Bodyweight, Bodyweight Trend
 - GitHub-style heatmap: Monday-Sunday weeks, clickable days
 - Muscle charts: Volume (weight × reps) and Set Count (top 10)
+
+### Spotify Integration
+Real-time music playback control during workouts. Three-layer architecture: `SpotifyService` (OAuth + SDK) → `SpotifyState` (polling + state) → UI components.
+
+**Core Files:**
+- `lib/spotify/spotify_service.dart` - OAuth flow, token capture (_accessToken, _tokenExpiry), SDK connection
+- `lib/spotify/spotify_state.dart` - ChangeNotifier with 500ms polling, player state management
+- `lib/spotify/spotify_web_api_service.dart` - REST API for queue/recently played
+- `lib/music/music_page.dart` - Main UI with dynamic album artwork background
+- `lib/music/widgets/` - PlayerControls, SeekBar, QueueBottomSheet, RecentlyPlayedSection, AnimatedEqualizer, AuthPrompt, NoPlaybackState
+- `lib/settings/spotify_settings.dart` - Client ID/Redirect URI config
+
+**Key Patterns:**
+- Token validation: `hasValidToken` getter checks existence + expiry before API calls
+- Polling: All Web API calls wrapped in try-catch, preserve state on error to prevent timer crashes
+- Album artwork: Convert Spotify URI (`spotify:image:`) → CDN URL (`https://i.scdn.co/image/`)
+- UI sizing: Album art 65% width (max 300px), buttons 48x48dp touch targets, track title uses `titleLarge`
+- Error handling: Check token validity first, gracefully degrade on 429 rate limit, keep last known state
+
+**Setup:**
+- Spotify Developer app with redirect URI (e.g., `jackedlog://callback`)
+- Settings → Spotify → enter Client ID/Redirect URI → connect
+- Android: SDK in `android/spotify-app-remote/libs/`, ProGuard rules, AndroidManifest intent filter
+- Requires: Spotify Premium, Spotify app installed, Android/iOS only
+
+**Limitations:** No token refresh (reconnect after expiry), no offline mode, no queue modification in some regions
 
 ## UI/UX Patterns
 
@@ -258,5 +290,6 @@ import 'package:drift/drift.dart' hide Column;
 
 ## Export/Import Backward Compatibility
 
+**v59→v60**: Added `spotifyClientId` and `spotifyRedirectUri` to Settings (nullable, no impact on import).
 **v57→v58**: Added `setOrder` column to gym_sets.csv. Import auto-detects by checking header for `setorder`.
 **v54→v55**: Removed `bodyWeight` column. Import auto-detects by checking header for `bodyweight`.
