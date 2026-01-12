@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:spotify_sdk/spotify_sdk.dart';
-import 'spotify_config.dart';
 
 /// Service for Spotify Web API REST calls
 /// Uses OAuth token from App Remote SDK for authentication
@@ -11,44 +9,27 @@ class SpotifyWebApiService {
   factory SpotifyWebApiService() => _instance;
   SpotifyWebApiService._internal();
 
+  /// Set the access token to use for API requests
+  /// Should be called with token from SpotifyService after connection
+  void setAccessToken(String token) {
+    _currentToken = token;
+  }
+
   static const String _baseUrl = 'https://api.spotify.com/v1';
-  String? _cachedToken;
-  DateTime? _tokenExpiry;
-  bool _isAuthenticating = false;
+  String? _currentToken;
 
-  /// Get valid access token (cached or fresh)
-  Future<String?> _getAccessToken() async {
-    // Return cached token if still valid (5 min buffer)
-    if (_cachedToken != null &&
-        _tokenExpiry != null &&
-        DateTime.now().isBefore(_tokenExpiry!.subtract(const Duration(minutes: 5)))) {
-      return _cachedToken;
+  /// Get current access token
+  /// Returns null if token not set
+  String? _getAccessToken() {
+    if (_currentToken == null) {
+      print('🎵 No access token set in Web API service');
     }
-
-    // Prevent concurrent authentication attempts
-    if (_isAuthenticating) {
-      return null;
-    }
-
-    // Fetch fresh token from SDK
-    try {
-      _isAuthenticating = true;
-      _cachedToken = await SpotifySdk.getAccessToken(
-        clientId: SpotifyConfig.clientId,
-        redirectUrl: SpotifyConfig.redirectUrl,
-      );
-      _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
-      return _cachedToken;
-    } catch (e) {
-      return null;
-    } finally {
-      _isAuthenticating = false;
-    }
+    return _currentToken;
   }
 
   /// Make authenticated GET request to Spotify Web API
   Future<Map<String, dynamic>?> _get(String endpoint) async {
-    final token = await _getAccessToken();
+    final token = _getAccessToken();
     if (token == null) return null;
 
     try {
@@ -63,9 +44,7 @@ class SpotifyWebApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body) as Map<String, dynamic>;
       } else if (response.statusCode == 401) {
-        // Token expired, clear cache and retry once
-        _cachedToken = null;
-        _tokenExpiry = null;
+        // Token expired, caller should refresh token
         return null;
       } else if (response.statusCode == 429) {
         // Rate limited, return cached data (handled by caller)
@@ -175,8 +154,6 @@ class SpotifyWebApiService {
 
   /// Clear cached token (useful for logout/reconnect)
   void clearCache() {
-    _cachedToken = null;
-    _tokenExpiry = null;
-    _isAuthenticating = false;
+    _currentToken = null;
   }
 }
