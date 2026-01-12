@@ -209,48 +209,54 @@ class SpotifyState extends ChangeNotifier {
 
   /// Fetch queue, recently played, and context from Web API
   Future<void> _fetchWebApiData() async {
-    // Set access token from service before making API calls
-    final token = _service.accessToken;
-    if (token == null) {
-      print('🎵 No access token available, skipping Web API fetch');
+    // Check both token existence and expiry
+    if (!_service.hasValidToken) {
+      print('🎵 No valid access token available, skipping Web API fetch');
       return;
     }
 
+    final token = _service.accessToken!;  // Safe non-null assertion
     _webApiService.setAccessToken(token);
 
-    // Fetch queue
-    final queueData = await _webApiService.getQueue();
-    _queue = queueData.map((item) {
-      return Track(
-        title: item['title'] as String,
-        artist: item['artist'] as String,
-        album: item['album'] as String,
-        artworkUrl: item['artworkUrl'] as String?,
-      );
-    }).toList();
+    try {
+      // Fetch queue
+      final queueData = await _webApiService.getQueue();
+      _queue = queueData.map((item) {
+        return Track(
+          title: item['title'] as String,
+          artist: item['artist'] as String,
+          album: item['album'] as String,
+          artworkUrl: item['artworkUrl'] as String?,
+        );
+      }).toList();
 
-    // Fetch recently played
-    final recentlyPlayedData = await _webApiService.getRecentlyPlayed(limit: 10);
-    _recentlyPlayed = recentlyPlayedData.map((item) {
-      return Track(
-        title: item['title'] as String,
-        artist: item['artist'] as String,
-        album: item['album'] as String,
-        artworkUrl: item['artworkUrl'] as String?,
-      );
-    }).toList();
+      // Fetch recently played
+      final recentlyPlayedData = await _webApiService.getRecentlyPlayed(limit: 10);
+      _recentlyPlayed = recentlyPlayedData.map((item) {
+        return Track(
+          title: item['title'] as String,
+          artist: item['artist'] as String,
+          album: item['album'] as String,
+          artworkUrl: item['artworkUrl'] as String?,
+        );
+      }).toList();
 
-    // Fetch playback context
-    final context = await _webApiService.getPlaybackContext();
-    if (context != null) {
-      _playingFromType = context['type'];
-      _playingFromName = context['name'];
-    } else {
-      _playingFromType = null;
-      _playingFromName = null;
+      // Fetch playback context
+      final context = await _webApiService.getPlaybackContext();
+      if (context != null) {
+        _playingFromType = context['type'];
+        _playingFromName = context['name'];
+      } else {
+        _playingFromType = null;
+        _playingFromName = null;
+      }
+
+      notifyListeners();
+    } catch (e) {
+      // Log error but don't crash polling
+      print('🎵 Web API fetch error: $e');
+      // Keep existing state, don't clear it
     }
-
-    notifyListeners();
   }
 
   /// Update state properties from PlayerState object
