@@ -129,6 +129,22 @@ class QueueBottomSheet extends StatelessWidget {
                               horizontal: 16,
                               vertical: 4,
                             ),
+                            onTap: track.uri != null
+                                ? () async {
+                                    try {
+                                      await spotifyState.playTrack(track.uri!);
+                                      if (context.mounted) {
+                                        Navigator.pop(context);
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Failed to play track: $e')),
+                                        );
+                                      }
+                                    }
+                                  }
+                                : null,
                             leading: Container(
                               width: 48,
                               height: 48,

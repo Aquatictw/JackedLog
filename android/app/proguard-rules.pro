@@ -8,6 +8,11 @@
 -keep class com.spotify.protocol.client.** { *; }
 -keep class com.spotify.protocol.mappers.** { *; }
 
+# Suppress warnings for Spotify protocol types (loaded at runtime)
+-dontwarn com.spotify.protocol.types.**
+-dontwarn com.spotify.protocol.client.**
+-dontwarn com.spotify.protocol.mappers.**
+
 # Keep Spotify SDK annotations
 -keepattributes *Annotation*
 -keepattributes Signature

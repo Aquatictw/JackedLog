@@ -63,7 +63,7 @@ class SpotifyWebApiService {
   }
 
   /// Fetch current user's playback queue
-  /// Returns list of tracks: {title, artist, album, artworkUrl}
+  /// Returns list of tracks: {title, artist, album, artworkUrl, uri}
   Future<List<Map<String, dynamic>>> getQueue() async {
     final data = await _get('/me/player/queue');
     if (data == null) {
@@ -77,12 +77,13 @@ class SpotifyWebApiService {
         'artist': (item['artists'] as List?)?.first['name'] ?? 'Unknown Artist',
         'album': item['album']?['name'] ?? 'Unknown Album',
         'artworkUrl': (item['album']?['images'] as List?)?.first['url'],
+        'uri': item['uri'] ?? '',
       };
     }).toList();
   }
 
   /// Fetch recently played tracks (last 10)
-  /// Returns list of tracks: {title, artist, album, artworkUrl, playedAt}
+  /// Returns list of tracks: {title, artist, album, artworkUrl, playedAt, uri}
   Future<List<Map<String, dynamic>>> getRecentlyPlayed({int limit = 10}) async {
     final data = await _get('/me/player/recently-played?limit=$limit');
     if (data == null) {
@@ -98,6 +99,7 @@ class SpotifyWebApiService {
         'album': track['album']?['name'] ?? 'Unknown Album',
         'artworkUrl': (track['album']?['images'] as List?)?.first['url'],
         'playedAt': item['played_at'],
+        'uri': track['uri'] ?? '',
       };
     }).toList();
   }
