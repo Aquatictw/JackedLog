@@ -18,10 +18,24 @@ class SpotifyService {
   static const List<String> scopes = SpotifyConfig.scopes;
 
   bool _isConnected = false;
+
+  /// OAuth access token for Spotify Web API calls.
+  /// Captured during connection and expires after 1 hour.
   String? _accessToken;
+
+  /// Expiration timestamp for the access token.
+  /// Set to 1 hour after token acquisition.
   DateTime? _tokenExpiry;
+
   bool get isConnected => _isConnected;
+
+  /// Get the current access token if available.
+  /// Returns null if not connected or token not yet acquired.
+  /// Check [hasValidToken] to verify token is still valid.
   String? get accessToken => _accessToken;
+
+  /// Check if a valid, non-expired access token is available.
+  /// Returns true only if token exists and hasn't expired.
   bool get hasValidToken =>
       _accessToken != null &&
       _tokenExpiry != null &&
@@ -48,10 +62,16 @@ class SpotifyService {
         );
         // Token expires in 1 hour
         _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
-        print('🎵 Access token received: ${_accessToken!.substring(0, 20)}...');
+        // Safe token logging (handle tokens shorter than 20 chars)
+        final tokenPreview = _accessToken!.length > 20
+            ? '${_accessToken!.substring(0, 20)}...'
+            : _accessToken!;
+        print('🎵 Access token received: $tokenPreview');
         print('🎵 Token expires at: $_tokenExpiry');
       } catch (e) {
         print('🎵 Access token error: $e');
+        _accessToken = null;
+        _tokenExpiry = null;
         // Continue anyway - some SDK versions don't need this step
       }
 
