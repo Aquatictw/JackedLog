@@ -99,7 +99,7 @@ class _MusicPageState extends State<MusicPage> {
   /// Build album art widget with fallback placeholder
   Widget _buildAlbumArt(BuildContext context, SpotifyState spotifyState) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final artSize = (screenWidth * 0.9).clamp(200.0, 400.0);
+    final artSize = (screenWidth * 0.65).clamp(200.0, 300.0);
 
     return Container(
       width: artSize,
@@ -147,7 +147,7 @@ class _MusicPageState extends State<MusicPage> {
   Widget _buildTrackTitle(ThemeData theme, SpotifyState spotifyState) {
     return Text(
       spotifyState.currentTrack.title,
-      style: theme.textTheme.headlineMedium?.copyWith(
+      style: theme.textTheme.titleLarge?.copyWith(
         fontWeight: FontWeight.bold,
       ),
       textAlign: TextAlign.center,
