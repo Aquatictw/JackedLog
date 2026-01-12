@@ -31,16 +31,16 @@ class _SeekBarState extends State<SeekBar> {
 
     // Calculate slider value (0.0 to 1.0)
     // Handle edge cases: division by zero, null duration
-    final sliderValue = durationMs > 0
-        ? (positionMs / durationMs).clamp(0.0, 1.0)
-        : 0.0;
+    final sliderValue =
+        durationMs > 0 ? (positionMs / durationMs).clamp(0.0, 1.0) : 0.0;
 
     // Format times as M:SS (e.g., "3:45", not "03:45")
     final currentTime = _formatTime(positionMs);
     final totalTime = _formatTime(durationMs);
 
     // Disable slider if no active playback
-    final isEnabled = durationMs > 0 && spotifyState.connectionStatus == ConnectionStatus.connected;
+    final isEnabled = durationMs > 0 &&
+        spotifyState.connectionStatus == ConnectionStatus.connected;
 
     return Column(
       children: [

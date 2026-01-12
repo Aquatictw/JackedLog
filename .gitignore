@@ -58,3 +58,6 @@ flexify-release-key.keystore
 notes.md
 task_plan.md
 docs/
+
+# Spotify credentials (use spotify_config.dart.template to create)
+/lib/spotify/spotify_config.dart

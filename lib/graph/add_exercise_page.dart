@@ -1,13 +1,12 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart' hide Column;
-import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jackedlog/animated_fab.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/main.dart';
 import 'package:jackedlog/settings/settings_state.dart';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class AddExercisePage extends StatefulWidget {

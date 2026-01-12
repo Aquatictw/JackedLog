@@ -1,6 +1,10 @@
-import 'package:spotify_sdk/spotify_sdk.dart';
-import 'package:spotify_sdk/models/player_state.dart';
+import 'dart:async';
+
 import 'package:spotify_sdk/models/player_options.dart' as player_options;
+import 'package:spotify_sdk/models/player_state.dart';
+import 'package:spotify_sdk/spotify_sdk.dart';
+
+import 'spotify_config.dart';
 
 /// Singleton service wrapping Spotify SDK
 /// Manages connection lifecycle and playback controls
@@ -9,25 +13,56 @@ class SpotifyService {
   factory SpotifyService() => _instance;
   SpotifyService._internal();
 
-  // Spotify Client ID - TODO: Replace with your app's client ID from developer.spotify.com
-  static const String clientId = 'YOUR_SPOTIFY_CLIENT_ID';
-  static const String redirectUrl = 'jackedlog://spotify-auth-callback';
+  static const String clientId = SpotifyConfig.clientId;
+  static const String redirectUrl = SpotifyConfig.redirectUrl;
+  static const List<String> scopes = SpotifyConfig.scopes;
 
   bool _isConnected = false;
   bool get isConnected => _isConnected;
 
-  /// Connect to Spotify with OAuth flow
-  /// Opens Spotify app (or browser) for authorization
-  /// Returns true if connection successful
   Future<bool> connect() async {
     try {
+      print('🎵 Starting Spotify connection...');
+      print('🎵 Client ID: $clientId');
+      print('🎵 Redirect URL: $redirectUrl');
+
+      print('🎵 Step 1: Getting access token...');
+      try {
+        final authToken = await SpotifySdk.getAccessToken(
+          clientId: clientId,
+          redirectUrl: redirectUrl,
+          scope: scopes.join(' '),
+        ).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            print('🎵 Access token request timed out');
+            throw TimeoutException('Authentication timed out.');
+          },
+        );
+        print('🎵 Access token received: ${authToken.substring(0, 20)}...');
+      } catch (e) {
+        print('🎵 Access token error: $e');
+        // Continue anyway - some SDK versions don't need this step
+      }
+
+      print('🎵 Step 2: Connecting to Spotify Remote...');
       final result = await SpotifySdk.connectToSpotifyRemote(
         clientId: clientId,
         redirectUrl: redirectUrl,
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print('🎵 Remote connection timed out after 30 seconds');
+          throw TimeoutException('Connection timed out. Please try again.');
+        },
       );
+
+      print('🎵 Connection result: $result');
       _isConnected = result;
       return result;
     } catch (e) {
+      print('🎵 Connection error: $e');
+      print('🎵 Error type: ${e.runtimeType}');
       _isConnected = false;
       rethrow;
     }
@@ -100,7 +135,8 @@ class SpotifyService {
   Future<void> toggleRepeat() async {
     try {
       final state = await SpotifySdk.getPlayerState();
-      final currentRepeat = state?.playbackOptions.repeatMode ?? player_options.RepeatMode.off;
+      final currentRepeat =
+          state?.playbackOptions.repeatMode ?? player_options.RepeatMode.off;
 
       final player_options.RepeatMode nextMode;
       switch (currentRepeat) {

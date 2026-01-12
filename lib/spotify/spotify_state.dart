@@ -2,9 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:jackedlog/spotify/spotify_service.dart';
-import 'package:spotify_sdk/spotify_sdk.dart';
-import 'package:spotify_sdk/models/player_state.dart';
 import 'package:spotify_sdk/models/player_options.dart' as player_options;
+import 'package:spotify_sdk/models/player_state.dart';
 
 /// Connection status for Spotify
 enum ConnectionStatus {

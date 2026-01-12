@@ -1,4 +1,6 @@
 import 'package:drift/drift.dart' hide Column;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:jackedlog/constants.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/database/gym_sets.dart';
@@ -14,13 +16,8 @@ import 'package:jackedlog/settings/settings_state.dart';
 import 'package:jackedlog/timer/timer_state.dart';
 import 'package:jackedlog/widgets/bodypart_tag.dart';
 import 'package:jackedlog/widgets/five_three_one_calculator.dart';
-import 'package:jackedlog/widgets/sets/complete_button.dart';
-import 'package:jackedlog/widgets/sets/reps_input.dart';
 import 'package:jackedlog/widgets/sets/set_row.dart';
-import 'package:jackedlog/widgets/sets/weight_input.dart';
 import 'package:jackedlog/widgets/superset/superset_badge.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class ExerciseSetsCard extends StatefulWidget {
@@ -100,25 +97,26 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     );
 
     // Separate previous sets by type for smart set creation
-    _previousWarmups = exerciseData.previousSets.where((s) => s.warmup).toList();
-    _previousDropSets = exerciseData.previousSets.where((s) => s.dropSet).toList();
-    _previousWorkingSets =
-        exerciseData.previousSets.where((s) => !s.warmup && !s.dropSet).toList();
+    _previousWarmups =
+        exerciseData.previousSets.where((s) => s.warmup).toList();
+    _previousDropSets =
+        exerciseData.previousSets.where((s) => s.dropSet).toList();
+    _previousWorkingSets = exerciseData.previousSets
+        .where((s) => !s.warmup && !s.dropSet)
+        .toList();
 
     // Get default values from first working set, or first set, or fallback
-    GymSet? referenceSet =
-        _previousWorkingSets.firstOrNull ?? exerciseData.previousSets.firstOrNull;
+    GymSet? referenceSet = _previousWorkingSets.firstOrNull ??
+        exerciseData.previousSets.firstOrNull;
 
     // If no previous completed sets, check for any set (including hidden) for metadata
-    if (referenceSet == null) {
-      referenceSet = await (db.gymSets.select()
-            ..where((tbl) => tbl.name.equals(widget.exercise.exercise))
-            ..orderBy([
-              (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
-            ])
-            ..limit(1))
-          .getSingleOrNull();
-    }
+    referenceSet ??= await (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(widget.exercise.exercise))
+          ..orderBy([
+            (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
 
     _defaultWeight = referenceSet?.weight ?? 0.0;
     _defaultReps = referenceSet?.reps.toInt() ?? 8;
@@ -171,14 +169,14 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
 
         // Count existing sets for this exercise instance to calculate starting setOrder
         final existingSetCount = await (db.gymSets.selectOnly()
-          ..addColumns([db.gymSets.id.count()])
-          ..where(
-            db.gymSets.workoutId.equals(widget.workoutId!) &
-            db.gymSets.name.equals(widget.exercise.exercise) &
-            db.gymSets.sequence.equals(widget.sequence)
-          )).getSingleOrNull();
+              ..addColumns([db.gymSets.id.count()])
+              ..where(db.gymSets.workoutId.equals(widget.workoutId!) &
+                  db.gymSets.name.equals(widget.exercise.exercise) &
+                  db.gymSets.sequence.equals(widget.sequence)))
+            .getSingleOrNull();
 
-        final startingSetOrder = existingSetCount?.read(db.gymSets.id.count()) ?? 0;
+        final startingSetOrder =
+            existingSetCount?.read(db.gymSets.id.count()) ?? 0;
 
         // Create working sets based on previous working sets
         for (int i = 0; i < maxSets; i++) {
@@ -209,7 +207,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                   planId: Value(widget.planId),
                   workoutId: Value(widget.workoutId),
                   sequence: Value(widget.sequence),
-                  setOrder: Value(startingSetOrder + i),  // Set position within exercise
+                  setOrder: Value(
+                      startingSetOrder + i), // Set position within exercise
                   hidden: const Value(true), // Uncompleted
                   brandName: Value(_brandName),
                   exerciseType: Value(_exerciseType),
@@ -511,7 +510,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               planId: Value(widget.planId),
               workoutId: Value(widget.workoutId),
               sequence: Value(widget.sequence),
-              setOrder: Value(setOrderValue),  // Use index as setOrder
+              setOrder: Value(setOrderValue), // Use index as setOrder
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(false),
               warmup: Value(setData.isWarmup),
@@ -690,7 +689,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               planId: Value(widget.planId),
               workoutId: Value(widget.workoutId),
               sequence: Value(widget.sequence),
-              setOrder: Value(insertIndex),  // Set position within exercise
+              setOrder: Value(insertIndex), // Set position within exercise
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(true),
               warmup: Value(isWarmup),
@@ -827,7 +826,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                 ..where((tbl) => tbl.id.equals(sets[i].savedSetId!)))
               .write(
             GymSetsCompanion(
-              setOrder: Value(i),  // CHANGE: Update setOrder instead of sequence
+              setOrder: Value(i), // CHANGE: Update setOrder instead of sequence
             ),
           );
         }
@@ -857,7 +856,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       clipBehavior: Clip.antiAlias,
       elevation: 2,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
-      color: supersetColor?.withValues(alpha: 0.08), // Subtle background tint for superset exercises
+      color: supersetColor?.withValues(
+          alpha: 0.08), // Subtle background tint for superset exercises
       shape: supersetColor != null
           ? RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -923,7 +923,9 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                     ),
                               ),
                             ),
-                            if (_supersetId != null && _supersetPosition != null && _supersetIndex != null) ...[
+                            if (_supersetId != null &&
+                                _supersetPosition != null &&
+                                _supersetIndex != null) ...[
                               const SizedBox(width: 8),
                               SupersetBadge(
                                 supersetIndex: _supersetIndex!,

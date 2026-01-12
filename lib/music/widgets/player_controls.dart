@@ -5,7 +5,6 @@ import 'package:jackedlog/spotify/spotify_service.dart';
 import 'package:jackedlog/spotify/spotify_state.dart';
 import 'package:jackedlog/utils.dart';
 import 'package:provider/provider.dart';
-import 'package:spotify_sdk/spotify_sdk.dart';
 import 'package:spotify_sdk/models/player_options.dart' as player_options;
 
 /// Player controls widget for Spotify playback
@@ -142,7 +141,8 @@ class _PlayerControlsState extends State<PlayerControls> {
 
     // Determine if controls should be enabled
     final hasActivePlayback = spotifyState.currentPlayerState != null;
-    final isConnected = spotifyState.connectionStatus == ConnectionStatus.connected;
+    final isConnected =
+        spotifyState.connectionStatus == ConnectionStatus.connected;
     final controlsEnabled = hasActivePlayback && isConnected;
 
     final isPaused = spotifyState.isPaused;
@@ -159,7 +159,9 @@ class _PlayerControlsState extends State<PlayerControls> {
             icon: Icon(Icons.shuffle_rounded),
             iconSize: 28,
             color: controlsEnabled
-                ? (isShuffling ? colorScheme.primary : colorScheme.onSurfaceVariant)
+                ? (isShuffling
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant)
                 : colorScheme.onSurfaceVariant.withValues(alpha: 0.38),
             onPressed: controlsEnabled ? _handleToggleShuffle : null,
             tooltip: 'Shuffle',
