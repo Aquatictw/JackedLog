@@ -165,6 +165,11 @@ class _PlayerControlsState extends State<PlayerControls> {
                 : colorScheme.onSurfaceVariant.withValues(alpha: 0.38),
             onPressed: controlsEnabled ? _handleToggleShuffle : null,
             tooltip: 'Shuffle',
+            padding: const EdgeInsets.all(12),
+            constraints: const BoxConstraints(
+              minWidth: 56,
+              minHeight: 56,
+            ),
           ),
 
           // Previous track button
@@ -176,6 +181,11 @@ class _PlayerControlsState extends State<PlayerControls> {
                 : colorScheme.onSurfaceVariant.withValues(alpha: 0.38),
             onPressed: controlsEnabled ? _handleSkipPrevious : null,
             tooltip: 'Previous',
+            padding: const EdgeInsets.all(12),
+            constraints: const BoxConstraints(
+              minWidth: 56,
+              minHeight: 56,
+            ),
           ),
 
           // Play/Pause button (large circular)
@@ -210,6 +220,11 @@ class _PlayerControlsState extends State<PlayerControls> {
                 : colorScheme.onSurfaceVariant.withValues(alpha: 0.38),
             onPressed: controlsEnabled ? _handleSkipNext : null,
             tooltip: 'Next',
+            padding: const EdgeInsets.all(12),
+            constraints: const BoxConstraints(
+              minWidth: 56,
+              minHeight: 56,
+            ),
           ),
 
           // Repeat mode button
@@ -223,6 +238,11 @@ class _PlayerControlsState extends State<PlayerControls> {
                 : colorScheme.onSurfaceVariant.withValues(alpha: 0.38),
             onPressed: controlsEnabled ? _handleToggleRepeat : null,
             tooltip: 'Repeat',
+            padding: const EdgeInsets.all(12),
+            constraints: const BoxConstraints(
+              minWidth: 56,
+              minHeight: 56,
+            ),
           ),
         ],
       ),
