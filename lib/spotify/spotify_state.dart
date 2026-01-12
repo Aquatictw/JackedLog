@@ -161,7 +161,6 @@ class SpotifyState extends ChangeNotifier {
 
         // Fetch Web API data every 5 seconds (reduce API calls)
         if (_pollingTick % 5 == 0) {
-          print('🎵 Polling tick $_pollingTick - fetching Web API data');
           _fetchWebApiData();
         }
       } else {
