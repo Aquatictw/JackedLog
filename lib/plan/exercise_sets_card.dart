@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:jackedlog/constants.dart';
 import 'package:jackedlog/database/database.dart';
 import 'package:jackedlog/database/gym_sets.dart';
+import 'package:jackedlog/database/query_helpers.dart';
 import 'package:jackedlog/graph/cardio_page.dart';
 import 'package:jackedlog/graph/strength_page.dart';
 import 'package:jackedlog/main.dart';
@@ -91,60 +92,29 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     final settings = context.read<SettingsState>().value;
     final maxSets = widget.exercise.maxSets ?? settings.maxSets;
 
-    // Get the most recent workout that had this exercise (completed sets only)
-    final recentWorkoutRow = await (db.gymSets.selectOnly()
-          ..addColumns([db.gymSets.workoutId])
-          ..where(
-            db.gymSets.name.equals(widget.exercise.exercise) &
-                db.gymSets.hidden.equals(false) &
-                db.gymSets.workoutId.isNotNull(),
-          )
-          ..orderBy([
-            OrderingTerm(
-              expression: db.gymSets.created,
-              mode: OrderingMode.desc,
-            ),
-          ])
-          ..limit(1))
-        .getSingleOrNull();
+    // Use optimized query helper - replaces 3-5 separate queries with 1-2 queries
+    final exerciseData = await QueryHelpers.loadExerciseData(
+      exerciseName: widget.exercise.exercise,
+      sequence: widget.sequence,
+      workoutId: widget.workoutId,
+    );
 
-    final recentWorkoutId = recentWorkoutRow?.read(db.gymSets.workoutId);
-
-    List<GymSet> previousSets = [];
-    if (recentWorkoutId != null) {
-      // Get all sets from that workout for this exercise
-      previousSets = await (db.gymSets.select()
-            ..where(
-              (tbl) =>
-                  tbl.name.equals(widget.exercise.exercise) &
-                  tbl.workoutId.equals(recentWorkoutId) &
-                  tbl.hidden.equals(false),
-            )
-            ..orderBy([
-              (u) =>
-                  OrderingTerm(expression: u.created, mode: OrderingMode.asc),
-            ]))
-          .get();
-    }
-
-    // Separate sets by type
-    _previousWarmups = previousSets.where((s) => s.warmup).toList();
-    _previousDropSets = previousSets.where((s) => s.dropSet).toList();
+    // Separate previous sets by type for smart set creation
+    _previousWarmups = exerciseData.previousSets.where((s) => s.warmup).toList();
+    _previousDropSets = exerciseData.previousSets.where((s) => s.dropSet).toList();
     _previousWorkingSets =
-        previousSets.where((s) => !s.warmup && !s.dropSet).toList();
+        exerciseData.previousSets.where((s) => !s.warmup && !s.dropSet).toList();
 
-    // Get default values from the first working set, or first set, or fallback
+    // Get default values from first working set, or first set, or fallback
     GymSet? referenceSet =
-        _previousWorkingSets.firstOrNull ?? previousSets.firstOrNull;
+        _previousWorkingSets.firstOrNull ?? exerciseData.previousSets.firstOrNull;
 
-    // If no previous completed sets found, check for any set (including hidden ones)
-    // to get metadata like brandName, category, exerciseType, restMs
+    // If no previous completed sets, check for any set (including hidden) for metadata
     if (referenceSet == null) {
       referenceSet = await (db.gymSets.select()
             ..where((tbl) => tbl.name.equals(widget.exercise.exercise))
             ..orderBy([
-              (u) =>
-                  OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+              (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
             ])
             ..limit(1))
           .getSingleOrNull();
@@ -156,76 +126,28 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     _brandName = referenceSet?.brandName;
     _exerciseType = referenceSet?.exerciseType;
     _category = referenceSet?.category;
-    _restMs = referenceSet?.restMs; // Load custom rest time
+    _restMs = referenceSet?.restMs;
 
-    // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
-    List<GymSet> existingSets = [];
-    if (widget.workoutId != null) {
-      existingSets = await (db.gymSets.select()
-            ..where(
-              (tbl) =>
-                  tbl.name.equals(widget.exercise.exercise) &
-                  tbl.workoutId.equals(widget.workoutId!) &
-                  tbl.sequence.equals(widget.sequence),
-            ) // Filter by sequence to get only this exercise instance
-            ..orderBy([
-              // Order by setOrder if available, fallback to created timestamp
-              (u) => OrderingTerm(
-                expression: const CustomExpression<int>(
-                  "COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))"
-                ),
-                mode: OrderingMode.asc,
-              ),
-            ]))
-          .get();
+    // Use existing sets from helper
+    final existingSets = exerciseData.existingSets;
 
-      // Load superset information from first set (if exists)
-      if (existingSets.isNotEmpty) {
-        final firstSet = existingSets.first;
-        _supersetId = firstSet.supersetId;
-        _supersetPosition = firstSet.supersetPosition;
-
-        // If in a superset, determine the global index for this superset
-        if (_supersetId != null) {
-          final allSupersets = await (db.gymSets.selectOnly(distinct: true)
-                ..addColumns([db.gymSets.supersetId])
-                ..where(
-                  db.gymSets.workoutId.equals(widget.workoutId!) &
-                      db.gymSets.supersetId.isNotNull(),
-                )
-                ..orderBy([
-                  OrderingTerm(expression: db.gymSets.created, mode: OrderingMode.asc)
-                ]))
-              .get();
-
-          final supersetIds = allSupersets
-              .map((row) => row.read(db.gymSets.supersetId))
-              .where((id) => id != null)
-              .toSet()
-              .toList();
-
-          _supersetIndex = supersetIds.indexOf(_supersetId);
-        }
-      }
-    }
+    // Load superset information from helper
+    _supersetId = exerciseData.supersetId;
+    _supersetPosition = exerciseData.supersetPosition;
+    _supersetIndex = exerciseData.supersetIndex;
 
     if (!mounted) return;
 
     if (existingSets.isNotEmpty) {
+      // Batch-load all records at once instead of per-set queries
+      final allRecords = await QueryHelpers.batchLoadSetRecords(
+        exerciseName: widget.exercise.exercise,
+        sets: existingSets,
+      );
+
       // Load existing sets from database (resuming workout)
       final loadedSets = <SetData>[];
       for (final set in existingSets) {
-        // Check if this set holds any records
-        Set<RecordType> records = {};
-        if (!set.hidden) { // Only check records for completed sets
-          records = await getSetRecords(
-            setId: set.id,
-            exerciseName: set.name,
-            weight: set.weight,
-            reps: set.reps,
-          );
-        }
-
         loadedSets.add(SetData(
           weight: set.weight,
           reps: set.reps.toInt(),
@@ -233,7 +155,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           savedSetId: set.id,
           isWarmup: set.warmup,
           isDropSet: set.dropSet,
-          records: records,
+          records: allRecords[set.id] ?? {},
         ));
       }
 
