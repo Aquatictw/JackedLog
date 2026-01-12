@@ -2,26 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:jackedlog/spotify/spotify_state.dart';
 import 'package:provider/provider.dart';
 
-/// Shows the Spotify playback queue in a bottom sheet
-/// Displays upcoming tracks with album art, title, and artist
-void showQueueBottomSheet(BuildContext context) {
+/// Shows the Spotify recently played tracks in a bottom sheet
+/// Displays recently played tracks with album art, title, and artist
+void showRecentlyPlayedBottomSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (context) => const QueueBottomSheet(),
+    builder: (context) => const RecentlyPlayedBottomSheet(),
   );
 }
 
-class QueueBottomSheet extends StatelessWidget {
-  const QueueBottomSheet({super.key});
+class RecentlyPlayedBottomSheet extends StatelessWidget {
+  const RecentlyPlayedBottomSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final spotifyState = Provider.of<SpotifyState>(context);
-    final queue = spotifyState.queue;
+    final recentlyPlayed = spotifyState.recentlyPlayed;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -60,14 +60,14 @@ class QueueBottomSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        Icons.queue_music,
+                        Icons.history,
                         color: colorScheme.primary,
                         size: 20,
                       ),
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'Queue',
+                      'Recently Played',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             fontSize: 20,
@@ -83,22 +83,22 @@ class QueueBottomSheet extends StatelessWidget {
                 ),
               ),
               const Divider(height: 1),
-              // Queue list or empty state
+              // Recently played list or empty state
               Expanded(
-                child: queue.isEmpty
+                child: recentlyPlayed.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.queue_music,
+                              Icons.history,
                               size: 48,
                               color: colorScheme.onSurfaceVariant
                                   .withValues(alpha: 0.5),
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Queue is empty',
+                              'No recently played tracks',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: colorScheme.onSurfaceVariant
@@ -107,7 +107,7 @@ class QueueBottomSheet extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Add songs to your queue in Spotify',
+                              'Your listening history will appear here',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: colorScheme.onSurfaceVariant
@@ -120,9 +120,9 @@ class QueueBottomSheet extends StatelessWidget {
                     : ListView.builder(
                         controller: scrollController,
                         padding: const EdgeInsets.only(bottom: 16),
-                        itemCount: queue.length,
+                        itemCount: recentlyPlayed.length,
                         itemBuilder: (context, index) {
-                          final track = queue[index];
+                          final track = recentlyPlayed[index];
 
                           return ListTile(
                             contentPadding: const EdgeInsets.symmetric(

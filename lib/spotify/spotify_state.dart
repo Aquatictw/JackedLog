@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/main.dart';
 import 'package:jackedlog/spotify/spotify_service.dart';
 import 'package:jackedlog/spotify/spotify_web_api_service.dart';
 import 'package:palette_generator/palette_generator.dart';
@@ -114,6 +117,9 @@ class SpotifyState extends ChangeNotifier {
   List<Track> get recentlyPlayed => _recentlyPlayed;
   String? get playingFromType => _playingFromType;
   String? get playingFromName => _playingFromName;
+
+  /// Get the Spotify service instance for token access
+  SpotifyService get service => _service;
 
   /// Initialize SpotifyState and check for existing connection
   SpotifyState() {
@@ -299,6 +305,19 @@ class SpotifyState extends ChangeNotifier {
       if (success) {
         _connectionStatus = ConnectionStatus.connected;
         notifyListeners();
+
+        // Save tokens to database after successful connection
+        if (_service.accessToken != null && _service.hasValidToken) {
+          await db.settings.update().write(
+                SettingsCompanion(
+                  spotifyAccessToken: Value(_service.accessToken),
+                  spotifyTokenExpiry: _service.tokenExpiry != null
+                      ? Value(_service.tokenExpiry!.millisecondsSinceEpoch)
+                      : const Value(null),
+                ),
+              );
+        }
+
         return true;
       } else {
         _connectionStatus = ConnectionStatus.error;

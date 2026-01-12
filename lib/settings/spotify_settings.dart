@@ -72,15 +72,17 @@ class _SpotifySettingsState extends State<SpotifySettings> {
     final settings = context.watch<SettingsState>();
     final spotifyState = context.watch<SpotifyState>();
 
-    // Check if connected by checking if token exists and connection status
-    final bool isConnected = settings.value.spotifyAccessToken != null &&
-        spotifyState.connectionStatus == ConnectionStatus.connected;
+    // Check if connected by checking for valid, non-expired token
+    final bool hasToken = settings.value.spotifyAccessToken != null;
+    final bool isTokenExpired = hasToken &&
+        settings.value.spotifyTokenExpiry != null &&
+        DateTime.now().isAfter(
+            DateTime.fromMillisecondsSinceEpoch(settings.value.spotifyTokenExpiry!));
+
+    final bool isConnected = hasToken && !isTokenExpired;
+
     final bool hasError =
         spotifyState.connectionStatus == ConnectionStatus.error;
-
-    // Check if Music tab is currently visible
-    final tabSplit = settings.value.tabs.split(',');
-    final bool isMusicTabVisible = tabSplit.contains('MusicPage');
 
     return Scaffold(
       appBar: AppBar(
@@ -98,23 +100,31 @@ class _SpotifySettingsState extends State<SpotifySettings> {
                       ? Icons.check_circle
                       : hasError
                           ? Icons.error
-                          : Icons.music_note_outlined,
+                          : isTokenExpired
+                              ? Icons.schedule
+                              : Icons.music_note_outlined,
                   color: isConnected
                       ? Colors.green
                       : hasError
                           ? Theme.of(context).colorScheme.error
-                          : Colors.grey,
+                          : isTokenExpired
+                              ? Colors.orange
+                              : Colors.grey,
                 ),
                 title: Text(
                   isConnected
                       ? 'Connected to Spotify'
                       : hasError
                           ? 'Connection error'
-                          : 'Not connected',
+                          : isTokenExpired
+                              ? 'Token expired'
+                              : 'Not connected',
                 ),
                 subtitle: hasError && spotifyState.errorMessage != null
                     ? Text(spotifyState.errorMessage!)
-                    : null,
+                    : isTokenExpired
+                        ? const Text('Reconnect to continue using Spotify')
+                        : null,
               ),
             ),
             const SizedBox(height: 8),
@@ -127,8 +137,8 @@ class _SpotifySettingsState extends State<SpotifySettings> {
                 onTap: _isProcessing ? null : () => _showDisconnectDialog(),
               ),
 
-            // Reconnect button (visible when error state)
-            if (hasError)
+            // Reconnect button (visible when error state or token expired)
+            if (hasError || isTokenExpired)
               ListTile(
                 leading: const Icon(Icons.refresh),
                 title: const Text('Reconnect'),
@@ -136,22 +146,6 @@ class _SpotifySettingsState extends State<SpotifySettings> {
               ),
 
             const SizedBox(height: 8),
-
-            // Tab visibility toggle
-            ListTile(
-              leading: Icon(
-                isMusicTabVisible
-                    ? Icons.music_note
-                    : Icons.music_note_outlined,
-              ),
-              title: const Text('Show Music tab'),
-              subtitle: const Text('Display Music tab in navigation'),
-              onTap: () => _toggleMusicTab(!isMusicTabVisible, settings),
-              trailing: Switch(
-                value: isMusicTabVisible,
-                onChanged: (value) => _toggleMusicTab(value, settings),
-              ),
-            ),
           ],
         ),
       ),
@@ -240,29 +234,5 @@ class _SpotifySettingsState extends State<SpotifySettings> {
         setState(() => _isProcessing = false);
       }
     }
-  }
-
-  /// Toggle Music tab visibility
-  void _toggleMusicTab(bool visible, SettingsState settings) {
-    final tabSplit = settings.value.tabs.split(',');
-    List<String> newTabs = List.from(tabSplit);
-
-    if (visible && !tabSplit.contains('MusicPage')) {
-      // Add MusicPage after PlansPage (position 2)
-      final plansIndex = newTabs.indexOf('PlansPage');
-      if (plansIndex >= 0) {
-        newTabs.insert(plansIndex + 1, 'MusicPage');
-      } else {
-        newTabs.add('MusicPage');
-      }
-    } else if (!visible && tabSplit.contains('MusicPage')) {
-      newTabs.remove('MusicPage');
-    }
-
-    db.settings.update().write(
-          SettingsCompanion(
-            tabs: Value(newTabs.join(',')),
-          ),
-        );
   }
 }
