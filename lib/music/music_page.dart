@@ -6,6 +6,8 @@ import 'package:jackedlog/music/widgets/no_playback_state.dart';
 import 'package:jackedlog/music/widgets/player_controls.dart';
 import 'package:jackedlog/music/widgets/seek_bar.dart';
 import 'package:jackedlog/music/widgets/queue_bottom_sheet.dart';
+import 'package:jackedlog/music/widgets/animated_equalizer.dart';
+import 'package:jackedlog/music/widgets/recently_played_section.dart';
 
 /// Main UI widget for the Music tab
 /// Provides Spotify remote control interface during workouts
@@ -81,7 +83,7 @@ class _MusicPageState extends State<MusicPage> {
                     children: [
                       // Large album art
                       _buildAlbumArt(context, spotifyState),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
 
                       // Track name (bold, large text)
                       _buildTrackTitle(theme, spotifyState),
@@ -89,6 +91,14 @@ class _MusicPageState extends State<MusicPage> {
 
                       // Artist name (medium gray text)
                       _buildArtistName(theme, spotifyState),
+                      const SizedBox(height: 6),
+
+                      // Album name with music note icon
+                      _buildAlbumName(theme, spotifyState),
+                      const SizedBox(height: 4),
+
+                      // Playing from context
+                      _buildPlayingFromContext(theme, spotifyState),
                       const SizedBox(height: 20),
 
                       // Seek bar with position/duration
@@ -101,6 +111,12 @@ class _MusicPageState extends State<MusicPage> {
 
                       // View Queue button
                       _buildViewQueueButton(context),
+                      const SizedBox(height: 24),
+
+                      // Recently played tracks
+                      RecentlyPlayedSection(
+                        recentlyPlayed: spotifyState.recentlyPlayed,
+                      ),
 
                       // Add bottom padding to clear navigation bar
                       const SizedBox(height: 96),
@@ -162,16 +178,35 @@ class _MusicPageState extends State<MusicPage> {
     );
   }
 
-  /// Build track title with marquee scrolling for long text
+  /// Build track title with animated equalizer for playback indication
   Widget _buildTrackTitle(ThemeData theme, SpotifyState spotifyState) {
-    return Text(
-      spotifyState.currentTrack.title,
-      style: theme.textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.bold,
-      ),
-      textAlign: TextAlign.center,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Animated equalizer (only when playing)
+        if (!spotifyState.isPaused)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: AnimatedEqualizer(
+              color: theme.colorScheme.primary,
+              size: 20,
+              isPlaying: !spotifyState.isPaused,
+            ),
+          ),
+        // Track title
+        Flexible(
+          child: Text(
+            spotifyState.currentTrack.title,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
@@ -185,6 +220,80 @@ class _MusicPageState extends State<MusicPage> {
       textAlign: TextAlign.center,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  /// Build album name with album icon
+  Widget _buildAlbumName(ThemeData theme, SpotifyState spotifyState) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.album,
+          size: 14,
+          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+        ),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            spotifyState.currentTrack.album,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build playing from context (playlist/album name)
+  Widget _buildPlayingFromContext(ThemeData theme, SpotifyState spotifyState) {
+    if (spotifyState.playingFromName == null) {
+      return const SizedBox.shrink();
+    }
+
+    final IconData contextIcon;
+    switch (spotifyState.playingFromType) {
+      case 'playlist':
+        contextIcon = Icons.playlist_play;
+        break;
+      case 'album':
+        contextIcon = Icons.album;
+        break;
+      case 'artist':
+        contextIcon = Icons.person;
+        break;
+      default:
+        contextIcon = Icons.music_note;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          contextIcon,
+          size: 12,
+          color: theme.colorScheme.primary.withValues(alpha: 0.8),
+        ),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            'Playing from ${spotifyState.playingFromName}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.primary.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 

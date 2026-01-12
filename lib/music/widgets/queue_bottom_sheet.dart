@@ -98,7 +98,7 @@ class QueueBottomSheet extends StatelessWidget {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'No upcoming tracks',
+                              'Queue is empty',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: colorScheme.onSurfaceVariant
