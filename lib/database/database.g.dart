@@ -291,7 +291,7 @@ class $GymSetsTable extends GymSets with TableInfo<$GymSetsTable, GymSet> {
       'distance', aliasedName, false,
       type: DriftSqlType.double,
       requiredDuringInsert: false,
-      defaultValue: const Constant(0.0));
+      defaultValue: const Constant(0));
   static const VerificationMeta _durationMeta =
       const VerificationMeta('duration');
   @override
@@ -299,7 +299,7 @@ class $GymSetsTable extends GymSets with TableInfo<$GymSetsTable, GymSet> {
       'duration', aliasedName, false,
       type: DriftSqlType.double,
       requiredDuringInsert: false,
-      defaultValue: const Constant(0.0));
+      defaultValue: const Constant(0));
   static const VerificationMeta _hiddenMeta = const VerificationMeta('hidden');
   @override
   late final GeneratedColumn<bool> hidden = GeneratedColumn<bool>(
@@ -1590,7 +1590,7 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant(
-          "HistoryPage,PlansPage,MusicPage,GraphsPage,NotesPage,SettingsPage"));
+          'HistoryPage,PlansPage,MusicPage,GraphsPage,NotesPage,SettingsPage'));
   static const VerificationMeta _themeModeMeta =
       const VerificationMeta('themeMode');
   @override

@@ -101,6 +101,8 @@ Future<List<RecordAchievement>> checkForRecords({
     FROM gym_sets
     WHERE name = ?
       AND hidden = 0
+      AND warmup = 0
+      AND cardio = 0
       ${excludeSetId != null ? 'AND id != ?' : ''}
   ''';
 
@@ -192,6 +194,8 @@ Future<Set<RecordType>> getSetRecords({
     FROM gym_sets
     WHERE name = ?
       AND hidden = 0
+      AND warmup = 0
+      AND cardio = 0
       AND id != ?
   ''';
 
@@ -242,6 +246,7 @@ Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
         ..where((s) =>
             s.workoutId.equals(workoutId) &
             s.hidden.equals(false) &
+            s.warmup.equals(false) &
             s.cardio.equals(false),))
       .get();
 
@@ -265,6 +270,7 @@ Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
       FROM gym_sets
       WHERE name = ?
         AND hidden = 0
+        AND warmup = 0
         AND cardio = 0
     ''';
 
@@ -289,6 +295,7 @@ Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
           ..where((s) =>
               s.name.equals(exerciseName) &
               s.hidden.equals(false) &
+              s.warmup.equals(false) &
               s.cardio.equals(false),))
         .get();
 
@@ -383,6 +390,7 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
         ..where((s) =>
             s.workoutId.isIn(workoutIds) &
             s.hidden.equals(false) &
+            s.warmup.equals(false) &
             s.cardio.equals(false),))
       .get();
 
@@ -401,6 +409,7 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
       FROM gym_sets
       WHERE name = ?
         AND hidden = 0
+        AND warmup = 0
         AND cardio = 0
     ''';
 
@@ -431,6 +440,7 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
           ..where((s) =>
               s.name.equals(exerciseName) &
               s.hidden.equals(false) &
+              s.warmup.equals(false) &
               s.cardio.equals(false),))
         .get();
 
