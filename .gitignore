@@ -61,3 +61,5 @@ docs/
 
 # Flutter SDK submodule (local only)
 /flutter/
+
+test/generated_migrations/
