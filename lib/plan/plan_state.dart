@@ -26,9 +26,15 @@ typedef GymCount = ({
 class PlanState extends ChangeNotifier {
 
   PlanState() {
-    updatePlans(null);
+    // Initialize asynchronously with error handling
+    updatePlans(null).catchError((error) {
+      print('⚠️ Error updating plans: $error');
+    });
+    // updatePlanCounts is void, no need for catchError
     updatePlanCounts();
-    updateDefaults();
+    updateDefaults().catchError((error) {
+      print('⚠️ Error updating defaults: $error');
+    });
   }
   List<Plan> plans = [];
   List<GymCount> gymCounts = [];

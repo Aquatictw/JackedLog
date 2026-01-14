@@ -15,7 +15,6 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.documentfile.provider.DocumentFile
 import java.io.File
 
 class BackupReceiver : BroadcastReceiver() {
@@ -26,15 +25,6 @@ class BackupReceiver : BroadcastReceiver() {
 
         val (enabled, backupPath) = getSettings(context)
         if (!enabled || backupPath == null) return
-
-        val backupUri = Uri.parse(backupPath)
-        val dir = DocumentFile.fromTreeUri(context, backupUri)
-        if (dir == null) return
-
-        val fileName = "flexify.sqlite"
-
-        // Delete existing backup if it exists
-        dir.findFile(fileName)?.delete()
 
         val channelId = "backup_channel"
         var notificationBuilder = NotificationCompat.Builder(context, channelId)
@@ -58,64 +48,67 @@ class BackupReceiver : BroadcastReceiver() {
             ) != PackageManager.PERMISSION_GRANTED
         ) return
 
-        val file = dir.createFile("application/x-sqlite3", fileName)
-        if (file == null) {
-            Log.e("BackupReceiver", "Failed to create backup file")
-            return
-        }
-
-        Log.d("BackupReceiver", "file.uri=${file.uri}")
-        notificationBuilder = notificationBuilder.setContentText(file.name)
-
-        val openIntent = Intent().apply {
-            action = Intent.ACTION_GET_CONTENT
-            setDataAndType(dir.uri, "*/*")
-        }
-        val pendingOpen =
-            PendingIntent.getActivity(context, 0, openIntent, PendingIntent.FLAG_IMMUTABLE)
-        notificationBuilder = notificationBuilder.setContentIntent(pendingOpen)
-
-        val shareIntent = Intent().apply {
-            action = Intent.ACTION_SEND
-            putExtra(Intent.EXTRA_STREAM, file.uri)
-            type = "application/x-sqlite3"
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        val pendingShare =
-            PendingIntent.getActivity(context, 0, shareIntent, PendingIntent.FLAG_IMMUTABLE)
-        notificationBuilder =
-            notificationBuilder.addAction(R.drawable.ic_baseline_stop_24, "Share", pendingShare)
-
         try {
-            val outputStream = context.contentResolver.openOutputStream(file.uri)
-            if (outputStream == null) {
-                Log.e("BackupReceiver", "Failed to open output stream")
-                return
-            }
-
+            // Get source database file
             val parentDir = context.filesDir.parentFile
             if (parentDir == null) {
                 Log.e("BackupReceiver", "Failed to get parent directory")
                 return
             }
 
-            val dbFolder = File(parentDir, "app_flutter").absolutePath
-            val dbFile = File(dbFolder, fileName)
+            val dbFolder = File(parentDir, "app_flutter")
+            val sourceDbFile = File(dbFolder, "jackedlog.sqlite")
 
-            if (!dbFile.exists()) {
-                Log.e("BackupReceiver", "Database file does not exist: ${dbFile.absolutePath}")
+            if (!sourceDbFile.exists()) {
+                Log.e("BackupReceiver", "Database file does not exist: ${sourceDbFile.absolutePath}")
                 return
             }
 
-            dbFile.inputStream().use { input ->
-                outputStream.use { output ->
+            // Create backup directory if it doesn't exist
+            val backupDir = File(backupPath)
+            if (!backupDir.exists()) {
+                backupDir.mkdirs()
+            }
+
+            // Generate backup filename with date
+            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            val dateStr = dateFormat.format(java.util.Date())
+            val backupFileName = "jackedlog_backup_$dateStr.db"
+            val backupFile = File(backupDir, backupFileName)
+
+            // Copy database file to backup location
+            sourceDbFile.inputStream().use { input ->
+                backupFile.outputStream().use { output ->
                     input.copyTo(output)
-                    notificationBuilder = notificationBuilder.setContentTitle("Backed up database")
-                    notificationManager.notify(2, notificationBuilder.build())
                 }
             }
+
+            Log.d("BackupReceiver", "Backup created: ${backupFile.absolutePath}")
+
+            // Show notification
+            notificationBuilder = notificationBuilder
+                .setContentTitle("Backup completed")
+                .setContentText(backupFileName)
+
+            val openIntent = Intent().apply {
+                action = Intent.ACTION_VIEW
+                setDataAndType(Uri.fromFile(backupDir), "resource/folder")
+            }
+            val pendingOpen = PendingIntent.getActivity(
+                context,
+                0,
+                openIntent,
+                PendingIntent.FLAG_IMMUTABLE
+            )
+            notificationBuilder = notificationBuilder.setContentIntent(pendingOpen)
+
+            notificationManager.notify(2, notificationBuilder.build())
         } catch (e: Exception) {
             Log.e("BackupReceiver", "Error during backup: ${e.message}", e)
+            notificationBuilder = notificationBuilder
+                .setContentTitle("Backup failed")
+                .setContentText(e.message ?: "Unknown error")
+            notificationManager.notify(2, notificationBuilder.build())
         }
     }
 }

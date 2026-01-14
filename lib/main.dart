@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'backup/auto_backup_service.dart';
+import 'constants.dart';
 import 'database/database.dart';
 import 'database/failed_migrations_page.dart';
 import 'home_page.dart';
@@ -22,7 +23,17 @@ Future<void> main() async {
   Setting setting;
 
   try {
-    setting = await (db.settings.select()..limit(1)).getSingle();
+    final settingOrNull = await (db.settings.select()..limit(1)).getSingleOrNull();
+
+    if (settingOrNull == null) {
+      // Settings table is empty - create default settings
+      print('⚠️ Settings table is empty, creating default settings...');
+      await db.settings.insertOne(defaultSettings);
+      setting = await (db.settings.select()..limit(1)).getSingle();
+      print('✓ Default settings created successfully');
+    } else {
+      setting = settingOrNull;
+    }
   } catch (error) {
     return runApp(FailedMigrationsPage(error: error));
   }

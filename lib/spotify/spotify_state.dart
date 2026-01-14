@@ -152,10 +152,40 @@ class SpotifyState extends ChangeNotifier {
   SpotifyService get service => _service;
 
   Future<void> _initialize() async {
-    // Check if already connected
-    if (_service.isConnected) {
-      _connectionStatus = ConnectionStatus.connected;
-      notifyListeners();
+    try {
+      // Load saved tokens from database
+      final settings = await (db.settings.select()..limit(1)).getSingleOrNull();
+
+      if (settings != null) {
+        final accessToken = settings.spotifyAccessToken;
+        final tokenExpiryMs = settings.spotifyTokenExpiry;
+
+        // Restore tokens if they exist
+        if (accessToken != null && tokenExpiryMs != null) {
+          final tokenExpiry =
+              DateTime.fromMillisecondsSinceEpoch(tokenExpiryMs);
+          _service.restoreTokens(
+            accessToken: accessToken,
+            tokenExpiry: tokenExpiry,
+          );
+
+          // Only set connected status if token is still valid
+          if (_service.hasValidToken) {
+            print('🎵 Valid token restored from database');
+          } else {
+            print('🎵 Token restored but expired, reconnection needed');
+          }
+        }
+      }
+
+      // Check if already connected
+      if (_service.isConnected) {
+        _connectionStatus = ConnectionStatus.connected;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('🎵 Error during SpotifyState initialization: $e');
+      // Don't crash, just continue with disconnected state
     }
   }
 

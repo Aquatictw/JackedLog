@@ -591,16 +591,20 @@ Line 3 with & symbols''',
 
       // Verify zeros preserved, empty strings become null (as per import logic)
       final workouts = await targetDb.workouts.select().get();
-      expect(workouts[0].notes,
-          isNull); // Empty string exported as '', imported as null
+      expect(
+        workouts[0].notes,
+        isNull,
+      ); // Empty string exported as '', imported as null
 
       final sets = await targetDb.gymSets.select().get();
       expect(sets[0].weight, equals(0.0));
       expect(sets[0].reps, equals(0.0));
       expect(sets[0].duration, equals(0.0));
       expect(sets[0].distance, equals(0.0));
-      expect(sets[0].notes,
-          isNull); // Empty string exported as '', imported as null
+      expect(
+        sets[0].notes,
+        isNull,
+      ); // Empty string exported as '', imported as null
     });
   });
 }
