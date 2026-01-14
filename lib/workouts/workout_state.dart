@@ -9,7 +9,11 @@ import '../main.dart';
 class WorkoutState extends ChangeNotifier {
 
   WorkoutState() {
-    _loadActiveWorkout();
+    // Initialize asynchronously with error handling
+    _loadActiveWorkout().catchError((error) {
+      print('⚠️ Error loading active workout: $error');
+      // Don't crash, just continue with no active workout
+    });
   }
   Workout? _activeWorkout;
   Plan? _activePlan;
@@ -168,7 +172,13 @@ class WorkoutState extends ChangeNotifier {
     // Load the updated workout
     final updatedWorkout = await (db.workouts.select()
           ..where((w) => w.id.equals(workout.id)))
-        .getSingle();
+        .getSingleOrNull();
+
+    // Return null if workout was deleted
+    if (updatedWorkout == null) {
+      print('⚠️ Workout not found after resume update');
+      return null;
+    }
 
     // Load the associated plan
     Plan? plan;

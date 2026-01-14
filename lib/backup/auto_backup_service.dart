@@ -14,7 +14,13 @@ class AutoBackupService {
   /// Returns true if backup was performed, false otherwise
   static Future<bool> performAutoBackup() async {
     try {
-      final settings = await db.settings.select().getSingle();
+      final settings = await db.settings.select().getSingleOrNull();
+
+      // Return early if settings not found
+      if (settings == null) {
+        print('⚠️ Auto-backup skipped: Settings not found');
+        return false;
+      }
 
       // Check if auto-backup is enabled
       if (!settings.automaticBackups) {

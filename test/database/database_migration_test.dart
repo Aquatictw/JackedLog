@@ -20,56 +20,56 @@ import '../generated_migrations/schema.dart';
 /// Uses default/required values to test basic migration behavior.
 Future<void> insertMinimalSettings(AppDatabase db) async {
   await db.into(db.settings).insert(
-    SettingsCompanion.insert(
-      alarmSound: '',
-      cardioUnit: 'km',
-      longDateFormat: 'dd/MM/yyyy',
-      maxSets: 3,
-      planTrailing: 'PlanTrailing.reorder',
-      shortDateFormat: 'd/M/yy',
-      strengthUnit: 'kg',
-      themeMode: 'ThemeMode.system',
-      timerDuration: 90000,
-      curveLines: false,
-      explainedPermissions: true,
-      restTimers: true,
-      systemColors: false,
-      vibrate: true,
-      groupHistory: const Value(true),
-      showUnits: const Value(false),
-    ),
-  );
+        SettingsCompanion.insert(
+          alarmSound: '',
+          cardioUnit: 'km',
+          longDateFormat: 'dd/MM/yyyy',
+          maxSets: 3,
+          planTrailing: 'PlanTrailing.reorder',
+          shortDateFormat: 'd/M/yy',
+          strengthUnit: 'kg',
+          themeMode: 'ThemeMode.system',
+          timerDuration: 90000,
+          curveLines: false,
+          explainedPermissions: true,
+          restTimers: true,
+          systemColors: false,
+          vibrate: true,
+          groupHistory: const Value(true),
+          showUnits: const Value(false),
+        ),
+      );
 }
 
 /// Helper to insert Settings with custom/non-default values.
 /// Tests that migrations preserve all custom user configurations.
 Future<void> insertCustomSettings(AppDatabase db) async {
   await db.into(db.settings).insert(
-    SettingsCompanion.insert(
-      alarmSound: 'custom_alarm.mp3',
-      cardioUnit: 'mi',
-      longDateFormat: 'yyyy-MM-dd',
-      maxSets: 5,
-      planTrailing: 'PlanTrailing.ratio',
-      shortDateFormat: 'yy/M/d',
-      strengthUnit: 'lb',
-      themeMode: 'ThemeMode.dark',
-      timerDuration: const Duration(minutes: 5).inMilliseconds,
-      curveLines: true,
-      explainedPermissions: false,
-      restTimers: false,
-      systemColors: true,
-      vibrate: false,
-      groupHistory: const Value(false),
-      showUnits: const Value(true),
-      fivethreeoneSquatTm: const Value(200.0),
-      fivethreeoneBenchTm: const Value(150.0),
-      fivethreeoneDeadliftTm: const Value(250.0),
-      fivethreeonePressTm: const Value(100.0),
-      fivethreeoneWeek: const Value(3),
-      customColorSeed: const Value(0xFFE91E63), // pink
-    ),
-  );
+        SettingsCompanion.insert(
+          alarmSound: 'custom_alarm.mp3',
+          cardioUnit: 'mi',
+          longDateFormat: 'yyyy-MM-dd',
+          maxSets: 5,
+          planTrailing: 'PlanTrailing.ratio',
+          shortDateFormat: 'yy/M/d',
+          strengthUnit: 'lb',
+          themeMode: 'ThemeMode.dark',
+          timerDuration: const Duration(minutes: 5).inMilliseconds,
+          curveLines: true,
+          explainedPermissions: false,
+          restTimers: false,
+          systemColors: true,
+          vibrate: false,
+          groupHistory: const Value(false),
+          showUnits: const Value(true),
+          fivethreeoneSquatTm: const Value(200),
+          fivethreeoneBenchTm: const Value(150),
+          fivethreeoneDeadliftTm: const Value(250),
+          fivethreeonePressTm: const Value(100),
+          fivethreeoneWeek: const Value(3),
+          customColorSeed: const Value(0xFFE91E63), // pink
+        ),
+      );
 }
 
 void main() {
@@ -120,9 +120,11 @@ void main() {
 
         // Verify the PRIMARY GOAL of v59→v60 migration: Spotify columns exist and are NULL
         // This uses the current v60 schema (AppDatabase) to query the migrated database
-        final spotifyColumnsQuery = await db.customSelect(
-          'SELECT spotify_access_token, spotify_refresh_token, spotify_token_expiry FROM settings',
-        ).getSingle();
+        final spotifyColumnsQuery = await db
+            .customSelect(
+              'SELECT spotify_access_token, spotify_refresh_token, spotify_token_expiry FROM settings',
+            )
+            .getSingle();
 
         expect(
           spotifyColumnsQuery.data['spotify_access_token'],
@@ -168,10 +170,10 @@ void main() {
                 vibrate: true,
                 groupHistory: const Value(true),
                 showUnits: const Value(false),
-                fivethreeoneSquatTm: const Value(100.0),
-                fivethreeoneBenchTm: const Value(80.0),
-                fivethreeoneDeadliftTm: const Value(120.0),
-                fivethreeonePressTm: const Value(50.0),
+                fivethreeoneSquatTm: const Value(100),
+                fivethreeoneBenchTm: const Value(80),
+                fivethreeoneDeadliftTm: const Value(120),
+                fivethreeonePressTm: const Value(50),
                 fivethreeoneWeek: const Value(1),
               ),
             );
@@ -270,10 +272,10 @@ void main() {
                 vibrate: false,
                 groupHistory: const Value(false),
                 showUnits: const Value(true),
-                fivethreeoneSquatTm: const Value(200.0),
-                fivethreeoneBenchTm: const Value(150.0),
-                fivethreeoneDeadliftTm: const Value(250.0),
-                fivethreeonePressTm: const Value(100.0),
+                fivethreeoneSquatTm: const Value(200),
+                fivethreeoneBenchTm: const Value(150),
+                fivethreeoneDeadliftTm: const Value(250),
+                fivethreeonePressTm: const Value(100),
                 fivethreeoneWeek: const Value(3),
                 customColorSeed: const Value(0xFFE91E63), // pink
               ),

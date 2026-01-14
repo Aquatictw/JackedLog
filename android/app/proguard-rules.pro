@@ -29,3 +29,8 @@
 
 # Keep generic signature of Spotify SDK classes
 -keepattributes Signature
+
+# Fix missing classes errors for Spotify SDK and dependencies
+-dontwarn com.spotify.base.annotations.**
+-dontwarn javax.annotation.**
+-dontwarn javax.xml.stream.**

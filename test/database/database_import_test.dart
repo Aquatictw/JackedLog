@@ -208,8 +208,10 @@ id,NAME,reps,WEIGHT,unit,created,cardio,duration,distance,incline,restMs,hidden,
       // Verify setOrder column was detected and imported
       final sets = await db.gymSets.select().get();
       expect(sets.length, equals(1));
-      expect(sets[0].setOrder,
-          equals(0)); // Should be detected despite uppercase header
+      expect(
+        sets[0].setOrder,
+        equals(0),
+      ); // Should be detected despite uppercase header
 
       await db.close();
     });

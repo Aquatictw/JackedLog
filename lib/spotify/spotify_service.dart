@@ -45,6 +45,30 @@ class SpotifyService {
       _tokenExpiry != null &&
       DateTime.now().isBefore(_tokenExpiry!);
 
+  /// Restore tokens from previously saved values (e.g., from database)
+  /// This allows reusing tokens without reconnecting
+  void restoreTokens({
+    required String? accessToken,
+    required DateTime? tokenExpiry,
+  }) {
+    _accessToken = accessToken;
+    _tokenExpiry = tokenExpiry;
+
+    // Log token restoration for debugging
+    if (accessToken != null) {
+      final tokenPreview = accessToken.length > 20
+          ? '${accessToken.substring(0, 20)}...'
+          : accessToken;
+      print('🎵 Token restored: $tokenPreview');
+      print('🎵 Token expires at: $tokenExpiry');
+
+      // Check if token is already expired
+      if (tokenExpiry != null && DateTime.now().isAfter(tokenExpiry)) {
+        print('🎵 Warning: Restored token is already expired');
+      }
+    }
+  }
+
   Future<bool> connect() async {
     try {
       print('🎵 Starting Spotify connection...');

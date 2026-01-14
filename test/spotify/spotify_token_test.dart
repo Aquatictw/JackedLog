@@ -158,7 +158,7 @@ void main() {
 
       // Initial state: both null → false
       expect(service.hasValidToken, isFalse,
-          reason: 'Should be false when both token and expiry are null');
+          reason: 'Should be false when both token and expiry are null',);
     });
 
     test('token expiry is set to 1 hour after acquisition', () {
