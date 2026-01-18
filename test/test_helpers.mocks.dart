@@ -46,6 +46,23 @@ class MockSpotifyService extends _i1.Mock implements _i2.SpotifyService {
       ) as bool);
 
   @override
+  void restoreTokens({
+    required String? accessToken,
+    required DateTime? tokenExpiry,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #restoreTokens,
+          [],
+          {
+            #accessToken: accessToken,
+            #tokenExpiry: tokenExpiry,
+          },
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   _i3.Future<bool> connect() => (super.noSuchMethod(
         Invocation.method(
           #connect,
