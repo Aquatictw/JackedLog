@@ -2,7 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../constants.dart';
 import 'bodyweight_entries.dart';
-import 'database.steps.dart';
+import 'schema.dart';
 import 'database_connection_native.dart';
 import 'defaults.dart';
 import 'gym_sets.dart';
@@ -58,376 +58,88 @@ class AppDatabase extends _$AppDatabase {
 
         await settings.insertOne(defaultSettings);
       },
-      onUpgrade: stepByStep(
-        from1To2: (m, schema) async {
-          final gymSets = await schema.gymSets.select().get();
-          final plans = await schema.plans.select().get();
-          await m.drop(schema.gymSets);
-          await m.drop(schema.plans);
-          await m.create(schema.gymSets);
-          await m.create(schema.plans);
+      onUpgrade: (Migrator m, int from, int to) async {
+        // Reject unsupported database versions (< v31)
+        if (from < 31) {
+          throw UnsupportedError(
+            'Database version $from is too old (minimum: v31).\n'
+            'Please export your data, uninstall the app, then reinstall and import.',
+          );
+        }
 
-          await schema.gymSets.insertAll(
-            gymSets.map(
-              (gymSet) => RawValuesInsertable({
-                'name': Variable(gymSet.read<String>('name')),
-                'reps': Variable(gymSet.read<double>('reps')),
-                'weight': Variable(gymSet.read<double>('weight')),
-                'unit': Variable(gymSet.read<String>('unit')),
-                'created': Variable(gymSet.read<DateTime>('created')),
-              }),
-            ),
-          );
-          await schema.plans.insertAll(
-            plans.map(
-              (plan) => RawValuesInsertable({
-                'exercises': Variable(plan.read<String>('workouts')),
-                'days': Variable(plan.read<String>('days')),
-              }),
-            ),
-          );
+        // Consolidated migration handlers
+        // Each handler runs when crossing its version boundary
 
-          await m.createIndex(
-            Index(
-              'GymSets',
-              'CREATE INDEX IF NOT EXISTS gym_sets_name_created ON gym_sets(name, created);',
-            ),
-          );
-        },
-        from2To3: (m, schema) async {
-          await m.addColumn(schema.plans, schema.plans.sequence);
-        },
-        from3To4: (m, schema) async {
-          await m.addColumn(schema.plans, schema.plans.title);
-        },
-        from4To5: (m, schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.hidden);
-          await schema.gymSets.insertAll(
-            defaultSets.map(
-              (set) => RawValuesInsertable({
-                'name': Variable(set.name.value),
-                'reps': Variable(set.reps.value),
-                'weight': Variable(set.weight.value),
-                'unit': Variable(set.unit.value),
-                'created': Variable(set.created.value),
-                'hidden': const Variable(true),
-              }),
-            ),
-          );
-        },
-        from5To6: (m, schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.bodyWeight);
-        },
-        from6To7: (m, schema) async {},
-        from7To8: (m, schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.duration);
-          await m.addColumn(schema.gymSets, schema.gymSets.distance);
-          await m.addColumn(schema.gymSets, schema.gymSets.cardio);
-        },
-        from8To10: (Migrator m, Schema10 schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.restMs);
-          await m.addColumn(schema.gymSets, schema.gymSets.maxSets);
-        },
-        from10To11: (m, schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.incline);
-        },
-        from11To12: (m, schema) async {
-          await m.createIndex(
-            Index(
-              'GymSets',
-              'CREATE INDEX IF NOT EXISTS gym_sets_name_created ON gym_sets(name, created);',
-            ),
-          );
-        },
-        from12To13: (m, schema) async {
-          await m.alterTable(TableMigration(schema.gymSets));
-          final ms = const Duration(minutes: 3, seconds: 30).inMilliseconds;
+        // from31To48: Consolidates v31-v47 changes
+        // Runs when migrating FROM a version <=47 TO a version >=48
+        if (from < 48 && to >= 48) {
+          // v31→32: Reset estimation settings
           await m.database.customUpdate(
-            'UPDATE gym_sets SET rest_ms = null WHERE rest_ms = $ms',
+            'UPDATE settings SET rep_estimation = 0, duration_estimation = 0',
           );
-        },
-        from13To14: (m, schema) async {
-          await m.alterTable(TableMigration(schema.gymSets));
+
+          // v32→33: Add peekGraph setting
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN peek_graph INTEGER',
+          ).catchError((e) {});
+
+          // v33→34: Add curve_smoothness and notifications
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN curve_smoothness INTEGER',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN notifications INTEGER',
+          ).catchError((e) {});
+
+          // v35→36: Add showCategories
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN show_categories INTEGER',
+          ).catchError((e) {});
+
+          // v36→37: Add showNotes
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN show_notes INTEGER',
+          ).catchError((e) {});
+
+          // v37→38: Add notes to gymSets
+          await m.database.customStatement(
+            'ALTER TABLE gym_sets ADD COLUMN notes TEXT',
+          ).catchError((e) {});
+
+          // v38→39: Add showGlobalProgress
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN show_global_progress INTEGER',
+          ).catchError((e) {});
+
+          // v39→40: Create metadata table
+          await m.database.customStatement('''
+            CREATE TABLE IF NOT EXISTS metadata (
+              id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+              key TEXT NOT NULL UNIQUE,
+              value TEXT NOT NULL
+            )
+          ''');
+
+          // v40→41: Update unit settings
           await m.database.customUpdate(
-            'UPDATE gym_sets SET max_sets = NULL WHERE max_sets = 3',
+            "UPDATE settings SET strength_unit = 'last-entry', cardio_unit = 'last-entry'",
           );
-        },
-        from14To15: (Migrator m, Schema15 schema) async {},
-        from15To16: (Migrator m, Schema16 schema) async {
-          await m.createTable(schema.settings);
-          await schema.settings.insertOne(
-            RawValuesInsertable({
-              'theme_mode': const Variable('ThemeMode.system'),
-              'plan_trailing': const Variable('PlanTrailing.reorder'),
-              'long_date_format': const Variable('dd/MM/yy'),
-              'short_date_format': const Variable('d/M/yy'),
-              'timer_duration': Variable(
-                const Duration(minutes: 3, seconds: 30).inMilliseconds,
-              ),
-              'max_sets': const Variable(3),
-              'vibrate': const Variable(true),
-              'rest_timers': const Variable(true),
-              'show_units': const Variable(true),
-              'alarm_sound': const Variable(''),
-              'cardio_unit': const Variable('km'),
-              'curve_lines': const Variable(false),
-              'explained_permissions': const Variable(true),
-              'group_history': const Variable(true),
-              'hide_history_tab': const Variable(false),
-              'hide_timer_tab': const Variable(false),
-              'hide_weight': const Variable(false),
-              'strength_unit': const Variable('kg'),
-              'system_colors': const Variable(false),
-            }),
-          );
-        },
-        from16To17: (Migrator m, Schema17 schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.planId);
-        },
-        from17To18: (Migrator m, Schema18 schema) async {
-          final plans = await schema.plans.select().get();
-          const maxSets = CustomExpression<int>('max_sets');
-          final gymSets = await (schema.gymSets.selectOnly()
-                ..addColumns(
-                  [maxSets, schema.gymSets.name],
-                )
-                ..groupBy([schema.gymSets.name]))
-              .get();
 
-          final List<Insertable<QueryRow>> pe = [];
-          for (final plan in plans) {
-            final exercises = plan.read<String>('exercises').split(',');
+          // v42→43: Add scrollableTabs
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN scrollable_tabs INTEGER',
+          ).catchError((e) {});
 
-            for (final exercise in exercises) {
-              final index = gymSets.indexWhere(
-                (gymSet) => gymSet.read(schema.gymSets.name) == exercise.trim(),
-              );
-              if (index == -1) continue;
+          // v43→44: Delete disabled plan exercises
+          await m.database.customStatement('''
+            DELETE FROM plan_exercises WHERE enabled = 0
+          ''');
 
-              final gymSet = gymSets[index];
-              pe.add(
-                RawValuesInsertable({
-                  'plan_id': Variable(plan.read<int>('id')),
-                  'exercise': Variable(exercise),
-                  'enabled': const Variable(true),
-                  'max_sets': Variable(gymSet.read(maxSets)),
-                }),
-              );
-            }
-          }
-
-          await m.createTable(schema.planExercises);
-          await schema.planExercises.insertAll(pe);
-          await m.alterTable(TableMigration(schema.gymSets));
-        },
-        from18To19: (Migrator m, Schema19 schema) async {
-          await m.addColumn(schema.settings, schema.settings.showImages);
-          await m.addColumn(schema.gymSets, schema.gymSets.image);
-        },
-        from19To20: (Migrator m, Schema20 schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.category);
-        },
-        from20To21: (Migrator m, Schema21 schema) async {
-          await m.addColumn(schema.settings, schema.settings.warmupSets);
-          await m.addColumn(
-            schema.planExercises,
-            schema.planExercises.warmupSets,
-          );
-        },
-        from21To22: (Migrator m, Schema22 schema) async {
-          await m.addColumn(schema.settings, schema.settings.repEstimation);
-        },
-        from22To23: (Migrator m, Schema23 schema) async {
-          await m.addColumn(
-            schema.settings,
-            schema.settings.durationEstimation,
-          );
-        },
-        from23To24: (Migrator m, Schema24 schema) async {
-          const hideWeight = CustomExpression<bool>('hide_weight');
-          const hideTimerTab = CustomExpression<bool>('hide_timer_tab');
-          const hideHistoryTab = CustomExpression<bool>('hide_history_tab');
-
-          final result = await (schema.settings.selectOnly()
-                ..addColumns([hideWeight, hideTimerTab, hideHistoryTab]))
-              .getSingleOrNull();
-
-          await m.addColumn(schema.settings, schema.settings.showBodyWeight);
-          await m.addColumn(schema.settings, schema.settings.showTimerTab);
-          await m.addColumn(schema.settings, schema.settings.showHistoryTab);
-
-          if (result != null)
-            await schema.settings.update().write(
-                  RawValuesInsertable(
-                    {
-                      'show_body_weight': Variable(!result.read(hideWeight)!),
-                      'show_timer_tab': Variable(!result.read(hideTimerTab)!),
-                      'show_history_tab':
-                          Variable(!result.read(hideHistoryTab)!),
-                    },
-                  ),
-                );
-
-          await m.alterTable(TableMigration(schema.settings));
-        },
-        from24To25: (Migrator m, Schema25 schema) async {
-          await m.addColumn(schema.settings, schema.settings.automaticBackups);
-        },
-        from25To26: (Migrator m, Schema26 schema) async {
-          await m.addColumn(schema.settings, schema.settings.backupPath);
-        },
-        from26To27: (Migrator m, Schema27 schema) async {
-          final tabs = ['HistoryPage', 'PlansPage', 'GraphsPage', 'TimerPage'];
-          final settings =
-              await (schema.settings.select()..limit(1)).getSingleOrNull();
-
-          if (settings != null) {
-            final bool showTimer = settings.read('show_timer_tab');
-            if (!showTimer) tabs.remove('TimerPage');
-            final bool showHistory = settings.read('show_history_tab');
-            if (!showHistory) tabs.remove('HistoryPage');
-          }
-
-          await m.addColumn(schema.settings, schema.settings.tabs);
-          await schema.settings.update().write(
-                RawValuesInsertable({
-                  'tabs': Variable(tabs.join(',')),
-                }),
-              );
-
-          await m.alterTable(TableMigration(schema.settings));
-        },
-        from27To28: (Migrator m, Schema28 schema) async {
-          await m.addColumn(schema.settings, schema.settings.enableSound);
-        },
-        from28To29: (Migrator m, Schema29 schema) async {
-          await m.database
-              .customStatement('DROP INDEX IF EXISTS gym_sets_name_created');
-          await m.createIndex(
-            Index(
-              'gym_sets',
-              'CREATE INDEX IF NOT EXISTS gym_sets_name ON gym_sets(name)',
-            ),
-          );
-          await m.createIndex(
-            Index(
-              'gym_sets',
-              'CREATE INDEX IF NOT EXISTS gym_sets_created ON gym_sets(created)',
-            ),
-          );
-          await m.createIndex(
-            Index(
-              'gym_sets',
-              'CREATE INDEX IF NOT EXISTS gym_sets_hidden ON gym_sets(hidden)',
-            ),
-          );
-        },
-        from29To30: (Migrator m, Schema30 schema) async {
-          await m.createIndex(
-            Index(
-              'plan_exercises',
-              'CREATE INDEX IF NOT EXISTS plan_exercises_plan_id ON plan_exercises(plan_id)',
-            ),
-          );
-          await m.createIndex(
-            Index(
-              'gym_sets',
-              'CREATE INDEX IF NOT EXISTS gym_sets_plan_id ON gym_sets(plan_id)',
-            ),
-          );
-        },
-        from30To31: (Migrator m, Schema31 schema) async {
-          await m.addColumn(schema.planExercises, schema.planExercises.timers);
-        },
-        from31To32: (Migrator m, Schema32 schema) async {
-          await schema.settings.update().write(
-                const RawValuesInsertable({
-                  'rep_estimation': Variable(false),
-                }),
-              );
-          await schema.settings.update().write(
-                const RawValuesInsertable({
-                  'duration_estimation': Variable(false),
-                }),
-              );
-        },
-        from32To33: (Migrator m, Schema33 schema) async {
-          await m.addColumn(schema.settings, schema.settings.peekGraph);
-        },
-        from33To34: (Migrator m, Schema34 schema) async {
-          await m
-              .addColumn(schema.settings, schema.settings.curveSmoothness)
-              .catchError((e) {});
-          await m
-              .addColumn(schema.settings, schema.settings.notifications)
-              .catchError((e) {});
-        },
-        from34To35: (Migrator m, Schema35 schema) async {},
-        from35To36: (Migrator m, Schema36 schema) async {
-          await m.addColumn(schema.settings, schema.settings.showCategories);
-        },
-        from36To37: (Migrator m, Schema37 schema) async {
-          await m.addColumn(schema.settings, schema.settings.showNotes);
-        },
-        from37To38: (Migrator m, Schema38 schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.notes);
-        },
-        from38To39: (Migrator m, Schema39 schema) async {
-          await m.addColumn(
-            schema.settings,
-            schema.settings.showGlobalProgress,
-          );
-        },
-        from39To40: (Migrator m, Schema40 schema) async {
-          await m.createTable(schema.metadata);
-        },
-        from40To41: (Migrator m, Schema41 schema) async {
-          await schema.settings.update().write(
-                const RawValuesInsertable({
-                  'strength_unit': Variable('last-entry'),
-                  'cardio_unit': Variable('last-entry'),
-                }),
-              );
-        },
-        from41To42: (Migrator m, Schema42 schema) async {
-          await m.alterTable(TableMigration(schema.settings));
-          await schema.settings.update().write(
-                const RawValuesInsertable({
-                  'rep_estimation': Variable(false),
-                }),
-              );
-        },
-        from42To43: (Migrator m, Schema43 schema) async {
-          await m.addColumn(schema.settings, schema.settings.scrollableTabs);
-        },
-        from43To44: (Migrator m, Schema44 schema) async {
-          final plans = await schema.plans.select().get();
-          await batch(
-            (b) {
-              for (final plan in plans) {
-                final planId = plan.read<int>('id');
-
-                String sql;
-                sql = '''
-                DELETE FROM plan_exercises
-                WHERE plan_id = $planId
-                AND enabled = false;
-                ''';
-
-                b.customStatement(sql);
-              }
-            },
-          );
-        },
-        from44To45: (Migrator m, Schema45 schema) async {
-          await m.alterTable(TableMigration(schema.plans));
-        },
-        from45To46: (Migrator m, Schema46 schema) async {
-          await m.addColumn(
-            schema.planExercises,
-            schema.planExercises.sequence,
-          );
-          await schema.database.customStatement('''
+          // v45→46: Add and backfill sequence column in plan_exercises
+          await m.database.customStatement(
+            'ALTER TABLE plan_exercises ADD COLUMN sequence INTEGER',
+          ).catchError((e) {});
+          await m.database.customStatement('''
             UPDATE plan_exercises
             SET sequence = (
               SELECT COUNT(*)
@@ -436,18 +148,13 @@ class AppDatabase extends _$AppDatabase {
                 AND pe2.id < plan_exercises.id
             )
           ''');
-        },
-        from46To47: (Migrator m, schema) async {
-          await schema.settings.update().write(
-                const RawValuesInsertable({
-                  'group_history': Variable(true),
-                  'show_units': Variable(false),
-                  'show_body_weight': Variable(false),
-                  'rep_estimation': Variable(true),
-                }),
-              );
-        },
-        from47To48: (Migrator m, Schema48 schema) async {
+
+          // v46→47: Update settings defaults
+          await m.database.customUpdate(
+            'UPDATE settings SET group_history = 1, show_units = 0, show_body_weight = 0, rep_estimation = 1',
+          );
+
+          // v47→48: Create workouts table and add workout_id to gym_sets
           await m.database.customStatement('''
             CREATE TABLE IF NOT EXISTS workouts (
               id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -459,25 +166,36 @@ class AppDatabase extends _$AppDatabase {
             )
           ''');
           await m.database.customStatement(
-              'ALTER TABLE gym_sets ADD COLUMN workout_id INTEGER',);
+            'ALTER TABLE gym_sets ADD COLUMN workout_id INTEGER',
+          ).catchError((e) {});
           await m.createIndex(
             Index(
               'gym_sets',
               'CREATE INDEX IF NOT EXISTS gym_sets_workout_id ON gym_sets(workout_id)',
             ),
           );
-        },
-        from48To49: (Migrator m, Schema49 schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.sequence);
-        },
-        from49To50: (Migrator m, Schema50 schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.warmup);
-        },
-        from50To52: (Migrator m, Schema52 schema) async {
+        }
+
+        // from48To52: Consolidates v48-v51 changes
+        // Runs when migrating FROM a version <=51 TO a version >=52
+        if (from < 52 && to >= 52) {
+          // v48→49: Add sequence column to gym_sets
           await m.database.customStatement(
-              'ALTER TABLE gym_sets ADD COLUMN exercise_type TEXT',);
+            'ALTER TABLE gym_sets ADD COLUMN sequence INTEGER',
+          ).catchError((e) {});
+
+          // v49→50: Add warmup flag
           await m.database.customStatement(
-              'ALTER TABLE gym_sets ADD COLUMN brand_name TEXT',);
+            'ALTER TABLE gym_sets ADD COLUMN warmup INTEGER',
+          ).catchError((e) {});
+
+          // v50→52: Add exercise_type, brand_name, create notes table
+          await m.database.customStatement(
+            'ALTER TABLE gym_sets ADD COLUMN exercise_type TEXT',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE gym_sets ADD COLUMN brand_name TEXT',
+          ).catchError((e) {});
           await m.database.customStatement('''
             CREATE TABLE IF NOT EXISTS notes (
               id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -488,25 +206,38 @@ class AppDatabase extends _$AppDatabase {
               color INTEGER NOT NULL
             )
           ''');
-        },
-        from52To53: (Migrator m, Schema53 schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.dropSet);
-        },
-        from53To54: (Migrator m, Schema54 schema) async {
+        }
+
+        // from52To57: Consolidates v52-v56 changes
+        // Runs when migrating FROM a version <=56 TO a version >=57
+        if (from < 57 && to >= 57) {
+          // v52→53: Add drop_set column
           await m.database.customStatement(
-              'ALTER TABLE settings ADD COLUMN fivethreeone_squat_tm REAL',);
+            'ALTER TABLE gym_sets ADD COLUMN drop_set INTEGER',
+          ).catchError((e) {});
+
+          // v53→54: Add 5/3/1 training columns
           await m.database.customStatement(
-              'ALTER TABLE settings ADD COLUMN fivethreeone_bench_tm REAL',);
+            'ALTER TABLE settings ADD COLUMN fivethreeone_squat_tm REAL',
+          ).catchError((e) {});
           await m.database.customStatement(
-              'ALTER TABLE settings ADD COLUMN fivethreeone_deadlift_tm REAL',);
+            'ALTER TABLE settings ADD COLUMN fivethreeone_bench_tm REAL',
+          ).catchError((e) {});
           await m.database.customStatement(
-              'ALTER TABLE settings ADD COLUMN fivethreeone_press_tm REAL',);
+            'ALTER TABLE settings ADD COLUMN fivethreeone_deadlift_tm REAL',
+          ).catchError((e) {});
           await m.database.customStatement(
-              'ALTER TABLE settings ADD COLUMN fivethreeone_week INTEGER NOT NULL DEFAULT 1',);
-        },
-        from54To57: (Migrator m, Schema57 schema) async {
-          await m.addColumn(schema.settings, schema.settings.customColorSeed);
-          // Create bodyweightEntries table using raw SQL since Schema57 doesn't include it yet
+            'ALTER TABLE settings ADD COLUMN fivethreeone_press_tm REAL',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN fivethreeone_week INTEGER NOT NULL DEFAULT 1',
+          ).catchError((e) {});
+
+          // v54→57: Add customColorSeed, create bodyweight_entries, remove TimerPage, add lastAutoBackupTime, add superset columns
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN custom_color_seed INTEGER',
+          ).catchError((e) {});
+
           await m.database.customStatement('''
             CREATE TABLE IF NOT EXISTS bodyweight_entries (
               id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -519,7 +250,6 @@ class AppDatabase extends _$AppDatabase {
           // Remove TimerPage from existing users' tabs
           final result = await m.database.customSelect(
             'SELECT tabs FROM settings LIMIT 1',
-            readsFrom: {schema.settings},
           ).getSingleOrNull();
 
           if (result != null) {
@@ -533,26 +263,31 @@ class AppDatabase extends _$AppDatabase {
               await m.database.customUpdate(
                 'UPDATE settings SET tabs = ?',
                 variables: [Variable.withString(updatedTabs)],
-                updates: {schema.settings},
               );
             }
           }
 
-          await m.addColumn(
-              schema.settings, schema.settings.lastAutoBackupTime,);
-
-          // Add superset columns to gym_sets table
           await m.database.customStatement(
-              'ALTER TABLE gym_sets ADD COLUMN superset_id TEXT',);
-          await m.database.customStatement(
-              'ALTER TABLE gym_sets ADD COLUMN superset_position INTEGER',);
-        },
-        from57To58: (Migrator m, Schema58 schema) async {
-          // Add setOrder column - nullable, no default
-          await m.addColumn(schema.gymSets, schema.gymSets.setOrder);
+            'ALTER TABLE settings ADD COLUMN last_auto_backup_time INTEGER',
+          ).catchError((e) {});
 
-          // Initialize setOrder for existing sets based on created timestamp
-          // Groups by workoutId + name + sequence, orders by created, assigns setOrder
+          // Add superset columns
+          await m.database.customStatement(
+            'ALTER TABLE gym_sets ADD COLUMN superset_id TEXT',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE gym_sets ADD COLUMN superset_position INTEGER',
+          ).catchError((e) {});
+        }
+
+        // from57To61: Consolidates v57-v61 changes
+        // Runs when migrating FROM a version <=60 TO a version >=61
+        if (from < 61 && to >= 61) {
+          // v57→58: Add set_order with backfill logic
+          await m.database.customStatement(
+            'ALTER TABLE gym_sets ADD COLUMN set_order INTEGER',
+          ).catchError((e) {});
+
           await m.database.customStatement('''
             UPDATE gym_sets
             SET set_order = (
@@ -565,21 +300,24 @@ class AppDatabase extends _$AppDatabase {
             )
             WHERE workout_id IS NOT NULL
           ''');
-        },
-        from58To59: (Migrator m, Schema59 schema) async {
-          // Add selfieImagePath column to workouts - nullable, no default
-          await m.addColumn(schema.workouts, schema.workouts.selfieImagePath);
-        },
-        from59To60: (Migrator m, Schema60 schema) async {
-          // Add Spotify token columns to settings - nullable, no default
-          await m.addColumn(
-              schema.settings, schema.settings.spotifyAccessToken,);
-          await m.addColumn(
-              schema.settings, schema.settings.spotifyRefreshToken,);
-          await m.addColumn(
-              schema.settings, schema.settings.spotifyTokenExpiry,);
-        },
-        from60To61: (Migrator m, Schema61 schema) async {
+
+          // v58→59: Add selfie_image_path to workouts
+          await m.database.customStatement(
+            'ALTER TABLE workouts ADD COLUMN selfie_image_path TEXT',
+          ).catchError((e) {});
+
+          // v59→60: Add Spotify columns
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN spotify_access_token TEXT',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN spotify_refresh_token TEXT',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN spotify_token_expiry INTEGER',
+          ).catchError((e) {});
+
+          // v60→61: CRITICAL - sequence normalization fix (keep exactly as-is)
           // Fix old workout data where each set had unique sequence values
           // This migration normalizes sequences so all sets of same exercise instance share same sequence
 
@@ -646,8 +384,8 @@ class AppDatabase extends _$AppDatabase {
 
           // Clean up temp table
           await m.database.customStatement('DROP TABLE sequence_corrections');
-        },
-      ),
+        }
+      },
       beforeOpen: (details) async {
         // Ensure bodyweight_entries table exists (safety check for migration issues)
         await customStatement('''
