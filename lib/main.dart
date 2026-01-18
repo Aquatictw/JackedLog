@@ -10,6 +10,7 @@ import 'database/database.dart';
 import 'database/failed_migrations_page.dart';
 import 'home_page.dart';
 import 'plan/plan_state.dart';
+import 'screens/splash_screen.dart';
 import 'settings/settings_state.dart';
 import 'spotify/spotify_state.dart';
 import 'timer/timer_state.dart';
@@ -66,6 +67,8 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> with WidgetsBindingObserver {
+  bool _showSplash = true;
+
   @override
   void initState() {
     super.initState();
@@ -89,8 +92,24 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     }
   }
 
+  void _onSplashComplete() {
+    setState(() {
+      _showSplash = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Show splash screen during initialization
+    if (_showSplash) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: SplashScreen(
+          onInitComplete: _onSplashComplete,
+        ),
+      );
+    }
+
     final colors = context.select<SettingsState, bool>(
       (settings) => settings.value.systemColors,
     );
