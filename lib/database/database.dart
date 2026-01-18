@@ -579,6 +579,74 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(
               schema.settings, schema.settings.spotifyTokenExpiry,);
         },
+        from60To61: (Migrator m, Schema61 schema) async {
+          // Fix old workout data where each set had unique sequence values
+          // This migration normalizes sequences so all sets of same exercise instance share same sequence
+
+          // Old pattern: Bench has sets with sequence 0,1,2,3,4,5,6 (each set different sequence)
+          // New pattern: Bench has sets with sequence 0,0,0,0,0,0,0 and set_order 0,1,2,3,4,5,6
+
+          // Create temp table to calculate new values
+          await m.database.customStatement('''
+            CREATE TEMP TABLE sequence_corrections (
+              id INTEGER PRIMARY KEY,
+              new_sequence INTEGER,
+              new_set_order INTEGER
+            )
+          ''');
+
+          // Calculate new sequence and set_order values
+          // For each workout, group consecutive same-exercise sets together
+          await m.database.customStatement('''
+            INSERT INTO sequence_corrections (id, new_sequence, new_set_order)
+            WITH RECURSIVE
+            SetRanks AS (
+              SELECT
+                id,
+                workout_id,
+                name,
+                sequence AS old_sequence,
+                created,
+                ROW_NUMBER() OVER (PARTITION BY workout_id ORDER BY sequence, created) AS row_num,
+                LAG(name) OVER (PARTITION BY workout_id ORDER BY sequence, created) AS prev_name
+              FROM gym_sets
+              WHERE workout_id IS NOT NULL AND sequence >= 0
+            ),
+            ExerciseGroups AS (
+              SELECT
+                id,
+                workout_id,
+                name,
+                old_sequence,
+                created,
+                row_num,
+                -- Count how many times exercise name changed before this row
+                SUM(CASE WHEN prev_name IS NULL OR name != prev_name THEN 1 ELSE 0 END)
+                  OVER (PARTITION BY workout_id ORDER BY row_num) - 1 AS new_sequence
+              FROM SetRanks
+            )
+            SELECT
+              id,
+              new_sequence,
+              ROW_NUMBER() OVER (
+                PARTITION BY workout_id, name, new_sequence
+                ORDER BY old_sequence, created
+              ) - 1 AS new_set_order
+            FROM ExerciseGroups
+          ''');
+
+          // Apply corrections
+          await m.database.customStatement('''
+            UPDATE gym_sets
+            SET
+              sequence = (SELECT new_sequence FROM sequence_corrections WHERE sequence_corrections.id = gym_sets.id),
+              set_order = (SELECT new_set_order FROM sequence_corrections WHERE sequence_corrections.id = gym_sets.id)
+            WHERE id IN (SELECT id FROM sequence_corrections)
+          ''');
+
+          // Clean up temp table
+          await m.database.customStatement('DROP TABLE sequence_corrections');
+        },
       ),
       beforeOpen: (details) async {
         // Ensure bodyweight_entries table exists (safety check for migration issues)
@@ -603,5 +671,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 60;
+  int get schemaVersion => 61;
 }
