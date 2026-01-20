@@ -107,11 +107,11 @@ class _MusicPageState extends State<MusicPage> {
 
                       // Seek bar with position/duration
                       const SeekBar(),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
 
                       // Player controls (shuffle, previous, play/pause, next, repeat)
                       const PlayerControls(),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 8),
 
                       // Action buttons row (Queue and Recently Played)
                       Row(
@@ -136,8 +136,8 @@ class _MusicPageState extends State<MusicPage> {
                         ],
                       ),
 
-                      // Add bottom padding to clear navigation bar
-                      const SizedBox(height: 96),
+                      // Add bottom padding to clear navigation bar and active workout bar
+                      const SizedBox(height: 160),
                     ],
                   ),
                 ),

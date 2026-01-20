@@ -2,7 +2,6 @@ import 'package:drift/drift.dart';
 
 import '../constants.dart';
 import 'bodyweight_entries.dart';
-import 'schema.dart';
 import 'database_connection_native.dart';
 import 'defaults.dart';
 import 'gym_sets.dart';
