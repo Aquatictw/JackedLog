@@ -73,6 +73,8 @@ Use `grep` **ONLY** when:
 ## Project Overview
 JackedLog is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, iOS, Linux, macOS, Windows).
 
+A more detailed structure of the codebase is provided in ./.planning/codebase/
+
 ### Key Technologies
 - **Framework**: Flutter with Dart (SDK >= 3.2.6)
 - **Database**: Drift (Dart SQLite ORM) - Version 2.28.1
