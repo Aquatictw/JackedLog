@@ -293,6 +293,33 @@ class _StartPlanPageState extends State<StartPlanPage> {
         .write(WorkoutsCompanion(notes: Value(_notesController.text)));
   }
 
+  /// Checks if an exercise being deleted is part of a superset, and if so,
+  /// automatically unmarks the remaining exercise if only one remains in the superset.
+  Future<void> _checkAndUnmarkSingleSuperset(String supersetId) async {
+    if (workoutId == null) return;
+
+    // Count how many distinct exercises (by sequence) remain in this superset
+    final remainingExercises = await (db.gymSets.selectOnly(distinct: true)
+          ..addColumns([db.gymSets.sequence])
+          ..where(
+            db.gymSets.workoutId.equals(workoutId!) &
+                db.gymSets.supersetId.equals(supersetId),
+          ))
+        .get();
+
+    // If only one exercise remains, unmark it
+    if (remainingExercises.length == 1) {
+      await db.customUpdate(
+        'UPDATE gym_sets SET superset_id = NULL, superset_position = NULL WHERE workout_id = ? AND superset_id = ?',
+        updates: {db.gymSets},
+        variables: [
+          Variable.withInt(workoutId!),
+          Variable.withString(supersetId),
+        ],
+      );
+    }
+  }
+
   Future<void> _editWorkoutTitle() async {
     final titleController = TextEditingController(text: title);
     final newTitle = await showDialog<String>(
@@ -546,6 +573,21 @@ class _StartPlanPageState extends State<StartPlanPage> {
               final exerciseName = exercise.exercise;
               final removedSequence = item.sequence;
 
+              // Check if this exercise is part of a superset before deleting
+              String? supersetId;
+              if (workoutId != null) {
+                final firstSet = await (db.gymSets.select()
+                      ..where(
+                        (s) =>
+                            s.workoutId.equals(workoutId!) &
+                            s.name.equals(exerciseName) &
+                            s.sequence.equals(item.sequence),
+                      )
+                      ..limit(1))
+                    .getSingleOrNull();
+                supersetId = firstSet?.supersetId;
+              }
+
               // Delete all sets for this specific exercise instance from the database
               await (db.gymSets.delete()
                     ..where(
@@ -582,6 +624,11 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 ],
               );
 
+              // If exercise was in a superset, check if only one remains and unmark it
+              if (supersetId != null) {
+                await _checkAndUnmarkSingleSuperset(supersetId);
+              }
+
               setState(() {
                 _exerciseOrder.removeAt(index);
                 _exerciseNotes.remove(item.key);
@@ -591,6 +638,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 for (int i = index; i < _exerciseOrder.length; i++) {
                   _exerciseOrder[i].sequence = i;
                 }
+
+                // Force UI refresh to show unlinked superset badge
+                _refreshCounter++;
               });
             },
           );
@@ -637,6 +687,21 @@ class _StartPlanPageState extends State<StartPlanPage> {
               final exerciseName = item.adHocName!;
               final removedSequence = item.sequence;
 
+              // Check if this exercise is part of a superset before deleting
+              String? supersetId;
+              if (workoutId != null) {
+                final firstSet = await (db.gymSets.select()
+                      ..where(
+                        (s) =>
+                            s.workoutId.equals(workoutId!) &
+                            s.name.equals(exerciseName) &
+                            s.sequence.equals(item.sequence),
+                      )
+                      ..limit(1))
+                    .getSingleOrNull();
+                supersetId = firstSet?.supersetId;
+              }
+
               // Delete all sets for this specific exercise instance from the database
               await (db.gymSets.delete()
                     ..where(
@@ -672,6 +737,11 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 ],
               );
 
+              // If exercise was in a superset, check if only one remains and unmark it
+              if (supersetId != null) {
+                await _checkAndUnmarkSingleSuperset(supersetId);
+              }
+
               setState(() {
                 _exerciseOrder.removeAt(index);
                 _exerciseNotes.remove(item.key);
@@ -681,6 +751,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 for (int i = index; i < _exerciseOrder.length; i++) {
                   _exerciseOrder[i].sequence = i;
                 }
+
+                // Force UI refresh to show unlinked superset badge
+                _refreshCounter++;
               });
             },
           );
