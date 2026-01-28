@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -68,7 +69,6 @@ class AutoBackupService {
         );
 
     await cleanupOldBackups(backupPath);
-    toast('Backup completed successfully!');
   }
 
   /// Check if backup should be performed now
@@ -84,21 +84,38 @@ class AutoBackupService {
 
   /// Creates a backup database file
   static Future<void> _createBackup(String backupPath) async {
-    final now = DateTime.now();
+    print('🔵 Starting backup to: $backupPath');
 
     // Checkpoint WAL to ensure all changes are in the main database file
     await db.customStatement('PRAGMA wal_checkpoint(TRUNCATE)');
 
-    // Get the app database file
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final sourceFile = File(p.join(dbFolder.path, 'jackedlog.sqlite'));
-
-    // Determine backup filename
-    final filename = _getBackupFileName(now);
-    final backupFile = File(p.join(backupPath, filename));
-
-    // Copy database file to backup location
-    await sourceFile.copy(backupFile.path);
+    // Use native Android backup for SAF URIs
+    if (Platform.isAndroid && backupPath.startsWith('content://')) {
+      print('🟢 Using native Android SAF backup');
+      const platform = MethodChannel('com.presley.jackedlog/android');
+      try {
+        await platform.invokeMethod('performBackup', {
+          'backupUri': backupPath,
+        });
+        print('🟢 Native backup completed successfully');
+      } on PlatformException catch (e) {
+        print('🔴 Platform exception: ${e.code} - ${e.message}');
+        throw Exception('Backup failed: ${e.message}');
+      } catch (e) {
+        print('🔴 Unexpected error: $e');
+        rethrow;
+      }
+    } else {
+      print('🟡 Using fallback file backup for path: $backupPath');
+      // Fallback for non-SAF paths (shouldn't happen on Android 10+)
+      final now = DateTime.now();
+      final dbFolder = await getApplicationDocumentsDirectory();
+      final sourceFile = File(p.join(dbFolder.path, 'jackedlog.sqlite'));
+      final filename = _getBackupFileName(now);
+      final backupFile = File(p.join(backupPath, filename));
+      await sourceFile.copy(backupFile.path);
+      print('🟡 Fallback backup completed');
+    }
   }
 
   /// Generate backup filename based on date
@@ -110,6 +127,21 @@ class AutoBackupService {
 
   /// Cleanup old backups according to GFS retention policy
   static Future<void> cleanupOldBackups(String backupPath) async {
+    // Use native Android cleanup for SAF URIs
+    if (Platform.isAndroid && backupPath.startsWith('content://')) {
+      try {
+        const platform = MethodChannel('com.presley.jackedlog/android');
+        await platform.invokeMethod('cleanupOldBackups', {
+          'backupUri': backupPath,
+        });
+      } on PlatformException catch (e) {
+        // Silent fail for cleanup
+        print('Cleanup failed: ${e.message}');
+      }
+      return;
+    }
+
+    // Fallback for non-SAF paths
     try {
       final directory = Directory(backupPath);
       if (!await directory.exists()) {

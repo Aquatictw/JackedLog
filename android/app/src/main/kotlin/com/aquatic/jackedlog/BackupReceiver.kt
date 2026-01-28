@@ -15,7 +15,11 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.documentfile.provider.DocumentFile
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class BackupReceiver : BroadcastReceiver() {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -64,35 +68,74 @@ class BackupReceiver : BroadcastReceiver() {
                 return
             }
 
-            // Create backup directory if it doesn't exist
-            val backupDir = File(backupPath)
-            if (!backupDir.exists()) {
-                backupDir.mkdirs()
-            }
+            val backupFileName: String
 
-            // Generate backup filename with date
-            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-            val dateStr = dateFormat.format(java.util.Date())
-            val backupFileName = "jackedlog_backup_$dateStr.db"
-            val backupFile = File(backupDir, backupFileName)
+            // Use SAF if backup path is a content:// URI
+            if (backupPath.startsWith("content://")) {
+                // Parse backup directory URI
+                val backupUri = Uri.parse(backupPath)
+                val backupDir = DocumentFile.fromTreeUri(context, backupUri)
 
-            // Copy database file to backup location
-            sourceDbFile.inputStream().use { input ->
-                backupFile.outputStream().use { output ->
-                    input.copyTo(output)
+                if (backupDir == null || !backupDir.exists()) {
+                    throw IllegalStateException("Cannot access backup directory")
                 }
-            }
 
-            Log.d("BackupReceiver", "Backup created: ${backupFile.absolutePath}")
+                // Generate backup filename with date
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                val dateStr = dateFormat.format(Date())
+                backupFileName = "jackedlog_backup_$dateStr.db"
+
+                // Check if file already exists and delete it
+                val existingFile = backupDir.findFile(backupFileName)
+                existingFile?.delete()
+
+                // Create new backup file
+                val backupFile = backupDir.createFile("application/octet-stream", backupFileName)
+                    ?: throw IllegalStateException("Failed to create backup file")
+
+                // Copy database to backup location using content resolver
+                sourceDbFile.inputStream().use { input ->
+                    context.contentResolver.openOutputStream(backupFile.uri)?.use { output ->
+                        input.copyTo(output)
+                    } ?: throw IllegalStateException("Failed to open output stream")
+                }
+
+                Log.d("BackupReceiver", "Backup created: $backupFileName")
+            } else {
+                // Fallback for non-SAF paths (legacy)
+                val backupDir = File(backupPath)
+                if (!backupDir.exists()) {
+                    backupDir.mkdirs()
+                }
+
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                val dateStr = dateFormat.format(Date())
+                backupFileName = "jackedlog_backup_$dateStr.db"
+                val backupFile = File(backupDir, backupFileName)
+
+                sourceDbFile.inputStream().use { input ->
+                    backupFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+
+                Log.d("BackupReceiver", "Backup created: ${backupFile.absolutePath}")
+            }
 
             // Show notification
             notificationBuilder = notificationBuilder
                 .setContentTitle("Backup completed")
                 .setContentText(backupFileName)
 
+            // Open backup directory on click
             val openIntent = Intent().apply {
                 action = Intent.ACTION_VIEW
-                setDataAndType(Uri.fromFile(backupDir), "resource/folder")
+                if (backupPath.startsWith("content://")) {
+                    data = Uri.parse(backupPath)
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                } else {
+                    setDataAndType(Uri.fromFile(File(backupPath)), "resource/folder")
+                }
             }
             val pendingOpen = PendingIntent.getActivity(
                 context,

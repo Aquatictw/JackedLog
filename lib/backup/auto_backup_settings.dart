@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart' hide Column;
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -379,31 +381,37 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
 
   Future<void> _selectBackupFolder() async {
     try {
-      final String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      print('🔵 Opening folder picker...');
+      if (Platform.isAndroid) {
+        // Use native picker for Android SAF
+        const platform = MethodChannel('com.presley.jackedlog/android');
 
-      if (selectedDirectory != null) {
-        // Verify directory is writable
-        final testDir = Directory(selectedDirectory);
-        if (!await testDir.exists()) {
-          if (mounted) {
-            toast('Selected folder does not exist');
-          }
-          return;
-        }
+        // Get database path to pass to native method
+        final dbFolder = await getApplicationDocumentsDirectory();
+        final dbPath = p.join(dbFolder.path, 'jackedlog.sqlite');
 
-        await db.settings.update().write(
-              SettingsCompanion(
-                backupPath: Value(selectedDirectory),
-              ),
-            );
+        print('🔵 Calling native pick method with dbPath: $dbPath');
+        await platform.invokeMethod('pick', {
+          'dbPath': dbPath,
+        });
 
+        print('🟢 Native pick completed, refreshing settings...');
+        // The native code will handle updating the database and scheduling backups
+        // We just need to refresh the settings state
         if (mounted) {
           final settings = context.read<SettingsState>();
           await settings.init();
+          print('🟢 New backup path: ${settings.value.backupPath}');
           toast('Backup folder selected');
         }
       }
+    } on PlatformException catch (e) {
+      print('🔴 Platform exception in folder picker: ${e.code} - ${e.message}');
+      if (mounted) {
+        toast('Failed to select folder: ${e.message}');
+      }
     } catch (e) {
+      print('🔴 Error in folder picker: $e');
       if (mounted) {
         toast('Failed to select folder: ${e.toString()}');
       }
@@ -415,7 +423,9 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
     final backupPath = settings.value.backupPath;
 
     if (backupPath == null || backupPath.isEmpty) {
-      toast('Please select a backup folder first');
+      if (mounted) {
+        toast('Please select a backup folder first');
+      }
       return;
     }
 
@@ -427,6 +437,7 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
       await AutoBackupService.performManualBackup(backupPath);
       if (mounted) {
         await settings.init();
+        toast('Backup completed successfully!');
       }
     } catch (e) {
       if (mounted) {

@@ -96,8 +96,13 @@ class ImportData extends StatelessWidget {
     await sourceFile.copy(p.join(dbFolder.path, 'jackedlog.sqlite'));
     db = AppDatabase();
 
-    await db.settings.update()
-        .write(const SettingsCompanion(alarmSound: Value('')));
+    // Reset alarm sound and set backup time to now for imported database
+    await db.settings.update().write(
+          SettingsCompanion(
+            alarmSound: const Value(''),
+            lastAutoBackupTime: Value(DateTime.now()),
+          ),
+        );
 
     if (!ctx.mounted) return;
     final settingsState = ctx.read<SettingsState>();

@@ -810,4 +810,29 @@ import 'package:drift/drift.dart' hide Column;
 
 ---
 
-*Documentation generated from .planning/codebase/ - 2026-01-18*
+## O. Backup System (Android SAF)
+
+**Fixed:** 2026-01-28
+
+### Problem
+PathAccessException on Android 10+ when backing up to `/storage/emulated/0/` paths. Android's Scoped Storage requires Storage Access Framework (SAF) URIs instead of file paths.
+
+### Solution
+**Native backup methods using SAF:**
+- `MainActivity.performBackup()` - Uses DocumentFile + ContentResolver for SAF URIs
+- `MainActivity.cleanupOldBackups()` - Implements GFS retention policy (7 daily, 4 weekly, 12 monthly)
+- Backup path stored as `content://` URI in database after folder selection
+- Fallback to file paths for non-SAF paths (legacy support)
+
+**Key files:**
+- `lib/backup/auto_backup_service.dart` - Detects SAF URIs, calls native methods
+- `android/.../MainActivity.kt` - Native SAF implementation with DocumentFile
+- `android/.../BackupReceiver.kt` - Scheduled backup handler with SAF support
+
+**Timestamp fix:**
+- Imported databases reset `lastAutoBackupTime` to current time (not null)
+- Shows "a moment ago" instead of old misleading timestamp from backup file
+
+---
+
+*Documentation generated - 2026-01-18, updated 2026-01-28*
