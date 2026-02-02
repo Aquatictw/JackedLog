@@ -7,7 +7,7 @@ This milestone delivers three user-facing improvements to JackedLog: a total wor
 ## Phases
 
 - [x] **Phase 1: Quick Wins** - Stats card and history cleanup
-- [ ] **Phase 2: Edit Workout** - Full editing capability for completed workouts
+- [x] **Phase 2: Edit Workout** - Full editing capability for completed workouts
 - [ ] **Phase 3: Notes Reorder** - Drag-drop with persistent sequence
 
 ## Phase Details
@@ -35,11 +35,11 @@ Plans:
   3. User can edit set weight, reps, and type (normal/warmup/dropset) in a completed workout
   4. User can add and delete sets within exercises in a completed workout
   5. User can access selfie feature from edit panel instead of top bar
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Workout edit foundation (name, exercises)
-- [ ] 02-02: Set editing and selfie relocation
+- [x] 02-01-PLAN.md — Edit mode foundation (toggle, name editing, exercise add/remove/reorder)
+- [x] 02-02-PLAN.md — Set editing (weight/reps/type/add/delete) and selfie relocation
 
 ### Phase 3: Notes Reorder
 **Goal**: Users can organize notes in their preferred order
@@ -59,7 +59,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Quick Wins | 1/1 | ✓ Complete | 2026-02-02 |
-| 2. Edit Workout | 0/2 | Not started | - |
+| 2. Edit Workout | 2/2 | ✓ Complete | 2026-02-02 |
 | 3. Notes Reorder | 0/1 | Not started | - |
 
 ---
