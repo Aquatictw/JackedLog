@@ -11,6 +11,7 @@ class AppSearch extends StatefulWidget {
     this.onAdd,
     this.filter,
     this.confirmText,
+    this.showMenu = true,
   });
   final Set<dynamic> selected;
 
@@ -24,6 +25,7 @@ class AppSearch extends StatefulWidget {
   final Function? onAdd;
   final Widget? filter;
   final String? confirmText;
+  final bool showMenu;
 
   @override
   State<AppSearch> createState() => _AppSearchState();
@@ -85,7 +87,7 @@ class _AppSearchState extends State<AppSearch> {
     return Padding(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
       child: SearchBar(
-        constraints: const BoxConstraints(maxHeight: 48),
+        constraints: const BoxConstraints(minHeight: 48, maxHeight: 48),
         hintText: 'Search...',
         controller: ctrl,
         padding: WidgetStateProperty.all(
@@ -122,7 +124,8 @@ class _AppSearchState extends State<AppSearch> {
             transitionBuilder: (child, animation) =>
                 ScaleTransition(scale: animation, child: child),
           ),
-          Badge.count(
+          if (widget.showMenu)
+            Badge.count(
             count: widget.selected.length,
             isLabelVisible: widget.selected.isNotEmpty,
             backgroundColor: Theme.of(context).colorScheme.primary,

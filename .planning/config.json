@@ -11,6 +11,8 @@
   },
   "conventions": {
     "commit_prefix": "fix: | feat: | docs:",
-    "commit_note": "All commits must start with fix:, feat:, or docs:"
+    "commit_note": "All commits must start with fix:, feat:, or docs:",
+    "phase_commit_format": "feat: NN description (one commit per phase, no parentheses, phase number after colon)",
+    "phase_commit_example": "feat: 01 add Total Time stat and hide search menu"
   }
 }

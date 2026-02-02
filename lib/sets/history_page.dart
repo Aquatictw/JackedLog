@@ -101,6 +101,7 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
           _buildViewToggle(),
           if (historyView == HistoryView.workouts) ...[
             AppSearch(
+              showMenu: false,
               onChange: (value) {
                 setState(() {
                   search = value;
@@ -170,6 +171,7 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
                   return material.Column(
                     children: [
                       AppSearch(
+                        showMenu: false,
                         filter: Filters(
                           repsGtCtrl: repsGt,
                           repsLtCtrl: repsLt,
