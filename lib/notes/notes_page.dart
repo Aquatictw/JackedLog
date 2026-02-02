@@ -17,6 +17,7 @@ class NotesPage extends StatefulWidget {
 class _NotesPageState extends State<NotesPage> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  List<Note>? _localNotes;
 
   // Artistic color palette for notes (darker shades)
   final List<Color> _noteColors = [
@@ -156,6 +157,7 @@ class _NotesPageState extends State<NotesPage> {
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value.toLowerCase();
+                  _localNotes = null; // Force resync with stream
                 });
               },
             ),
@@ -166,7 +168,7 @@ class _NotesPageState extends State<NotesPage> {
         stream: (db.notes.select()
               ..orderBy([
                 (n) =>
-                    OrderingTerm(expression: n.updated, mode: OrderingMode.desc),
+                    OrderingTerm(expression: n.sequence, mode: OrderingMode.desc),
               ]))
             .watch(),
         builder: (context, snapshot) {
@@ -280,6 +282,13 @@ class _NotesPageState extends State<NotesPage> {
             );
           }
 
+          // Sync stream data to _localNotes when it changes
+          if (_localNotes == null || _searchQuery.isNotEmpty) {
+            _localNotes = List.from(notes);
+          }
+
+          final colorScheme = Theme.of(context).colorScheme;
+
           return Column(
             children: [
               _TrainingMaxBanner(
@@ -291,27 +300,70 @@ class _NotesPageState extends State<NotesPage> {
                 },
               ),
               Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.85,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: notes.length,
-                  itemBuilder: (context, index) {
-                    final note = notes[index];
-                    final color = _getColorFromValue(note.color);
+                child: _searchQuery.isNotEmpty
+                    // Regular ListView when searching (no reorder)
+                    ? ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        itemCount: _localNotes!.length,
+                        itemBuilder: (context, index) {
+                          final note = _localNotes![index];
+                          final color = _getColorFromValue(note.color);
+                          return _NoteCard(
+                            key: ValueKey(note.id),
+                            note: note,
+                            color: color,
+                            onTap: () => _editNote(note),
+                            onDelete: () => _deleteNote(note),
+                          );
+                        },
+                      )
+                    // ReorderableListView when not searching
+                    : ReorderableListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        itemCount: _localNotes!.length,
+                        proxyDecorator: (child, index, animation) {
+                          return Material(
+                            elevation: 8,
+                            shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(16),
+                            child: child,
+                          );
+                        },
+                        onReorder: (oldIndex, newIndex) async {
+                          if (oldIndex < newIndex) newIndex--;
 
-                    return _NoteCard(
-                      note: note,
-                      color: color,
-                      onTap: () => _editNote(note),
-                      onDelete: () => _deleteNote(note),
-                    );
-                  },
-                ),
+                          setState(() {
+                            final item = _localNotes!.removeAt(oldIndex);
+                            _localNotes!.insert(newIndex, item);
+                          });
+
+                          // Batch update sequences (highest index = highest sequence = top of list)
+                          await db.batch((batch) {
+                            for (var i = 0; i < _localNotes!.length; i++) {
+                              batch.update(
+                                db.notes,
+                                NotesCompanion(
+                                    sequence:
+                                        Value(_localNotes!.length - 1 - i)),
+                                where: (n) => n.id.equals(_localNotes![i].id),
+                              );
+                            }
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          final note = _localNotes![index];
+                          final color = _getColorFromValue(note.color);
+                          return _NoteCard(
+                            key: ValueKey(note.id),
+                            note: note,
+                            color: color,
+                            onTap: () => _editNote(note),
+                            onDelete: () => _deleteNote(note),
+                          );
+                        },
+                      ),
               ),
             ],
           );
@@ -409,8 +461,8 @@ class _TrainingMaxBanner extends StatelessWidget {
 }
 
 class _NoteCard extends StatelessWidget {
-
   const _NoteCard({
+    super.key,
     required this.note,
     required this.color,
     required this.onTap,
@@ -429,6 +481,7 @@ class _NoteCard extends StatelessWidget {
     return Card(
       elevation: 2,
       color: color,
+      margin: const EdgeInsets.symmetric(vertical: 6),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -439,6 +492,7 @@ class _NoteCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -464,19 +518,19 @@ class _NoteCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Text(
+              if (note.content.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
                   note.content,
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.black87,
                     height: 1.4,
                   ),
-                  maxLines: 6,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: [

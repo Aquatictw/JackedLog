@@ -9,8 +9,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Notes
 
-- [ ] **NOTES-01**: User can long-press and drag notes to reorder them
-- [ ] **NOTES-02**: Note order persists across app restarts (database-backed sequence)
+- [x] **NOTES-01**: User can long-press and drag notes to reorder them
+- [x] **NOTES-02**: Note order persists across app restarts (database-backed sequence)
 
 ### Overview Stats
 
@@ -67,8 +67,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EDIT-07 | Phase 2 | Complete |
 | EDIT-08 | Phase 2 | Complete |
 | EDIT-09 | Phase 2 | Complete |
-| NOTES-01 | Phase 3 | Pending |
-| NOTES-02 | Phase 3 | Pending |
+| NOTES-01 | Phase 3 | Complete |
+| NOTES-02 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 13 total

@@ -8,7 +8,7 @@ This milestone delivers three user-facing improvements to JackedLog: a total wor
 
 - [x] **Phase 1: Quick Wins** - Stats card and history cleanup
 - [x] **Phase 2: Edit Workout** - Full editing capability for completed workouts
-- [ ] **Phase 3: Notes Reorder** - Drag-drop with persistent sequence
+- [x] **Phase 3: Notes Reorder** - Drag-drop with persistent sequence
 
 ## Phase Details
 
@@ -49,10 +49,10 @@ Plans:
   1. User can long-press and drag notes to reorder them
   2. Note order persists after app restart (database-backed sequence)
   3. Reorder provides haptic feedback and visual lift during drag
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 03-01: Notes sequence migration and reorder UI
+- [x] 03-01-PLAN.md — Notes sequence migration and reorder UI
 
 ## Progress
 
@@ -60,7 +60,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Quick Wins | 1/1 | ✓ Complete | 2026-02-02 |
 | 2. Edit Workout | 2/2 | ✓ Complete | 2026-02-02 |
-| 3. Notes Reorder | 0/1 | Not started | - |
+| 3. Notes Reorder | 1/1 | ✓ Complete | 2026-02-02 |
 
 ---
 *Roadmap created: 2026-02-02*
