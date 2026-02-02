@@ -18,6 +18,7 @@ class _NotesPageState extends State<NotesPage> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
   List<Note>? _localNotes;
+  bool _isReorderMode = false;
 
   // Artistic color palette for notes (darker shades)
   final List<Color> _noteColors = [
@@ -123,6 +124,16 @@ class _NotesPageState extends State<NotesPage> {
       appBar: AppBar(
         title: const Text('Notes'),
         actions: [
+          if (_searchQuery.isEmpty)
+            IconButton(
+              icon: Icon(_isReorderMode ? Icons.grid_view : Icons.reorder),
+              onPressed: () {
+                setState(() {
+                  _isReorderMode = !_isReorderMode;
+                });
+              },
+              tooltip: _isReorderMode ? 'Grid View' : 'Reorder Notes',
+            ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _createNote,
@@ -300,33 +311,17 @@ class _NotesPageState extends State<NotesPage> {
                 },
               ),
               Expanded(
-                child: _searchQuery.isNotEmpty
-                    // Regular ListView when searching (no reorder)
-                    ? ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        itemCount: _localNotes!.length,
-                        itemBuilder: (context, index) {
-                          final note = _localNotes![index];
-                          final color = _getColorFromValue(note.color);
-                          return _NoteCard(
-                            key: ValueKey(note.id),
-                            note: note,
-                            color: color,
-                            onTap: () => _editNote(note),
-                            onDelete: () => _deleteNote(note),
-                          );
-                        },
-                      )
-                    // ReorderableListView when not searching
-                    : ReorderableListView.builder(
+                child: _isReorderMode && _searchQuery.isEmpty
+                    // ReorderableListView when in reorder mode (list layout)
+                    ? ReorderableListView.builder(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 8),
                         itemCount: _localNotes!.length,
                         proxyDecorator: (child, index, animation) {
                           return Material(
                             elevation: 8,
-                            shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
+                            shadowColor:
+                                colorScheme.shadow.withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(16),
                             child: child,
                           );
@@ -361,7 +356,34 @@ class _NotesPageState extends State<NotesPage> {
                             color: color,
                             onTap: () => _editNote(note),
                             onDelete: () => _deleteNote(note),
+                            isGridMode: false,
                           );
+                        },
+                      )
+                    // GridView as default with drag-to-reorder support
+                    : _ReorderableGridView(
+                        notes: _localNotes!,
+                        getColorFromValue: _getColorFromValue,
+                        onEditNote: _editNote,
+                        onDeleteNote: _deleteNote,
+                        onReorder: (oldIndex, newIndex) async {
+                          setState(() {
+                            final item = _localNotes!.removeAt(oldIndex);
+                            _localNotes!.insert(newIndex, item);
+                          });
+
+                          // Batch update sequences
+                          await db.batch((batch) {
+                            for (var i = 0; i < _localNotes!.length; i++) {
+                              batch.update(
+                                db.notes,
+                                NotesCompanion(
+                                    sequence:
+                                        Value(_localNotes!.length - 1 - i)),
+                                where: (n) => n.id.equals(_localNotes![i].id),
+                              );
+                            }
+                          });
                         },
                       ),
               ),
@@ -394,7 +416,7 @@ class _TrainingMaxBanner extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               gradient: LinearGradient(
@@ -409,53 +431,168 @@ class _TrainingMaxBanner extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: colorScheme.primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.fitness_center,
-                    size: 32,
+                    size: 24,
                     color: colorScheme.primary,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '5/3/1 Training Max',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onPrimaryContainer,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Calculate weights for your program',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: colorScheme.onPrimaryContainer
-                              .withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    '5/3/1 Training Max',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onPrimaryContainer,
+                      letterSpacing: 0.2,
+                    ),
                   ),
                 ),
                 Icon(
                   Icons.chevron_right,
                   color: colorScheme.primary,
-                  size: 28,
+                  size: 24,
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ReorderableGridView extends StatefulWidget {
+  const _ReorderableGridView({
+    required this.notes,
+    required this.getColorFromValue,
+    required this.onEditNote,
+    required this.onDeleteNote,
+    required this.onReorder,
+  });
+
+  final List<Note> notes;
+  final Color Function(int?) getColorFromValue;
+  final void Function(Note) onEditNote;
+  final void Function(Note) onDeleteNote;
+  final void Function(int oldIndex, int newIndex) onReorder;
+
+  @override
+  State<_ReorderableGridView> createState() => _ReorderableGridViewState();
+}
+
+class _ReorderableGridViewState extends State<_ReorderableGridView> {
+  int? _draggedIndex;
+  int? _targetIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.85,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: widget.notes.length,
+      itemBuilder: (context, index) {
+        final note = widget.notes[index];
+        final color = widget.getColorFromValue(note.color);
+        final isDragging = _draggedIndex == index;
+        final isTarget = _targetIndex == index && _draggedIndex != index;
+
+        return DragTarget<int>(
+          onWillAcceptWithDetails: (details) {
+            if (details.data != index) {
+              setState(() => _targetIndex = index);
+              return true;
+            }
+            return false;
+          },
+          onLeave: (_) {
+            setState(() => _targetIndex = null);
+          },
+          onAcceptWithDetails: (details) {
+            widget.onReorder(details.data, index);
+            setState(() {
+              _draggedIndex = null;
+              _targetIndex = null;
+            });
+          },
+          builder: (context, candidateData, rejectedData) {
+            return LongPressDraggable<int>(
+              data: index,
+              delay: const Duration(milliseconds: 200),
+              onDragStarted: () {
+                setState(() => _draggedIndex = index);
+              },
+              onDragEnd: (_) {
+                setState(() {
+                  _draggedIndex = null;
+                  _targetIndex = null;
+                });
+              },
+              feedback: Material(
+                elevation: 8,
+                shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  width: (MediaQuery.of(context).size.width - 36) / 2,
+                  height: ((MediaQuery.of(context).size.width - 36) / 2) / 0.85,
+                  child: _NoteCard(
+                    note: note,
+                    color: color,
+                    onTap: () {},
+                    onDelete: () {},
+                    isGridMode: true,
+                  ),
+                ),
+              ),
+              childWhenDragging: Opacity(
+                opacity: 0.3,
+                child: _NoteCard(
+                  note: note,
+                  color: color,
+                  onTap: () {},
+                  onDelete: () {},
+                  isGridMode: true,
+                ),
+              ),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: isTarget
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.primary,
+                          width: 2,
+                        ),
+                      )
+                    : null,
+                child: Opacity(
+                  opacity: isDragging ? 0.3 : 1.0,
+                  child: _NoteCard(
+                    note: note,
+                    color: color,
+                    onTap: () => widget.onEditNote(note),
+                    onDelete: () => widget.onDeleteNote(note),
+                    isGridMode: true,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -467,11 +604,13 @@ class _NoteCard extends StatelessWidget {
     required this.color,
     required this.onTap,
     required this.onDelete,
+    this.isGridMode = false,
   });
   final Note note;
   final Color color;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final bool isGridMode;
 
   @override
   Widget build(BuildContext context) {
@@ -481,7 +620,7 @@ class _NoteCard extends StatelessWidget {
     return Card(
       elevation: 2,
       color: color,
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: isGridMode ? EdgeInsets.zero : const EdgeInsets.symmetric(vertical: 6),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -492,7 +631,7 @@ class _NoteCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: isGridMode ? MainAxisSize.max : MainAxisSize.min,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -520,16 +659,29 @@ class _NoteCard extends StatelessWidget {
               ),
               if (note.content.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Text(
-                  note.content,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                    height: 1.4,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                isGridMode
+                    ? Expanded(
+                        child: Text(
+                          note.content,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                            height: 1.4,
+                          ),
+                          maxLines: 6,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      )
+                    : Text(
+                        note.content,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                          height: 1.4,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
               ],
               const SizedBox(height: 12),
               Row(

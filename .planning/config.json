@@ -14,5 +14,10 @@
     "commit_note": "All commits must start with fix:, feat:, or docs:",
     "phase_commit_format": "feat: NN description (one commit per phase, no parentheses, phase number after colon)",
     "phase_commit_example": "feat: 01 add Total Time stat and hide search menu"
+  },
+  "CRITICAL_RULES": {
+    "ONE_COMMIT_PER_PHASE": "NEVER make multiple commits. Squash ALL work (research, planning, context, execution, fixes, docs) into ONE SINGLE commit at the END. Format: 'feat: NN description' or 'feat: quick-NNN description'. NO intermediate commits. NO docs commits. ONE COMMIT ONLY.",
+    "violated_count": 1,
+    "last_violation": "2026-02-02 quick-001"
   }
 }
