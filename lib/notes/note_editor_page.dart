@@ -86,13 +86,22 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     final colorValue = _customColor?.toARGB32() ?? _selectedColorIndex;
 
     if (widget.note == null) {
-      // Create new note
+      // Get max sequence to put new note at top
+      final maxSeqResult = await (db.notes.selectOnly()
+            ..addColumns([db.notes.sequence.max()]))
+          .map((row) => row.read(db.notes.sequence.max()))
+          .getSingleOrNull();
+
+      final newSequence = (maxSeqResult ?? -1) + 1;
+
+      // Create new note with sequence
       final companion = NotesCompanion.insert(
         title: title.isEmpty ? 'Untitled' : title,
         content: content,
         created: now,
         updated: now,
         color: Value(colorValue),
+        sequence: Value(newSequence),
       );
       final id = await db.notes.insertOne(companion);
       final note =

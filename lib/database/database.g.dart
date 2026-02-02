@@ -4323,9 +4323,15 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
   late final GeneratedColumn<int> color = GeneratedColumn<int>(
       'color', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _sequenceMeta =
+      const VerificationMeta('sequence');
+  @override
+  late final GeneratedColumn<int> sequence = GeneratedColumn<int>(
+      'sequence', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, title, content, created, updated, color];
+      [id, title, content, created, updated, color, sequence];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -4367,6 +4373,10 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
       context.handle(
           _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
     }
+    if (data.containsKey('sequence')) {
+      context.handle(_sequenceMeta,
+          sequence.isAcceptableOrUnknown(data['sequence']!, _sequenceMeta));
+    }
     return context;
   }
 
@@ -4388,6 +4398,8 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated'])!,
       color: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}color']),
+      sequence: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sequence']),
     );
   }
 
@@ -4404,13 +4416,15 @@ class Note extends DataClass implements Insertable<Note> {
   final DateTime created;
   final DateTime updated;
   final int? color;
+  final int? sequence;
   const Note(
       {required this.id,
       required this.title,
       required this.content,
       required this.created,
       required this.updated,
-      this.color});
+      this.color,
+      this.sequence});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4421,6 +4435,9 @@ class Note extends DataClass implements Insertable<Note> {
     map['updated'] = Variable<DateTime>(updated);
     if (!nullToAbsent || color != null) {
       map['color'] = Variable<int>(color);
+    }
+    if (!nullToAbsent || sequence != null) {
+      map['sequence'] = Variable<int>(sequence);
     }
     return map;
   }
@@ -4434,6 +4451,9 @@ class Note extends DataClass implements Insertable<Note> {
       updated: Value(updated),
       color:
           color == null && nullToAbsent ? const Value.absent() : Value(color),
+      sequence: sequence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sequence),
     );
   }
 
@@ -4447,6 +4467,7 @@ class Note extends DataClass implements Insertable<Note> {
       created: serializer.fromJson<DateTime>(json['created']),
       updated: serializer.fromJson<DateTime>(json['updated']),
       color: serializer.fromJson<int?>(json['color']),
+      sequence: serializer.fromJson<int?>(json['sequence']),
     );
   }
   @override
@@ -4459,6 +4480,7 @@ class Note extends DataClass implements Insertable<Note> {
       'created': serializer.toJson<DateTime>(created),
       'updated': serializer.toJson<DateTime>(updated),
       'color': serializer.toJson<int?>(color),
+      'sequence': serializer.toJson<int?>(sequence),
     };
   }
 
@@ -4468,7 +4490,8 @@ class Note extends DataClass implements Insertable<Note> {
           String? content,
           DateTime? created,
           DateTime? updated,
-          Value<int?> color = const Value.absent()}) =>
+          Value<int?> color = const Value.absent(),
+          Value<int?> sequence = const Value.absent()}) =>
       Note(
         id: id ?? this.id,
         title: title ?? this.title,
@@ -4476,6 +4499,7 @@ class Note extends DataClass implements Insertable<Note> {
         created: created ?? this.created,
         updated: updated ?? this.updated,
         color: color.present ? color.value : this.color,
+        sequence: sequence.present ? sequence.value : this.sequence,
       );
   Note copyWithCompanion(NotesCompanion data) {
     return Note(
@@ -4485,6 +4509,7 @@ class Note extends DataClass implements Insertable<Note> {
       created: data.created.present ? data.created.value : this.created,
       updated: data.updated.present ? data.updated.value : this.updated,
       color: data.color.present ? data.color.value : this.color,
+      sequence: data.sequence.present ? data.sequence.value : this.sequence,
     );
   }
 
@@ -4496,13 +4521,15 @@ class Note extends DataClass implements Insertable<Note> {
           ..write('content: $content, ')
           ..write('created: $created, ')
           ..write('updated: $updated, ')
-          ..write('color: $color')
+          ..write('color: $color, ')
+          ..write('sequence: $sequence')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, title, content, created, updated, color);
+  int get hashCode =>
+      Object.hash(id, title, content, created, updated, color, sequence);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4512,7 +4539,8 @@ class Note extends DataClass implements Insertable<Note> {
           other.content == this.content &&
           other.created == this.created &&
           other.updated == this.updated &&
-          other.color == this.color);
+          other.color == this.color &&
+          other.sequence == this.sequence);
 }
 
 class NotesCompanion extends UpdateCompanion<Note> {
@@ -4522,6 +4550,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
   final Value<DateTime> created;
   final Value<DateTime> updated;
   final Value<int?> color;
+  final Value<int?> sequence;
   const NotesCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
@@ -4529,6 +4558,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.created = const Value.absent(),
     this.updated = const Value.absent(),
     this.color = const Value.absent(),
+    this.sequence = const Value.absent(),
   });
   NotesCompanion.insert({
     this.id = const Value.absent(),
@@ -4537,6 +4567,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
     required DateTime created,
     required DateTime updated,
     this.color = const Value.absent(),
+    this.sequence = const Value.absent(),
   })  : title = Value(title),
         content = Value(content),
         created = Value(created),
@@ -4548,6 +4579,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Expression<DateTime>? created,
     Expression<DateTime>? updated,
     Expression<int>? color,
+    Expression<int>? sequence,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -4556,6 +4588,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
       if (created != null) 'created': created,
       if (updated != null) 'updated': updated,
       if (color != null) 'color': color,
+      if (sequence != null) 'sequence': sequence,
     });
   }
 
@@ -4565,7 +4598,8 @@ class NotesCompanion extends UpdateCompanion<Note> {
       Value<String>? content,
       Value<DateTime>? created,
       Value<DateTime>? updated,
-      Value<int?>? color}) {
+      Value<int?>? color,
+      Value<int?>? sequence}) {
     return NotesCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
@@ -4573,6 +4607,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
       created: created ?? this.created,
       updated: updated ?? this.updated,
       color: color ?? this.color,
+      sequence: sequence ?? this.sequence,
     );
   }
 
@@ -4597,6 +4632,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
     if (color.present) {
       map['color'] = Variable<int>(color.value);
     }
+    if (sequence.present) {
+      map['sequence'] = Variable<int>(sequence.value);
+    }
     return map;
   }
 
@@ -4608,7 +4646,8 @@ class NotesCompanion extends UpdateCompanion<Note> {
           ..write('content: $content, ')
           ..write('created: $created, ')
           ..write('updated: $updated, ')
-          ..write('color: $color')
+          ..write('color: $color, ')
+          ..write('sequence: $sequence')
           ..write(')'))
         .toString();
   }
@@ -7169,6 +7208,7 @@ typedef $$NotesTableCreateCompanionBuilder = NotesCompanion Function({
   required DateTime created,
   required DateTime updated,
   Value<int?> color,
+  Value<int?> sequence,
 });
 typedef $$NotesTableUpdateCompanionBuilder = NotesCompanion Function({
   Value<int> id,
@@ -7177,6 +7217,7 @@ typedef $$NotesTableUpdateCompanionBuilder = NotesCompanion Function({
   Value<DateTime> created,
   Value<DateTime> updated,
   Value<int?> color,
+  Value<int?> sequence,
 });
 
 class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
@@ -7204,6 +7245,9 @@ class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
 
   ColumnFilters<int> get color => $composableBuilder(
       column: $table.color, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sequence => $composableBuilder(
+      column: $table.sequence, builder: (column) => ColumnFilters(column));
 }
 
 class $$NotesTableOrderingComposer
@@ -7232,6 +7276,9 @@ class $$NotesTableOrderingComposer
 
   ColumnOrderings<int> get color => $composableBuilder(
       column: $table.color, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sequence => $composableBuilder(
+      column: $table.sequence, builder: (column) => ColumnOrderings(column));
 }
 
 class $$NotesTableAnnotationComposer
@@ -7260,6 +7307,9 @@ class $$NotesTableAnnotationComposer
 
   GeneratedColumn<int> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<int> get sequence =>
+      $composableBuilder(column: $table.sequence, builder: (column) => column);
 }
 
 class $$NotesTableTableManager extends RootTableManager<
@@ -7291,6 +7341,7 @@ class $$NotesTableTableManager extends RootTableManager<
             Value<DateTime> created = const Value.absent(),
             Value<DateTime> updated = const Value.absent(),
             Value<int?> color = const Value.absent(),
+            Value<int?> sequence = const Value.absent(),
           }) =>
               NotesCompanion(
             id: id,
@@ -7299,6 +7350,7 @@ class $$NotesTableTableManager extends RootTableManager<
             created: created,
             updated: updated,
             color: color,
+            sequence: sequence,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -7307,6 +7359,7 @@ class $$NotesTableTableManager extends RootTableManager<
             required DateTime created,
             required DateTime updated,
             Value<int?> color = const Value.absent(),
+            Value<int?> sequence = const Value.absent(),
           }) =>
               NotesCompanion.insert(
             id: id,
@@ -7315,6 +7368,7 @@ class $$NotesTableTableManager extends RootTableManager<
             created: created,
             updated: updated,
             color: color,
+            sequence: sequence,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

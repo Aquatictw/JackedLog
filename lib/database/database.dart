@@ -384,6 +384,25 @@ class AppDatabase extends _$AppDatabase {
           // Clean up temp table
           await m.database.customStatement('DROP TABLE sequence_corrections');
         }
+
+        // from61To62: Add sequence to notes
+        // Runs when migrating FROM a version <=61 TO a version >=62
+        if (from < 62 && to >= 62) {
+          // Add sequence column
+          await m.database.customStatement(
+            'ALTER TABLE notes ADD COLUMN sequence INTEGER',
+          ).catchError((e) {});
+
+          // Backfill: assign sequence based on updated timestamp (most recent = highest)
+          await m.database.customStatement('''
+            UPDATE notes
+            SET sequence = (
+              SELECT COUNT(*)
+              FROM notes n2
+              WHERE n2.updated > notes.updated
+            )
+          ''');
+        }
       },
       beforeOpen: (details) async {
         // Ensure bodyweight_entries table exists (safety check for migration issues)
@@ -408,5 +427,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 61;
+  int get schemaVersion => 62;
 }

@@ -8,4 +8,5 @@ class Notes extends Table {
   DateTimeColumn get created => dateTime()();
   DateTimeColumn get updated => dateTime()();
   IntColumn get color => integer().nullable()();
+  IntColumn get sequence => integer().nullable()();
 }
