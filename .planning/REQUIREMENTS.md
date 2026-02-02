@@ -22,15 +22,15 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Edit Workout
 
-- [ ] **EDIT-01**: User can edit workout name from workout detail page
-- [ ] **EDIT-02**: User can add exercises to completed workout
-- [ ] **EDIT-03**: User can remove exercises from completed workout
-- [ ] **EDIT-04**: User can reorder exercises in completed workout
-- [ ] **EDIT-05**: User can edit set weight/reps in completed workout
-- [ ] **EDIT-06**: User can add sets to exercises in completed workout
-- [ ] **EDIT-07**: User can delete sets from exercises in completed workout
-- [ ] **EDIT-08**: User can change set type (normal/warmup/dropset) in completed workout
-- [ ] **EDIT-09**: Workout selfie feature accessible from edit panel (moved from top bar)
+- [x] **EDIT-01**: User can edit workout name from workout detail page
+- [x] **EDIT-02**: User can add exercises to completed workout
+- [x] **EDIT-03**: User can remove exercises from completed workout
+- [x] **EDIT-04**: User can reorder exercises in completed workout
+- [x] **EDIT-05**: User can edit set weight/reps in completed workout
+- [x] **EDIT-06**: User can add sets to exercises in completed workout
+- [x] **EDIT-07**: User can delete sets from exercises in completed workout
+- [x] **EDIT-08**: User can change set type (normal/warmup/dropset) in completed workout
+- [x] **EDIT-09**: Workout selfie feature accessible from edit panel (moved from top bar)
 
 ## v2 Requirements
 
@@ -58,15 +58,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | STATS-01 | Phase 1 | Complete |
 | HIST-01 | Phase 1 | Complete |
-| EDIT-01 | Phase 2 | Pending |
-| EDIT-02 | Phase 2 | Pending |
-| EDIT-03 | Phase 2 | Pending |
-| EDIT-04 | Phase 2 | Pending |
-| EDIT-05 | Phase 2 | Pending |
-| EDIT-06 | Phase 2 | Pending |
-| EDIT-07 | Phase 2 | Pending |
-| EDIT-08 | Phase 2 | Pending |
-| EDIT-09 | Phase 2 | Pending |
+| EDIT-01 | Phase 2 | Complete |
+| EDIT-02 | Phase 2 | Complete |
+| EDIT-03 | Phase 2 | Complete |
+| EDIT-04 | Phase 2 | Complete |
+| EDIT-05 | Phase 2 | Complete |
+| EDIT-06 | Phase 2 | Complete |
+| EDIT-07 | Phase 2 | Complete |
+| EDIT-08 | Phase 2 | Complete |
+| EDIT-09 | Phase 2 | Complete |
 | NOTES-01 | Phase 3 | Pending |
 | NOTES-02 | Phase 3 | Pending |
 

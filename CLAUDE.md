@@ -5,6 +5,7 @@
 ### DO NOT run any Flutter commands, ask user to run `flutter analyze` or manually test
 ### Always do manual migration
 ### If database version has been changed, and previous exported data from app can't be reimported, affirm me.
+### ONE COMMIT PER PHASE - Squash all commits (research, planning, context, execution, fixes) into a single `feat: XX phase-name` commit at the end of each phase. NO intermediate commits for docs, fixes, etc.
 
 ## Core Development Philosophy
 

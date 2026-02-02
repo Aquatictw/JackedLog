@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +13,7 @@ import '../database/gym_sets.dart';
 import '../graph/cardio_page.dart';
 import '../graph/strength_page.dart';
 import '../main.dart';
+import '../models/set_data.dart';
 import '../plan/start_plan_page.dart';
 import '../records/record_notification.dart';
 import '../records/records_service.dart';
@@ -19,6 +21,8 @@ import '../sets/edit_set_page.dart';
 import '../settings/settings_state.dart';
 import '../utils.dart';
 import '../widgets/bodypart_tag.dart';
+import '../widgets/sets/set_row.dart';
+import '../widgets/workout/exercise_picker_modal.dart';
 import 'workout_state.dart';
 
 class WorkoutDetailPage extends StatefulWidget {
@@ -34,6 +38,13 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   late Stream<List<GymSet>> setsStream;
   Map<int, Set<RecordType>> _recordsMap = {};
   Workout? _currentWorkout;
+
+  // Edit mode state
+  bool _isEditMode = false;
+  bool _isReorderMode = false;
+  bool _hasUnsavedChanges = false;
+  String? _originalName;
+  List<({String name, int sequence, List<SetData> editableSets, String unit})> _exerciseGroups = [];
 
   Workout get currentWorkout => _currentWorkout ?? widget.workout;
 
@@ -68,6 +79,498 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     }
   }
 
+  // Edit mode methods
+  void _enterEditMode(List<({String name, int sequence, List<GymSet> sets})> groups) {
+    setState(() {
+      _isEditMode = true;
+      _originalName = currentWorkout.name;
+      _hasUnsavedChanges = false;
+      _exerciseGroups = groups.map((g) => (
+        name: g.name,
+        sequence: g.sequence,
+        unit: g.sets.firstOrNull?.unit ?? 'kg',
+        editableSets: g.sets.map((s) => SetData(
+          weight: s.weight,
+          reps: s.reps.toInt(),
+          completed: !s.hidden,
+          savedSetId: s.id,
+          isWarmup: s.warmup,
+          isDropSet: s.dropSet,
+          records: _recordsMap[s.id] ?? {},
+        )).toList(),
+      )).toList();
+    });
+  }
+
+  Future<void> _exitEditMode({bool save = false}) async {
+    if (!save && _hasUnsavedChanges) {
+      final shouldDiscard = await _showDiscardDialog();
+      if (!shouldDiscard) return;
+    }
+
+    setState(() {
+      _isEditMode = false;
+      _isReorderMode = false;
+      _hasUnsavedChanges = false;
+      _originalName = null;
+      _exerciseGroups = [];
+    });
+  }
+
+  Future<bool> _showDiscardDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Discard changes?'),
+        content: const Text('You have unsaved changes. Are you sure you want to discard them?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  Future<void> _editWorkoutName() async {
+    final nameController = TextEditingController(text: currentWorkout.name ?? 'Workout');
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Workout Name'),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            labelText: 'Name',
+            border: OutlineInputBorder(),
+            hintText: 'Enter workout name...',
+          ),
+          onSubmitted: (value) => Navigator.pop(context, value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, nameController.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (newName != null && newName.isNotEmpty && mounted) {
+      await (db.workouts.update()..where((w) => w.id.equals(widget.workout.id)))
+          .write(WorkoutsCompanion(name: Value(newName)));
+      await _reloadWorkout();
+      setState(() {
+        _hasUnsavedChanges = true;
+      });
+    }
+  }
+
+  Future<void> _addExercise() async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      useRootNavigator: true,
+      builder: (context) => const ExercisePickerModal(),
+    );
+
+    if (result != null && mounted) {
+      final nextSequence = _exerciseGroups.isEmpty
+          ? 0
+          : _exerciseGroups.map((e) => e.sequence).reduce((a, b) => a > b ? a : b) + 1;
+
+      // Insert a placeholder set to database
+      final newSet = await db.gymSets.insertReturning(
+        GymSetsCompanion.insert(
+          name: result,
+          reps: 0,
+          weight: 0,
+          unit: 'kg',
+          created: DateTime.now(),
+          workoutId: Value(widget.workout.id),
+          hidden: const Value(false),
+          sequence: Value(nextSequence),
+          setOrder: const Value(0),
+        ),
+      );
+
+      setState(() {
+        _exerciseGroups.add((
+          name: result,
+          sequence: nextSequence,
+          unit: newSet.unit,
+          editableSets: [SetData(
+            weight: newSet.weight,
+            reps: newSet.reps.toInt(),
+            completed: !newSet.hidden,
+            savedSetId: newSet.id,
+            isWarmup: newSet.warmup,
+            isDropSet: newSet.dropSet,
+          )],
+        ));
+        _hasUnsavedChanges = true;
+      });
+    }
+  }
+
+  Future<void> _removeExercise(int index) async {
+    final group = _exerciseGroups[index];
+    final exerciseName = group.name;
+    final sequence = group.sequence;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Exercise?'),
+        content: Text('Remove $exerciseName and all its sets?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Check if this exercise is part of a superset before deleting
+    String? supersetId;
+    final firstSetId = group.editableSets.firstOrNull?.savedSetId;
+    if (firstSetId != null) {
+      final firstSet = await (db.gymSets.select()
+            ..where((s) => s.id.equals(firstSetId)))
+          .getSingleOrNull();
+      supersetId = firstSet?.supersetId;
+    }
+
+    // Delete all sets for this exercise
+    await (db.gymSets.delete()
+          ..where((s) =>
+              s.workoutId.equals(widget.workout.id) &
+              s.name.equals(exerciseName) &
+              s.sequence.equals(sequence)))
+        .go();
+
+    // Update sequence numbers for exercises after removed one
+    await db.customUpdate(
+      'UPDATE gym_sets SET sequence = sequence - 1 WHERE workout_id = ? AND sequence > ?',
+      updates: {db.gymSets},
+      variables: [
+        Variable.withInt(widget.workout.id),
+        Variable.withInt(sequence),
+      ],
+    );
+
+    // If exercise was in a superset, check if only one remains and unmark it
+    if (supersetId != null) {
+      await _checkAndUnmarkSingleSuperset(supersetId);
+    }
+
+    // Clear PR cache
+    clearPRCache();
+
+    setState(() {
+      _exerciseGroups.removeAt(index);
+      // Update sequence numbers in local list
+      for (int i = index; i < _exerciseGroups.length; i++) {
+        final old = _exerciseGroups[i];
+        _exerciseGroups[i] = (
+          name: old.name,
+          sequence: i,
+          unit: old.unit,
+          editableSets: old.editableSets,
+        );
+      }
+      _hasUnsavedChanges = true;
+    });
+  }
+
+  Future<void> _checkAndUnmarkSingleSuperset(String supersetId) async {
+    // Count how many distinct exercises (by sequence) remain in this superset
+    final remainingExercises = await (db.gymSets.selectOnly(distinct: true)
+          ..addColumns([db.gymSets.sequence])
+          ..where(
+            db.gymSets.workoutId.equals(widget.workout.id) &
+                db.gymSets.supersetId.equals(supersetId),
+          ))
+        .get();
+
+    // If only one exercise remains, unmark it
+    if (remainingExercises.length == 1) {
+      await db.customUpdate(
+        'UPDATE gym_sets SET superset_id = NULL, superset_position = NULL WHERE workout_id = ? AND superset_id = ?',
+        updates: {db.gymSets},
+        variables: [
+          Variable.withInt(widget.workout.id),
+          Variable.withString(supersetId),
+        ],
+      );
+    }
+  }
+
+  Future<void> _reorderExercises(int oldIndex, int newIndex) async {
+    if (oldIndex < newIndex) newIndex--;
+
+    final item = _exerciseGroups.removeAt(oldIndex);
+    _exerciseGroups.insert(newIndex, item);
+
+    HapticFeedback.mediumImpact();
+
+    // Update sequence numbers in database for all exercises
+    for (int i = 0; i < _exerciseGroups.length; i++) {
+      final group = _exerciseGroups[i];
+      final oldSequence = group.sequence;
+
+      await db.customUpdate(
+        'UPDATE gym_sets SET sequence = ? WHERE workout_id = ? AND name = ? AND sequence = ?',
+        updates: {db.gymSets},
+        variables: [
+          Variable.withInt(i),
+          Variable.withInt(widget.workout.id),
+          Variable.withString(group.name),
+          Variable.withInt(oldSequence),
+        ],
+      );
+
+      // Update local sequence
+      _exerciseGroups[i] = (
+        name: group.name,
+        sequence: i,
+        unit: group.unit,
+        editableSets: group.editableSets,
+      );
+    }
+
+    setState(() {
+      _hasUnsavedChanges = true;
+    });
+  }
+
+  // Set editing methods
+  Future<void> _updateSetWeight(int exerciseIndex, int setIndex, double value) async {
+    final sets = _exerciseGroups[exerciseIndex].editableSets;
+    sets[setIndex].weight = value;
+
+    if (sets[setIndex].savedSetId != null) {
+      await (db.gymSets.update()
+            ..where((tbl) => tbl.id.equals(sets[setIndex].savedSetId!)))
+          .write(GymSetsCompanion(weight: Value(value)));
+      clearPRCache();
+    }
+
+    setState(() {
+      _hasUnsavedChanges = true;
+    });
+  }
+
+  Future<void> _updateSetReps(int exerciseIndex, int setIndex, int value) async {
+    final sets = _exerciseGroups[exerciseIndex].editableSets;
+    sets[setIndex].reps = value;
+
+    if (sets[setIndex].savedSetId != null) {
+      await (db.gymSets.update()
+            ..where((tbl) => tbl.id.equals(sets[setIndex].savedSetId!)))
+          .write(GymSetsCompanion(reps: Value(value.toDouble())));
+      clearPRCache();
+    }
+
+    setState(() {
+      _hasUnsavedChanges = true;
+    });
+  }
+
+  Future<void> _addSetToExercise(int exerciseIndex, {bool isWarmup = false, bool isDropSet = false}) async {
+    HapticFeedback.selectionClick();
+
+    final group = _exerciseGroups[exerciseIndex];
+    final sets = group.editableSets;
+
+    // Determine insert position
+    int insertIndex;
+    if (isWarmup) {
+      insertIndex = sets.where((s) => s.isWarmup).length;
+    } else if (isDropSet) {
+      insertIndex = sets.length;
+    } else {
+      insertIndex = sets.length - sets.where((s) => s.isDropSet).length;
+    }
+
+    // Get default weight/reps from last set of same type or defaults
+    double weight = 0;
+    int reps = 8;
+
+    if (isWarmup && sets.any((s) => s.isWarmup)) {
+      final lastWarmup = sets.lastWhere((s) => s.isWarmup);
+      weight = lastWarmup.weight;
+      reps = lastWarmup.reps;
+    } else if (isDropSet && sets.any((s) => s.isDropSet)) {
+      final lastDrop = sets.lastWhere((s) => s.isDropSet);
+      weight = lastDrop.weight;
+      reps = lastDrop.reps;
+    } else if (!isWarmup && !isDropSet && sets.any((s) => !s.isWarmup && !s.isDropSet)) {
+      final lastWorking = sets.lastWhere((s) => !s.isWarmup && !s.isDropSet);
+      weight = lastWorking.weight;
+      reps = lastWorking.reps;
+    } else if (sets.isNotEmpty) {
+      weight = sets.last.weight;
+      reps = sets.last.reps;
+    }
+
+    // Insert to database
+    final gymSet = await db.into(db.gymSets).insertReturning(
+      GymSetsCompanion.insert(
+        name: group.name,
+        reps: reps.toDouble(),
+        weight: weight,
+        unit: group.unit,
+        created: DateTime.now().toLocal(),
+        workoutId: Value(widget.workout.id),
+        sequence: Value(group.sequence),
+        setOrder: Value(insertIndex),
+        hidden: const Value(false),
+        warmup: Value(isWarmup),
+        dropSet: Value(isDropSet),
+      ),
+    );
+
+    // Add to local list
+    sets.insert(insertIndex, SetData(
+      weight: weight,
+      reps: reps,
+      completed: true,
+      savedSetId: gymSet.id,
+      isWarmup: isWarmup,
+      isDropSet: isDropSet,
+    ));
+
+    // Update setOrder for all sets
+    for (int i = 0; i < sets.length; i++) {
+      if (sets[i].savedSetId != null) {
+        await (db.gymSets.update()
+              ..where((tbl) => tbl.id.equals(sets[i].savedSetId!)))
+            .write(GymSetsCompanion(setOrder: Value(i)));
+      }
+    }
+
+    setState(() {
+      _hasUnsavedChanges = true;
+    });
+  }
+
+  Future<void> _deleteSetFromExercise(int exerciseIndex, int setIndex) async {
+    HapticFeedback.mediumImpact();
+
+    final sets = _exerciseGroups[exerciseIndex].editableSets;
+    final set = sets[setIndex];
+
+    if (set.savedSetId != null) {
+      await (db.gymSets.delete()
+            ..where((tbl) => tbl.id.equals(set.savedSetId!)))
+          .go();
+      clearPRCache();
+    }
+
+    sets.removeAt(setIndex);
+
+    setState(() {
+      _hasUnsavedChanges = true;
+    });
+  }
+
+  Future<void> _changeSetType(int exerciseIndex, int setIndex, bool isWarmup, bool isDropSet) async {
+    HapticFeedback.lightImpact();
+
+    final sets = _exerciseGroups[exerciseIndex].editableSets;
+    sets[setIndex].isWarmup = isWarmup;
+    sets[setIndex].isDropSet = isDropSet;
+
+    if (sets[setIndex].savedSetId != null) {
+      await (db.gymSets.update()
+            ..where((tbl) => tbl.id.equals(sets[setIndex].savedSetId!)))
+          .write(GymSetsCompanion(
+            warmup: Value(isWarmup),
+            dropSet: Value(isDropSet),
+          ));
+    }
+
+    setState(() {
+      _hasUnsavedChanges = true;
+    });
+  }
+
+  Future<void> _showExerciseMenu(int exerciseIndex, ColorScheme colorScheme) async {
+    final group = _exerciseGroups[exerciseIndex];
+    await showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.fitness_center, color: colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      group.name,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
+              title: Text(
+                'Remove Exercise',
+                style: TextStyle(color: colorScheme.error),
+              ),
+              subtitle: const Text('Remove this exercise and all its sets'),
+              onTap: () {
+                Navigator.pop(context);
+                _removeExercise(exerciseIndex);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final showImages = context.select<SettingsState, bool>(
@@ -77,8 +580,24 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
     final workoutEnded = widget.workout.endTime != null;
 
-    return Scaffold(
-      body: StreamBuilder<List<GymSet>>(
+    return PopScope(
+      canPop: !_isEditMode || !_hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        if (_isEditMode && _hasUnsavedChanges) {
+          final shouldDiscard = await _showDiscardDialog();
+          if (shouldDiscard && mounted) {
+            setState(() {
+              _isEditMode = false;
+              _hasUnsavedChanges = false;
+            });
+            if (mounted) Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
+        body: StreamBuilder<List<GymSet>>(
         stream: setsStream,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
@@ -204,12 +723,46 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               SliverAppBar(
                 expandedHeight: 200,
                 pinned: true,
+                backgroundColor: _isEditMode
+                    ? colorScheme.tertiaryContainer
+                    : null,
+                title: _isReorderMode
+                    ? const Text('Reorder Exercises')
+                    : null,
+                leading: _isReorderMode
+                    ? IconButton(
+                        icon: const Icon(Icons.close),
+                        tooltip: 'Cancel reorder',
+                        onPressed: () => setState(() => _isReorderMode = false),
+                      )
+                    : _isEditMode
+                        ? IconButton(
+                            icon: const Icon(Icons.close),
+                            tooltip: 'Cancel editing',
+                            onPressed: () => _exitEditMode(save: false),
+                          )
+                        : null,
                 actions: [
-                  if (workoutEnded)
+                  if (_isReorderMode) ...[
+                    // Done button in reorder mode
+                    TextButton.icon(
+                      onPressed: () => setState(() => _isReorderMode = false),
+                      icon: const Icon(Icons.check),
+                      label: const Text('Done'),
+                    ),
+                  ] else if (_isEditMode) ...[
+                    // Reorder button in edit mode (only if more than 1 exercise)
+                    if (_exerciseGroups.length > 1)
+                      IconButton(
+                        icon: const Icon(Icons.swap_vert),
+                        tooltip: 'Reorder exercises',
+                        onPressed: () => setState(() => _isReorderMode = true),
+                      ),
+                    // Selfie button in edit mode
                     IconButton(
                       icon: Icon(
                         currentWorkout.selfieImagePath != null
-                            ? Icons.edit_outlined
+                            ? Icons.camera_alt
                             : Icons.add_a_photo_outlined,
                       ),
                       tooltip: currentWorkout.selfieImagePath != null
@@ -217,16 +770,41 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                           : 'Add Selfie',
                       onPressed: () => _editSelfie(context),
                     ),
-                  if (workoutEnded)
+                    // Save button in edit mode
                     IconButton(
-                      icon: const Icon(Icons.play_arrow),
-                      tooltip: 'Resume Workout',
-                      onPressed: () => _resumeWorkout(context),
+                      icon: const Icon(Icons.check),
+                      tooltip: 'Done editing',
+                      onPressed: () => _exitEditMode(save: true),
                     ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _deleteWorkout(context),
-                  ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => _deleteWorkout(context),
+                    ),
+                  ] else ...[
+                    // Edit button when not in edit mode (only for ended workouts)
+                    if (workoutEnded)
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Edit Workout',
+                        onPressed: () => _enterEditMode(
+                          exerciseGroups.map((g) => (
+                            name: g.name,
+                            sequence: g.minSeq,
+                            sets: g.sets,
+                          )).toList(),
+                        ),
+                      ),
+                    if (workoutEnded)
+                      IconButton(
+                        icon: const Icon(Icons.play_arrow),
+                        tooltip: 'Resume Workout',
+                        onPressed: () => _resumeWorkout(context),
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => _deleteWorkout(context),
+                    ),
+                  ],
                 ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: currentWorkout.selfieImagePath != null
@@ -263,18 +841,47 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                                   children: [
                                     _buildDateBadge(),
                                     const SizedBox(height: 12),
-                                    Text(
-                                      currentWorkout.name ?? 'Workout',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
+                                    _isEditMode
+                                        ? GestureDetector(
+                                            onTap: _editWorkoutName,
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Flexible(
+                                                  child: Text(
+                                                    currentWorkout.name ?? 'Workout',
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .headlineSmall
+                                                        ?.copyWith(
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.white,
+                                                        ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Icon(
+                                                  Icons.edit_outlined,
+                                                  size: 20,
+                                                  color: Colors.white.withValues(alpha: 0.7),
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : Text(
+                                            currentWorkout.name ?? 'Workout',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .headlineSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
                                     const SizedBox(height: 4),
                                     Text(
                                       DateFormat('HH:mm')
@@ -306,41 +913,122 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 SliverToBoxAdapter(
                   child: _buildNotesSection(),
                 ),
-              // Empty state
-              if (displayItems.isEmpty)
+              // Empty state (only in view mode)
+              if (displayItems.isEmpty && !_isEditMode)
                 const SliverFillRemaining(
                   child: Center(
                     child: Text('No exercises in this workout'),
                   ),
                 ),
-              // Display items (exercises with optional superset styling)
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final item = displayItems[index];
-
-                    // All items are exercises now, some with superset metadata
-                    return _buildExerciseGroup(
-                      item['name'] as String,
-                      item['sets'] as List<GymSet>,
-                      showImages,
-                      _recordsMap,
-                      supersetIndex: item['supersetIndex'] as int?,
-                      supersetPosition: item['supersetPosition'] as int?,
-                      isFirstInSuperset:
-                          item['isFirstInSuperset'] as bool? ?? false,
-                      isLastInSuperset:
-                          item['isLastInSuperset'] as bool? ?? false,
-                    );
-                  },
-                  childCount: displayItems.length,
+              // Edit mode: use reorderable list with add/remove
+              if (_isEditMode) ...[
+                if (_isReorderMode)
+                  SliverReorderableList(
+                    itemCount: _exerciseGroups.length,
+                    onReorder: _reorderExercises,
+                    itemBuilder: (context, index) {
+                      final group = _exerciseGroups[index];
+                      return ReorderableDragStartListener(
+                        key: ValueKey('reorder_${group.name}_${group.sequence}'),
+                        index: index,
+                        child: _buildReorderableExerciseTile(
+                          index,
+                          colorScheme,
+                        ),
+                      );
+                    },
+                  )
+                else
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildEditableExerciseCard(
+                        index,
+                        colorScheme,
+                      ),
+                      childCount: _exerciseGroups.length,
+                    ),
+                  ),
+                // Add Exercise button at the end
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _addExercise,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: colorScheme.primary.withValues(alpha: 0.4),
+                              width: 1.5,
+                            ),
+                            gradient: LinearGradient(
+                              colors: [
+                                colorScheme.primaryContainer.withValues(alpha: 0.3),
+                                colorScheme.secondaryContainer.withValues(alpha: 0.2),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_circle,
+                                color: colorScheme.primary,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Add Exercise',
+                                style: TextStyle(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ] else ...[
+                // View mode: display items (exercises with optional superset styling)
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final item = displayItems[index];
+
+                      // All items are exercises now, some with superset metadata
+                      return _buildExerciseGroup(
+                        item['name'] as String,
+                        item['sets'] as List<GymSet>,
+                        showImages,
+                        _recordsMap,
+                        supersetIndex: item['supersetIndex'] as int?,
+                        supersetPosition: item['supersetPosition'] as int?,
+                        isFirstInSuperset:
+                            item['isFirstInSuperset'] as bool? ?? false,
+                        isLastInSuperset:
+                            item['isLastInSuperset'] as bool? ?? false,
+                      );
+                    },
+                    childCount: displayItems.length,
+                  ),
+                ),
+              ],
               // Bottom padding for navigation bar + active workout bar + timer
               const SliverPadding(padding: EdgeInsets.only(bottom: 260)),
             ],
           );
         },
+      ),
       ),
     );
   }
@@ -351,11 +1039,17 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primaryContainer,
-            colorScheme.primaryContainer.withValues(alpha: 0.6),
-            colorScheme.surface,
-          ],
+          colors: _isEditMode
+              ? [
+                  colorScheme.tertiaryContainer,
+                  colorScheme.tertiaryContainer.withValues(alpha: 0.6),
+                  colorScheme.surface,
+                ]
+              : [
+                  colorScheme.primaryContainer,
+                  colorScheme.primaryContainer.withValues(alpha: 0.6),
+                  colorScheme.surface,
+                ],
         ),
       ),
       child: SafeArea(
@@ -366,14 +1060,39 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             children: [
               _buildDateBadge(),
               const SizedBox(height: 12),
-              Text(
-                currentWorkout.name ?? 'Workout',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+              _isEditMode
+                  ? GestureDetector(
+                      onTap: _editWorkoutName,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              currentWorkout.name ?? 'Workout',
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.edit_outlined,
+                            size: 20,
+                            color: colorScheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Text(
+                      currentWorkout.name ?? 'Workout',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
               const SizedBox(height: 4),
               Text(
                 DateFormat('HH:mm').format(currentWorkout.startTime),
@@ -592,6 +1311,272 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     return volume.toStringAsFixed(0);
   }
 
+  Widget _buildReorderableExerciseTile(
+    int index,
+    ColorScheme colorScheme,
+  ) {
+    final group = _exerciseGroups[index];
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      elevation: 1,
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            Icons.fitness_center,
+            color: colorScheme.primary,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          group.name,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: Text(
+          '${group.editableSets.length} set${group.editableSets.length == 1 ? '' : 's'}',
+          style: TextStyle(
+            fontSize: 12,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.drag_handle,
+            size: 20,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditableExerciseCard(
+    int exerciseIndex,
+    ColorScheme colorScheme,
+  ) {
+    final group = _exerciseGroups[exerciseIndex];
+    final sets = group.editableSets;
+    final exerciseName = group.name;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      elevation: 2,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          // Header row - long press to show menu
+          InkWell(
+            onLongPress: () => _showExerciseMenu(exerciseIndex, colorScheme),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              ),
+              child: Row(
+                children: [
+                  // Exercise icon badge (like ExerciseSetsCard)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.fitness_center,
+                      color: colorScheme.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Exercise name
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          exerciseName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        Text(
+                          '${sets.length} set${sets.length == 1 ? '' : 's'} - Hold for options',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Sets list using SetRow
+          if (sets.isNotEmpty)
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: sets.length,
+              itemBuilder: (context, setIndex) {
+                // Calculate display index
+                final warmupCount = sets.take(setIndex).where((s) => s.isWarmup).length;
+                final dropSetCount = sets.take(setIndex).where((s) => s.isDropSet).length;
+                final displayIndex = sets[setIndex].isWarmup
+                    ? setIndex + 1 - dropSetCount
+                    : sets[setIndex].isDropSet
+                        ? setIndex + 1 - warmupCount
+                        : setIndex - warmupCount - dropSetCount + 1;
+
+                return SetRow(
+                  key: ValueKey('edit_set_${sets[setIndex].savedSetId ?? setIndex}'),
+                  index: displayIndex,
+                  setData: sets[setIndex],
+                  unit: group.unit,
+                  records: sets[setIndex].records,
+                  onWeightChanged: (value) => _updateSetWeight(exerciseIndex, setIndex, value),
+                  onRepsChanged: (value) => _updateSetReps(exerciseIndex, setIndex, value),
+                  onToggle: () {}, // No toggle in edit mode - sets are completed
+                  onDelete: () => _deleteSetFromExercise(exerciseIndex, setIndex),
+                  onTypeChanged: (isWarmup, isDropSet) =>
+                      _changeSetType(exerciseIndex, setIndex, isWarmup, isDropSet),
+                );
+              },
+            ),
+          // Add set buttons row
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                // Add Warmup button
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _addSetToExercise(exerciseIndex, isWarmup: true),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colorScheme.tertiary.withValues(alpha: 0.5),
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        color: colorScheme.tertiaryContainer.withValues(alpha: 0.2),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.whatshot_outlined,
+                            size: 14,
+                            color: colorScheme.tertiary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Warmup',
+                            style: TextStyle(
+                              color: colorScheme.tertiary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                // Add Drop Set button
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _addSetToExercise(exerciseIndex, isDropSet: true),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colorScheme.secondary.withValues(alpha: 0.5),
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        color: colorScheme.secondaryContainer.withValues(alpha: 0.2),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.trending_down,
+                            size: 14,
+                            color: colorScheme.secondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Drop',
+                            style: TextStyle(
+                              color: colorScheme.secondary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                // Add Working Set button
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _addSetToExercise(exerciseIndex),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colorScheme.primary.withValues(alpha: 0.5),
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        color: colorScheme.primaryContainer.withValues(alpha: 0.2),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add,
+                            size: 14,
+                            color: colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Working',
+                            style: TextStyle(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildExerciseGroup(
     String exerciseName,
     List<GymSet> sets,
@@ -707,7 +1692,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     }
 
     final exerciseWidget = InkWell(
-      onLongPress: () => _showExerciseMenu(context, exerciseName),
+      onLongPress: () => _showViewExerciseMenu(context, exerciseName),
       child: ExpansionTile(
         leading: leading,
         title: Row(
@@ -1017,7 +2002,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
   }
 
-  Future<void> _showExerciseMenu(
+  Future<void> _showViewExerciseMenu(
       BuildContext parentContext, String exerciseName,) async {
     final colorScheme = Theme.of(parentContext).colorScheme;
 
