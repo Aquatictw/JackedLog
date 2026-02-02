@@ -25,6 +25,7 @@ class _OverviewPageState extends State<OverviewPage> {
   int totalWorkouts = 0;
   double totalVolume = 0;
   int currentStreak = 0;
+  int totalTimeSeconds = 0;
   String? mostTrainedMuscle;
   bool isLoading = true;
   DateTime? actualStartDate; // The actual start date used in queries
@@ -158,6 +159,21 @@ class _OverviewPageState extends State<OverviewPage> {
 
     final workoutCount = workoutsQuery.read<int>('workout_count');
 
+    // Calculate total workout time
+    final totalTimeQuery = await db.customSelect(
+      '''
+      SELECT COALESCE(SUM(end_time - start_time), 0) as total_seconds
+      FROM workouts
+      WHERE start_time >= ?
+        AND end_time IS NOT NULL
+      ''',
+      variables: [
+        drift.Variable.withInt(startDate.millisecondsSinceEpoch ~/ 1000),
+      ],
+    ).getSingleOrNull();
+
+    final totalSeconds = totalTimeQuery?.read<int?>('total_seconds') ?? 0;
+
     // Calculate total volume
     final totalVol = volumes.values.fold<double>(0, (sum, vol) => sum + vol);
 
@@ -221,6 +237,7 @@ class _OverviewPageState extends State<OverviewPage> {
         totalVolume = totalVol;
         currentStreak = streak;
         mostTrainedMuscle = topMuscle;
+        totalTimeSeconds = totalSeconds;
         actualStartDate = startDate; // Save the actual start date used
         currentBodyweight = latestWeight;
         previousBodyweight = previousWeight;
@@ -258,6 +275,13 @@ class _OverviewPageState extends State<OverviewPage> {
     }
 
     return streak;
+  }
+
+  String _formatTotalTime(int totalSeconds) {
+    final duration = Duration(seconds: totalSeconds);
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    return '${hours}h ${minutes}m';
   }
 
   Future<void> _showDayDetails(DateTime date) async {
@@ -643,10 +667,10 @@ class _OverviewPageState extends State<OverviewPage> {
             const SizedBox(width: 12),
             Expanded(
               child: StatCard(
-                icon: Icons.emoji_events,
-                label: 'Top Muscle',
-                value: mostTrainedMuscle ?? 'N/A',
-                color: colorScheme.tertiary,
+                icon: Icons.schedule,
+                label: 'Total Time',
+                value: _formatTotalTime(totalTimeSeconds),
+                color: colorScheme.primary,
               ),
             ),
           ],
