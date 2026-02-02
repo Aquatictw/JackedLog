@@ -1845,14 +1845,11 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         color: Theme.of(context).primaryColor,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Center(
-        child: Text(
-          name.isNotEmpty ? name[0].toUpperCase() : '?',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+      child: const Center(
+        child: Icon(
+          Icons.fitness_center,
+          color: Colors.white,
+          size: 20,
         ),
       ),
     );
