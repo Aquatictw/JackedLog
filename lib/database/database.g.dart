@@ -1674,6 +1674,12 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
   late final GeneratedColumn<DateTime> lastAutoBackupTime =
       GeneratedColumn<DateTime>('last_auto_backup_time', aliasedName, true,
           type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _lastBackupStatusMeta =
+      const VerificationMeta('lastBackupStatus');
+  @override
+  late final GeneratedColumn<String> lastBackupStatus = GeneratedColumn<String>(
+      'last_backup_status', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _spotifyAccessTokenMeta =
       const VerificationMeta('spotifyAccessToken');
   @override
@@ -1733,6 +1739,7 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         fivethreeoneWeek,
         customColorSeed,
         lastAutoBackupTime,
+        lastBackupStatus,
         spotifyAccessToken,
         spotifyRefreshToken,
         spotifyTokenExpiry
@@ -1992,6 +1999,12 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           lastAutoBackupTime.isAcceptableOrUnknown(
               data['last_auto_backup_time']!, _lastAutoBackupTimeMeta));
     }
+    if (data.containsKey('last_backup_status')) {
+      context.handle(
+          _lastBackupStatusMeta,
+          lastBackupStatus.isAcceptableOrUnknown(
+              data['last_backup_status']!, _lastBackupStatusMeta));
+    }
     if (data.containsKey('spotify_access_token')) {
       context.handle(
           _spotifyAccessTokenMeta,
@@ -2099,6 +2112,8 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
       lastAutoBackupTime: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime,
           data['${effectivePrefix}last_auto_backup_time']),
+      lastBackupStatus: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}last_backup_status']),
       spotifyAccessToken: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}spotify_access_token']),
       spotifyRefreshToken: attachedDatabase.typeMapping.read(
@@ -2154,6 +2169,7 @@ class Setting extends DataClass implements Insertable<Setting> {
   final int fivethreeoneWeek;
   final int customColorSeed;
   final DateTime? lastAutoBackupTime;
+  final String? lastBackupStatus;
   final String? spotifyAccessToken;
   final String? spotifyRefreshToken;
   final int? spotifyTokenExpiry;
@@ -2197,6 +2213,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       required this.fivethreeoneWeek,
       required this.customColorSeed,
       this.lastAutoBackupTime,
+      this.lastBackupStatus,
       this.spotifyAccessToken,
       this.spotifyRefreshToken,
       this.spotifyTokenExpiry});
@@ -2258,6 +2275,9 @@ class Setting extends DataClass implements Insertable<Setting> {
     map['custom_color_seed'] = Variable<int>(customColorSeed);
     if (!nullToAbsent || lastAutoBackupTime != null) {
       map['last_auto_backup_time'] = Variable<DateTime>(lastAutoBackupTime);
+    }
+    if (!nullToAbsent || lastBackupStatus != null) {
+      map['last_backup_status'] = Variable<String>(lastBackupStatus);
     }
     if (!nullToAbsent || spotifyAccessToken != null) {
       map['spotify_access_token'] = Variable<String>(spotifyAccessToken);
@@ -2328,6 +2348,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       lastAutoBackupTime: lastAutoBackupTime == null && nullToAbsent
           ? const Value.absent()
           : Value(lastAutoBackupTime),
+      lastBackupStatus: lastBackupStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastBackupStatus),
       spotifyAccessToken: spotifyAccessToken == null && nullToAbsent
           ? const Value.absent()
           : Value(spotifyAccessToken),
@@ -2389,6 +2412,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       customColorSeed: serializer.fromJson<int>(json['customColorSeed']),
       lastAutoBackupTime:
           serializer.fromJson<DateTime?>(json['lastAutoBackupTime']),
+      lastBackupStatus: serializer.fromJson<String?>(json['lastBackupStatus']),
       spotifyAccessToken:
           serializer.fromJson<String?>(json['spotifyAccessToken']),
       spotifyRefreshToken:
@@ -2440,6 +2464,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       'fivethreeoneWeek': serializer.toJson<int>(fivethreeoneWeek),
       'customColorSeed': serializer.toJson<int>(customColorSeed),
       'lastAutoBackupTime': serializer.toJson<DateTime?>(lastAutoBackupTime),
+      'lastBackupStatus': serializer.toJson<String?>(lastBackupStatus),
       'spotifyAccessToken': serializer.toJson<String?>(spotifyAccessToken),
       'spotifyRefreshToken': serializer.toJson<String?>(spotifyRefreshToken),
       'spotifyTokenExpiry': serializer.toJson<int?>(spotifyTokenExpiry),
@@ -2486,6 +2511,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           int? fivethreeoneWeek,
           int? customColorSeed,
           Value<DateTime?> lastAutoBackupTime = const Value.absent(),
+          Value<String?> lastBackupStatus = const Value.absent(),
           Value<String?> spotifyAccessToken = const Value.absent(),
           Value<String?> spotifyRefreshToken = const Value.absent(),
           Value<int?> spotifyTokenExpiry = const Value.absent()}) =>
@@ -2541,6 +2567,9 @@ class Setting extends DataClass implements Insertable<Setting> {
         lastAutoBackupTime: lastAutoBackupTime.present
             ? lastAutoBackupTime.value
             : this.lastAutoBackupTime,
+        lastBackupStatus: lastBackupStatus.present
+            ? lastBackupStatus.value
+            : this.lastBackupStatus,
         spotifyAccessToken: spotifyAccessToken.present
             ? spotifyAccessToken.value
             : this.spotifyAccessToken,
@@ -2646,6 +2675,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       lastAutoBackupTime: data.lastAutoBackupTime.present
           ? data.lastAutoBackupTime.value
           : this.lastAutoBackupTime,
+      lastBackupStatus: data.lastBackupStatus.present
+          ? data.lastBackupStatus.value
+          : this.lastBackupStatus,
       spotifyAccessToken: data.spotifyAccessToken.present
           ? data.spotifyAccessToken.value
           : this.spotifyAccessToken,
@@ -2700,6 +2732,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('fivethreeoneWeek: $fivethreeoneWeek, ')
           ..write('customColorSeed: $customColorSeed, ')
           ..write('lastAutoBackupTime: $lastAutoBackupTime, ')
+          ..write('lastBackupStatus: $lastBackupStatus, ')
           ..write('spotifyAccessToken: $spotifyAccessToken, ')
           ..write('spotifyRefreshToken: $spotifyRefreshToken, ')
           ..write('spotifyTokenExpiry: $spotifyTokenExpiry')
@@ -2748,6 +2781,7 @@ class Setting extends DataClass implements Insertable<Setting> {
         fivethreeoneWeek,
         customColorSeed,
         lastAutoBackupTime,
+        lastBackupStatus,
         spotifyAccessToken,
         spotifyRefreshToken,
         spotifyTokenExpiry
@@ -2795,6 +2829,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.fivethreeoneWeek == this.fivethreeoneWeek &&
           other.customColorSeed == this.customColorSeed &&
           other.lastAutoBackupTime == this.lastAutoBackupTime &&
+          other.lastBackupStatus == this.lastBackupStatus &&
           other.spotifyAccessToken == this.spotifyAccessToken &&
           other.spotifyRefreshToken == this.spotifyRefreshToken &&
           other.spotifyTokenExpiry == this.spotifyTokenExpiry);
@@ -2840,6 +2875,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<int> fivethreeoneWeek;
   final Value<int> customColorSeed;
   final Value<DateTime?> lastAutoBackupTime;
+  final Value<String?> lastBackupStatus;
   final Value<String?> spotifyAccessToken;
   final Value<String?> spotifyRefreshToken;
   final Value<int?> spotifyTokenExpiry;
@@ -2883,6 +2919,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.fivethreeoneWeek = const Value.absent(),
     this.customColorSeed = const Value.absent(),
     this.lastAutoBackupTime = const Value.absent(),
+    this.lastBackupStatus = const Value.absent(),
     this.spotifyAccessToken = const Value.absent(),
     this.spotifyRefreshToken = const Value.absent(),
     this.spotifyTokenExpiry = const Value.absent(),
@@ -2927,6 +2964,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.fivethreeoneWeek = const Value.absent(),
     this.customColorSeed = const Value.absent(),
     this.lastAutoBackupTime = const Value.absent(),
+    this.lastBackupStatus = const Value.absent(),
     this.spotifyAccessToken = const Value.absent(),
     this.spotifyRefreshToken = const Value.absent(),
     this.spotifyTokenExpiry = const Value.absent(),
@@ -2984,6 +3022,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<int>? fivethreeoneWeek,
     Expression<int>? customColorSeed,
     Expression<DateTime>? lastAutoBackupTime,
+    Expression<String>? lastBackupStatus,
     Expression<String>? spotifyAccessToken,
     Expression<String>? spotifyRefreshToken,
     Expression<int>? spotifyTokenExpiry,
@@ -3035,6 +3074,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       if (customColorSeed != null) 'custom_color_seed': customColorSeed,
       if (lastAutoBackupTime != null)
         'last_auto_backup_time': lastAutoBackupTime,
+      if (lastBackupStatus != null) 'last_backup_status': lastBackupStatus,
       if (spotifyAccessToken != null)
         'spotify_access_token': spotifyAccessToken,
       if (spotifyRefreshToken != null)
@@ -3084,6 +3124,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       Value<int>? fivethreeoneWeek,
       Value<int>? customColorSeed,
       Value<DateTime?>? lastAutoBackupTime,
+      Value<String?>? lastBackupStatus,
       Value<String?>? spotifyAccessToken,
       Value<String?>? spotifyRefreshToken,
       Value<int?>? spotifyTokenExpiry}) {
@@ -3128,6 +3169,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       fivethreeoneWeek: fivethreeoneWeek ?? this.fivethreeoneWeek,
       customColorSeed: customColorSeed ?? this.customColorSeed,
       lastAutoBackupTime: lastAutoBackupTime ?? this.lastAutoBackupTime,
+      lastBackupStatus: lastBackupStatus ?? this.lastBackupStatus,
       spotifyAccessToken: spotifyAccessToken ?? this.spotifyAccessToken,
       spotifyRefreshToken: spotifyRefreshToken ?? this.spotifyRefreshToken,
       spotifyTokenExpiry: spotifyTokenExpiry ?? this.spotifyTokenExpiry,
@@ -3259,6 +3301,9 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       map['last_auto_backup_time'] =
           Variable<DateTime>(lastAutoBackupTime.value);
     }
+    if (lastBackupStatus.present) {
+      map['last_backup_status'] = Variable<String>(lastBackupStatus.value);
+    }
     if (spotifyAccessToken.present) {
       map['spotify_access_token'] = Variable<String>(spotifyAccessToken.value);
     }
@@ -3314,6 +3359,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('fivethreeoneWeek: $fivethreeoneWeek, ')
           ..write('customColorSeed: $customColorSeed, ')
           ..write('lastAutoBackupTime: $lastAutoBackupTime, ')
+          ..write('lastBackupStatus: $lastBackupStatus, ')
           ..write('spotifyAccessToken: $spotifyAccessToken, ')
           ..write('spotifyRefreshToken: $spotifyRefreshToken, ')
           ..write('spotifyTokenExpiry: $spotifyTokenExpiry')
@@ -5796,6 +5842,7 @@ typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
   Value<int> fivethreeoneWeek,
   Value<int> customColorSeed,
   Value<DateTime?> lastAutoBackupTime,
+  Value<String?> lastBackupStatus,
   Value<String?> spotifyAccessToken,
   Value<String?> spotifyRefreshToken,
   Value<int?> spotifyTokenExpiry,
@@ -5840,6 +5887,7 @@ typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
   Value<int> fivethreeoneWeek,
   Value<int> customColorSeed,
   Value<DateTime?> lastAutoBackupTime,
+  Value<String?> lastBackupStatus,
   Value<String?> spotifyAccessToken,
   Value<String?> spotifyRefreshToken,
   Value<int?> spotifyTokenExpiry,
@@ -5985,6 +6033,10 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<DateTime> get lastAutoBackupTime => $composableBuilder(
       column: $table.lastAutoBackupTime,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastBackupStatus => $composableBuilder(
+      column: $table.lastBackupStatus,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get spotifyAccessToken => $composableBuilder(
@@ -6149,6 +6201,10 @@ class $$SettingsTableOrderingComposer
       column: $table.lastAutoBackupTime,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get lastBackupStatus => $composableBuilder(
+      column: $table.lastBackupStatus,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get spotifyAccessToken => $composableBuilder(
       column: $table.spotifyAccessToken,
       builder: (column) => ColumnOrderings(column));
@@ -6288,6 +6344,9 @@ class $$SettingsTableAnnotationComposer
   GeneratedColumn<DateTime> get lastAutoBackupTime => $composableBuilder(
       column: $table.lastAutoBackupTime, builder: (column) => column);
 
+  GeneratedColumn<String> get lastBackupStatus => $composableBuilder(
+      column: $table.lastBackupStatus, builder: (column) => column);
+
   GeneratedColumn<String> get spotifyAccessToken => $composableBuilder(
       column: $table.spotifyAccessToken, builder: (column) => column);
 
@@ -6360,6 +6419,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             Value<int> fivethreeoneWeek = const Value.absent(),
             Value<int> customColorSeed = const Value.absent(),
             Value<DateTime?> lastAutoBackupTime = const Value.absent(),
+            Value<String?> lastBackupStatus = const Value.absent(),
             Value<String?> spotifyAccessToken = const Value.absent(),
             Value<String?> spotifyRefreshToken = const Value.absent(),
             Value<int?> spotifyTokenExpiry = const Value.absent(),
@@ -6404,6 +6464,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             fivethreeoneWeek: fivethreeoneWeek,
             customColorSeed: customColorSeed,
             lastAutoBackupTime: lastAutoBackupTime,
+            lastBackupStatus: lastBackupStatus,
             spotifyAccessToken: spotifyAccessToken,
             spotifyRefreshToken: spotifyRefreshToken,
             spotifyTokenExpiry: spotifyTokenExpiry,
@@ -6448,6 +6509,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             Value<int> fivethreeoneWeek = const Value.absent(),
             Value<int> customColorSeed = const Value.absent(),
             Value<DateTime?> lastAutoBackupTime = const Value.absent(),
+            Value<String?> lastBackupStatus = const Value.absent(),
             Value<String?> spotifyAccessToken = const Value.absent(),
             Value<String?> spotifyRefreshToken = const Value.absent(),
             Value<int?> spotifyTokenExpiry = const Value.absent(),
@@ -6492,6 +6554,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             fivethreeoneWeek: fivethreeoneWeek,
             customColorSeed: customColorSeed,
             lastAutoBackupTime: lastAutoBackupTime,
+            lastBackupStatus: lastBackupStatus,
             spotifyAccessToken: spotifyAccessToken,
             spotifyRefreshToken: spotifyRefreshToken,
             spotifyTokenExpiry: spotifyTokenExpiry,

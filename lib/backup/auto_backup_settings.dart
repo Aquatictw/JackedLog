@@ -191,58 +191,63 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
 
                 const SizedBox(height: 16),
 
-                // Last backup time
-                if (settings.value.lastAutoBackupTime != null)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color:
-                          colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: colorScheme.outlineVariant,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.schedule_rounded,
-                          color: colorScheme.secondary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Last Backup',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                timeago
-                                    .format(settings.value.lastAutoBackupTime!),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: colorScheme.onSurface,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                // Last backup time with status indicator
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color:
+                        colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant,
                     ),
                   ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.schedule_rounded,
+                        color: colorScheme.secondary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Last Backup',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              settings.value.lastAutoBackupTime != null
+                                  ? timeago.format(settings.value.lastAutoBackupTime!)
+                                  : 'Never',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: colorScheme.onSurface,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _buildBackupStatusIndicator(
+                        context,
+                        settings.value.lastBackupStatus,
+                        settings.value.lastAutoBackupTime,
+                      ),
+                    ],
+                  ),
+                ),
 
                 const SizedBox(height: 16),
 
@@ -379,6 +384,48 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
     );
   }
 
+  Widget _buildBackupStatusIndicator(
+    BuildContext context,
+    String? status,
+    DateTime? lastBackupTime,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    IconData icon;
+    String label;
+    Color color;
+
+    if (lastBackupTime == null) {
+      icon = Icons.backup_outlined;
+      label = 'Never';
+      color = colorScheme.outline;
+    } else if (status == 'failed') {
+      icon = Icons.error_outline_rounded;
+      label = 'Failed';
+      color = colorScheme.error;
+    } else {
+      icon = Icons.check_circle_outline_rounded;
+      label = 'Success';
+      color = colorScheme.primary;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _selectBackupFolder() async {
     try {
       print('🔵 Opening folder picker...');
@@ -440,8 +487,19 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
         toast('Backup completed successfully!');
       }
     } catch (e) {
+      print('ERROR [ManualBackup] Backup failed');
+      print('  Backup path: $backupPath');
+      print('  Exception type: ${e.runtimeType}');
+      print('  Message: $e');
+      if (e is FileSystemException) {
+        print('  OS Error: ${e.osError}');
+      }
+      if (e is PlatformException) {
+        print('  Platform code: ${e.code}');
+        print('  Platform message: ${e.message}');
+      }
       if (mounted) {
-        toast('Backup failed: ${e.toString()}');
+        toast(_getBackupErrorMessage(e), duration: const Duration(seconds: 10));
       }
     } finally {
       if (mounted) {
@@ -450,5 +508,51 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
         });
       }
     }
+  }
+
+  String _getBackupErrorMessage(Object error) {
+    final msg = error.toString().toLowerCase();
+
+    if (error is PlatformException) {
+      final platformMsg = error.message?.toLowerCase() ?? '';
+      if (platformMsg.contains('permission') || platformMsg.contains('denied')) {
+        return 'Backup failed: Permission denied. Please re-select the backup folder.';
+      }
+      if (platformMsg.contains('no space') || platformMsg.contains('full')) {
+        return 'Backup failed: Not enough storage space.';
+      }
+      return 'Backup failed: ${error.message ?? 'Unknown error'}';
+    }
+
+    if (error is FileSystemException) {
+      final osError = error.osError;
+      if (osError != null) {
+        if (osError.errorCode == 13) {
+          return 'Backup failed: Permission denied.';
+        }
+        if (osError.errorCode == 28) {
+          return 'Backup failed: Not enough storage space.';
+        }
+        if (osError.errorCode == 2) {
+          return 'Backup failed: Folder not found. Please select a new backup folder.';
+        }
+      }
+      return 'Backup failed: Could not write to backup location.';
+    }
+
+    if (msg.contains('permission') || msg.contains('denied')) {
+      return 'Backup failed: Permission denied. Please re-select the backup folder.';
+    }
+    if (msg.contains('no space') ||
+        msg.contains('disk full') ||
+        msg.contains('storage')) {
+      return 'Backup failed: Not enough storage space.';
+    }
+    if (msg.contains('not found') || msg.contains('no such')) {
+      return 'Backup failed: Backup folder not found. Please select a new folder.';
+    }
+
+    final firstLine = error.toString().split('\n').first;
+    return 'Backup failed: ${firstLine.length > 80 ? '${firstLine.substring(0, 80)}...' : firstLine}';
   }
 }

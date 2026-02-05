@@ -41,10 +41,11 @@ class AutoBackupService {
       // Perform the backup
       await _createBackup(settings.backupPath!);
 
-      // Update last backup time
+      // Update last backup time and status
       await db.settings.update().write(
             SettingsCompanion(
               lastAutoBackupTime: Value(DateTime.now()),
+              lastBackupStatus: const Value('success'),
             ),
           );
 
@@ -53,7 +54,25 @@ class AutoBackupService {
 
       return true;
     } catch (e) {
-      // Silent fail for auto-backup
+      print('ERROR [AutoBackup] Backup failed');
+      print('  Exception type: ${e.runtimeType}');
+      print('  Message: $e');
+      if (e is FileSystemException) {
+        print('  OS Error: ${e.osError}');
+        print('  Path: ${e.path}');
+      }
+      if (e is PlatformException) {
+        print('  Platform code: ${e.code}');
+        print('  Platform message: ${e.message}');
+      }
+
+      // Track failure status
+      await db.settings.update().write(
+            const SettingsCompanion(
+              lastBackupStatus: Value('failed'),
+            ),
+          );
+
       return false;
     }
   }
@@ -65,6 +84,7 @@ class AutoBackupService {
     await db.settings.update().write(
           SettingsCompanion(
             lastAutoBackupTime: Value(DateTime.now()),
+            lastBackupStatus: const Value('success'),
           ),
         );
 
