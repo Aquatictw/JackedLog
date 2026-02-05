@@ -403,6 +403,14 @@ class AppDatabase extends _$AppDatabase {
             )
           ''');
         }
+
+        // from62To63: Add backup status tracking
+        // Runs when migrating FROM a version <=62 TO a version >=63
+        if (from < 63 && to >= 63) {
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN last_backup_status TEXT',
+          ).catchError((e) {});
+        }
       },
       beforeOpen: (details) async {
         // Ensure bodyweight_entries table exists (safety check for migration issues)
@@ -427,5 +435,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 62;
+  int get schemaVersion => 63;
 }

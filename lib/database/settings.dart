@@ -50,6 +50,8 @@ class Settings extends Table {
   IntColumn get customColorSeed => integer()
       .withDefault(const Constant(0xFF673AB7))(); // Default: deep purple
   DateTimeColumn get lastAutoBackupTime => dateTime().nullable()();
+  TextColumn get lastBackupStatus => text().nullable()();
+  // Values: null (never attempted), 'success', 'failed'
   // Spotify integration tokens
   TextColumn get spotifyAccessToken => text().nullable()();
   TextColumn get spotifyRefreshToken => text().nullable()();

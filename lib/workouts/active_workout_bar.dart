@@ -34,13 +34,13 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
+      if (!mounted) return; // Exit early if widget disposed
+
+      final workoutState = context.read<WorkoutState>();
+      if (workoutState.activeWorkout != null) {
         setState(() {
-          final workoutState = context.read<WorkoutState>();
-          if (workoutState.activeWorkout != null) {
-            _elapsed = DateTime.now()
-                .difference(workoutState.activeWorkout!.startTime);
-          }
+          _elapsed = DateTime.now()
+              .difference(workoutState.activeWorkout!.startTime);
         });
       }
     });

@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Users can efficiently log and track their workouts with minimal friction
-**Current focus:** Planning next milestone
+**Current focus:** v1.1 Error Handling & Stability
 
 ## Current Position
 
-Phase: Milestone complete
-Plan: N/A
-Status: Ready for next milestone
-Last activity: 2026-02-02 — v1.0 milestone complete
+Phase: 5 of 5 (Backup Status & Stability) ✓
+Plan: 1/1 complete
+Status: Phase complete, verified — MILESTONE v1.1 COMPLETE
+Last activity: 2026-02-05 — Phase 5 executed and verified
 
-Progress: [██████████] v1.0 SHIPPED
+Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1)
 
 ## Performance Metrics
 
@@ -23,6 +23,11 @@ Progress: [██████████] v1.0 SHIPPED
 - Average duration: 13 min
 - Total execution time: 53 min
 
+**v1.1 Velocity:**
+- Total plans completed: 2
+- Average duration: 2.5 min
+- Total execution time: 5 min
+
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
@@ -30,6 +35,8 @@ Progress: [██████████] v1.0 SHIPPED
 | 01-quick-wins | 1 | 8 min | 8 min |
 | 02-edit-workout | 2 | 37 min | 18.5 min |
 | 03-notes-reorder | 1 | 8 min | 8 min |
+| 04-error-handling | 1 | 2 min | 2 min |
+| 05-backup-status-stability | 1 | 3 min | 3 min |
 
 *Updated after each plan completion*
 
@@ -39,6 +46,14 @@ Progress: [██████████] v1.0 SHIPPED
 
 Decisions are logged in PROJECT.md Key Decisions table.
 v1.0 decisions archived with milestone.
+
+**v1.1 Decisions:**
+
+| ID | Decision | Rationale |
+|----|----------|-----------|
+| DEC-04-01-01 | Use helper functions for error classification | Centralizes mapping logic, easy to extend for new error types |
+| DEC-05-01-01 | Store backup status as text column | Simple 'success'/'failed'/null values, easy to extend |
+| DEC-05-01-02 | Always show Last Backup section when auto-backups enabled | Better UX - shows "Never" if no backup yet rather than hiding section |
 
 ### Pending Todos
 
@@ -57,22 +72,17 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-02
-Stopped at: v1.0 milestone complete
+Last session: 2026-02-05
+Stopped at: Phase 5 complete and verified - v1.1 milestone complete
 Resume file: None
-
-## Milestone Status
-
-**v1.0 UI Enhancements: SHIPPED**
-
-See: .planning/MILESTONES.md
 
 ## Next Steps
 
-Run `/gsd:new-milestone` to start next milestone cycle:
-- Define new requirements
-- Create roadmap with phases
-- Begin execution
+v1.1 milestone complete. All planned phases executed:
+- Phase 4: Error Handling - complete
+- Phase 5: Backup Status & Stability - complete
+
+Ready for user testing and next milestone planning.
 
 ---
-*Last updated: 2026-02-02 after quick-002 completion*
+*Last updated: 2026-02-05 after phase 5 verification*

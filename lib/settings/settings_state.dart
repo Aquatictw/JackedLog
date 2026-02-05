@@ -23,9 +23,12 @@ class SettingsState extends ChangeNotifier {
 
   Future<void> init() async {
     subscription =
-        (db.settings.select()..limit(1)).watchSingle().listen((event) {
-      value = event;
-      notifyListeners();
+        (db.settings.select()..limit(1)).watchSingleOrNull().listen((event) {
+      if (event != null) {
+        value = event;
+        notifyListeners();
+      }
+      // If event is null, keep existing value (graceful degradation)
     });
   }
 }

@@ -36,7 +36,15 @@ Users can efficiently log and track their workouts with minimal friction — eve
 
 ### Active
 
-(None — ready for next milestone definition)
+**Current Milestone: v1.1 Error Handling & Stability**
+
+**Goal:** Improve app reliability by surfacing silent errors and fixing stability issues.
+
+**Target features:**
+- Import error logging and user notifications
+- Backup failure logging with status indicator in settings
+- Active workout bar timer stability fix
+- Settings initialization null safety
 
 ### Out of Scope
 
@@ -73,4 +81,4 @@ The Edit Workout feature mirrors the active workout experience from `start_plan_
 | Sequence stored descending | Natural ordering (highest = top) | ✓ Good |
 
 ---
-*Last updated: 2026-02-02 after v1.0 milestone*
+*Last updated: 2026-02-05 after v1.1 milestone start*

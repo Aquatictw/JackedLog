@@ -460,12 +460,14 @@ class ImportHevy extends StatelessWidget {
   }
 
   Future<void> _importHevy(BuildContext context) async {
+    String? filePath;
     try {
       final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
       if (result == null) return;
+      filePath = result.files.single.path;
 
       String csvContent;
       if (kIsWeb) {
@@ -724,11 +726,35 @@ class ImportHevy extends StatelessWidget {
       toast(message);
     } catch (e) {
       if (!ctx.mounted) return;
+
+      print('ERROR [ImportHevy] Import failed');
+      print('  File path: $filePath');
+      print('  Exception type: ${e.runtimeType}');
+      print('  Message: $e');
+
       toast(
-        'Failed to import from Hevy: ${e.toString()}',
+        _getHevyImportErrorMessage(e, filePath),
         duration: const Duration(seconds: 10),
       );
     }
+  }
+
+  String _getHevyImportErrorMessage(Object error, String? filePath) {
+    if (error is FormatException) {
+      return 'Hevy import failed: Invalid CSV format.';
+    }
+    if (error is FileSystemException) {
+      return 'Hevy import failed: Could not read file.';
+    }
+    final msg = error.toString().toLowerCase();
+    if (msg.contains('could not find exercise column')) {
+      return 'Hevy import failed: CSV missing exercise column. Is this a Hevy export file?';
+    }
+    if (msg.contains('csv file is empty') || msg.contains('at least one data row')) {
+      return 'Hevy import failed: CSV file has no workout data.';
+    }
+    final firstLine = error.toString().split('\n').first;
+    return 'Hevy import failed: ${firstLine.length > 80 ? '${firstLine.substring(0, 80)}...' : firstLine}';
   }
 
   int _findColumnIndex(List<String> headers, List<String> possibleNames) {

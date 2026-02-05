@@ -58,25 +58,35 @@ class ImportData extends StatelessWidget {
   Future<void> importDatabase(BuildContext context) async {
     Navigator.pop(context);
 
+    FilePickerResult? result;
     try {
       if (kIsWeb) {
         await _importDatabaseWeb(context);
       } else {
-        await _importDatabaseNative(context);
+        result = await _importDatabaseNativeWithResult(context);
       }
     } catch (e) {
       if (!ctx.mounted) return;
 
+      print('ERROR [ImportDatabase] Import failed');
+      print('  File path: ${result?.files.single.path ?? 'unknown'}');
+      print('  Exception type: ${e.runtimeType}');
+      print('  Message: $e');
+      if (e is FileSystemException) {
+        print('  OS Error: ${e.osError}');
+      }
+
       toast(
-        'Failed to import database: ${e.toString()}',
+        _getImportErrorMessage(e, result?.files.single.path),
         duration: const Duration(seconds: 10),
       );
     }
   }
 
-  Future<void> _importDatabaseNative(BuildContext context) async {
+  Future<FilePickerResult?> _importDatabaseNativeWithResult(
+      BuildContext context,) async {
     final FilePickerResult? result = await FilePicker.platform.pickFiles();
-    if (result == null) return;
+    if (result == null) return null;
 
     final File sourceFile = File(result.files.single.path!);
 
@@ -104,13 +114,15 @@ class ImportData extends StatelessWidget {
           ),
         );
 
-    if (!ctx.mounted) return;
+    if (!ctx.mounted) return result;
     final settingsState = ctx.read<SettingsState>();
     await settingsState.init();
 
-    if (!ctx.mounted) return;
+    if (!ctx.mounted) return result;
     Navigator.of(ctx, rootNavigator: true)
         .pushNamedAndRemoveUntil('/', (_) => false);
+
+    return result;
   }
 
   Future<void> _importDatabaseWeb(BuildContext context) async {
@@ -130,12 +142,14 @@ class ImportData extends StatelessWidget {
   Future<void> importWorkouts(BuildContext context) async {
     Navigator.pop(context);
 
+    String? filePath;
     try {
       final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['zip'],
       );
       if (result == null) return;
+      filePath = result.files.single.path;
 
       // Read ZIP file
       Uint8List zipBytes;
@@ -295,8 +309,13 @@ class ImportData extends StatelessWidget {
     } catch (e) {
       if (!ctx.mounted) return;
 
+      print('ERROR [ImportWorkouts] Import failed');
+      print('  File path: $filePath');
+      print('  Exception type: ${e.runtimeType}');
+      print('  Message: $e');
+
       toast(
-        'Failed to import workouts: ${e.toString()}',
+        _getImportErrorMessage(e, filePath),
         duration: const Duration(seconds: 10),
       );
     }
@@ -350,5 +369,33 @@ class ImportData extends StatelessWidget {
     }
     if (value is num) return value != 0;
     return false;
+  }
+
+  String _getImportErrorMessage(Object error, String? filePath) {
+    if (error is FormatException) {
+      return 'Import failed: Invalid file format. Ensure this is a valid backup file.';
+    }
+    if (error is FileSystemException) {
+      final osError = error.osError;
+      if (osError != null) {
+        if (osError.errorCode == 13) {
+          return 'Import failed: Storage permission denied.';
+        }
+        if (osError.errorCode == 2) return 'Import failed: File not found.';
+      }
+      return 'Import failed: Could not read file.';
+    }
+    final msg = error.toString().toLowerCase();
+    if (msg.contains('missing required csv')) {
+      return 'Import failed: Invalid backup file (missing workouts or sets data).';
+    }
+    if (msg.contains('insufficient columns')) {
+      return 'Import failed: Backup file format is outdated or corrupted.';
+    }
+    if (msg.contains('csv is empty')) {
+      return 'Import failed: Backup file contains no data.';
+    }
+    final firstLine = error.toString().split('\n').first;
+    return 'Import failed: ${firstLine.length > 80 ? '${firstLine.substring(0, 80)}...' : firstLine}';
   }
 }
