@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 Phase: 5 of 5 (Backup Status & Stability) ✓
 Plan: 1/1 complete
 Status: Phase complete, verified — MILESTONE v1.1 COMPLETE
-Last activity: 2026-02-06 — Completed quick task 003: Fix notes saving bug
+Last activity: 2026-02-06 — Completed quick task 004: Fix notes stale cache after edit
 
 Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1)
 
@@ -70,11 +70,12 @@ None.
 | 001 | Restore notes grid layout and slim Training Max button | 2026-02-02 | c100a9a0 | [001-restore-notes-grid-layout-and-slim-train](./quick/001-restore-notes-grid-layout-and-slim-train/) |
 | 002 | Exercise icon barbell in workout detail | 2026-02-02 | 8fc6f2e9 | [002-exercise-icon-barbell-workout-detail](./quick/002-exercise-icon-barbell-workout-detail/) |
 | 003 | Fix notes edits not persisting after save | 2026-02-06 | bf80d088 | [003-fix-notes-saving-not-persisting](./quick/003-fix-notes-saving-not-persisting/) |
+| 004 | Fix notes stale cache after edit | 2026-02-06 | c2e03f73 | [004-fix-notes-stale-cache-after-edit](./quick/004-fix-notes-stale-cache-after-edit/) |
 
 ## Session Continuity
 
-Last session: 2026-02-05
-Stopped at: Phase 5 complete and verified - v1.1 milestone complete
+Last session: 2026-02-06
+Stopped at: Completed quick task 004
 Resume file: None
 
 ## Next Steps
@@ -86,4 +87,4 @@ v1.1 milestone complete. All planned phases executed:
 Ready for user testing and next milestone planning.
 
 ---
-*Last updated: 2026-02-05 after phase 5 verification*
+*Last updated: 2026-02-06 after quick task 004*
