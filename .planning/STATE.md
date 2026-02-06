@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 Phase: 5 of 5 (Backup Status & Stability) ✓
 Plan: 1/1 complete
 Status: Phase complete, verified — MILESTONE v1.1 COMPLETE
-Last activity: 2026-02-05 — Phase 5 executed and verified
+Last activity: 2026-02-06 — Completed quick task 003: Fix notes saving bug
 
 Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1)
 
@@ -69,6 +69,7 @@ None.
 |---|-------------|------|--------|-----------|
 | 001 | Restore notes grid layout and slim Training Max button | 2026-02-02 | c100a9a0 | [001-restore-notes-grid-layout-and-slim-train](./quick/001-restore-notes-grid-layout-and-slim-train/) |
 | 002 | Exercise icon barbell in workout detail | 2026-02-02 | 8fc6f2e9 | [002-exercise-icon-barbell-workout-detail](./quick/002-exercise-icon-barbell-workout-detail/) |
+| 003 | Fix notes edits not persisting after save | 2026-02-06 | bf80d088 | [003-fix-notes-saving-not-persisting](./quick/003-fix-notes-saving-not-persisting/) |
 
 ## Session Continuity
 
