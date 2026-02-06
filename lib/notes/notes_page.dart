@@ -64,10 +64,17 @@ class _NotesPageState extends State<NotesPage> {
       ),
     );
 
-    if (result != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Note created')),
-      );
+    if (!mounted) return;
+    setState(() { _localNotes = null; });
+
+    if (result != null) {
+      try {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Note created')),
+        );
+      } on FlutterError catch (_) {
+        // Scaffold may be deactivated during frame transition
+      }
     }
   }
 
@@ -82,10 +89,17 @@ class _NotesPageState extends State<NotesPage> {
       ),
     );
 
-    if (result != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Note updated')),
-      );
+    if (!mounted) return;
+    setState(() { _localNotes = null; });
+
+    if (result != null) {
+      try {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Note updated')),
+        );
+      } on FlutterError catch (_) {
+        // Scaffold may be deactivated during frame transition
+      }
     }
   }
 
