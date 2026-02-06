@@ -107,6 +107,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       final note =
           await (db.notes.select()..where((n) => n.id.equals(id))).getSingle();
       if (mounted) {
+        setState(() { _isModified = false; });
         Navigator.pop(context, note);
       }
     } else {
@@ -124,6 +125,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
             ..where((n) => n.id.equals(widget.note!.id)))
           .getSingle();
       if (mounted) {
+        setState(() { _isModified = false; });
         Navigator.pop(context, note);
       }
     }
@@ -185,7 +187,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
+      canPop: !_isModified,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
