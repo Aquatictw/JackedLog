@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 Phase: 9 of 9 (Block Completion) -- Complete
 Plan: 1 of 1 in current phase
 Status: v1.2 complete
-Last activity: 2026-02-11 -- Completed 09-01-PLAN.md
+Last activity: 2026-02-11 -- Completed quick-008
 
 Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2)
 
@@ -90,6 +90,7 @@ None.
 | 005 | 5/3/1 UI: compact TM, editable TMs, phase labels | 2026-02-11 | 7f694e65 | [005-531-ui-compact-tm-editable-phase-labels](./quick/005-531-ui-compact-tm-editable-phase-labels/) |
 | 006 | Fix start TM columns migration self-heal | 2026-02-11 | 94de8641 | [006-fix-start-tm-columns-migration](./quick/006-fix-start-tm-columns-migration/) |
 | 007 | 5/3/1 UI fixes: block progress & calculator | 2026-02-11 | 583c9be4 | [007-531-ui-fixes-block-progress-calculator](./quick/007-531-ui-fixes-block-progress-calculator/) |
+| 008 | Squash 4 docs commits into feat: 06 | 2026-02-11 | 4b5839d3 | [008-squash-v12-docs-into-feat-06](./quick/008-squash-v12-docs-into-feat-06/) |
 
 ## Session Continuity
 
