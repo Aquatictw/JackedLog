@@ -89,11 +89,12 @@ None.
 | 004 | Fix notes stale cache after edit | 2026-02-06 | c2e03f73 | [004-fix-notes-stale-cache-after-edit](./quick/004-fix-notes-stale-cache-after-edit/) |
 | 005 | 5/3/1 UI: compact TM, editable TMs, phase labels | 2026-02-11 | 7f694e65 | [005-531-ui-compact-tm-editable-phase-labels](./quick/005-531-ui-compact-tm-editable-phase-labels/) |
 | 006 | Fix start TM columns migration self-heal | 2026-02-11 | 94de8641 | [006-fix-start-tm-columns-migration](./quick/006-fix-start-tm-columns-migration/) |
+| 007 | 5/3/1 UI fixes: block progress & calculator | 2026-02-11 | 583c9be4 | [007-531-ui-fixes-block-progress-calculator](./quick/007-531-ui-fixes-block-progress-calculator/) |
 
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed quick-006
+Stopped at: Completed quick-007
 Resume file: None
 
 ## Next Steps
@@ -101,4 +102,4 @@ Resume file: None
 v1.2 5/3/1 Forever Block Programming milestone is complete. All 9 phases delivered.
 
 ---
-*Last updated: 2026-02-11 after phase 9 completion*
+*Last updated: 2026-02-11 after quick-007 completion*
