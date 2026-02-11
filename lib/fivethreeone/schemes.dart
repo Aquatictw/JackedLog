@@ -167,3 +167,38 @@ String getSupplementalName(int cycleType) {
       return '';
   }
 }
+
+/// Returns descriptive label combining main scheme + supplemental
+String getDescriptiveLabel(int cycleType) {
+  switch (cycleType) {
+    case cycleLeader1:
+    case cycleLeader2:
+      return "5's Pro BBB";
+    case cycleAnchor:
+      return 'PR Sets FSL';
+    case cycleDeload:
+      return 'Deload';
+    case cycleTmTest:
+      return 'TM Test';
+    default:
+      return '';
+  }
+}
+
+/// Returns a short badge string for cycle type
+String getCycleBadge(int cycleType) {
+  switch (cycleType) {
+    case cycleLeader1:
+      return 'L1';
+    case cycleLeader2:
+      return 'L2';
+    case cycleDeload:
+      return 'D';
+    case cycleAnchor:
+      return 'A';
+    case cycleTmTest:
+      return 'T';
+    default:
+      return '';
+  }
+}
