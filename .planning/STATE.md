@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Users can efficiently log and track their workouts with minimal friction
-**Current focus:** v1.2 5/3/1 Forever Block Programming - Phase 7: Block Management
+**Current focus:** v1.2 5/3/1 Forever Block Programming - Phase 8: Calculator Enhancement
 
 ## Current Position
 
-Phase: 6 of 9 (Data Foundation) — Complete
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-02-11 — Completed Phase 6 (Data Foundation)
+Phase: 8 of 9 (Calculator Enhancement) — Not started
+Plan: 0 of 1 in current phase
+Status: Not started
+Last activity: 2026-02-11 — Completed Phase 7 (Block Management)
 
-Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [███░░░░░░░] 25% (v1.2)
+Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [███████░░░] 62% (v1.2)
 
 ## Performance Metrics
 
@@ -29,9 +29,9 @@ Progress: [██████████] 100% (v1.0) | [███████�
 - Total execution time: 5 min
 
 **v1.2 Velocity:**
-- Total plans completed: 1
-- Average duration: 2 min
-- Total execution time: 2 min
+- Total plans completed: 3
+- Average duration: 2.7 min
+- Total execution time: 6 min
 
 **By Phase:**
 
@@ -43,6 +43,7 @@ Progress: [██████████] 100% (v1.0) | [███████�
 | 04-error-handling | 1 | 2 min | 2 min |
 | 05-backup-status-stability | 1 | 3 min | 3 min |
 | 06-data-foundation | 1 | 2 min | 2 min |
+| 07-block-management | 2/2 | 4 min | 2 min |
 
 *Updated after each plan completion*
 
@@ -60,6 +61,8 @@ v1.0 and v1.1 decisions archived with milestones.
 - Pure `schemes.dart` module with no UI/DB dependencies for all percentage/rep data
 - Manual week advancement only (no auto-detection from workout completion)
 - TM snapshots stored per block (not references to Settings values)
+- StatelessWidget for BlockOverviewPage since state comes from Provider watch
+- Private extracted widgets (_CycleEntry, _CompleteWeekButton) for timeline structure
 
 ### Pending Todos
 
@@ -81,12 +84,12 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Phase 6 complete, verified ✓
+Stopped at: Completed Phase 7 (Block Management) - all plans executed and verified
 Resume file: None
 
 ## Next Steps
 
-Plan Phase 7 (Block Management): block creation flow, overview page, week/cycle advancement, TM progression.
+Plan and execute Phase 8: Calculator Enhancement (context-aware calculator with scheme switching and supplemental display).
 
 ---
-*Last updated: 2026-02-11 after Phase 6 completion*
+*Last updated: 2026-02-11 after Phase 7 completion*

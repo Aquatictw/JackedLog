@@ -1,10 +1,13 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../database/database.dart';
+import '../fivethreeone/block_creation_dialog.dart';
+import '../fivethreeone/block_overview_page.dart';
+import '../fivethreeone/fivethreeone_state.dart';
 import '../main.dart';
-import '../widgets/training_max_editor.dart';
 import 'note_editor_page.dart';
 
 class NotesPage extends StatefulWidget {
@@ -218,14 +221,7 @@ class _NotesPageState extends State<NotesPage> {
           if (notes.isEmpty && _searchQuery.isNotEmpty) {
             return Column(
               children: [
-                _TrainingMaxBanner(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => const TrainingMaxEditor(),
-                    );
-                  },
-                ),
+                const _TrainingMaxBanner(),
                 Expanded(
                   child: Center(
                     child: Column(
@@ -261,14 +257,7 @@ class _NotesPageState extends State<NotesPage> {
           if (notes.isEmpty) {
             return Column(
               children: [
-                _TrainingMaxBanner(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => const TrainingMaxEditor(),
-                    );
-                  },
-                ),
+                const _TrainingMaxBanner(),
                 Expanded(
                   child: Center(
                     child: Column(
@@ -316,14 +305,7 @@ class _NotesPageState extends State<NotesPage> {
 
           return Column(
             children: [
-              _TrainingMaxBanner(
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => const TrainingMaxEditor(),
-                  );
-                },
-              ),
+              const _TrainingMaxBanner(),
               Expanded(
                 child: _isReorderMode && _searchQuery.isEmpty
                     // ReorderableListView when in reorder mode (list layout)
@@ -410,24 +392,48 @@ class _NotesPageState extends State<NotesPage> {
 }
 
 class _TrainingMaxBanner extends StatelessWidget {
-
-  const _TrainingMaxBanner({
-    required this.onTap,
-  });
-  final VoidCallback onTap;
+  const _TrainingMaxBanner();
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final fiveThreeOneState = context.watch<FiveThreeOneState>();
+    final hasBlock = fiveThreeOneState.hasActiveBlock;
+
+    final backgroundColor = hasBlock
+        ? colorScheme.primaryContainer
+        : colorScheme.surfaceContainerHigh;
+    final textColor = hasBlock
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
+    final iconColor = hasBlock
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
+    final label = hasBlock
+        ? fiveThreeOneState.positionLabel
+        : 'Start a 5/3/1 block \u2192';
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       child: Material(
         elevation: 3,
         borderRadius: BorderRadius.circular(16),
-        color: colorScheme.primaryContainer,
+        color: backgroundColor,
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            if (hasBlock) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const BlockOverviewPage(),
+                ),
+              );
+            } else {
+              showDialog(
+                context: context,
+                builder: (_) => const BlockCreationDialog(),
+              );
+            }
+          },
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -435,8 +441,8 @@ class _TrainingMaxBanner extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               gradient: LinearGradient(
                 colors: [
-                  colorScheme.primaryContainer,
-                  colorScheme.primaryContainer.withValues(alpha: 0.8),
+                  backgroundColor,
+                  backgroundColor.withValues(alpha: 0.8),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -447,30 +453,30 @@ class _TrainingMaxBanner extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.15),
+                    color: iconColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.fitness_center,
                     size: 24,
-                    color: colorScheme.primary,
+                    color: iconColor,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    '5/3/1 Training Max',
+                    label,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: colorScheme.onPrimaryContainer,
+                      color: textColor,
                       letterSpacing: 0.2,
                     ),
                   ),
                 ),
                 Icon(
                   Icons.chevron_right,
-                  color: colorScheme.primary,
+                  color: iconColor,
                   size: 24,
                 ),
               ],

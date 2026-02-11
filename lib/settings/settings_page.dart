@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../database/database.dart';
+import '../fivethreeone/block_creation_dialog.dart';
 import 'appearance_settings.dart';
 import 'data_settings.dart';
 import 'format_settings.dart';
@@ -179,6 +180,17 @@ class _SettingsPageState extends State<SettingsPage>
                               builder: (context) => const WorkoutSettings(),
                             ),
                           ),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.fitness_center),
+                          title: const Text('5/3/1 Block'),
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) =>
+                                  const BlockCreationDialog(),
+                            );
+                          },
                         ),
                         ListTile(
                           leading: const Icon(Icons.music_note),
