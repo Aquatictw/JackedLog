@@ -62,7 +62,7 @@ v1.0 and v1.1 decisions archived with milestones.
 - Pure `schemes.dart` module with no UI/DB dependencies for all percentage/rep data
 - Manual week advancement only (no auto-detection from workout completion)
 - TM snapshots stored per block (not references to Settings values)
-- StatelessWidget for BlockOverviewPage since state comes from Provider watch
+- StatelessWidget for BlockOverviewPage since state comes from Provider watch (TmCard upgraded to StatefulWidget for inline editing)
 - Private extracted widgets (_CycleEntry, _CompleteWeekButton) for timeline structure
 - Single widget with `_isBlockMode` flag for dual-mode calculator (avoids widget duplication)
 - Compact single-line supplemental display format ("BBB 5x10 @ weight") instead of repeating identical rows
@@ -83,11 +83,12 @@ None.
 | 002 | Exercise icon barbell in workout detail | 2026-02-02 | 8fc6f2e9 | [002-exercise-icon-barbell-workout-detail](./quick/002-exercise-icon-barbell-workout-detail/) |
 | 003 | Fix notes edits not persisting after save | 2026-02-06 | bf80d088 | [003-fix-notes-saving-not-persisting](./quick/003-fix-notes-saving-not-persisting/) |
 | 004 | Fix notes stale cache after edit | 2026-02-06 | c2e03f73 | [004-fix-notes-stale-cache-after-edit](./quick/004-fix-notes-stale-cache-after-edit/) |
+| 005 | 5/3/1 UI: compact TM, editable TMs, phase labels | 2026-02-11 | 7f694e65 | [005-531-ui-compact-tm-editable-phase-labels](./quick/005-531-ui-compact-tm-editable-phase-labels/) |
 
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 08-01-PLAN.md (Calculator Enhancement phase complete)
+Stopped at: Completed quick-005 (compact TM, editable TMs, phase labels)
 Resume file: None
 
 ## Next Steps
@@ -95,4 +96,4 @@ Resume file: None
 Plan and execute Phase 9: Block Completion (post-block summary and block completion flow).
 
 ---
-*Last updated: 2026-02-11 after Phase 8 completion*
+*Last updated: 2026-02-11 after quick-005 completion*

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../database/database.dart';
@@ -226,10 +227,101 @@ class _CycleEntry extends StatelessWidget {
 
 }
 
-class _TmCard extends StatelessWidget {
+class _TmCard extends StatefulWidget {
   const _TmCard({required this.block});
 
   final FiveThreeOneBlock block;
+
+  @override
+  State<_TmCard> createState() => _TmCardState();
+}
+
+class _TmCardState extends State<_TmCard> {
+  late TextEditingController _squatController;
+  late TextEditingController _benchController;
+  late TextEditingController _deadliftController;
+  late TextEditingController _pressController;
+
+  late FocusNode _squatFocus;
+  late FocusNode _benchFocus;
+  late FocusNode _deadliftFocus;
+  late FocusNode _pressFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _squatController = TextEditingController(text: _formatTm(widget.block.squatTm));
+    _benchController = TextEditingController(text: _formatTm(widget.block.benchTm));
+    _deadliftController = TextEditingController(text: _formatTm(widget.block.deadliftTm));
+    _pressController = TextEditingController(text: _formatTm(widget.block.pressTm));
+
+    _squatFocus = FocusNode()..addListener(() => _onFocusLost(_squatFocus, 'squat', _squatController));
+    _benchFocus = FocusNode()..addListener(() => _onFocusLost(_benchFocus, 'bench', _benchController));
+    _deadliftFocus = FocusNode()..addListener(() => _onFocusLost(_deadliftFocus, 'deadlift', _deadliftController));
+    _pressFocus = FocusNode()..addListener(() => _onFocusLost(_pressFocus, 'press', _pressController));
+  }
+
+  @override
+  void didUpdateWidget(covariant _TmCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update controllers if block values changed externally (e.g. after TM bump)
+    if (!_squatFocus.hasFocus) _squatController.text = _formatTm(widget.block.squatTm);
+    if (!_benchFocus.hasFocus) _benchController.text = _formatTm(widget.block.benchTm);
+    if (!_deadliftFocus.hasFocus) _deadliftController.text = _formatTm(widget.block.deadliftTm);
+    if (!_pressFocus.hasFocus) _pressController.text = _formatTm(widget.block.pressTm);
+  }
+
+  String _formatTm(double value) {
+    return value == value.roundToDouble() ? value.toInt().toString() : value.toStringAsFixed(1);
+  }
+
+  void _onFocusLost(FocusNode node, String exercise, TextEditingController controller) {
+    if (!node.hasFocus) {
+      _saveTm(exercise, controller);
+    }
+  }
+
+  void _saveTm(String exercise, TextEditingController controller) {
+    final value = double.tryParse(controller.text);
+    if (value != null && value > 0) {
+      context.read<FiveThreeOneState>().updateTm(exercise: exercise, value: value);
+    }
+  }
+
+  @override
+  void dispose() {
+    _squatController.dispose();
+    _benchController.dispose();
+    _deadliftController.dispose();
+    _pressController.dispose();
+    _squatFocus.dispose();
+    _benchFocus.dispose();
+    _deadliftFocus.dispose();
+    _pressFocus.dispose();
+    super.dispose();
+  }
+
+  Widget _buildTmField({
+    required String label,
+    required String exerciseKey,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+  }) {
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+      decoration: InputDecoration(
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        labelText: label,
+        suffixText: widget.block.unit,
+        border: const OutlineInputBorder(),
+      ),
+      onSubmitted: (_) => _saveTm(exerciseKey, controller),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +332,7 @@ class _TmCard extends StatelessWidget {
       color: colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -265,7 +357,7 @@ class _TmCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    block.unit,
+                    widget.block.unit,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
@@ -274,22 +366,24 @@ class _TmCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
-                  child: _TmTile(
+                  child: _buildTmField(
                     label: 'Squat',
-                    value: block.squatTm,
-                    colorScheme: colorScheme,
+                    exerciseKey: 'squat',
+                    controller: _squatController,
+                    focusNode: _squatFocus,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: _TmTile(
+                  child: _buildTmField(
                     label: 'Bench',
-                    value: block.benchTm,
-                    colorScheme: colorScheme,
+                    exerciseKey: 'bench',
+                    controller: _benchController,
+                    focusNode: _benchFocus,
                   ),
                 ),
               ],
@@ -298,68 +392,26 @@ class _TmCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _TmTile(
+                  child: _buildTmField(
                     label: 'Deadlift',
-                    value: block.deadliftTm,
-                    colorScheme: colorScheme,
+                    exerciseKey: 'deadlift',
+                    controller: _deadliftController,
+                    focusNode: _deadliftFocus,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: _TmTile(
+                  child: _buildTmField(
                     label: 'OHP',
-                    value: block.pressTm,
-                    colorScheme: colorScheme,
+                    exerciseKey: 'press',
+                    controller: _pressController,
+                    focusNode: _pressFocus,
                   ),
                 ),
               ],
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _TmTile extends StatelessWidget {
-  const _TmTile({
-    required this.label,
-    required this.value,
-    required this.colorScheme,
-  });
-
-  final String label;
-  final double value;
-  final ColorScheme colorScheme;
-
-  @override
-  Widget build(BuildContext context) {
-    final displayValue =
-        value == value.roundToDouble() ? value.toInt().toString() : value.toStringAsFixed(1);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            displayValue,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-          ),
-        ],
       ),
     );
   }

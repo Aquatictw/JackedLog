@@ -43,8 +43,13 @@ class FiveThreeOneState extends ChangeNotifier {
   String get positionLabel {
     if (_activeBlock == null) return '';
     final block = _activeBlock!;
-    final cycleName = cycleNames[block.currentCycle];
-    return '$cycleName - Week ${block.currentWeek}';
+    return '${getDescriptiveLabel(block.currentCycle)} - Week ${block.currentWeek}';
+  }
+
+  /// Short badge string for cycle type (L1, L2, D, A, T)
+  String get cycleBadge {
+    if (_activeBlock == null) return '';
+    return getCycleBadge(_activeBlock!.currentCycle);
   }
 
   Future<void> _loadActiveBlock() async {
@@ -142,6 +147,39 @@ class FiveThreeOneState extends ChangeNotifier {
         pressTm: Value(double.parse((block.pressTm + 2.2).toStringAsFixed(1))),
       ),
     );
+
+    await refresh();
+  }
+
+  /// Update a single training max value for inline editing
+  Future<void> updateTm({
+    required String exercise,
+    required double value,
+  }) async {
+    if (_activeBlock == null) return;
+    final block = _activeBlock!;
+
+    FiveThreeOneBlocksCompanion companion;
+    switch (exercise) {
+      case 'squat':
+        companion = FiveThreeOneBlocksCompanion(squatTm: Value(value));
+        break;
+      case 'bench':
+        companion = FiveThreeOneBlocksCompanion(benchTm: Value(value));
+        break;
+      case 'deadlift':
+        companion = FiveThreeOneBlocksCompanion(deadliftTm: Value(value));
+        break;
+      case 'press':
+        companion = FiveThreeOneBlocksCompanion(pressTm: Value(value));
+        break;
+      default:
+        return;
+    }
+
+    await (db.update(db.fiveThreeOneBlocks)
+          ..where((b) => b.id.equals(block.id)))
+        .write(companion);
 
     await refresh();
   }

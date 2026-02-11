@@ -456,11 +456,20 @@ class _TrainingMaxBanner extends StatelessWidget {
                     color: iconColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    Icons.fitness_center,
-                    size: 24,
-                    color: iconColor,
-                  ),
+                  child: hasBlock
+                      ? Text(
+                          fiveThreeOneState.cycleBadge,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: iconColor,
+                          ),
+                        )
+                      : Icon(
+                          Icons.fitness_center,
+                          size: 24,
+                          color: iconColor,
+                        ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(

@@ -169,6 +169,20 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
     HapticFeedback.mediumImpact();
   }
 
+  void _saveBlockTm() {
+    final tm = double.tryParse(_tmController.text);
+    if (tm == null || tm <= 0) return;
+
+    context.read<FiveThreeOneState>().updateTm(
+      exercise: _getExerciseKey(),
+      value: tm,
+    );
+
+    setState(() {
+      _trainingMax = tm;
+    });
+  }
+
   Future<void> _updateWeek(int week) async {
     await db.settings.update().write(
           SettingsCompanion(
@@ -363,39 +377,31 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                           ),
                     ),
                     const SizedBox(height: 8),
-                    if (_isBlockMode)
-                      TextField(
-                        controller: _tmController,
-                        readOnly: true,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(
-                          hintText: 'Enter your Training Max',
-                          suffixText: _unit,
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.monitor_weight_outlined),
-                        ),
-                      )
-                    else
-                      TextField(
-                        controller: _tmController,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(
-                          hintText: 'Enter your Training Max',
-                          suffixText: _unit,
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.monitor_weight_outlined),
-                        ),
-                        onChanged: (_) => _saveTrainingMax(),
+                    TextField(
+                      controller: _tmController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        hintText: 'Enter your Training Max',
+                        suffixText: _unit,
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.monitor_weight_outlined),
                       ),
+                      onChanged: (_) {
+                        if (_isBlockMode) {
+                          _saveBlockTm();
+                        } else {
+                          _saveTrainingMax();
+                        }
+                      },
+                    ),
 
                     const SizedBox(height: 24),
 
                     // Week Selector / Block position header
                     if (_isBlockMode)
                       Text(
-                        '${getMainSchemeName(_blockCycleType)} — ${cycleNames[_blockCycleType]}, Week $_blockWeek',
+                        '${getDescriptiveLabel(_blockCycleType)} — Week $_blockWeek',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
