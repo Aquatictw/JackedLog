@@ -1,42 +1,49 @@
 # Requirements: JackedLog
 
-**Defined:** 2026-02-05
+**Defined:** 2026-02-11
 **Core Value:** Users can efficiently log and track their workouts with minimal friction
 
-## v1.1 Requirements
+## v1.2 Requirements
 
-Requirements for Error Handling & Stability milestone. Each maps to roadmap phases.
+Requirements for 5/3/1 Forever Block Programming milestone. Each maps to roadmap phases.
 
-### Error Handling
+### Block Management
 
-- [x] **ERR-01**: Import failures log exception type and context to console
-- [x] **ERR-02**: Import failures show toast message to user with actionable description
-- [x] **ERR-03**: Backup failures log specific error reason (permission, path, disk space)
-- [x] **ERR-04**: Backup failures show toast notification to user
+- [ ] **BLOCK-01**: User can create a new 11-week block with starting TMs for 4 lifts (Squat, Bench, Deadlift, OHP)
+- [ ] **BLOCK-02**: Block overview page shows timeline of all cycles/weeks with current position highlighted
+- [ ] **BLOCK-03**: User can manually advance to the next week within a cycle
+- [ ] **BLOCK-04**: When advancing past a cycle (Leader 1, Leader 2, Anchor), TMs auto-bump with confirmation (+2.2kg upper, +4.5kg lower)
+- [ ] **BLOCK-05**: Notes page banner shows current block position (e.g., "Leader 2 - Week 5") and navigates to block overview
+- [ ] **BLOCK-06**: When block completes (after TM Test), post-block summary shows TM progression across the block
 
-### Backup Status
+### Calculator
 
-- [x] **BAK-01**: Settings page shows last successful backup timestamp
-- [x] **BAK-02**: Settings page shows backup status indicator (success/failed/never)
+- [ ] **CALC-01**: Calculator shows correct main work scheme based on block position (5's PRO for Leader, PR Sets with AMRAP for Anchor)
+- [ ] **CALC-02**: Calculator shows 7th Week Deload scheme (70/80/90/100% x5,3-5,1,1)
+- [ ] **CALC-03**: Calculator shows 7th Week TM Test scheme (70/80/90/100% all x5) with validation warning
+- [ ] **CALC-04**: Calculator shows supplemental work below main sets (BBB 5x10@60% for Leader, FSL 5x5 for Anchor)
 
-### Stability
+### Infrastructure
 
-- [x] **STB-01**: Active workout bar timer checks `mounted` before accessing context
-- [x] **STB-02**: Settings initialization uses `getSingleOrNull()` with safe defaults
+- [x] **INFRA-01**: New `fivethreeone_blocks` database table with block state (cycle, week, TMs, active status)
+- [x] **INFRA-02**: `FiveThreeOneState` ChangeNotifier registered in Provider tree
+- [x] **INFRA-03**: Pure `schemes.dart` module with all percentage/rep data for all cycle types
 
 ## Future Requirements
 
 Deferred to future milestones. Tracked but not in current roadmap.
 
-### Error Handling (Enhanced)
+### Block Management (Enhanced)
 
-- **ERR-05**: Database migration failures logged with version context
-- **ERR-06**: User-facing error page with recovery options for critical failures
+- **BLOCK-07**: Template picker for different Leader/Anchor combinations
+- **BLOCK-08**: Block history — view past completed blocks with drill-down
+- **BLOCK-09**: TM history graph per lift across blocks
+- **BLOCK-10**: "What's today?" auto-context calculator from exercise name
 
-### Backup (Enhanced)
+### Calculator (Enhanced)
 
-- **BAK-03**: Backup verification (checksum/integrity check after backup)
-- **BAK-04**: Pre-backup path validation (permission, disk space, accessibility)
+- **CALC-05**: Plate breakdown display alongside calculated weights
+- **CALC-06**: Joker sets / Beyond 5/3/1 extensions
 
 ## Out of Scope
 
@@ -44,11 +51,12 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| Silent migration error fixes (25+ instances) | Requires careful approach, not a quick win |
-| Database lifecycle management | Architectural change, beyond quick fix scope |
-| Spotify token expiry enforcement | Needs careful testing, separate milestone |
-| Backup path validation (SAF complexity) | Complex Android SAF edge cases, defer |
-| Security hardening (token encryption) | Scope creep, separate security milestone |
+| Auto-generated workout plans | JackedLog is a logging tool, not a plan generator. Calculator shows prescription, user logs actual performance. |
+| Assistance work tracking in block system | Accessories are bodybuilding style, tracked as regular exercises |
+| Scheduling / calendar integration | App has no calendar. Block tracks position, not dates. User advances manually. |
+| Multiple concurrent blocks | User runs one program at a time. Single active block. |
+| Automatic week detection from logged workouts | Unreliable. User might log partial weeks or train out of order. Manual advancement preferred. |
+| Configurable TM increment amounts | Hardcoded +2.2kg upper / +4.5kg lower for now. Extend later if needed. |
 
 ## Traceability
 
@@ -56,20 +64,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ERR-01 | Phase 4 | Complete |
-| ERR-02 | Phase 4 | Complete |
-| ERR-03 | Phase 4 | Complete |
-| ERR-04 | Phase 4 | Complete |
-| BAK-01 | Phase 5 | Complete |
-| BAK-02 | Phase 5 | Complete |
-| STB-01 | Phase 5 | Complete |
-| STB-02 | Phase 5 | Complete |
+| INFRA-01 | Phase 6 | Complete |
+| INFRA-02 | Phase 6 | Complete |
+| INFRA-03 | Phase 6 | Complete |
+| BLOCK-01 | Phase 7 | Pending |
+| BLOCK-02 | Phase 7 | Pending |
+| BLOCK-03 | Phase 7 | Pending |
+| BLOCK-04 | Phase 7 | Pending |
+| BLOCK-05 | Phase 7 | Pending |
+| BLOCK-06 | Phase 9 | Pending |
+| CALC-01 | Phase 8 | Pending |
+| CALC-02 | Phase 8 | Pending |
+| CALC-03 | Phase 8 | Pending |
+| CALC-04 | Phase 8 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 8 total
-- Mapped to phases: 8
+- v1.2 requirements: 13 total
+- Mapped to phases: 13
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 after phase 5 execution*
+*Requirements defined: 2026-02-11*
+*Last updated: 2026-02-11 after Phase 6 completion*

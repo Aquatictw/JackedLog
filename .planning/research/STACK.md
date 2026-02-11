@@ -1,314 +1,316 @@
-# Technology Stack: Flutter UI Enhancements
+# Technology Stack: 5/3/1 Forever Block Programming
 
-**Project:** JackedLog - Flutter Fitness App
-**Researched:** 2026-02-02
-**Focus:** Drag-drop reordering, inline editing of nested data, statistics display
+**Project:** JackedLog v1.2 - 5/3/1 Block Programming Milestone
+**Researched:** 2026-02-11
+**Focus:** Database schema for block model, UI for timeline/overview, calculator enhancement, supplemental work display
+**Overall Confidence:** HIGH
+
+---
 
 ## Executive Summary
 
-This milestone adds three UI enhancement features to the existing JackedLog Flutter app. The research confirms that **all features can be implemented using Flutter's built-in widgets** - no additional packages required. This aligns with the existing architecture (Provider + Drift + fl_chart) and minimizes dependency bloat.
+The 5/3/1 block programming feature requires **database schema additions** (new table + settings columns) and **no new Flutter packages**. The existing stack (Drift 2.30.0, Provider 6.1.1, Flutter Material 3) provides everything needed. The main technical work is designing the right data model and wiring it through the existing Provider/Drift reactive pipeline.
 
-**Key Finding:** Flutter's Material library provides mature, well-documented solutions for all three requirements. The main implementation challenge is integrating reordering persistence with Drift.
-
----
-
-## Recommended Stack
-
-### 1. Drag-and-Drop List Reordering (Notes)
-
-| Component | Recommendation | Why |
-|-----------|---------------|-----|
-| Widget | `ReorderableListView.builder` | Built-in Flutter widget, no package needed. The `.builder` variant is specifically designed for database-backed lists. |
-| Persistence | Add `order` column to Notes table | Drift migration required; store integer position per note. |
-| State | Existing Provider pattern | Update note order in ChangeNotifier, persist to Drift. |
-
-**Confidence:** HIGH - Verified via [official Flutter documentation](https://api.flutter.dev/flutter/material/ReorderableListView-class.html)
-
-**Why ReorderableListView over alternatives:**
-- Built into Flutter SDK (no dependency)
-- Handles platform-specific drag gestures automatically (long-press on mobile, drag handles on desktop)
-- Integrates with existing GridView layout via `ReorderableListView.builder` (requires wrapping approach)
-- Production-ready with proper key management
-
-**Implementation Pattern:**
-```dart
-ReorderableListView.builder(
-  itemCount: notes.length,
-  itemBuilder: (context, index) {
-    final note = notes[index];
-    return NoteCard(
-      key: ValueKey(note.id),  // CRITICAL: unique key required
-      note: note,
-    );
-  },
-  onReorder: (oldIndex, newIndex) {
-    // Adjust for Flutter's index behavior
-    if (newIndex > oldIndex) newIndex -= 1;
-
-    // Update in-memory state
-    final item = notes.removeAt(oldIndex);
-    notes.insert(newIndex, item);
-
-    // Persist to Drift (batch update order values)
-    _persistNoteOrder(notes);
-  },
-)
-```
-
-**Drift Migration:**
-```dart
-// Add to Notes table
-IntColumn get order => integer().withDefault(const Constant(0))();
-
-// Query with ordering
-(db.notes.select()
-  ..orderBy([(n) => OrderingTerm(expression: n.order)]))
-  .watch();
-```
+The key architectural decision is: **one new `fivethreeone_blocks` table** rather than extending the Settings table further. The current Settings table already has 5 columns for 5/3/1 data (4 TMs + week). Adding block/cycle/supplemental state to Settings would bloat a single-row config table into a domain model, violating single responsibility.
 
 ---
 
-### 2. Inline Editing of Nested Data (Workout Sessions)
+## Recommended Stack Changes
 
-| Component | Recommendation | Why |
-|-----------|---------------|-----|
-| Container Widget | `ExpansionTile` | Built-in, designed for hierarchical data. Already used pattern in Flutter ecosystem for workout trackers. |
-| Edit Mode | Toggle-based editing | Switch between view/edit modes rather than always-editable. Prevents accidental edits and simplifies UX. |
-| Form State | `TextEditingController` per field | Standard Flutter pattern. Create controllers dynamically for each set row. |
-| Nested Lists | `Column` inside ExpansionTile | Avoids nested ListView performance issues. Use `shrinkWrap: true` if ListView needed. |
+### Database: New Table + Migration (v63 -> v64)
 
-**Confidence:** HIGH - Pattern verified across [multiple authoritative sources](https://api.flutter.dev/flutter/material/ExpansionTile-class.html)
+**Current schema version:** 63 (added `last_backup_status` to settings)
 
-**Data Structure (already exists in codebase):**
+The block model requires tracking:
+- Which block is active (or historical)
+- Current position within the 11-week structure
+- Starting TMs for each block (snapshot, not live)
+- Completed status per cycle
+
+#### New Table: `fivethreeone_blocks`
+
+| Column | Type | Purpose | Why |
+|--------|------|---------|-----|
+| `id` | INTEGER PK AUTO | Row identity | Standard Drift pattern |
+| `created` | DATETIME | When block was created | Ordering, history |
+| `squat_tm` | REAL NOT NULL | Squat TM at block start | Snapshot TM for this block's calculations |
+| `bench_tm` | REAL NOT NULL | Bench TM at block start | Same |
+| `deadlift_tm` | REAL NOT NULL | Deadlift TM at block start | Same |
+| `press_tm` | REAL NOT NULL | OHP TM at block start | Same |
+| `unit` | TEXT NOT NULL | kg or lb | Captured at block creation time |
+| `current_cycle` | INTEGER NOT NULL DEFAULT 0 | 0=Leader1, 1=Leader2, 2=Deload, 3=Anchor, 4=TMTest | Single integer encodes 11-week position |
+| `current_week` | INTEGER NOT NULL DEFAULT 1 | 1-3 within the current cycle | Week within cycle (1=5s, 2=3s, 3=5/3/1 or varies by cycle type) |
+| `is_active` | INTEGER NOT NULL DEFAULT 1 | Whether this is the current block | Only one block active at a time |
+| `completed` | DATETIME NULLABLE | When block was completed | NULL = in progress, set when TM Test done |
+
+**Why this structure:**
+
+1. **Snapshot TMs:** Each block records starting TMs. TM progression happens within the block (Leader1 complete -> bump TMs -> continue to Leader2). The settings table TMs remain the "live" values for the calculator. Block TMs are the starting reference point for history.
+
+2. **Single `current_cycle` integer:** The 11-week structure maps cleanly to 5 cycles (0-4). No need for separate tables per cycle. The cycle index determines the set scheme (Leader uses 5's PRO, Anchor uses PR Sets, etc.).
+
+3. **`current_week` within cycle:** Each cycle has 3 weeks. Combined with `current_cycle`, this gives exact position in the 11-week block (e.g., cycle=1, week=2 means Leader 2, Week 2 = "3s Week").
+
+4. **Historical blocks:** When a block completes, `is_active` = 0 and `completed` is set. Users can see past blocks. When starting a new block, the old one is marked complete.
+
+**What NOT to add:**
+- No `fivethreeone_cycles` sub-table. Cycles are derived from the `current_cycle` enum. Adding a table per cycle is over-engineering for what is fundamentally a counter (0-4).
+- No `fivethreeone_weeks` table. Week state is a simple integer on the block.
+- No per-exercise TM history table. TM progression is deterministic (add 2.5kg upper / 5kg lower per cycle). Historical TMs can be calculated from the block's starting TMs + cycle position.
+
+#### Settings Table: No Changes Needed
+
+The existing 5/3/1 columns in Settings remain as-is:
+
+| Column | Current Use | New Use |
+|--------|-------------|---------|
+| `fivethreeone_squat_tm` | Live TM for calculator | Same -- updated as cycles progress |
+| `fivethreeone_bench_tm` | Live TM for calculator | Same |
+| `fivethreeone_deadlift_tm` | Live TM for calculator | Same |
+| `fivethreeone_press_tm` | Live TM for calculator | Same |
+| `fivethreeone_week` | Global week (1-4) | **Deprecated in favor of block's `current_week`**, but kept for backward compat |
+
+The live TMs in Settings continue to serve the calculator. When a block is active, advancing cycles auto-updates these Settings values. This preserves backward compatibility -- users who never create a block still have their TMs in Settings working as before.
+
+#### Migration Code Pattern
+
+```sql
+-- v63 -> v64: Add fivethreeone_blocks table
+CREATE TABLE IF NOT EXISTS fivethreeone_blocks (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  created INTEGER NOT NULL,
+  squat_tm REAL NOT NULL,
+  bench_tm REAL NOT NULL,
+  deadlift_tm REAL NOT NULL,
+  press_tm REAL NOT NULL,
+  unit TEXT NOT NULL,
+  current_cycle INTEGER NOT NULL DEFAULT 0,
+  current_week INTEGER NOT NULL DEFAULT 1,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  completed INTEGER
+);
 ```
-Workout (id, name, startTime, endTime, notes)
-  -> GymSets (id, workoutId, name, weight, reps, setOrder, sequence)
-```
 
-**Why ExpansionTile over alternatives:**
-- Built-in Material widget
-- Proper state preservation with `PageStorageKey`
-- `maintainState: true` preserves child widget state during collapse/expand
-- Integrates cleanly with existing workout card design
+This follows the project's established manual migration pattern (see `database.dart` lines 283-405 for existing examples). No Drift codegen migration -- raw SQL in the `onUpgrade` handler with `.catchError((e) {})` guard.
 
-**Recommended Widget Structure:**
+**Backup/Import Compatibility:** Database imports work by copying the .sqlite file directly (see `import_data.dart` line 106). The migration handler runs on `onUpgrade`, so importing an older database (v63) into a v64 app will trigger the migration and create the new table. CSV export only covers `workouts` and `gym_sets` tables, so the new table does not affect CSV import/export.
+
+---
+
+### Drift Table Definition
+
 ```dart
-// Workout editing page
-ListView.builder(
-  itemCount: exercises.length,
-  itemBuilder: (context, index) {
-    return ExpansionTile(
-      key: PageStorageKey('exercise_$index'),  // Preserves expanded state
-      maintainState: true,  // Keeps child state during collapse
-      title: Text(exercise.name),
-      children: [
-        // Sets as Column (not nested ListView)
-        Column(
-          children: exercise.sets.map((set) =>
-            _EditableSetRow(
-              set: set,
-              onChanged: (updated) => _updateSet(updated),
-            ),
-          ).toList(),
-        ),
-      ],
-    );
-  },
-)
-```
+// lib/database/fivethreeone_blocks.dart
+import 'package:drift/drift.dart';
 
-**Inline Edit Pattern:**
-```dart
-class _EditableSetRow extends StatefulWidget {
-  final GymSet set;
-  final ValueChanged<GymSet> onChanged;
-
-  @override
-  State<_EditableSetRow> createState() => _EditableSetRowState();
+@DataClassName('FiveThreeOneBlock')
+class FiveThreeOneBlocks extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  DateTimeColumn get created => dateTime()();
+  RealColumn get squatTm => real()();
+  RealColumn get benchTm => real()();
+  RealColumn get deadliftTm => real()();
+  RealColumn get pressTm => real()();
+  TextColumn get unit => text()();
+  IntColumn get currentCycle => integer().withDefault(const Constant(0))();
+  IntColumn get currentWeek => integer().withDefault(const Constant(1))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get completed => dateTime().nullable()();
 }
+```
 
-class _EditableSetRowState extends State<_EditableSetRow> {
-  late TextEditingController _weightController;
-  late TextEditingController _repsController;
-  bool _isEditing = false;
+Register in `database.dart`:
+```dart
+@DriftDatabase(tables: [
+  Plans,
+  GymSets,
+  Settings,
+  PlanExercises,
+  Metadata,
+  Workouts,
+  Notes,
+  BodyweightEntries,
+  FiveThreeOneBlocks,  // NEW
+])
+```
 
-  @override
-  void initState() {
-    super.initState();
-    _weightController = TextEditingController(text: widget.set.weight.toString());
-    _repsController = TextEditingController(text: widget.set.reps.toString());
+Then run `dart run build_runner build` to regenerate `database.g.dart`.
+
+**Confidence:** HIGH -- follows exact pattern of existing tables (Notes, Workouts, BodyweightEntries).
+
+---
+
+### UI Components: No New Packages
+
+#### Timeline / Block Overview
+
+**Recommendation:** Custom widget using `Column` + `Row` + `Container` with Material 3 styling.
+
+**Why NOT a timeline package:**
+- The block structure is fixed (always 5 segments: L1, L2, Deload, Anchor, TM Test)
+- A generic timeline package adds dependency weight for a static 5-item layout
+- Custom styling matches app's Material 3 theme (colorScheme.primaryContainer, etc.)
+- KISS principle -- a `Row` of 5 styled containers with progress indication is simpler than learning a package API
+
+**Why NOT Flutter's built-in Stepper:**
+- Stepper is designed for form wizards with expandable content per step
+- It has a vertical/horizontal layout but imposes its own visual style (circles + connecting lines)
+- The 5/3/1 block overview needs a compact progress bar style, not a form stepper
+- Stepper also manages its own state (activeStep), which conflicts with our database-driven state
+
+**Implementation approach:**
+```dart
+// A horizontal bar showing 5 segments
+Row(
+  children: [
+    _CycleSegment(label: 'L1', status: _getStatus(0)),
+    _CycleSegment(label: 'L2', status: _getStatus(1)),
+    _CycleSegment(label: 'DL', status: _getStatus(2)),
+    _CycleSegment(label: 'AN', status: _getStatus(3)),
+    _CycleSegment(label: 'TM', status: _getStatus(4)),
+  ],
+)
+```
+
+Each segment uses `Container` with `BoxDecoration` -- completed = filled primary, active = primary outline + glow, future = surfaceContainerHighest. This is ~50 lines of widget code vs. adding a package dependency.
+
+**Confidence:** HIGH -- standard Flutter layout, no external API to learn or break.
+
+#### Calculator Enhancement
+
+The existing `FiveThreeOneCalculator` widget (562 lines) already handles week selection and set scheme display. Enhancements needed:
+
+1. **Cycle-awareness:** Read `current_cycle` from active block to determine set scheme variant (5's PRO for Leader, PR Sets for Anchor, Deload percentages, TM Test scheme)
+2. **Supplemental work display:** Add a section below the main sets showing supplemental work (BBB 5x10@60% for Leader, FSL 5x5 for Anchor)
+
+These are modifications to the existing widget, not new packages. The `_getWorkingSetScheme()` method (line 179) already returns a list of (percentage, reps, amrap) records -- it just needs to branch on cycle type in addition to week.
+
+**Confidence:** HIGH -- extending existing code path.
+
+#### State Management
+
+**Recommendation:** Extend existing Provider pattern with a new `FiveThreeOneState` ChangeNotifier, or integrate into existing `SettingsState`.
+
+**Option A: New ChangeNotifier (Recommended)**
+
+```dart
+class FiveThreeOneState extends ChangeNotifier {
+  FiveThreeOneBlock? activeBlock;
+  StreamSubscription? _subscription;
+
+  Future<void> init() async {
+    _subscription = (db.fiveThreeOneBlocks.select()
+      ..where((b) => b.isActive.equals(true))
+      ..limit(1))
+      .watchSingleOrNull()
+      .listen((block) {
+        activeBlock = block;
+        notifyListeners();
+      });
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: _isEditing
-          ? Row(children: [
-              Expanded(child: TextField(controller: _weightController)),
-              Expanded(child: TextField(controller: _repsController)),
-            ])
-          : Text('${widget.set.weight} x ${widget.set.reps}'),
-      trailing: IconButton(
-        icon: Icon(_isEditing ? Icons.check : Icons.edit),
-        onPressed: () {
-          if (_isEditing) {
-            widget.onChanged(widget.set.copyWith(
-              weight: double.parse(_weightController.text),
-              reps: double.parse(_repsController.text),
-            ));
-          }
-          setState(() => _isEditing = !_isEditing);
-        },
-      ),
-    );
-  }
 }
 ```
 
-**Important Considerations:**
-- Create separate `TextEditingController` for each editable field
-- Dispose controllers properly to avoid memory leaks
-- Use `SizedBox` or `Expanded` to constrain TextField width in ListTile
-- Toggle edit mode rather than always showing TextFields (better UX, fewer rebuilds)
+Add to `MultiProvider` in `main.dart` alongside existing state providers.
+
+**Why a separate state class:**
+- SettingsState already handles 50+ settings fields. Adding block lifecycle management bloats it.
+- Block state has its own lifecycle (create, advance, complete) that doesn't map to settings updates.
+- Follows existing pattern: WorkoutState, PlanState, TimerState are all separate ChangeNotifiers.
+
+**Option B: Integrate into SettingsState (NOT recommended)**
+- Simpler (no new provider), but violates single responsibility
+- Settings is already a single-row table pattern; blocks are multi-row
+
+**Confidence:** HIGH -- mirrors WorkoutState pattern exactly.
 
 ---
 
-### 3. Statistics/Aggregation Display (Total Workout Time)
+## What NOT to Add
 
-| Component | Recommendation | Why |
-|-----------|---------------|-----|
-| Display Widget | Existing `StatCard` widget | Already exists in codebase at `lib/widgets/stats/stat_card.dart`. Consistent design. |
-| Charting | Existing `fl_chart` (v1.1.1) | Already a dependency. No new packages needed. |
-| Data Aggregation | Drift query with SQL aggregation | Perform calculations in database, not Dart. More efficient for large datasets. |
-| Layout | `GridView` or `Row`/`Wrap` | Responsive stat cards grid pattern. |
+| Rejected Addition | Why Not |
+|-------------------|---------|
+| `timelines` package | Fixed 5-item layout doesn't justify a dependency. Custom Row+Container is simpler. |
+| `flutter_staggered_animations` | Animation on cycle transitions is nice-to-have but YAGNI for MVP. Flutter's built-in `AnimatedContainer` suffices if needed later. |
+| `step_progress_indicator` | Another package for what is a styled Row. |
+| Separate TM history table | TM progression is deterministic from block start TMs + cycle number. Can be calculated, not stored. |
+| `fivethreeone_cycles` junction table | Over-normalized. Cycle state is a single integer (0-4) on the block row. |
+| `fivethreeone_supplementals` config table | Supplemental schemes (BBB, FSL) are hardcoded per cycle type. They don't vary per user in this implementation. If user-configurable supplementals are added later, that's a separate feature. |
+| Any charting additions | Block progress is a 5-step bar, not a graph. `fl_chart` is overkill for this. |
 
-**Confidence:** HIGH - Uses existing codebase patterns, verified fl_chart is [current (v1.1.1)](https://pub.dev/packages/fl_chart)
+---
 
-**Existing StatCard Widget (from codebase):**
-```dart
-StatCard(
-  icon: Icons.timer_outlined,
-  label: 'Total Time',
-  value: _formatDuration(totalDuration),
-  color: colorScheme.primary,
-)
+## Integration Points with Existing Stack
+
+### Drift Streams (Reactive Updates)
+
+The block table should use Drift's `.watch()` streams so the UI updates reactively when:
+- A new block is created
+- The user advances to the next week/cycle
+- A block is completed
+
+This matches the existing pattern in `SettingsState` (line 26: `db.settings.select()...watchSingleOrNull()`) and `gym_sets.dart` (line 222: `query.watch()`).
+
+### Provider (State Propagation)
+
+The new `FiveThreeOneState` provides:
+- `activeBlock` -- the current block (or null if no block exists)
+- Methods: `createBlock()`, `advanceWeek()`, `advanceCycle()`, `completeBlock()`
+
+Widgets access via `context.watch<FiveThreeOneState>()` or `context.read<FiveThreeOneState>()`.
+
+### Calculator Widget Integration
+
+The `FiveThreeOneCalculator` currently reads week from Settings (`setting.fivethreeoneWeek`). With blocks:
+1. Check if an active block exists via `FiveThreeOneState`
+2. If yes: use block's `currentCycle` and `currentWeek` to determine scheme
+3. If no: fall back to current behavior (Settings-based week)
+
+This preserves backward compatibility for users who don't use blocks.
+
+### Notes Page Entry Point
+
+The "5/3/1 Training Max" banner in `notes_page.dart` (line 462) currently opens `TrainingMaxEditor`. This should:
+1. If active block exists: navigate to block overview page
+2. If no block: show "Create Block" option alongside existing TM editor
+
+### Export/Import Considerations
+
+**CSV Export:** Currently exports `workouts` and `gym_sets` only. The `fivethreeone_blocks` table does NOT need CSV export -- it's configuration data, not workout data. Database export (.sqlite file) captures everything automatically.
+
+**Database Import:** Migration handler ensures the table is created when importing an older database. No changes needed to import logic.
+
+**Backward Compatibility:** Importing a v64 database into a v63 app would fail on the unknown table, but this is the existing behavior for any schema upgrade and is acceptable.
+
+---
+
+## Installation / Build Commands
+
+No new packages. The only build step is regenerating Drift code after adding the new table definition:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
 ```
 
-**Total Workout Time Query (Drift):**
-```dart
-Future<Duration> getTotalWorkoutTime({DateTime? since}) async {
-  final query = db.workouts.select()
-    ..where((w) => w.endTime.isNotNull());
-
-  if (since != null) {
-    query.where((w) => w.startTime.isBiggerOrEqualValue(since));
-  }
-
-  final workouts = await query.get();
-
-  return workouts.fold<Duration>(
-    Duration.zero,
-    (total, workout) => total + workout.endTime!.difference(workout.startTime),
-  );
-}
-
-// Or more efficient SQL approach:
-Future<int> getTotalWorkoutMinutes({DateTime? since}) async {
-  final whereClause = since != null
-    ? 'WHERE end_time IS NOT NULL AND start_time >= ${since.millisecondsSinceEpoch ~/ 1000}'
-    : 'WHERE end_time IS NOT NULL';
-
-  final result = await db.customSelect('''
-    SELECT SUM((end_time - start_time) / 60) as total_minutes
-    FROM workouts
-    $whereClause
-  ''').getSingleOrNull();
-
-  return result?.read<int?>('total_minutes') ?? 0;
-}
-```
-
-**Stats Display Pattern:**
-```dart
-// In a stats section widget
-FutureBuilder<int>(
-  future: getTotalWorkoutMinutes(since: thirtyDaysAgo),
-  builder: (context, snapshot) {
-    final minutes = snapshot.data ?? 0;
-    return StatCard(
-      icon: Icons.timer_outlined,
-      label: 'Total Time (30d)',
-      value: _formatMinutes(minutes),
-      color: Theme.of(context).colorScheme.tertiary,
-    );
-  },
-)
-```
-
----
-
-## Alternatives Considered
-
-| Feature | Recommended | Alternative | Why Not Alternative |
-|---------|-------------|-------------|---------------------|
-| Drag-Drop | `ReorderableListView.builder` | `flutter_reorderable_grid_view` package | Adds dependency. Built-in works for list; grid reordering is complex but achievable. |
-| Drag-Drop | `ReorderableListView.builder` | `Draggable` + `DragTarget` | Lower-level, more code. ReorderableListView handles all the complexity. |
-| Nested Editing | `ExpansionTile` | `ExpansionPanel` + `ExpansionPanelList` | ExpansionTile is simpler, integrates better with ListView. Panel requires more boilerplate. |
-| Nested Editing | Toggle edit mode | Always-editable | Accidental edits, more complex state management, worse performance (all fields have controllers). |
-| Stats Display | `StatCard` (existing) | Custom Card implementation | Reinventing existing pattern. Consistency with current app design. |
-| Charting | `fl_chart` (existing) | `syncfusion_flutter_charts` | Already using fl_chart. Syncfusion is more feature-rich but adds large dependency. |
-
----
-
-## No New Dependencies Required
-
-All features use Flutter's built-in widgets and existing project dependencies:
-
-**Already in pubspec.yaml:**
-- `flutter` (SDK) - ReorderableListView, ExpansionTile, StatCard building blocks
-- `provider: ^6.1.1` - State management
-- `drift: ^2.28.1` - Database queries and persistence
-- `fl_chart: ^1.0.0` - Charts (if stats include visualization)
-
-**No packages to add for this milestone.**
-
----
-
-## Implementation Sequence
-
-Based on dependencies and complexity:
-
-1. **Notes Reordering** (Foundation)
-   - Add `order` column to Notes table (Drift migration)
-   - Update notes query to order by new column
-   - Replace GridView with ReorderableListView pattern
-   - Implement `onReorder` persistence
-
-2. **Workout Editing** (Most Complex)
-   - Create WorkoutEditPage with ExpansionTile structure
-   - Implement toggle-based inline editing for sets
-   - Add save/cancel workflow
-   - Test with existing workout data
-
-3. **Stats Display** (Quick Win)
-   - Add totalWorkoutTime query to database helpers
-   - Create stats section widget using existing StatCard
-   - Integrate into appropriate page (likely History or Overview)
+This updates `database.g.dart` with the new table's generated code.
 
 ---
 
 ## Sources
 
-**HIGH Confidence (Official Documentation):**
-- [ReorderableListView class - Flutter API](https://api.flutter.dev/flutter/material/ReorderableListView-class.html)
-- [ExpansionTile class - Flutter API](https://api.flutter.dev/flutter/material/ExpansionTile-class.html)
-- [Simple app state management - Flutter docs](https://docs.flutter.dev/data-and-backend/state-mgmt/simple)
-- [fl_chart package - pub.dev](https://pub.dev/packages/fl_chart)
+**HIGH Confidence:**
+- Codebase analysis: `lib/database/database.dart` (migration patterns, schema version 63)
+- Codebase analysis: `lib/database/settings.dart` (existing 5/3/1 columns)
+- Codebase analysis: `lib/widgets/five_three_one_calculator.dart` (current calculator implementation)
+- Codebase analysis: `lib/settings/settings_state.dart` (Provider + Drift stream pattern)
+- Codebase analysis: `lib/import_data.dart` (database import mechanism)
+- Codebase analysis: `lib/export_data.dart` (CSV export scope)
+- Codebase analysis: `pubspec.lock` (Drift 2.30.0 actual installed version)
+- [Drift Tables Documentation](https://drift.simonbinder.eu/dart_api/tables/) -- foreign keys, column types
+- [Flutter Stepper class](https://api.flutter.dev/flutter/material/Stepper-class.html) -- evaluated and rejected
 
-**MEDIUM Confidence (Verified Community Patterns):**
-- [Working with ReorderableListView - KindaCode](https://www.kindacode.com/article/working-with-reorderablelistview-in-flutter)
-- [Mastering ExpansionTile in Flutter](https://medium.com/my-technical-journey/mastering-expansiontile-in-flutter-collapsible-ui-made-easy-cec8cec3650a)
-- [Complex list editors without state management](https://medium.com/flutter-senior/complex-list-editors-without-state-management-in-flutter-33408c35bac7)
+**MEDIUM Confidence:**
+- [Flutter timeline packages landscape](https://fluttergems.dev/timeline/) -- confirmed no compelling built-in alternative
 
 ---
 
@@ -316,37 +318,23 @@ Based on dependencies and complexity:
 
 | Area | Confidence | Rationale |
 |------|------------|-----------|
-| Drag-Drop Reordering | HIGH | Official Flutter widget, well-documented, standard pattern |
-| Inline Editing | HIGH | Standard Flutter patterns, toggle-based approach is established |
-| Stats Display | HIGH | Uses existing codebase patterns and widgets |
-| Drift Persistence | HIGH | Straightforward migration, existing patterns in codebase |
-| Grid Reordering (if needed) | MEDIUM | May need workaround since ReorderableListView is list-focused |
+| Database schema design | HIGH | Follows exact patterns of existing tables (Workouts, Notes). Manual migration pattern established in 12+ prior migrations. |
+| No new packages needed | HIGH | All UI is standard Flutter Material 3 widgets. Block timeline is a fixed 5-item Row. |
+| Provider integration | HIGH | Mirrors existing WorkoutState/PlanState pattern exactly. |
+| Calculator enhancement | HIGH | Extending existing `_getWorkingSetScheme()` method with cycle branching. |
+| Export/import compatibility | HIGH | Verified: CSV only touches workouts/gym_sets; database import triggers migration handler. |
+| Supplemental work display | HIGH | Static data (BBB percentages, FSL percentages) rendered as additional set rows in existing calculator UI. |
 
 ---
 
-## Pitfalls to Avoid
+## Summary for Roadmap
 
-1. **Missing Keys on Reorderable Items**
-   - Every child of ReorderableListView MUST have a unique `key`
-   - Use `ValueKey(item.id)` not `ValueKey(index)`
+1. **Phase 1 (Foundation):** Create `fivethreeone_blocks` table + Drift definition + migration v63->v64. Create `FiveThreeOneState` provider. No UI yet -- just data layer.
 
-2. **Nested ListView Performance**
-   - Don't nest ListView inside ExpansionTile
-   - Use Column with shrinkWrap or fixed-height containers
+2. **Phase 2 (Block Overview):** Block overview page with timeline bar, create/advance/complete actions. Entry point from Notes page banner.
 
-3. **TextEditingController Leaks**
-   - Always dispose controllers in `dispose()`
-   - Consider creating controllers dynamically only when entering edit mode
+3. **Phase 3 (Calculator Enhancement):** Make calculator cycle-aware (5's PRO vs PR Sets vs Deload vs TM Test). Add supplemental work section.
 
-4. **Reorder Index Adjustment**
-   - When `newIndex > oldIndex`, subtract 1 from `newIndex`
-   - Flutter's API quirk - documented but easy to forget
+4. **Phase 4 (Polish):** TM auto-progression on cycle advance, historical block viewing, edge cases (mid-block TM edits).
 
-5. **ExpansionTile State Loss**
-   - Use `PageStorageKey` when inside a ListView
-   - Set `maintainState: true` if child state must persist
-
-6. **Editing Completed Workouts**
-   - Consider whether to allow edits or just viewing
-   - If allowing edits, implement proper save/discard workflow
-   - May affect PR calculations - clear PR cache after edits (pattern exists in codebase)
+All phases use existing stack. Zero new dependencies.

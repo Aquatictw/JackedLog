@@ -4,6 +4,7 @@ import '../constants.dart';
 import 'bodyweight_entries.dart';
 import 'database_connection_native.dart';
 import 'defaults.dart';
+import 'fivethreeone_blocks.dart';
 import 'gym_sets.dart';
 import 'metadata.dart';
 import 'notes.dart';
@@ -27,6 +28,7 @@ LazyDatabase openConnection() {
   Workouts,
   Notes,
   BodyweightEntries,
+  FiveThreeOneBlocks,
 ],)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
@@ -411,6 +413,25 @@ class AppDatabase extends _$AppDatabase {
             'ALTER TABLE settings ADD COLUMN last_backup_status TEXT',
           ).catchError((e) {});
         }
+
+        // from63To64: Add fivethreeone_blocks table for block programming
+        if (from < 64 && to >= 64) {
+          await m.database.customStatement('''
+            CREATE TABLE IF NOT EXISTS fivethreeone_blocks (
+              id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+              created INTEGER NOT NULL,
+              squat_tm REAL NOT NULL,
+              bench_tm REAL NOT NULL,
+              deadlift_tm REAL NOT NULL,
+              press_tm REAL NOT NULL,
+              unit TEXT NOT NULL,
+              current_cycle INTEGER NOT NULL DEFAULT 0,
+              current_week INTEGER NOT NULL DEFAULT 1,
+              is_active INTEGER NOT NULL DEFAULT 1,
+              completed INTEGER
+            )
+          ''');
+        }
       },
       beforeOpen: (details) async {
         // Ensure bodyweight_entries table exists (safety check for migration issues)
@@ -435,5 +456,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 63;
+  int get schemaVersion => 64;
 }

@@ -24,6 +24,31 @@
 
 **Git range:** `908f6066` (docs: initialize GSD) → `dd920260` (feat: quick-001)
 
-**What's next:** v1.1 milestone TBD
+**What's next:** v1.1 Error Handling & Stability
+
+---
+
+## v1.1 Error Handling & Stability (Shipped: 2026-02-06)
+
+**Delivered:** Error visibility improvements and stability fixes for import, backup, and async operations.
+
+**Phases completed:** 4-5 (2 plans total)
+
+**Key accomplishments:**
+
+- Import failures now log exception type/context and show user toast with actionable description
+- Backup failures log specific error reason and show toast notification
+- Settings page shows last backup timestamp and status indicator (success/failed/never)
+- Active workout bar timer checks mounted before context access
+- Settings initialization uses getSingleOrNull with safe defaults
+
+**Stats:**
+
+- 2 phases, 2 plans
+- 5 min total execution time
+
+**Git range:** v1.1 phases
+
+**What's next:** v1.2 5/3/1 Forever Block Programming
 
 ---
