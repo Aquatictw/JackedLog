@@ -8,6 +8,7 @@ import 'backup/auto_backup_service.dart';
 import 'constants.dart';
 import 'database/database.dart';
 import 'database/failed_migrations_page.dart';
+import 'fivethreeone/fivethreeone_state.dart';
 import 'home_page.dart';
 import 'plan/plan_state.dart';
 import 'screens/splash_screen.dart';
@@ -55,6 +56,7 @@ Widget appProviders(SettingsState state) => MultiProvider(
         ChangeNotifierProvider(create: (context) => PlanState()),
         ChangeNotifierProvider(create: (context) => WorkoutState()),
         ChangeNotifierProvider(create: (context) => SpotifyState()),
+        ChangeNotifierProvider(create: (context) => FiveThreeOneState()),
       ],
       child: const App(),
     );

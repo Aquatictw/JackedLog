@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-02)
+See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Users can efficiently log and track their workouts with minimal friction
-**Current focus:** v1.1 Error Handling & Stability
+**Current focus:** v1.2 5/3/1 Forever Block Programming - Phase 7: Block Management
 
 ## Current Position
 
-Phase: 5 of 5 (Backup Status & Stability) ✓
-Plan: 1/1 complete
-Status: Phase complete, verified — MILESTONE v1.1 COMPLETE
-Last activity: 2026-02-06 — Completed quick task 004: Fix notes stale cache after edit
+Phase: 6 of 9 (Data Foundation) — Complete
+Plan: 1 of 1 in current phase
+Status: Phase complete
+Last activity: 2026-02-11 — Completed Phase 6 (Data Foundation)
 
-Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1)
+Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [███░░░░░░░] 25% (v1.2)
 
 ## Performance Metrics
 
@@ -28,6 +28,11 @@ Progress: [██████████] 100% (v1.0) | [███████�
 - Average duration: 2.5 min
 - Total execution time: 5 min
 
+**v1.2 Velocity:**
+- Total plans completed: 1
+- Average duration: 2 min
+- Total execution time: 2 min
+
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
@@ -37,6 +42,7 @@ Progress: [██████████] 100% (v1.0) | [███████�
 | 03-notes-reorder | 1 | 8 min | 8 min |
 | 04-error-handling | 1 | 2 min | 2 min |
 | 05-backup-status-stability | 1 | 3 min | 3 min |
+| 06-data-foundation | 1 | 2 min | 2 min |
 
 *Updated after each plan completion*
 
@@ -45,15 +51,15 @@ Progress: [██████████] 100% (v1.0) | [███████�
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-v1.0 decisions archived with milestone.
+v1.0 and v1.1 decisions archived with milestones.
 
-**v1.1 Decisions:**
+**v1.2 Decisions:**
 
-| ID | Decision | Rationale |
-|----|----------|-----------|
-| DEC-04-01-01 | Use helper functions for error classification | Centralizes mapping logic, easy to extend for new error types |
-| DEC-05-01-01 | Store backup status as text column | Simple 'success'/'failed'/null values, easy to extend |
-| DEC-05-01-02 | Always show Last Backup section when auto-backups enabled | Better UX - shows "Never" if no backup yet rather than hiding section |
+- Dedicated `fivethreeone_blocks` table (not extending Settings) for proper lifecycle management
+- Single integer `current_cycle` (0-4) encodes block position across 5 cycle types
+- Pure `schemes.dart` module with no UI/DB dependencies for all percentage/rep data
+- Manual week advancement only (no auto-detection from workout completion)
+- TM snapshots stored per block (not references to Settings values)
 
 ### Pending Todos
 
@@ -74,17 +80,13 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06
-Stopped at: Completed quick task 004
+Last session: 2026-02-11
+Stopped at: Phase 6 complete, verified ✓
 Resume file: None
 
 ## Next Steps
 
-v1.1 milestone complete. All planned phases executed:
-- Phase 4: Error Handling - complete
-- Phase 5: Backup Status & Stability - complete
-
-Ready for user testing and next milestone planning.
+Plan Phase 7 (Block Management): block creation flow, overview page, week/cycle advancement, TM progression.
 
 ---
-*Last updated: 2026-02-06 after quick task 004*
+*Last updated: 2026-02-11 after Phase 6 completion*

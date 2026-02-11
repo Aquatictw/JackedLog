@@ -1,705 +1,575 @@
-# Architecture Patterns: Flutter UI Enhancements
+# Architecture Patterns: 5/3/1 Forever Block Programming
 
-**Domain:** Fitness tracking app - Flutter/Drift integration patterns
-**Researched:** 2026-02-02
-**Confidence:** HIGH (based on existing codebase analysis + official documentation)
+**Domain:** 5/3/1 Forever block programming integration into existing Flutter fitness app
+**Researched:** 2026-02-11
+**Confidence:** HIGH (based on direct codebase analysis, not external sources)
 
-## Executive Summary
+## Current Architecture Snapshot
 
-This research examines how three new features integrate with JackedLog's existing Provider + Drift architecture:
+### What Exists Today
 
-1. **Notes table sequence column** - Drift migration for drag-drop reordering
-2. **Edit mode for completed workouts** - Distinguishing active vs historical data editing
-3. **Duration aggregation queries** - Stats computation patterns
+The current 5/3/1 implementation is minimal -- a "calculator overlay" bolted onto Settings:
 
-The existing codebase already implements similar patterns (plan_exercises has sequence, start_plan_page has reorder mode, gym_sets.dart has aggregation queries), making these enhancements straightforward extensions rather than architectural changes.
+```
+Settings table (single row):
+  fivethreeone_squat_tm    REAL nullable
+  fivethreeone_bench_tm    REAL nullable
+  fivethreeone_deadlift_tm REAL nullable
+  fivethreeone_press_tm    REAL nullable
+  fivethreeone_week        INTEGER default 1
+
+Entry points:
+  Notes page banner -> TrainingMaxEditor dialog (edit 4 TMs)
+  Exercise long-press menu -> FiveThreeOneCalculator dialog (per-exercise)
+
+Calculator:
+  Hardcoded 4-week scheme: W1 (5s), W2 (3s), W3 (5/3/1), W4 (Deload)
+  All exercises share same week number
+  "Progress Cycle" button: bump TM + reset to W1
+```
+
+**Key limitation:** There is no concept of blocks, cycles, supplemental work, or program structure. The current system is a reference calculator, not a program tracker.
+
+### Existing Patterns to Follow
+
+| Pattern | How It Works | Where |
+|---------|-------------|-------|
+| State management | `ChangeNotifier` + `Provider` | `SettingsState`, `WorkoutState`, `PlanState` |
+| Database access | Global `db` singleton, Drift ORM | `lib/main.dart`, all state classes |
+| Reactive updates | Drift `.watch()` streams + `StreamSubscription` | `SettingsState.init()`, `NotesPage` |
+| Navigation | Banner tap -> dialog/page, long-press -> bottom sheet | `NotesPage`, `ExerciseSetsCard` |
+| Database schema changes | Manual `ALTER TABLE` in `onUpgrade`, version bump | `database.dart` migration blocks |
+| Feature structure | `lib/{feature}/` with `*_page.dart` + `*_state.dart` | `workouts/`, `plan/`, `settings/` |
 
 ---
 
-## 1. Schema Changes: Notes Sequence Column
+## Recommended Architecture
 
-### Current Schema (Notes Table)
+### 1. Data Model: New Table, Not Extended Settings
+
+**Recommendation:** Create a new `fivethreeone_blocks` table. Do NOT extend Settings further.
+
+**Rationale:**
+- Settings is a single-row table already carrying 30+ columns (Spotify tokens, UI prefs, TMs, backup config). Adding block state (cycle index, supplemental scheme, anchor week, etc.) would further bloat a table that should only hold user preferences.
+- Block state is temporal and program-specific. It has a lifecycle (created, advanced, completed). Settings has no lifecycle.
+- A dedicated table enables future features: block history, multiple saved templates, undo.
+- The 4 TM columns in Settings should remain there (they are user preferences -- the starting TMs). The block table references them but owns its own state.
+
+**New table: `FiveThreeOneBlocks`**
 
 ```dart
-// lib/database/notes.dart - current
-@DataClassName('Note')
-class Notes extends Table {
+class FiveThreeOneBlocks extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get title => text()();
-  TextColumn get content => text()();
-  DateTimeColumn get created => dateTime()();
-  DateTimeColumn get updated => dateTime()();
-  IntColumn get color => integer().nullable()();
+
+  // Block template configuration
+  TextColumn get templateName => text().withDefault(const Constant('2 Leaders + Anchor'))();
+  TextColumn get supplementalType => text().withDefault(const Constant('fsl'))();
+  // Values: 'bbb' (Boring But Big), 'fsl' (First Set Last), 'ssl' (Second Set Last), 'bbs' (Boring But Strong), 'none'
+
+  // Current position in the block
+  IntColumn get currentCycleIndex => integer().withDefault(const Constant(0))();
+  // 0=Leader1, 1=Leader2, 2=Deload, 3=Anchor, 4=TM Test, 5=Complete
+  IntColumn get currentWeek => integer().withDefault(const Constant(1))();
+  // 1, 2, or 3 within each cycle
+
+  // TM snapshots at block creation (frozen values, not references)
+  RealColumn get squatTm => real()();
+  RealColumn get benchTm => real()();
+  RealColumn get deadliftTm => real()();
+  RealColumn get pressTm => real()();
+
+  // Metadata
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 }
 ```
 
-### Required Schema Change
-
-```dart
-// lib/database/notes.dart - with sequence
-@DataClassName('Note')
-class Notes extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  TextColumn get title => text()();
-  TextColumn get content => text()();
-  DateTimeColumn get created => dateTime()();
-  DateTimeColumn get updated => dateTime()();
-  IntColumn get color => integer().nullable()();
-  IntColumn get sequence => integer().withDefault(const Constant(0))();  // NEW
-}
-```
-
-### Migration Strategy
-
-**Pattern from existing codebase:** The plan_exercises migration (v45->v46) demonstrates exact pattern needed:
-
-```dart
-// From database.dart lines 138-149
-// v45->46: Add and backfill sequence column in plan_exercises
-await m.database.customStatement(
-  'ALTER TABLE plan_exercises ADD COLUMN sequence INTEGER',
-).catchError((e) {});
-await m.database.customStatement('''
-  UPDATE plan_exercises
-  SET sequence = (
-    SELECT COUNT(*)
-    FROM plan_exercises pe2
-    WHERE pe2.plan_id = plan_exercises.plan_id
-      AND pe2.id < plan_exercises.id
-  )
-''');
-```
-
-**For Notes table migration (v61->v62):**
-
-```dart
-// Migration in database.dart
-if (from < 62 && to >= 62) {
-  await m.database.customStatement(
-    'ALTER TABLE notes ADD COLUMN sequence INTEGER',
-  ).catchError((e) {});
-
-  // Backfill: order by updated DESC (most recent first = sequence 0)
-  await m.database.customStatement('''
-    UPDATE notes
-    SET sequence = (
-      SELECT COUNT(*)
-      FROM notes n2
-      WHERE n2.updated > notes.updated
-    )
-  ''');
-}
-```
-
-### Confidence: HIGH
-
-- Exact pattern exists in codebase (plan_exercises)
-- [Drift migration documentation](https://drift.simonbinder.eu/migrations/api/) confirms ALTER TABLE approach
-- SQLite safely ignores .catchError() for idempotent re-runs
-
----
-
-## 2. Drag-Drop Reordering for Notes
-
-### Existing Pattern in Codebase
-
-The `StartPlanPage` already implements full drag-drop reordering (lines 243-288):
-
-```dart
-// From start_plan_page.dart
-Future<void> _onReorder(int oldIndex, int newIndex) async {
-  if (newIndex > oldIndex) newIndex--;
-
-  setState(() {
-    final item = _exerciseOrder.removeAt(oldIndex);
-    _exerciseOrder.insert(newIndex, item);
-  });
-
-  HapticFeedback.mediumImpact();
-
-  // Update sequence numbers in database
-  if (workoutId != null) {
-    for (int i = 0; i < _exerciseOrder.length; i++) {
-      final item = _exerciseOrder[i];
-      final oldSequence = item.sequence;
-      await db.customUpdate(
-        'UPDATE gym_sets SET sequence = ? WHERE workout_id = ? AND name = ? AND sequence = ?',
-        updates: {db.gymSets},
-        variables: [
-          Variable.withInt(i),
-          Variable.withInt(workoutId!),
-          Variable.withString(exerciseName),
-          Variable.withInt(oldSequence),
-        ],
-      );
-      item.sequence = i;
-    }
-  }
-}
-```
-
-### Recommended Pattern for NotesPage
-
-**State Management Approach:**
-
-Notes currently uses direct StreamBuilder without local state management. Two approaches:
-
-| Approach | Pros | Cons | Recommendation |
-|----------|------|------|----------------|
-| **A: Local State** | Simple, isolated to NotesPage | Duplicates data, sync issues | Use for small lists |
-| **B: NotesState (ChangeNotifier)** | Consistent with app architecture, reusable | More code, new Provider | Use if notes used elsewhere |
-
-**Recommendation: Local State (Approach A)** because:
-1. Notes page is self-contained (not used by other features)
-2. Existing codebase uses local state for edit_plan_page exercises
-3. Simpler implementation, follows KISS principle
-
-### Implementation Pattern
-
-```dart
-// NotesPage with reorder support
-class _NotesPageState extends State<NotesPage> {
-  List<Note> _notes = [];
-  bool _isReorderMode = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<List<Note>>(
-      stream: (db.notes.select()
-        ..orderBy([(n) => OrderingTerm(expression: n.sequence)]))
-        .watch(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData && !_isReorderMode) {
-          _notes = snapshot.data!;
-        }
-
-        return _isReorderMode
-            ? _buildReorderableList()
-            : _buildGridView();
-      },
-    );
-  }
-
-  Future<void> _onReorder(int oldIndex, int newIndex) async {
-    if (newIndex > oldIndex) newIndex--;
-
-    setState(() {
-      final item = _notes.removeAt(oldIndex);
-      _notes.insert(newIndex, item);
-    });
-
-    // Batch update all sequence values
-    await db.batch((batch) {
-      for (int i = 0; i < _notes.length; i++) {
-        batch.update(
-          db.notes,
-          NotesCompanion(sequence: Value(i)),
-          where: (n) => n.id.equals(_notes[i].id),
-        );
-      }
-    });
-  }
-}
-```
-
-### Key Considerations
-
-1. **Grid vs List:** Current NotesPage uses GridView. ReorderableListView doesn't support grid layout. Options:
-   - Switch to list layout in reorder mode (like StartPlanPage does)
-   - Use `flutter_reorderable_grid_view` package (adds dependency)
-   - **Recommended:** Toggle to list layout for reorder mode (matches existing pattern)
-
-2. **Haptic Feedback:** Use `HapticFeedback.mediumImpact()` on reorder (existing pattern)
-
-3. **Visual Feedback:** Use `proxyDecorator` for elevation during drag (see start_plan_page.dart lines 769-780)
-
-### Confidence: HIGH
-
-- Exact pattern exists in StartPlanPage
-- [Flutter ReorderableListView](https://api.flutter.dev/flutter/material/ReorderableListView-class.html) well-documented
-- Batch updates efficient for sequence renumbering
-
----
-
-## 3. Edit Mode for Completed Workouts
-
-### Current Architecture
-
-**Active Workout Flow:**
-```
-WorkoutState.startWorkout() -> Creates Workout row (endTime=null)
-                            -> Sets _activeWorkout, _activePlan
-                            -> StartPlanPage uses workoutId for sets
-                            -> WorkoutState.stopWorkout() sets endTime
-```
-
-**Viewing Completed Workout:**
-```
-WorkoutDetailPage -> Receives Workout (endTime != null)
-                  -> Displays read-only exercise/set data
-                  -> Resume button calls WorkoutState.resumeWorkout()
-```
-
-### Edit Mode Requirements
-
-Edit mode for completed workouts differs from active workout flow:
-
-| Aspect | Active Workout | Edit Mode (Completed) |
-|--------|----------------|----------------------|
-| Timer | Running | N/A |
-| WorkoutState | Has activeWorkout | No activeWorkout |
-| New sets | Adds with current timestamp | Preserves original timestamp |
-| Reorder | Yes | Yes (if needed) |
-| Delete sets | Yes | Yes |
-| Modify sets | Yes | Yes |
-
-### Recommended Architecture
-
-**Option A: Reuse StartPlanPage with edit flag**
-
-```dart
-class StartPlanPage extends StatefulWidget {
-  final Plan plan;
-  final bool isEditMode;  // NEW: distinguishes active vs edit
-  final int? editWorkoutId;  // NEW: workout being edited
-
-  // When isEditMode=true:
-  // - Don't start timer
-  // - Don't show "Finish Workout" button
-  // - Show "Save Changes" instead
-  // - Don't modify WorkoutState
-}
-```
-
-**Option B: Dedicated WorkoutEditPage**
-
-```dart
-class WorkoutEditPage extends StatefulWidget {
-  final Workout workout;
-
-  // Focused on editing existing data
-  // No timer, no WorkoutState interaction
-  // Direct database operations
-}
-```
-
-**Recommendation: Option B (Dedicated Page)** because:
-1. **Single Responsibility:** Edit mode has different concerns than active recording
-2. **Simpler State:** No need to conditionally skip WorkoutState operations
-3. **Clearer UX:** Users understand they're editing history, not recording
-4. **Existing Pattern:** WorkoutDetailPage already handles completed workouts separately
-
-### Edit Page Integration with Provider
-
-The edit page should NOT modify WorkoutState (which is for active workouts). Instead:
-
-```dart
-class WorkoutEditPage extends StatefulWidget {
-  final Workout workout;
-
-  @override
-  State<WorkoutEditPage> createState() => _WorkoutEditPageState();
-}
-
-class _WorkoutEditPageState extends State<WorkoutEditPage> {
-  late Stream<List<GymSet>> setsStream;
-
-  @override
-  void initState() {
-    super.initState();
-    setsStream = (db.gymSets.select()
-      ..where((s) => s.workoutId.equals(widget.workout.id) & s.hidden.equals(false))
-      ..orderBy([(s) => OrderingTerm(expression: s.sequence)]))
-      .watch();
-  }
-
-  // Direct database operations for edits
-  Future<void> _updateSet(GymSet set, GymSetsCompanion update) async {
-    await (db.gymSets.update()..where((s) => s.id.equals(set.id)))
-        .write(update);
-  }
-
-  Future<void> _deleteSet(GymSet set) async {
-    await (db.gymSets.delete()..where((s) => s.id.equals(set.id))).go();
-  }
-
-  Future<void> _addSet(GymSetsCompanion newSet) async {
-    // Use original workout's date context for created timestamp
-    await db.gymSets.insertOne(newSet.copyWith(
-      created: Value(widget.workout.startTime),  // Or use endTime
-      workoutId: Value(widget.workout.id),
-    ));
-  }
-}
-```
-
-### Navigation Pattern
-
-From WorkoutDetailPage:
-
-```dart
-// Current: Resume button reopens workout as active
-IconButton(
-  icon: const Icon(Icons.play_arrow),
-  tooltip: 'Resume Workout',
-  onPressed: () => _resumeWorkout(context),
-),
-
-// Add: Edit button for modifying without resuming
-IconButton(
-  icon: const Icon(Icons.edit_outlined),
-  tooltip: 'Edit Workout',
-  onPressed: () => Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => WorkoutEditPage(workout: widget.workout),
-    ),
-  ),
-),
-```
-
-### Confidence: HIGH
-
-- Pattern follows existing separation (StartPlanPage vs WorkoutDetailPage)
-- Direct database operations already used throughout codebase
-- No new state management complexity
-
----
-
-## 4. Duration Aggregation Queries
-
-### Existing Aggregation Patterns
-
-The codebase already has extensive aggregation in `lib/database/gym_sets.dart`:
-
-```dart
-// Volume aggregation
-const volumeCol = CustomExpression<double>('ROUND(SUM(weight * reps), 2)');
-
-// One-rep max (Brzycki formula)
-const ormCol = CustomExpression<double>(
-  'MAX(CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END)',
-);
-
-// Cardio aggregation
-const inclineAdjustedPace = CustomExpression<double>(
-  'SUM(distance) * POW(1.1, AVG(incline)) / SUM(duration)',
+**Why snapshot TMs instead of referencing Settings:**
+- When user creates a block, the TMs are locked in. If they manually edit TMs in Settings mid-block, the block should still use its own values.
+- TM progression happens via the block's advance logic (bump by 5/10 lb per cycle), not by editing Settings.
+- This prevents the subtle bug where editing Settings TMs silently corrupts a running block.
+
+**Migration (version 64):**
+
+```sql
+CREATE TABLE IF NOT EXISTS fivethreeone_blocks (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  template_name TEXT NOT NULL DEFAULT '2 Leaders + Anchor',
+  supplemental_type TEXT NOT NULL DEFAULT 'fsl',
+  current_cycle_index INTEGER NOT NULL DEFAULT 0,
+  current_week INTEGER NOT NULL DEFAULT 1,
+  squat_tm REAL NOT NULL,
+  bench_tm REAL NOT NULL,
+  deadlift_tm REAL NOT NULL,
+  press_tm REAL NOT NULL,
+  created_at INTEGER NOT NULL,
+  completed_at INTEGER,
+  is_active INTEGER NOT NULL DEFAULT 1
 );
 ```
 
-### Duration Stats Query Pattern
+**Import/export impact:** The new table is independent of the existing CSV export (which only covers workouts + gym_sets). Database export (.sqlite) will automatically include it. No changes needed to export_data.dart or import_data.dart for the initial implementation. Older databases imported will simply not have this table, which is fine -- no active block means the feature shows the "Start Block" setup screen.
 
-For workout duration aggregation, follow the existing pattern:
+### 2. State Management: Lightweight ChangeNotifier
+
+**Recommendation:** Create `FiveThreeOneState` as a `ChangeNotifier` registered in `appProviders`, following the exact pattern of `WorkoutState`.
+
+**Rationale:**
+- The block state is consumed by multiple disconnected widgets: the Notes page banner, the calculator dialog, and the new block overview page. Provider is the right way to share this.
+- A simpler approach (just reading from DB each time) would work for the overview page, but the calculator dialog needs instant access to block state without async initialization delays.
+- Follows existing convention: `WorkoutState`, `PlanState`, `SettingsState` all use this pattern.
 
 ```dart
-// In lib/database/workouts.dart or lib/database/gym_sets.dart
+// lib/fivethreeone/fivethreeone_state.dart
 
-/// Get total workout duration in the period
-Future<Duration> getTotalWorkoutDuration({
-  required Period period,
-}) async {
-  final periodStart = getPeriodStart(period);
+class FiveThreeOneState extends ChangeNotifier {
+  FiveThreeOneState() {
+    _loadActiveBlock().catchError((error) {
+      print('Warning: Error loading active 5/3/1 block: $error');
+    });
+  }
 
-  final whereClause = periodStart != null
-      ? 'WHERE end_time IS NOT NULL AND start_time >= ${periodStart.millisecondsSinceEpoch ~/ 1000}'
-      : 'WHERE end_time IS NOT NULL';
+  FiveThreeOneBlock? _activeBlock;
 
-  final result = await db.customSelect('''
-    SELECT SUM(end_time - start_time) as total_seconds
-    FROM workouts
-    $whereClause
-  ''').getSingleOrNull();
+  FiveThreeOneBlock? get activeBlock => _activeBlock;
+  bool get hasActiveBlock => _activeBlock != null;
 
-  final totalSeconds = result?.read<int?>('total_seconds') ?? 0;
-  return Duration(seconds: totalSeconds);
-}
+  // Derived getters for current position
+  String get currentCycleName { ... }  // "Leader 1", "Leader 2", etc.
+  int get currentWeek { ... }          // 1, 2, or 3
+  bool get isLeader { ... }
+  bool get isAnchor { ... }
+  bool get isDeload { ... }
 
-/// Get average workout duration
-Future<Duration> getAverageWorkoutDuration({
-  required Period period,
-}) async {
-  final periodStart = getPeriodStart(period);
+  // Get percentage scheme for current position
+  List<SetScheme> getMainScheme(String exerciseKey) { ... }
+  List<SetScheme> getSupplementalScheme(String exerciseKey) { ... }
 
-  final whereClause = periodStart != null
-      ? 'WHERE end_time IS NOT NULL AND start_time >= ${periodStart.millisecondsSinceEpoch ~/ 1000}'
-      : 'WHERE end_time IS NOT NULL';
+  // TM for a given exercise from the active block
+  double? getTm(String exerciseKey) { ... }
 
-  final result = await db.customSelect('''
-    SELECT AVG(end_time - start_time) as avg_seconds
-    FROM workouts
-    $whereClause
-  ''').getSingleOrNull();
-
-  final avgSeconds = (result?.read<double?>('avg_seconds') ?? 0).toInt();
-  return Duration(seconds: avgSeconds);
-}
-
-/// Get workout count
-Future<int> getWorkoutCount({required Period period}) async {
-  final periodStart = getPeriodStart(period);
-
-  final whereClause = periodStart != null
-      ? 'WHERE end_time IS NOT NULL AND start_time >= ${periodStart.millisecondsSinceEpoch ~/ 1000}'
-      : 'WHERE end_time IS NOT NULL';
-
-  final result = await db.customSelect('''
-    SELECT COUNT(*) as count
-    FROM workouts
-    $whereClause
-  ''').getSingleOrNull();
-
-  return result?.read<int>('count') ?? 0;
+  // Actions
+  Future<void> createBlock({ ... }) { ... }
+  Future<void> advanceWeek() { ... }
+  Future<void> advanceCycle() { ... }
 }
 ```
 
-### Combined Stats Query (Optimized)
-
-For a stats dashboard, combine into single query:
+**Registration in main.dart:**
 
 ```dart
-typedef WorkoutStats = ({
-  int workoutCount,
-  Duration totalDuration,
-  Duration avgDuration,
-  double totalVolume,
-});
+Widget appProviders(SettingsState state) => MultiProvider(
+  providers: [
+    ChangeNotifierProvider(create: (context) => state),
+    ChangeNotifierProvider(create: (context) => TimerState()),
+    ChangeNotifierProvider(create: (context) => PlanState()),
+    ChangeNotifierProvider(create: (context) => WorkoutState()),
+    ChangeNotifierProvider(create: (context) => SpotifyState()),
+    ChangeNotifierProvider(create: (context) => FiveThreeOneState()),  // NEW
+  ],
+  child: const App(),
+);
+```
 
-Future<WorkoutStats> getWorkoutStats({required Period period}) async {
-  final periodStart = getPeriodStart(period);
+### 3. Navigation: Banner -> Full Page (Not Dialog)
 
-  final whereClause = periodStart != null
-      ? 'AND w.start_time >= ${periodStart.millisecondsSinceEpoch ~/ 1000}'
-      : '';
+**Recommendation:** Replace the TrainingMaxEditor dialog with a full `FiveThreeOnePage` that pushes via `Navigator.push`. Keep the banner as the entry point.
 
-  final result = await db.customSelect('''
-    SELECT
-      COUNT(DISTINCT w.id) as workout_count,
-      SUM(w.end_time - w.start_time) as total_seconds,
-      AVG(w.end_time - w.start_time) as avg_seconds,
-      SUM(gs.weight * gs.reps) as total_volume
-    FROM workouts w
-    LEFT JOIN gym_sets gs ON gs.workout_id = w.id AND gs.hidden = 0
-    WHERE w.end_time IS NOT NULL
-    $whereClause
-  ''').getSingleOrNull();
+**Rationale:**
+- The current TrainingMaxEditor is a dialog because it only has 4 text fields. The block feature needs: block overview timeline, TM display for 4 lifts, current week indicator, supplemental scheme display, advance/create controls. This is too much for a dialog.
+- A full page is consistent with how other rich features work (workout detail, graph pages).
+- The banner stays in Notes page and becomes more informative (shows "Leader 1 / Week 2" instead of just "5/3/1 Training Max").
 
-  return (
-    workoutCount: result?.read<int>('workout_count') ?? 0,
-    totalDuration: Duration(seconds: result?.read<int?>('total_seconds') ?? 0),
-    avgDuration: Duration(seconds: (result?.read<double?>('avg_seconds') ?? 0).toInt()),
-    totalVolume: result?.read<double?>('total_volume') ?? 0.0,
-  );
+**Banner update:**
+
+```
+Current:  "5/3/1 Training Max" -> TrainingMaxEditor dialog
+New:      "5/3/1 Block: Leader 1 - Week 2 (FSL)" -> FiveThreeOnePage push
+Fallback: "5/3/1 Setup Block" -> FiveThreeOnePage push (setup mode)
+```
+
+**Page structure:**
+
+```
+lib/fivethreeone/
+  fivethreeone_state.dart     # ChangeNotifier state
+  fivethreeone_page.dart      # Main page (block overview OR setup)
+  block_timeline_widget.dart  # Visual cycle/week timeline
+  scheme_display_widget.dart  # Shows percentage scheme for current position
+  schemes.dart                # Pure data: percentage schemes, no UI/DB deps
+```
+
+**Why not a dialog:**
+- The TrainingMaxEditor dialog is 243 lines for just 4 text fields + save button.
+- The block page will need: timeline visualization, per-lift TM display, week/cycle navigation, supplemental scheme display, advance controls, "Start New Block" flow. A dialog would be cramped and require excessive scrolling on small screens.
+- Full page allows future expansion (history of past blocks, comparison views) without re-navigation.
+
+### 4. Calculator Integration: Context-Aware via FiveThreeOneState
+
+**Recommendation:** Modify the existing `FiveThreeOneCalculator` to check `FiveThreeOneState` first, falling back to current behavior if no active block.
+
+**Rationale:**
+- The calculator already knows the exercise name (passed via constructor). It already loads TM from Settings. The change is: if an active block exists, read TM and week scheme from the block instead of Settings.
+- This keeps the calculator usable even without an active block (manual mode), which is important for users who haven't set up blocks.
+
+**Current flow:**
+```
+FiveThreeOneCalculator(exerciseName: "Squat")
+  -> _loadSettings()
+  -> reads fivethreeone_squat_tm from Settings
+  -> reads fivethreeone_week from Settings
+  -> shows hardcoded 4-week scheme
+```
+
+**New flow:**
+```
+FiveThreeOneCalculator(exerciseName: "Squat")
+  -> check context.read<FiveThreeOneState>().hasActiveBlock
+  -> IF active block:
+       -> TM from block.squatTm
+       -> Week/scheme from block state (Leader: 5's PRO, Anchor: PR Sets, etc.)
+       -> Supplemental scheme shown below main sets
+       -> Week selector disabled (driven by block)
+  -> ELSE (no active block):
+       -> Existing behavior (Settings TMs, manual week selector)
+```
+
+**Key changes to `_getWorkingSetScheme()`:**
+
+The current method returns a fixed 4-week cycle. With blocks, the scheme depends on cycle type:
+
+| Cycle Type | Main Work | Top Set |
+|-----------|-----------|---------|
+| Leader (5's PRO) | 65/75/85, 70/80/90, 75/85/95 | No AMRAP (prescribed reps only) |
+| Anchor (PR Sets) | Same percentages | AMRAP on top set (current behavior) |
+| Deload | 40/50/60 x5 | No AMRAP |
+| TM Test | 100% TM x3-5 | Single set validation |
+
+This is a data-only change to the calculator -- the UI structure (set cards with percentage/weight/reps) stays identical. Only the data source changes.
+
+### 5. Supplemental Work Display
+
+**Recommendation:** Show supplemental sets as a separate section below main work in the calculator dialog. Do NOT create actual GymSet entries automatically.
+
+**Rationale:**
+- Supplemental work (BBB 5x10 @ 50%, FSL 5x5 @ 65%) is informational guidance, not tracked sets. The user will log the actual sets they do via the workout recording flow (ExerciseSetsCard).
+- Auto-creating GymSet entries would fight the existing workout flow where users add sets manually, adjust weights, and mark completion.
+- The calculator already displays "what to do." Adding supplemental display is a natural extension.
+
+**Supplemental scheme data:**
+
+```dart
+enum SupplementalType {
+  bbb,   // Boring But Big: 5x10 @ 50-60%
+  fsl,   // First Set Last: 5x5 @ first set %
+  ssl,   // Second Set Last: 5x5 @ second set %
+  bbs,   // Boring But Strong: 10x5 @ first set %
+  none,  // No supplemental
+}
+
+List<SetScheme> getSupplementalScheme(SupplementalType type, int week) {
+  switch (type) {
+    case SupplementalType.bbb:
+      return List.generate(5, (_) =>
+        (percentage: [0.50, 0.55, 0.60][week - 1], reps: 10, amrap: false));
+    case SupplementalType.fsl:
+      final firstSetPct = [0.65, 0.70, 0.75][week - 1];
+      return List.generate(5, (_) =>
+        (percentage: firstSetPct, reps: 5, amrap: false));
+    // ...
+  }
 }
 ```
 
-### Stream-Based Stats (for reactive UI)
+**Display in calculator:**
 
-```dart
-Stream<WorkoutStats> watchWorkoutStats({required Period period}) {
-  // Drift watches on workouts and gymSets tables
-  return db.customSelect(
-    // Same query as above
-    '''...''',
-    readsFrom: {db.workouts, db.gymSets},
-  ).watchSingle().map((result) => (
-    workoutCount: result.read<int>('workout_count'),
-    totalDuration: Duration(seconds: result.read<int?>('total_seconds') ?? 0),
-    avgDuration: Duration(seconds: (result.read<double?>('avg_seconds') ?? 0).toInt()),
-    totalVolume: result.read<double?>('total_volume') ?? 0.0,
-  ));
-}
 ```
+--- Main Work (5's PRO) ---
+Set 1: 127.5 kg x5  (65%)
+Set 2: 147.5 kg x5  (75%)
+Set 3: 167.5 kg x5  (85%)
 
-### Confidence: HIGH
-
-- Exact query patterns exist in gym_sets.dart
-- Drift custom SQL fully supported
-- getPeriodStart() helper already implemented
+--- Supplemental (FSL 5x5) ---
+5 x 5 @ 127.5 kg (65%)
+```
 
 ---
 
 ## Component Boundaries
 
-### Data Layer Changes
+### New Components
 
-| Component | File | Change |
-|-----------|------|--------|
-| Notes schema | `lib/database/notes.dart` | Add `sequence` column |
-| Database version | `lib/database/database.dart` | Bump to v62, add migration |
-| Stats queries | `lib/database/workouts.dart` or `gym_sets.dart` | Add duration/stats functions |
+| Component | Location | Responsibility |
+|-----------|----------|---------------|
+| `FiveThreeOneBlocks` table | `lib/database/fivethreeone_blocks.dart` | Schema definition for block data |
+| `FiveThreeOneState` | `lib/fivethreeone/fivethreeone_state.dart` | Block lifecycle, current position, TM management |
+| `FiveThreeOnePage` | `lib/fivethreeone/fivethreeone_page.dart` | Block overview page (timeline, TMs, controls) |
+| `BlockTimelineWidget` | `lib/fivethreeone/block_timeline_widget.dart` | Visual cycle/week progress indicator |
+| `SchemeDisplayWidget` | `lib/fivethreeone/scheme_display_widget.dart` | Percentage/weight table for current position |
+| Scheme data module | `lib/fivethreeone/schemes.dart` | Pure data: percentage schemes for all cycle types and supplemental variations |
 
-### Presentation Layer Changes
+### Modified Components
 
-| Component | File | Change |
-|-----------|------|--------|
-| NotesPage | `lib/notes/notes_page.dart` | Add reorder mode toggle, ReorderableListView |
-| WorkoutDetailPage | `lib/workouts/workout_detail_page.dart` | Add Edit button |
-| WorkoutEditPage | `lib/workouts/workout_edit_page.dart` | **NEW FILE** for edit mode |
-| StatsWidget | `lib/widgets/stats/` | Display aggregated stats |
+| Component | Location | What Changes |
+|-----------|----------|-------------|
+| `database.dart` | `lib/database/database.dart` | Add `FiveThreeOneBlocks` to `@DriftDatabase` tables, add migration v64 |
+| `main.dart` | `lib/main.dart` | Add `FiveThreeOneState` to Provider tree |
+| `notes_page.dart` | `lib/notes/notes_page.dart` | Banner reads from `FiveThreeOneState`, navigates to `FiveThreeOnePage` |
+| `five_three_one_calculator.dart` | `lib/widgets/five_three_one_calculator.dart` | Reads block state if active, shows supplemental section |
+| `training_max_editor.dart` | `lib/widgets/training_max_editor.dart` | May be preserved as "manual TM editor" accessible from FiveThreeOnePage settings |
 
-### State Management
+### Unchanged Components
 
-| Component | Change | Reason |
-|-----------|--------|--------|
-| WorkoutState | **No change** | Edit mode doesn't use active workout state |
-| NotesState | **Not needed** | Local state sufficient for isolated page |
+| Component | Why Unchanged |
+|-----------|--------------|
+| `ExerciseSetsCard` | Workout recording stays manual. Users log whatever they actually do. |
+| `GymSets` table | No schema changes. Recorded sets are just normal gym sets. |
+| `Plans` / `PlanExercises` | Plans are orthogonal to 5/3/1 blocks. A plan says "do Squat, Bench, Rows." The block says "this week Squat is 65/75/85%." |
+| `WorkoutState` | Workout lifecycle is independent of block programming. |
+| `export_data.dart` / `import_data.dart` | CSV export covers workouts/sets only. Database export handles new table automatically. |
+| `SettingsState` | Still holds TM values (for manual mode), but block reads its own snapshot. |
+
+---
+
+## Data Flow
+
+### Block Creation Flow
+
+```
+User taps banner -> FiveThreeOnePage (setup mode)
+  -> User selects template: "2 Leaders + Anchor"
+  -> User selects supplemental: "FSL"
+  -> User confirms TMs (pre-populated from Settings)
+  -> FiveThreeOneState.createBlock()
+    -> INSERT into fivethreeone_blocks
+    -> TMs snapshotted from Settings into block row
+    -> currentCycleIndex = 0, currentWeek = 1
+    -> notifyListeners()
+  -> Banner updates to "Leader 1 - Week 1 (FSL)"
+```
+
+### Week Advance Flow
+
+```
+User taps "Complete Week" on FiveThreeOnePage
+  -> FiveThreeOneState.advanceWeek()
+    -> currentWeek++ (1->2->3)
+    -> If currentWeek > 3: advanceCycle()
+    -> UPDATE fivethreeone_blocks
+    -> notifyListeners()
+  -> UI updates everywhere (banner, calculator, page)
+```
+
+### Cycle Advance Flow
+
+```
+FiveThreeOneState.advanceCycle()
+  -> currentCycleIndex++ (Leader1 -> Leader2 -> Deload -> Anchor -> TMTest -> Complete)
+  -> currentWeek = 1
+  -> If crossing Leader2 -> Deload: TMs stay same
+  -> If crossing TMTest -> Complete:
+    -> Bump TMs: upper +2.5kg/5lb, lower +5kg/10lb
+    -> Update both block row AND Settings table (so manual mode stays current)
+    -> Mark block completed (completedAt, isActive=false)
+  -> notifyListeners()
+```
+
+### Calculator Context-Aware Flow
+
+```
+User long-presses Squat in workout -> "5/3/1 Calculator"
+  -> FiveThreeOneCalculator(exerciseName: "Squat")
+  -> initState: check FiveThreeOneState
+    -> hasActiveBlock?
+      YES: tm = block.squatTm, scheme = block scheme for current position
+      NO:  tm = settings.fivethreeoneSquatTm, scheme = manual 4-week
+  -> Display main sets + supplemental (if block active)
+```
+
+---
+
+## Patterns to Follow
+
+### Pattern 1: Stream-Backed State with Manual Control
+
+**What:** Like `WorkoutState`, the block state loads from DB on init and updates via explicit actions (not automatic stream watching).
+
+**When:** Block state changes are user-initiated (advance week, create block), not driven by external events.
+
+**Why not stream-watching like SettingsState:** Settings changes from any UI immediately propagate everywhere. Block state only changes when the user explicitly advances. Watching adds unnecessary complexity.
+
+```dart
+class FiveThreeOneState extends ChangeNotifier {
+  Future<void> _loadActiveBlock() async {
+    _activeBlock = await (db.fiveThreeOneBlocks.select()
+      ..where((b) => b.isActive.equals(true))
+      ..limit(1))
+      .getSingleOrNull();
+    notifyListeners();
+  }
+
+  Future<void> advanceWeek() async {
+    if (_activeBlock == null) return;
+    // ... update logic ...
+    await (db.fiveThreeOneBlocks.update()
+      ..where((b) => b.id.equals(_activeBlock!.id)))
+      .write(FiveThreeOneBlocksCompanion(
+        currentWeek: Value(newWeek),
+        currentCycleIndex: Value(newCycle),
+      ));
+    await _loadActiveBlock(); // Reload to sync
+  }
+}
+```
+
+### Pattern 2: Pure Data Schemes Module
+
+**What:** All percentage schemes, supplemental calculations, and cycle definitions are pure functions in a separate module with no UI or database dependencies.
+
+**Why:** This makes the scheme logic testable in isolation and reusable across calculator, overview page, and any future "workout suggestion" feature.
+
+```dart
+// lib/fivethreeone/schemes.dart - NO imports from database or flutter
+
+typedef SetScheme = ({double percentage, int reps, bool amrap});
+
+List<SetScheme> getMainScheme({
+  required int cycleType, // 0=leader, 1=anchor, 2=deload, 3=tmtest
+  required int week,      // 1, 2, or 3
+}) { ... }
+
+List<SetScheme> getSupplementalScheme({
+  required String supplementalType, // 'bbb', 'fsl', 'ssl', etc.
+  required int week,
+}) { ... }
+
+double calculateWeight(double tm, double percentage, String unit) { ... }
+```
+
+### Pattern 3: Graceful Degradation
+
+**What:** Every component that reads `FiveThreeOneState` must work when no active block exists.
+
+**Why:** Users may not use 5/3/1 blocks at all. The calculator must still work in manual mode. The banner must still show something useful.
+
+```dart
+// In calculator:
+final blockState = context.read<FiveThreeOneState>();
+if (blockState.hasActiveBlock) {
+  // Block-driven mode
+} else {
+  // Manual mode (existing behavior)
+}
+
+// In banner:
+if (blockState.hasActiveBlock) {
+  '5/3/1: ${blockState.currentCycleName} - Week ${blockState.currentWeek}'
+} else {
+  '5/3/1 Training Max'  // Original text
+}
+```
 
 ---
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Modifying WorkoutState for Edit Mode
+### Anti-Pattern 1: Storing Block State in Settings
 
-**What:** Adding `isEditMode` flag to WorkoutState
-**Why bad:** WorkoutState is for active workout tracking (timer, nav coordination). Edit mode is fundamentally different.
-**Instead:** Create dedicated WorkoutEditPage with direct database operations.
+**What:** Adding `fivethreeone_cycle_index`, `fivethreeone_supplemental_type`, etc. to the Settings table.
 
-### Anti-Pattern 2: Shared Mutable State for Reorder
+**Why bad:** Settings is already overloaded (30+ columns). Block state has a lifecycle (create/advance/complete) that Settings doesn't model. You'd need to add `fivethreeone_block_started_at`, `fivethreeone_block_completed_at`, and soon you're building a table inside a row.
 
-**What:** Using a Provider to hold reorderable list state
-**Why bad:** Introduces unnecessary complexity, sync issues with database stream
-**Instead:** Use local state (`setState`) synchronized with database on reorder complete.
+**Instead:** Dedicated `FiveThreeOneBlocks` table with proper schema.
 
-### Anti-Pattern 3: Eager Sequence Updates
+### Anti-Pattern 2: Auto-Generating Workout Sets
 
-**What:** Updating database sequence on every drag move
-**Why bad:** Too many DB writes, poor performance, difficult to cancel
-**Instead:** Update in-memory list immediately (optimistic UI), batch-write to database on reorder complete.
+**What:** When user starts a workout during an active block, automatically creating GymSet rows with pre-calculated weights.
 
-### Anti-Pattern 4: Missing Migration Idempotency
+**Why bad:** Fights the existing workout flow. Users adjust weights, skip sets, add extra sets. Pre-populating creates ghost data that needs cleanup logic. The calculator already tells users what to do -- they record what they actually did.
 
-**What:** Migration that fails on re-run (e.g., column already exists error)
-**Why bad:** Users who interrupted migration or restored backups will crash
-**Instead:** Use `.catchError((e) {})` for ALTER TABLE statements (existing pattern in codebase).
+**Instead:** Calculator shows the prescription. User records actual performance via normal ExerciseSetsCard flow.
 
----
+### Anti-Pattern 3: Complex Cycle State Machine
 
-## Data Flow Diagrams
+**What:** Building an elaborate state machine with transitions, guards, and rollback logic for cycle advancement.
 
-### Notes Reorder Flow
+**Why bad:** YAGNI. The block progression is strictly linear: Leader1 W1->W2->W3 -> Leader2 W1->W2->W3 -> Deload W1->W2->W3 -> Anchor W1->W2->W3 -> TM Test -> Complete. Two integers (cycleIndex, week) fully describe the state.
 
-```
-User drags note → ReorderableListView.onReorder
-                       ↓
-              _notes.removeAt(oldIndex)
-              _notes.insert(newIndex, note)
-              setState() ← Optimistic UI update
-                       ↓
-              db.batch((batch) {
-                for (i, note) in _notes:
-                  batch.update(sequence: i)
-              })
-                       ↓
-              Stream emits new order ← UI already correct
-```
+**Instead:** Simple integer math with a `CYCLE_NAMES` list for display.
 
-### Edit Mode Flow
+### Anti-Pattern 4: Making Calculator Modal About Block State
 
-```
-WorkoutDetailPage → Edit Button tap
-                          ↓
-               Navigator.push(WorkoutEditPage)
-                          ↓
-               StreamBuilder(setsStream)
-                          ↓
-               User edits set → db.gymSets.update()
-               User adds set → db.gymSets.insert()
-               User deletes → db.gymSets.delete()
-                          ↓
-               Navigator.pop() ← Changes already persisted
-```
+**What:** If an active block exists, preventing the user from using the calculator in manual mode.
 
-### Stats Aggregation Flow
+**Why bad:** Users may want to look up different week percentages, calculate for a non-block lift, or compare options. Locking them into block mode removes flexibility.
 
-```
-StatsPage/OverviewPage → watchWorkoutStats(period)
-                              ↓
-                    Drift streams from workouts + gymSets
-                              ↓
-                    StreamBuilder receives WorkoutStats
-                              ↓
-                    UI displays: count, total time, avg time, volume
-```
+**Instead:** Block mode is the default when a block is active, but a toggle/tab allows switching to manual mode.
 
 ---
 
-## Migration Considerations
+## Suggested Build Order
 
-### Schema Version Bump
+Build order is designed so each phase is independently useful and testable.
 
-```dart
-// database.dart
-@override
-int get schemaVersion => 62;  // Was 61
-```
+### Phase 1: Data Foundation + State
+**Build:** Table definition, migration, `FiveThreeOneState`, schemes module
+**Why first:** Everything else depends on this. Can be tested without UI.
+**Deliverable:** State class that can create/advance/complete blocks, pure scheme functions
+**Integration points:** `database.dart` (table + migration), `main.dart` (Provider registration)
 
-### Migration Code Location
+### Phase 2: Block Overview Page + Banner Update
+**Build:** `FiveThreeOnePage`, `BlockTimelineWidget`, banner context-awareness
+**Why second:** Gives users the primary interface to create and manage blocks.
+**Deliverable:** Full page showing block timeline, TMs, advance controls. Banner shows current position.
+**Integration points:** `notes_page.dart` (banner navigation change)
 
-Add to `onUpgrade` in `database.dart`, following existing consolidation pattern:
+### Phase 3: Calculator Context-Awareness + Supplemental Display
+**Build:** Calculator reads block state, shows supplemental section
+**Why third:** This is where the block state becomes actionable during workouts.
+**Deliverable:** Calculator shows correct scheme based on block position, supplemental sets displayed below main work.
+**Integration points:** `five_three_one_calculator.dart` (logic + UI changes)
 
-```dart
-// from61To62: Notes sequence column
-if (from < 62 && to >= 62) {
-  await m.database.customStatement(
-    'ALTER TABLE notes ADD COLUMN sequence INTEGER',
-  ).catchError((e) {});
+### Phase 4: Polish + Edge Cases
+**Build:** Manual mode toggle in calculator, block completion flow with TM bump, block history view
+**Why last:** These are refinements that depend on all prior phases working.
+**Deliverable:** Complete block lifecycle from creation to completion with TM progression.
 
-  await m.database.customStatement('''
-    UPDATE notes
-    SET sequence = (
-      SELECT COUNT(*)
-      FROM notes n2
-      WHERE n2.updated > notes.updated
-    )
-  ''');
-}
-```
+---
 
-### Drift Schema Export
+## Scalability Considerations
 
-After migration, run:
-```bash
-dart run drift_dev schema dump lib/database/database.dart drift_schemas/
-```
+| Concern | Current (No Blocks) | With Blocks | At Scale (Many Completed Blocks) |
+|---------|---------------------|-------------|----------------------------------|
+| DB size | 0 extra rows | 1 active row | Grows by 1 row per completed block (negligible) |
+| Provider overhead | N/A | 1 additional ChangeNotifier | Same -- only 1 active block at a time |
+| Calculator startup | 1 DB read (Settings) | 1 DB read (Settings) + 1 Provider read (in-memory) | Same -- Provider caches active block |
+| Migration complexity | N/A | 1 new table, no data migration | No migration needed for block growth |
 
-### Confidence: HIGH
-
-- Follows established migration patterns in codebase
-- SQLite ALTER TABLE is safe for adding nullable/default columns
-- Backfill query tested conceptually against existing Notes schema
+The single-active-block constraint means this feature adds essentially zero overhead to the existing app. The table could accumulate hundreds of completed blocks over years without any performance concern.
 
 ---
 
 ## Sources
 
-### Official Documentation
-- [Drift Migration API](https://drift.simonbinder.eu/migrations/api/) - Migration patterns
-- [Drift Tables](https://drift.simonbinder.eu/dart_api/tables/) - Column definitions
-- [Flutter ReorderableListView](https://api.flutter.dev/flutter/material/ReorderableListView-class.html) - Drag-drop API
-- [Flutter State Management](https://docs.flutter.dev/data-and-backend/state-mgmt/options) - Provider patterns
-
-### Community Resources
-- [Drift Migration with Flutter](https://medium.com/@tagizada.nicat/migration-with-flutter-drift-c9e21e905eeb) - Practical migration examples
-- [Mastering ReorderableListView.builder](https://medium.com/@jamshaidaslam/mastering-reorderablelistview-builder-in-flutter-a-deep-dive-for-advanced-developers-60d2f55ea771) - Advanced reorder patterns
-
-### Codebase References (HIGH confidence - primary source)
-- `lib/database/database.dart` - Migration patterns (lines 138-149 for sequence)
-- `lib/plan/start_plan_page.dart` - Reorder implementation (lines 243-288, 765-797)
-- `lib/database/gym_sets.dart` - Aggregation queries (lines 1-260)
-- `lib/workouts/workout_state.dart` - Active workout management
-- `lib/workouts/workout_detail_page.dart` - Completed workout display
-
----
-
-## Quality Gate Checklist
-
-- [x] Schema changes are explicit (Notes.sequence column defined)
-- [x] State management integrates with existing Provider pattern (local state for notes, no WorkoutState changes for edit)
-- [x] Migration considerations noted (v62, backfill query, idempotency)
-- [x] Existing patterns referenced from codebase
-- [x] Anti-patterns documented
-- [x] Data flow diagrams provided
+- Direct codebase analysis (HIGH confidence):
+  - `lib/database/database.dart` -- migration patterns, schema version 63
+  - `lib/database/settings.dart` -- existing 5/3/1 columns (lines 44-49)
+  - `lib/widgets/five_three_one_calculator.dart` -- current calculator logic
+  - `lib/widgets/training_max_editor.dart` -- current TM editor
+  - `lib/notes/notes_page.dart` -- banner entry point, `_TrainingMaxBanner` widget
+  - `lib/plan/exercise_sets_card.dart` -- calculator launch via `_show531Calculator`
+  - `lib/settings/settings_state.dart` -- ChangeNotifier + StreamSubscription pattern
+  - `lib/workouts/workout_state.dart` -- state management pattern with async init
+  - `lib/main.dart` -- Provider registration in `appProviders()`
+  - `lib/export_data.dart`, `lib/import_data.dart` -- import/export impact assessment
+  - `.planning/codebase/ARCHITECTURE.md`, `STRUCTURE.md`, `CONVENTIONS.md`
+- 5/3/1 Forever program knowledge (MEDIUM confidence -- based on training knowledge, not verified against the book):
+  - Leader/Anchor cycle structure
+  - 5's PRO vs PR Sets distinction
+  - Supplemental volume schemes (BBB, FSL, SSL, BBS)
+  - TM progression rules (upper +2.5kg, lower +5kg)
 
 ---
 
-*Architecture research completed: 2026-02-02*
+*Architecture analysis: 2026-02-11*

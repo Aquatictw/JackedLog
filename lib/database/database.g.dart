@@ -4993,6 +4993,553 @@ class BodyweightEntriesCompanion extends UpdateCompanion<BodyweightEntry> {
   }
 }
 
+class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
+    with TableInfo<$FiveThreeOneBlocksTable, FiveThreeOneBlock> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FiveThreeOneBlocksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _createdMeta =
+      const VerificationMeta('created');
+  @override
+  late final GeneratedColumn<DateTime> created = GeneratedColumn<DateTime>(
+      'created', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _squatTmMeta =
+      const VerificationMeta('squatTm');
+  @override
+  late final GeneratedColumn<double> squatTm = GeneratedColumn<double>(
+      'squat_tm', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _benchTmMeta =
+      const VerificationMeta('benchTm');
+  @override
+  late final GeneratedColumn<double> benchTm = GeneratedColumn<double>(
+      'bench_tm', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _deadliftTmMeta =
+      const VerificationMeta('deadliftTm');
+  @override
+  late final GeneratedColumn<double> deadliftTm = GeneratedColumn<double>(
+      'deadlift_tm', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _pressTmMeta =
+      const VerificationMeta('pressTm');
+  @override
+  late final GeneratedColumn<double> pressTm = GeneratedColumn<double>(
+      'press_tm', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+      'unit', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _currentCycleMeta =
+      const VerificationMeta('currentCycle');
+  @override
+  late final GeneratedColumn<int> currentCycle = GeneratedColumn<int>(
+      'current_cycle', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _currentWeekMeta =
+      const VerificationMeta('currentWeek');
+  @override
+  late final GeneratedColumn<int> currentWeek = GeneratedColumn<int>(
+      'current_week', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _completedMeta =
+      const VerificationMeta('completed');
+  @override
+  late final GeneratedColumn<DateTime> completed = GeneratedColumn<DateTime>(
+      'completed', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        created,
+        squatTm,
+        benchTm,
+        deadliftTm,
+        pressTm,
+        unit,
+        currentCycle,
+        currentWeek,
+        isActive,
+        completed
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'five_three_one_blocks';
+  @override
+  VerificationContext validateIntegrity(Insertable<FiveThreeOneBlock> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created')) {
+      context.handle(_createdMeta,
+          created.isAcceptableOrUnknown(data['created']!, _createdMeta));
+    } else if (isInserting) {
+      context.missing(_createdMeta);
+    }
+    if (data.containsKey('squat_tm')) {
+      context.handle(_squatTmMeta,
+          squatTm.isAcceptableOrUnknown(data['squat_tm']!, _squatTmMeta));
+    } else if (isInserting) {
+      context.missing(_squatTmMeta);
+    }
+    if (data.containsKey('bench_tm')) {
+      context.handle(_benchTmMeta,
+          benchTm.isAcceptableOrUnknown(data['bench_tm']!, _benchTmMeta));
+    } else if (isInserting) {
+      context.missing(_benchTmMeta);
+    }
+    if (data.containsKey('deadlift_tm')) {
+      context.handle(
+          _deadliftTmMeta,
+          deadliftTm.isAcceptableOrUnknown(
+              data['deadlift_tm']!, _deadliftTmMeta));
+    } else if (isInserting) {
+      context.missing(_deadliftTmMeta);
+    }
+    if (data.containsKey('press_tm')) {
+      context.handle(_pressTmMeta,
+          pressTm.isAcceptableOrUnknown(data['press_tm']!, _pressTmMeta));
+    } else if (isInserting) {
+      context.missing(_pressTmMeta);
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+          _unitMeta, unit.isAcceptableOrUnknown(data['unit']!, _unitMeta));
+    } else if (isInserting) {
+      context.missing(_unitMeta);
+    }
+    if (data.containsKey('current_cycle')) {
+      context.handle(
+          _currentCycleMeta,
+          currentCycle.isAcceptableOrUnknown(
+              data['current_cycle']!, _currentCycleMeta));
+    }
+    if (data.containsKey('current_week')) {
+      context.handle(
+          _currentWeekMeta,
+          currentWeek.isAcceptableOrUnknown(
+              data['current_week']!, _currentWeekMeta));
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
+    if (data.containsKey('completed')) {
+      context.handle(_completedMeta,
+          completed.isAcceptableOrUnknown(data['completed']!, _completedMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FiveThreeOneBlock map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FiveThreeOneBlock(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      created: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created'])!,
+      squatTm: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}squat_tm'])!,
+      benchTm: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}bench_tm'])!,
+      deadliftTm: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}deadlift_tm'])!,
+      pressTm: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}press_tm'])!,
+      unit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}unit'])!,
+      currentCycle: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}current_cycle'])!,
+      currentWeek: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}current_week'])!,
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      completed: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}completed']),
+    );
+  }
+
+  @override
+  $FiveThreeOneBlocksTable createAlias(String alias) {
+    return $FiveThreeOneBlocksTable(attachedDatabase, alias);
+  }
+}
+
+class FiveThreeOneBlock extends DataClass
+    implements Insertable<FiveThreeOneBlock> {
+  final int id;
+  final DateTime created;
+  final double squatTm;
+  final double benchTm;
+  final double deadliftTm;
+  final double pressTm;
+  final String unit;
+
+  /// 0=Leader1, 1=Leader2, 2=7th Week Deload, 3=Anchor, 4=TM Test
+  final int currentCycle;
+
+  /// 1-3 within each cycle (7th Week cycles only use week 1)
+  final int currentWeek;
+  final bool isActive;
+  final DateTime? completed;
+  const FiveThreeOneBlock(
+      {required this.id,
+      required this.created,
+      required this.squatTm,
+      required this.benchTm,
+      required this.deadliftTm,
+      required this.pressTm,
+      required this.unit,
+      required this.currentCycle,
+      required this.currentWeek,
+      required this.isActive,
+      this.completed});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['created'] = Variable<DateTime>(created);
+    map['squat_tm'] = Variable<double>(squatTm);
+    map['bench_tm'] = Variable<double>(benchTm);
+    map['deadlift_tm'] = Variable<double>(deadliftTm);
+    map['press_tm'] = Variable<double>(pressTm);
+    map['unit'] = Variable<String>(unit);
+    map['current_cycle'] = Variable<int>(currentCycle);
+    map['current_week'] = Variable<int>(currentWeek);
+    map['is_active'] = Variable<bool>(isActive);
+    if (!nullToAbsent || completed != null) {
+      map['completed'] = Variable<DateTime>(completed);
+    }
+    return map;
+  }
+
+  FiveThreeOneBlocksCompanion toCompanion(bool nullToAbsent) {
+    return FiveThreeOneBlocksCompanion(
+      id: Value(id),
+      created: Value(created),
+      squatTm: Value(squatTm),
+      benchTm: Value(benchTm),
+      deadliftTm: Value(deadliftTm),
+      pressTm: Value(pressTm),
+      unit: Value(unit),
+      currentCycle: Value(currentCycle),
+      currentWeek: Value(currentWeek),
+      isActive: Value(isActive),
+      completed: completed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completed),
+    );
+  }
+
+  factory FiveThreeOneBlock.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FiveThreeOneBlock(
+      id: serializer.fromJson<int>(json['id']),
+      created: serializer.fromJson<DateTime>(json['created']),
+      squatTm: serializer.fromJson<double>(json['squatTm']),
+      benchTm: serializer.fromJson<double>(json['benchTm']),
+      deadliftTm: serializer.fromJson<double>(json['deadliftTm']),
+      pressTm: serializer.fromJson<double>(json['pressTm']),
+      unit: serializer.fromJson<String>(json['unit']),
+      currentCycle: serializer.fromJson<int>(json['currentCycle']),
+      currentWeek: serializer.fromJson<int>(json['currentWeek']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      completed: serializer.fromJson<DateTime?>(json['completed']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'created': serializer.toJson<DateTime>(created),
+      'squatTm': serializer.toJson<double>(squatTm),
+      'benchTm': serializer.toJson<double>(benchTm),
+      'deadliftTm': serializer.toJson<double>(deadliftTm),
+      'pressTm': serializer.toJson<double>(pressTm),
+      'unit': serializer.toJson<String>(unit),
+      'currentCycle': serializer.toJson<int>(currentCycle),
+      'currentWeek': serializer.toJson<int>(currentWeek),
+      'isActive': serializer.toJson<bool>(isActive),
+      'completed': serializer.toJson<DateTime?>(completed),
+    };
+  }
+
+  FiveThreeOneBlock copyWith(
+          {int? id,
+          DateTime? created,
+          double? squatTm,
+          double? benchTm,
+          double? deadliftTm,
+          double? pressTm,
+          String? unit,
+          int? currentCycle,
+          int? currentWeek,
+          bool? isActive,
+          Value<DateTime?> completed = const Value.absent()}) =>
+      FiveThreeOneBlock(
+        id: id ?? this.id,
+        created: created ?? this.created,
+        squatTm: squatTm ?? this.squatTm,
+        benchTm: benchTm ?? this.benchTm,
+        deadliftTm: deadliftTm ?? this.deadliftTm,
+        pressTm: pressTm ?? this.pressTm,
+        unit: unit ?? this.unit,
+        currentCycle: currentCycle ?? this.currentCycle,
+        currentWeek: currentWeek ?? this.currentWeek,
+        isActive: isActive ?? this.isActive,
+        completed: completed.present ? completed.value : this.completed,
+      );
+  FiveThreeOneBlock copyWithCompanion(FiveThreeOneBlocksCompanion data) {
+    return FiveThreeOneBlock(
+      id: data.id.present ? data.id.value : this.id,
+      created: data.created.present ? data.created.value : this.created,
+      squatTm: data.squatTm.present ? data.squatTm.value : this.squatTm,
+      benchTm: data.benchTm.present ? data.benchTm.value : this.benchTm,
+      deadliftTm:
+          data.deadliftTm.present ? data.deadliftTm.value : this.deadliftTm,
+      pressTm: data.pressTm.present ? data.pressTm.value : this.pressTm,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      currentCycle: data.currentCycle.present
+          ? data.currentCycle.value
+          : this.currentCycle,
+      currentWeek:
+          data.currentWeek.present ? data.currentWeek.value : this.currentWeek,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      completed: data.completed.present ? data.completed.value : this.completed,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FiveThreeOneBlock(')
+          ..write('id: $id, ')
+          ..write('created: $created, ')
+          ..write('squatTm: $squatTm, ')
+          ..write('benchTm: $benchTm, ')
+          ..write('deadliftTm: $deadliftTm, ')
+          ..write('pressTm: $pressTm, ')
+          ..write('unit: $unit, ')
+          ..write('currentCycle: $currentCycle, ')
+          ..write('currentWeek: $currentWeek, ')
+          ..write('isActive: $isActive, ')
+          ..write('completed: $completed')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, created, squatTm, benchTm, deadliftTm,
+      pressTm, unit, currentCycle, currentWeek, isActive, completed);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FiveThreeOneBlock &&
+          other.id == this.id &&
+          other.created == this.created &&
+          other.squatTm == this.squatTm &&
+          other.benchTm == this.benchTm &&
+          other.deadliftTm == this.deadliftTm &&
+          other.pressTm == this.pressTm &&
+          other.unit == this.unit &&
+          other.currentCycle == this.currentCycle &&
+          other.currentWeek == this.currentWeek &&
+          other.isActive == this.isActive &&
+          other.completed == this.completed);
+}
+
+class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
+  final Value<int> id;
+  final Value<DateTime> created;
+  final Value<double> squatTm;
+  final Value<double> benchTm;
+  final Value<double> deadliftTm;
+  final Value<double> pressTm;
+  final Value<String> unit;
+  final Value<int> currentCycle;
+  final Value<int> currentWeek;
+  final Value<bool> isActive;
+  final Value<DateTime?> completed;
+  const FiveThreeOneBlocksCompanion({
+    this.id = const Value.absent(),
+    this.created = const Value.absent(),
+    this.squatTm = const Value.absent(),
+    this.benchTm = const Value.absent(),
+    this.deadliftTm = const Value.absent(),
+    this.pressTm = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.currentCycle = const Value.absent(),
+    this.currentWeek = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.completed = const Value.absent(),
+  });
+  FiveThreeOneBlocksCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime created,
+    required double squatTm,
+    required double benchTm,
+    required double deadliftTm,
+    required double pressTm,
+    required String unit,
+    this.currentCycle = const Value.absent(),
+    this.currentWeek = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.completed = const Value.absent(),
+  })  : created = Value(created),
+        squatTm = Value(squatTm),
+        benchTm = Value(benchTm),
+        deadliftTm = Value(deadliftTm),
+        pressTm = Value(pressTm),
+        unit = Value(unit);
+  static Insertable<FiveThreeOneBlock> custom({
+    Expression<int>? id,
+    Expression<DateTime>? created,
+    Expression<double>? squatTm,
+    Expression<double>? benchTm,
+    Expression<double>? deadliftTm,
+    Expression<double>? pressTm,
+    Expression<String>? unit,
+    Expression<int>? currentCycle,
+    Expression<int>? currentWeek,
+    Expression<bool>? isActive,
+    Expression<DateTime>? completed,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (created != null) 'created': created,
+      if (squatTm != null) 'squat_tm': squatTm,
+      if (benchTm != null) 'bench_tm': benchTm,
+      if (deadliftTm != null) 'deadlift_tm': deadliftTm,
+      if (pressTm != null) 'press_tm': pressTm,
+      if (unit != null) 'unit': unit,
+      if (currentCycle != null) 'current_cycle': currentCycle,
+      if (currentWeek != null) 'current_week': currentWeek,
+      if (isActive != null) 'is_active': isActive,
+      if (completed != null) 'completed': completed,
+    });
+  }
+
+  FiveThreeOneBlocksCompanion copyWith(
+      {Value<int>? id,
+      Value<DateTime>? created,
+      Value<double>? squatTm,
+      Value<double>? benchTm,
+      Value<double>? deadliftTm,
+      Value<double>? pressTm,
+      Value<String>? unit,
+      Value<int>? currentCycle,
+      Value<int>? currentWeek,
+      Value<bool>? isActive,
+      Value<DateTime?>? completed}) {
+    return FiveThreeOneBlocksCompanion(
+      id: id ?? this.id,
+      created: created ?? this.created,
+      squatTm: squatTm ?? this.squatTm,
+      benchTm: benchTm ?? this.benchTm,
+      deadliftTm: deadliftTm ?? this.deadliftTm,
+      pressTm: pressTm ?? this.pressTm,
+      unit: unit ?? this.unit,
+      currentCycle: currentCycle ?? this.currentCycle,
+      currentWeek: currentWeek ?? this.currentWeek,
+      isActive: isActive ?? this.isActive,
+      completed: completed ?? this.completed,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (created.present) {
+      map['created'] = Variable<DateTime>(created.value);
+    }
+    if (squatTm.present) {
+      map['squat_tm'] = Variable<double>(squatTm.value);
+    }
+    if (benchTm.present) {
+      map['bench_tm'] = Variable<double>(benchTm.value);
+    }
+    if (deadliftTm.present) {
+      map['deadlift_tm'] = Variable<double>(deadliftTm.value);
+    }
+    if (pressTm.present) {
+      map['press_tm'] = Variable<double>(pressTm.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (currentCycle.present) {
+      map['current_cycle'] = Variable<int>(currentCycle.value);
+    }
+    if (currentWeek.present) {
+      map['current_week'] = Variable<int>(currentWeek.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (completed.present) {
+      map['completed'] = Variable<DateTime>(completed.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FiveThreeOneBlocksCompanion(')
+          ..write('id: $id, ')
+          ..write('created: $created, ')
+          ..write('squatTm: $squatTm, ')
+          ..write('benchTm: $benchTm, ')
+          ..write('deadliftTm: $deadliftTm, ')
+          ..write('pressTm: $pressTm, ')
+          ..write('unit: $unit, ')
+          ..write('currentCycle: $currentCycle, ')
+          ..write('currentWeek: $currentWeek, ')
+          ..write('isActive: $isActive, ')
+          ..write('completed: $completed')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5005,6 +5552,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NotesTable notes = $NotesTable(this);
   late final $BodyweightEntriesTable bodyweightEntries =
       $BodyweightEntriesTable(this);
+  late final $FiveThreeOneBlocksTable fiveThreeOneBlocks =
+      $FiveThreeOneBlocksTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5017,7 +5566,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         metadata,
         workouts,
         notes,
-        bodyweightEntries
+        bodyweightEntries,
+        fiveThreeOneBlocks
       ];
 }
 
@@ -7621,6 +8171,266 @@ typedef $$BodyweightEntriesTableProcessedTableManager = ProcessedTableManager<
     ),
     BodyweightEntry,
     PrefetchHooks Function()>;
+typedef $$FiveThreeOneBlocksTableCreateCompanionBuilder
+    = FiveThreeOneBlocksCompanion Function({
+  Value<int> id,
+  required DateTime created,
+  required double squatTm,
+  required double benchTm,
+  required double deadliftTm,
+  required double pressTm,
+  required String unit,
+  Value<int> currentCycle,
+  Value<int> currentWeek,
+  Value<bool> isActive,
+  Value<DateTime?> completed,
+});
+typedef $$FiveThreeOneBlocksTableUpdateCompanionBuilder
+    = FiveThreeOneBlocksCompanion Function({
+  Value<int> id,
+  Value<DateTime> created,
+  Value<double> squatTm,
+  Value<double> benchTm,
+  Value<double> deadliftTm,
+  Value<double> pressTm,
+  Value<String> unit,
+  Value<int> currentCycle,
+  Value<int> currentWeek,
+  Value<bool> isActive,
+  Value<DateTime?> completed,
+});
+
+class $$FiveThreeOneBlocksTableFilterComposer
+    extends Composer<_$AppDatabase, $FiveThreeOneBlocksTable> {
+  $$FiveThreeOneBlocksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get created => $composableBuilder(
+      column: $table.created, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get squatTm => $composableBuilder(
+      column: $table.squatTm, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get benchTm => $composableBuilder(
+      column: $table.benchTm, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get deadliftTm => $composableBuilder(
+      column: $table.deadliftTm, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get pressTm => $composableBuilder(
+      column: $table.pressTm, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get unit => $composableBuilder(
+      column: $table.unit, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get currentCycle => $composableBuilder(
+      column: $table.currentCycle, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get currentWeek => $composableBuilder(
+      column: $table.currentWeek, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get completed => $composableBuilder(
+      column: $table.completed, builder: (column) => ColumnFilters(column));
+}
+
+class $$FiveThreeOneBlocksTableOrderingComposer
+    extends Composer<_$AppDatabase, $FiveThreeOneBlocksTable> {
+  $$FiveThreeOneBlocksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get created => $composableBuilder(
+      column: $table.created, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get squatTm => $composableBuilder(
+      column: $table.squatTm, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get benchTm => $composableBuilder(
+      column: $table.benchTm, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get deadliftTm => $composableBuilder(
+      column: $table.deadliftTm, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get pressTm => $composableBuilder(
+      column: $table.pressTm, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get unit => $composableBuilder(
+      column: $table.unit, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get currentCycle => $composableBuilder(
+      column: $table.currentCycle,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get currentWeek => $composableBuilder(
+      column: $table.currentWeek, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get completed => $composableBuilder(
+      column: $table.completed, builder: (column) => ColumnOrderings(column));
+}
+
+class $$FiveThreeOneBlocksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FiveThreeOneBlocksTable> {
+  $$FiveThreeOneBlocksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get created =>
+      $composableBuilder(column: $table.created, builder: (column) => column);
+
+  GeneratedColumn<double> get squatTm =>
+      $composableBuilder(column: $table.squatTm, builder: (column) => column);
+
+  GeneratedColumn<double> get benchTm =>
+      $composableBuilder(column: $table.benchTm, builder: (column) => column);
+
+  GeneratedColumn<double> get deadliftTm => $composableBuilder(
+      column: $table.deadliftTm, builder: (column) => column);
+
+  GeneratedColumn<double> get pressTm =>
+      $composableBuilder(column: $table.pressTm, builder: (column) => column);
+
+  GeneratedColumn<String> get unit =>
+      $composableBuilder(column: $table.unit, builder: (column) => column);
+
+  GeneratedColumn<int> get currentCycle => $composableBuilder(
+      column: $table.currentCycle, builder: (column) => column);
+
+  GeneratedColumn<int> get currentWeek => $composableBuilder(
+      column: $table.currentWeek, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completed =>
+      $composableBuilder(column: $table.completed, builder: (column) => column);
+}
+
+class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $FiveThreeOneBlocksTable,
+    FiveThreeOneBlock,
+    $$FiveThreeOneBlocksTableFilterComposer,
+    $$FiveThreeOneBlocksTableOrderingComposer,
+    $$FiveThreeOneBlocksTableAnnotationComposer,
+    $$FiveThreeOneBlocksTableCreateCompanionBuilder,
+    $$FiveThreeOneBlocksTableUpdateCompanionBuilder,
+    (
+      FiveThreeOneBlock,
+      BaseReferences<_$AppDatabase, $FiveThreeOneBlocksTable, FiveThreeOneBlock>
+    ),
+    FiveThreeOneBlock,
+    PrefetchHooks Function()> {
+  $$FiveThreeOneBlocksTableTableManager(
+      _$AppDatabase db, $FiveThreeOneBlocksTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FiveThreeOneBlocksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FiveThreeOneBlocksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FiveThreeOneBlocksTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<DateTime> created = const Value.absent(),
+            Value<double> squatTm = const Value.absent(),
+            Value<double> benchTm = const Value.absent(),
+            Value<double> deadliftTm = const Value.absent(),
+            Value<double> pressTm = const Value.absent(),
+            Value<String> unit = const Value.absent(),
+            Value<int> currentCycle = const Value.absent(),
+            Value<int> currentWeek = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime?> completed = const Value.absent(),
+          }) =>
+              FiveThreeOneBlocksCompanion(
+            id: id,
+            created: created,
+            squatTm: squatTm,
+            benchTm: benchTm,
+            deadliftTm: deadliftTm,
+            pressTm: pressTm,
+            unit: unit,
+            currentCycle: currentCycle,
+            currentWeek: currentWeek,
+            isActive: isActive,
+            completed: completed,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required DateTime created,
+            required double squatTm,
+            required double benchTm,
+            required double deadliftTm,
+            required double pressTm,
+            required String unit,
+            Value<int> currentCycle = const Value.absent(),
+            Value<int> currentWeek = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime?> completed = const Value.absent(),
+          }) =>
+              FiveThreeOneBlocksCompanion.insert(
+            id: id,
+            created: created,
+            squatTm: squatTm,
+            benchTm: benchTm,
+            deadliftTm: deadliftTm,
+            pressTm: pressTm,
+            unit: unit,
+            currentCycle: currentCycle,
+            currentWeek: currentWeek,
+            isActive: isActive,
+            completed: completed,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$FiveThreeOneBlocksTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $FiveThreeOneBlocksTable,
+    FiveThreeOneBlock,
+    $$FiveThreeOneBlocksTableFilterComposer,
+    $$FiveThreeOneBlocksTableOrderingComposer,
+    $$FiveThreeOneBlocksTableAnnotationComposer,
+    $$FiveThreeOneBlocksTableCreateCompanionBuilder,
+    $$FiveThreeOneBlocksTableUpdateCompanionBuilder,
+    (
+      FiveThreeOneBlock,
+      BaseReferences<_$AppDatabase, $FiveThreeOneBlocksTable, FiveThreeOneBlock>
+    ),
+    FiveThreeOneBlock,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7641,4 +8451,6 @@ class $AppDatabaseManager {
       $$NotesTableTableManager(_db, _db.notes);
   $$BodyweightEntriesTableTableManager get bodyweightEntries =>
       $$BodyweightEntriesTableTableManager(_db, _db.bodyweightEntries);
+  $$FiveThreeOneBlocksTableTableManager get fiveThreeOneBlocks =>
+      $$FiveThreeOneBlocksTableTableManager(_db, _db.fiveThreeOneBlocks);
 }

@@ -1,395 +1,432 @@
-# Feature Landscape: Flutter UI Enhancements
+# Feature Landscape: 5/3/1 Forever Block Programming
 
-**Domain:** Mobile fitness app UI/UX patterns
-**Researched:** 2026-02-02
-**Confidence:** MEDIUM (verified with official docs and multiple sources)
+**Domain:** Strength training program tracking (5/3/1 Forever methodology)
+**Researched:** 2026-02-11
+**Confidence:** HIGH (domain rules well-defined, user's specific setup documented, existing codebase thoroughly analyzed)
 
 ---
 
-## Feature 1: Drag-and-Drop Note Reordering
+## Current State Analysis
 
-### Expected UX Patterns
+**What exists today:**
+- Basic 5/3/1 calculator dialog (accessible via long-press on powerlifting exercises during workout)
+- 4-week cycle: W1 (5s), W2 (3s), W3 (5/3/1), W4 (Deload) with AMRAP on last set of W1-W3
+- Training Max editor dialog (4 lifts: Squat, Bench, Deadlift, OHP) stored in Settings table
+- TM auto-increment after deload week (+2.5kg upper / +5kg lower)
+- Week selector (W1-W4 SegmentedButton) with persistence in `fivethreeoneWeek` settings column
+- Single global week counter shared across all lifts
+- `_TrainingMaxBanner` on Notes page as entry point to TM editor
 
-**Table Stakes - What Users Expect:**
+**What needs to change for Forever:**
+- Single 4-week cycle becomes 11-week block with distinct phase types (Leader, Anchor, Deload, TM Test)
+- Week selector (W1-W4) becomes block position tracker (week 1-11 across 5 phases)
+- AMRAP-always calculator becomes context-aware (5's PRO for Leader, AMRAP for Anchor, special schemes for 7th Week)
+- No supplemental work display becomes BBB 5x10 and FSL 5x5 calculated displays
+- TM bump once per cycle becomes 3 bumps per block (after Leader 1, Leader 2, and Anchor)
+- TM increment values change: +2.5kg/+5kg becomes +2.2kg/+4.5kg per user preference
+- Notes page banner becomes entry point to full block overview page
 
-| Pattern | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Long-press to initiate drag | iOS/Android standard gesture | Low | 300-500ms delay prevents accidental drags while scrolling |
-| Haptic feedback on pickup | Confirms action registered | Low | Use `HapticFeedback.mediumImpact()` at drag start |
-| Visual lift (elevation + scale) | Object feels "grabbed" | Low | Material: 8dp elevation, slight scale to 1.02-1.05 |
-| Ghost/placeholder at original position | Shows where item came from | Medium | Semi-transparent or outline of original item |
-| Other items animate aside | Preview of drop result | Medium | ~100ms animation with easing, not instant |
-| Haptic bump on valid drop zone | Confirms successful placement | Low | Light haptic as item settles |
-| Snap-to-position on release | Polished feel | Low | Quick 100ms animation to final position |
+---
 
-**Differentiators - What Makes It Great:**
+## Table Stakes
 
-| Pattern | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Drag handles for clarity | Obviates "how do I reorder?" | Low | Icon button at leading/trailing edge |
-| Auto-scroll at edges | Enables reordering long lists | Medium | flutter_reorderable_grid_view handles this |
-| Visual drop zone expansion | Magnetic snap feel | Medium | Expand hit target beyond visible border |
-| Undo snackbar after reorder | Safety net for mistakes | Low | "Reordered. Undo?" with 5s timeout |
+Features users expect for 5/3/1 block tracking. Missing any of these means the feature is incomplete and users fall back to spreadsheets/markdown.
 
-**Anti-Features - What NOT to Build:**
+### TS-01: Block Overview Page
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | Dedicated page showing the full 11-week block structure with current position highlighted |
+| **Why Expected** | Without seeing where you are in the block, you lose the whole point of structured periodization. Every 5/3/1 app (KeyLifts, Five3One, 531 BBB) shows cycle structure upfront. |
+| **Complexity** | Medium |
+| **Dependencies** | New database table for block state; replaces current `fivethreeoneWeek` single-integer tracking |
+
+**Expected layout (vertical timeline, not horizontal -- works better on mobile per UX research):**
+
+```
+Block: BBB Leader / FSL Anchor
+Started: Jan 13, 2026
+
+[*] Leader 1    Week 1 - 5s PRO     [completed]
+                Week 2 - 3s PRO     [completed]
+                Week 3 - 5/3/1 PRO  [completed]
+                TM: +2.2/+4.5kg
+
+[ ] Leader 2    Week 4 - 5s PRO     [current] <-- highlighted
+                Week 5 - 3s PRO
+                Week 6 - 5/3/1 PRO
+                TM: +2.2/+4.5kg
+
+[ ] 7th Week    Week 7 - Deload
+
+[ ] Anchor      Week 8 - 5s Week
+                Week 9 - 3s Week
+                Week 10 - 5/3/1 Week
+                TM: +2.2/+4.5kg
+
+[ ] 7th Week    Week 11 - TM Test
+```
+
+**Key UX decisions:**
+- Vertical timeline (not horizontal stepper) -- mobile-friendly, shows all phases without scrolling
+- Current week/phase visually prominent (filled circle, highlight color, "CURRENT" label)
+- Completed phases show checkmark and are visually dimmed/de-emphasized
+- Future phases visible but subdued
+- Each phase shows its TM values (so user can see progression across the block)
+
+### TS-02: Context-Aware Calculator
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | Calculator automatically shows correct set/rep scheme based on current block position |
+| **Why Expected** | The whole point of block programming is different schemes per phase. A calculator that doesn't know Leader vs Anchor is useless for Forever. |
+| **Complexity** | Medium |
+| **Dependencies** | Block state (TS-01), refactors existing `FiveThreeOneCalculator` |
+
+**Scheme by phase:**
+
+| Phase | Week Pattern | Main Work | Last Set | Supplemental |
+|-------|-------------|-----------|----------|-------------|
+| Leader 1 | W1: 65/75/85% | 3x5 (all sets x5) | No AMRAP (5's PRO) | BBB 5x10 @ 60% TM |
+| Leader 1 | W2: 70/80/90% | 3x5 (all sets x5) | No AMRAP (5's PRO) | BBB 5x10 @ 60% TM |
+| Leader 1 | W3: 75/85/95% | 3x5 (all sets x5) | No AMRAP (5's PRO) | BBB 5x10 @ 60% TM |
+| Leader 2 | Same as Leader 1 but with bumped TMs | Same | Same | Same |
+| 7th Week Deload | 70/80/90/100% | 5, 3-5, 1, 1 | No AMRAP | None |
+| Anchor | W1: 65/75/85% | 5/5/5+ | AMRAP last set | FSL 5x5 @ 65% |
+| Anchor | W2: 70/80/90% | 3/3/3+ | AMRAP last set | FSL 5x5 @ 70% |
+| Anchor | W3: 75/85/95% | 5/3/1+ | AMRAP last set | FSL 5x5 @ 75% |
+| 7th Week TM Test | 70/80/90/100% | 5, 5, 5, 5 | No AMRAP | None |
+
+**Calculator must clearly show:**
+- Phase name and week label in header (e.g., "Leader 1 -- Week 2: 3s PRO")
+- Whether AMRAP is active (prominent visual indicator, same border highlight as current)
+- "5's PRO" label when all sets are straight 5s (Leader phases)
+- Supplemental work section below main sets
+
+### TS-03: Supplemental Work Display
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | Show supplemental sets (BBB or FSL) with calculated weights below main work in calculator |
+| **Why Expected** | Supplemental work is integral to 5/3/1 Forever. Without it, users must calculate 60% of TM for BBB or remember first-set weight for FSL manually. Defeats the purpose of having a calculator. |
+| **Complexity** | Low |
+| **Dependencies** | Block state (TS-01) to know Leader vs Anchor |
+
+**Display format in calculator:**
+
+```
+--- Main Work ---
+Set 1: 65.0 kg x5   (65% TM)
+Set 2: 75.0 kg x5   (75% TM)
+Set 3: 85.0 kg x5   (85% TM)
+
+--- Supplemental: BBB ---
+5 x 10 @ 60.0 kg    (60% TM)
+```
+
+For Anchor FSL:
+```
+--- Main Work ---
+Set 1: 65.0 kg x5   (65% TM)
+Set 2: 75.0 kg x3   (75% TM)
+Set 3: 85.0 kg x1+  (85% TM) AMRAP
+
+--- Supplemental: FSL ---
+5 x 5 @ 65.0 kg     (first set weight)
+```
+
+**Key points:**
+- Supplemental section visually separated from main work (divider or card boundary)
+- Weight pre-calculated and rounded to plate increments
+- Label identifies the template (BBB / FSL) so user knows what they're doing
+- For 7th Week phases: no supplemental section displayed
+
+### TS-04: TM Progression Tracking Across Block
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | TMs auto-bump at correct points in the block and show history of TM values per phase |
+| **Why Expected** | 5/3/1 Forever bumps TMs 3 times per block (after Leader 1, Leader 2, Anchor). Getting this wrong cascades incorrect weights through remaining phases. Users tracking in spreadsheets always have a TM column per cycle -- the app must match. |
+| **Complexity** | Medium |
+| **Dependencies** | Block state (TS-01), modifies existing TM storage |
+
+**Bump schedule per block:**
+
+```
+Block start:  Squat=100, Bench=70, Deadlift=120, OHP=50
+After Leader 1: Squat=104.5, Bench=72.2, Deadlift=124.5, OHP=52.2
+After Leader 2: Squat=109, Bench=74.4, Deadlift=129, OHP=54.4
+After Anchor:   Squat=113.5, Bench=76.6, Deadlift=133.5, OHP=56.6
+```
+
+**User's specific increments:** +2.2kg upper (Bench, OHP), +4.5kg lower (Squat, Deadlift)
+
+**UX for bump:**
+- When advancing past a cycle that triggers TM bump, show confirmation: "Cycle complete. Bump TMs? Squat +4.5kg (104.5 -> 109.0), Bench +2.2kg (72.2 -> 74.4)..."
+- User confirms or can edit individual TMs before confirming (for cases where TM test indicates a reduction)
+- Block overview page shows TM values at each phase boundary
+
+### TS-05: Manual Week/Cycle Advancement
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | User can manually advance to the next week or cycle within the block |
+| **Why Expected** | The app cannot know when the user actually trained. Unlike apps that auto-generate and schedule workouts, JackedLog is a logging tool -- the user decides when they've done a week's work and advances manually. This matches the existing W1-W4 week selector pattern. |
+| **Complexity** | Low |
+| **Dependencies** | Block state (TS-01) |
+
+**UX options (recommend option A):**
+
+**Option A: "Complete Week" button on block overview page**
+- After training all 4 lifts for the current week, user taps "Complete Week"
+- Advances to next week in the block
+- If this crosses a cycle boundary, triggers TM bump flow (TS-04)
+- Simple, explicit, matches mental model
+
+**Option B: Auto-advance when calculator is opened on a new week (implicit)**
+- Reject this. User might open calculator to look ahead, or might train out of order
+- Explicit is better for a tool like this
+
+**Edge cases:**
+- User wants to skip a week (e.g., skip deload): allow advancing past it
+- User wants to go back (made a mistake): allow navigating backward
+- User wants to restart block: "New Block" button
+
+### TS-06: Block Setup / Initialization
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | Flow to create a new 11-week block with starting TMs |
+| **Why Expected** | User needs to set up initial TMs and start tracking. Without a clear setup flow, the block state has no starting point. |
+| **Complexity** | Low-Medium |
+| **Dependencies** | New database table, TM editor (existing) |
+
+**Setup flow:**
+
+```
+1. User taps "Start New Block" (on block overview page or banner)
+2. If existing TMs are set: "Use current TMs? Squat: 100kg, Bench: 70kg..."
+   - Confirm: block created with those TMs
+   - Edit: opens TM editor, then creates block
+3. If no TMs set: opens TM editor first, then creates block
+4. Block starts at Week 1 (Leader 1, Week 1)
+```
+
+**Key decisions:**
+- Hardcoded template (user's specific Leader/Anchor setup) -- no template picker needed
+- Re-use existing TrainingMaxEditor dialog for TM input
+- Store block start date for reference
+- Previous block data (if any) remains in history
+
+---
+
+## Differentiators
+
+Features that make this better than a spreadsheet or markdown file. Not expected, but valued. These are what justify building an in-app feature versus the user continuing to track in their notes.
+
+### DF-01: At-a-Glance Block Progress Badge
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | Small badge/chip on the Notes page banner (replacing current TrainingMaxBanner) showing current block position at a glance |
+| **Value Proposition** | User sees "Leader 2, W2" without opening the block page. Quick context for "what am I doing today?" |
+| **Complexity** | Low |
+| **Dependencies** | Block state (TS-01) |
+
+**Current:** Notes page shows "5/3/1 Training Max" banner that opens TM editor.
+**Proposed:** Banner shows "5/3/1 Block: Leader 2 - Week 5" and opens block overview page.
+
+### DF-02: Calculated Weight with Plate Breakdown Integration
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | Calculator shows both the weight AND the plate breakdown for each set |
+| **Value Proposition** | Eliminates mental math at the rack. User sees "85.0 kg = 20kg bar + 2x20kg + 2x10kg + 2x2.5kg". Existing PlateCalculator widget can be reused. |
+| **Complexity** | Low (widget exists) |
+| **Dependencies** | Existing `plate_calculator.dart` widget |
+
+### DF-03: TM History Graph per Lift
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | Graph showing TM progression for each lift across blocks over time |
+| **Value Proposition** | Visualizes long-term strength progression through TM increases. More meaningful than 1RM graphs because TM is what you actually train with. |
+| **Complexity** | Medium |
+| **Dependencies** | TM history stored per bump event, existing graph infrastructure |
+
+### DF-04: "What's Today?" Quick View
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | When opening the calculator from a specific exercise during a workout, it immediately shows the correct sets/weights for that exercise in the current block week -- no manual selection needed |
+| **Value Proposition** | Zero-tap access to today's weights. Open calculator from Squat exercise -> immediately see "Leader 2, Week 5: Squat 70/80/90kg x5, then BBB 5x10 @ 60kg". Current calculator already knows which exercise it's opened from via `exerciseName` parameter. |
+| **Complexity** | Low (extends existing pattern) |
+| **Dependencies** | Block state (TS-01), exercise-to-lift mapping (already exists in `exerciseMapping`) |
+
+### DF-05: Post-Block Summary
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | When completing the final week (TM Test), show a summary of the entire block: starting TMs, ending TMs, total weight progression, weeks completed |
+| **Value Proposition** | Sense of accomplishment. Seeing "+13.5kg on Squat over 11 weeks" is motivating. Spreadsheets don't celebrate your progress. |
+| **Complexity** | Low |
+| **Dependencies** | Block state with TM history |
+
+### DF-06: TM Test Validation Warning
+
+| Aspect | Detail |
+|--------|--------|
+| **What** | During 7th Week TM Test, if user reports struggling with 100% TM x5, prompt them to consider reducing TM before starting next block |
+| **Value Proposition** | Implements Wendler's key rule: "If you can't get 5 strong reps at 100% TM, your TM is too high." Apps that blindly auto-increment miss this crucial self-regulation. |
+| **Complexity** | Low |
+| **Dependencies** | TM Test phase detection, user input |
+
+---
+
+## Anti-Features
+
+Things to deliberately NOT build. Building these would add complexity without matching the user's actual workflow, or would violate KISS/YAGNI principles.
+
+### AF-01: Template Picker / Custom Program Builder
 
 | Anti-Feature | Why Avoid | What to Do Instead |
 |--------------|-----------|-------------------|
-| Drag mode toggle button | Adds friction, feels dated | Use long-press like iOS/Android native |
-| Instant position swap without animation | Feels jarring, disorienting | Animate items sliding 100ms |
-| Drag sensitivity too high | Accidental reorders while scrolling | Add 300ms long-press delay |
-| No haptic feedback | Interaction feels disconnected | Add feedback at pickup and drop |
-| Requiring precision placement | Frustrating on touch | Use large hit targets, snap-to behavior |
+| Letting users choose from dozens of 5/3/1 Forever templates (BBB, BBS, SSL, God is a Beast, etc.) | User has ONE specific setup they run. Building a template system is massive scope. KeyLifts has 150+ templates and still gets complaints about bugs/incorrect percentages. | Hardcode the user's specific Leader (5's PRO + BBB) and Anchor (Original + FSL) templates. If they ever change programs, a code update is fine. |
 
-### Implementation Notes for Notes Grid
-
-**Current state:** Notes page uses `GridView.builder` without reordering capability.
-
-**Recommended approach:**
-1. Use `flutter_reorderable_grid_view` package for grid-based reorder
-2. Add `sequence` column to notes table (integer, default to creation order)
-3. Long-press initiates drag (mobile standard)
-4. Apply `proxyDecorator` for elevation effect during drag
-5. Persist sequence on `onReorder` callback
-
-**Key Interactions:**
-
-```
-Drag Start:
-- Long press 300-500ms triggers
-- HapticFeedback.mediumImpact()
-- Item elevates (8dp shadow) and scales slightly (1.03x)
-- Other items maintain position initially
-
-During Drag:
-- Items slide aside as drag position changes (100ms animation)
-- Auto-scroll triggers at screen edges
-- Original position shows ghost/outline
-
-Drop:
-- HapticFeedback.lightImpact()
-- Item snaps to position (100ms ease-out)
-- Persist new sequence to database
-- Optional: Show undo snackbar
-```
-
-**Edge Cases to Handle:**
-
-| Edge Case | Expected Behavior |
-|-----------|------------------|
-| Single note | No reorder affordance needed |
-| Drag cancelled (release at original) | Item settles back, no database update |
-| Scroll during drag | Allow scrolling, maintain drag |
-| Search filter active | Either disable reorder or reorder within filtered results |
-| Concurrent edit (another note modified) | Sequence update should be atomic |
-
-### Sources
-
-- [NN/g Drag-Drop UX](https://www.nngroup.com/articles/drag-drop/) - Animation timing, visual feedback (HIGH confidence)
-- [Flutter ReorderableListView](https://api.flutter.dev/flutter/material/ReorderableListView-class.html) - Official API (HIGH confidence)
-- [flutter_reorderable_grid_view](https://pub.dev/packages/flutter_reorderable_grid_view) - Grid support (MEDIUM confidence)
-- [Smart Interface Design Patterns](https://smart-interface-design-patterns.com/articles/drag-and-drop-ux/) - Best practices (MEDIUM confidence)
-
----
-
-## Feature 2: Edit Historical/Completed Workout
-
-### Expected UX Patterns
-
-**Table Stakes - What Users Expect:**
-
-| Pattern | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Direct edit access | Users need to fix mistakes | Medium | Tap-to-edit is standard |
-| Confirmation for destructive changes | Prevent accidental data loss | Low | Dialog for delete, not for value edits |
-| Same UI as active workout | Consistency, familiarity | Medium | Mirror start_plan_page patterns |
-| Changes save immediately or explicitly | Clear save model | Low | Auto-save with "Updated" confirmation |
-| Visual distinction from active workout | Avoid confusion | Low | Header badge: "Editing Past Workout" |
-
-**Differentiators - What Makes It Great:**
-
-| Pattern | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Undo/revert option | Safety net for accidents | Medium | "Revert all changes" option |
-| Change history indicator | Transparency | High | Show when workout was last modified |
-| Inline editing without mode switch | Reduced friction | Medium | Tap field to edit directly |
-| Validation feedback | Prevent invalid data | Low | Same validation as active workout |
-
-**Anti-Features - What NOT to Build:**
+### AF-02: Auto-Generated Workout Plans
 
 | Anti-Feature | Why Avoid | What to Do Instead |
 |--------------|-----------|-------------------|
-| Read-only historical view | Blocks legitimate corrections | Allow editing with appropriate safeguards |
-| Delete and re-add workflow | Too much friction (Samsung Health model) | Allow direct field editing |
-| Overly strict validation | Historical data may be legitimate edge cases | Warn but allow saving |
-| Confirmation for every change | Modal fatigue | Confirm only destructive (delete) actions |
-| Hidden edit option | Users can't find it | Clear "Edit" button/affordance |
+| Generating full workout sessions with exercises pre-populated | JackedLog is a logging tool, not a plan generator. The user builds their own workouts. The 5/3/1 calculator is a reference tool opened during workouts, not a workout builder. | Keep calculator as reference. User logs sets manually as they always have. |
 
-### Edit Workout Features Breakdown
-
-**WORKOUT-01: Edit workout name**
-
-| Requirement | Implementation |
-|-------------|----------------|
-| Trigger | Tap workout title or edit icon |
-| UI | AlertDialog with text field |
-| Validation | Non-empty string |
-| Save | Update workouts table, show "Updated" snackbar |
-| Undo | Not needed (non-destructive) |
-
-**WORKOUT-02: Edit workout exercises (add/remove/reorder)**
-
-| Requirement | Implementation |
-|-------------|----------------|
-| Add exercise | Same ExercisePickerModal as start_plan_page |
-| Remove exercise | Swipe-to-delete OR delete button with confirmation |
-| Reorder exercises | Same ReorderableListView pattern as start_plan_page |
-| Edge case | Removing exercise removes its sets from history |
-| Confirmation | Required for remove (destructive) |
-
-**WORKOUT-03: Edit workout sets**
-
-| Requirement | Implementation |
-|-------------|----------------|
-| Edit values | Tap set row to open EditSetPage (existing) |
-| Add set | Same SetRow pattern as active workout |
-| Delete set | Swipe or delete icon, confirmation dialog |
-| Set type changes | Warmup/working/drop-set toggle (like active) |
-
-**WORKOUT-04: Move selfie to edit panel**
-
-| Requirement | Implementation |
-|-------------|----------------|
-| Location | Within edit workout view, not separate action |
-| Actions | Add/change/remove selfie |
-| Existing behavior | Keep camera/gallery picker pattern |
-
-### UI/UX Recommendations
-
-**Entry Point:**
-- Add "Edit" action button to WorkoutDetailPage app bar
-- OR: Make existing "Resume" behavior contextual (Resume if recent, Edit if old)
-
-**Edit Mode Distinction:**
-```
-Visual cues for "editing past workout":
-- Header shows "Editing: [Workout Name]"
-- Subtle background tint or banner
-- "Completed [date]" reminder visible
-- Save/Done button clearly visible
-```
-
-**Consistency with start_plan_page:**
-
-Mirror these patterns from the active workout:
-- Exercise cards with expansion
-- Add Set button appearance
-- Reorder mode toggle
-- Notes section
-- Superset management
-
-Different from active workout:
-- No rest timer integration
-- No "End Workout" button (already ended)
-- Date/time shown as historical, not elapsed
-- "Done" instead of "End Workout"
-
-### Confidence Assessment
-
-| Aspect | Confidence | Reason |
-|--------|------------|--------|
-| Edit name | HIGH | Simple, low-risk feature |
-| Add/remove exercises | MEDIUM | Database cascade implications |
-| Reorder exercises | HIGH | Already implemented in start_plan_page |
-| Edit sets | HIGH | EditSetPage already exists and works |
-| Selfie move | HIGH | UI reorganization only |
-
-### Sources
-
-- [Google Fit Edit Activity](https://support.google.com/fit/answer/6223934) - Edit workflow reference (MEDIUM confidence)
-- [MapMyFitness Edit Workout](https://support.mapmyfitness.com/hc/en-us/articles/1500009118702-Edit-or-Delete-a-Workout) - Edit capability pattern (MEDIUM confidence)
-- [UX Movement Destructive Actions](https://uxmovement.com/buttons/how-to-design-destructive-actions-that-prevent-data-loss/) - Confirmation patterns (MEDIUM confidence)
-- Existing codebase: start_plan_page.dart, edit_set_page.dart (HIGH confidence)
-
----
-
-## Feature 3: Total Workout Time Stat Card
-
-### Expected UX Patterns
-
-**Table Stakes - What Users Expect:**
-
-| Pattern | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Clear duration format | Instant comprehension | Low | "12h 45m" or "12.75 hours" |
-| Period-sensitive calculation | Matches other stats | Low | Sum duration for selected period |
-| Consistent card styling | Visual coherence | Low | Match existing StatCard component |
-| Responsive to period changes | Interactive feel | Low | Update when period selector changes |
-
-**Differentiators - What Makes It Great:**
-
-| Pattern | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Per-day average alongside total | Context for the number | Low | "Total 12h 45m (avg 1h 17m/workout)" |
-| Comparison to previous period | Progress indication | Medium | "+15% vs last month" |
-| Animated count-up on load | Micro-interaction delight | Low | Number animates from 0 |
-| Trend indicator icon | Quick direction read | Low | Arrow up/down/neutral |
-
-**Anti-Features - What NOT to Build:**
+### AF-03: Assistance Work Tracking in Block System
 
 | Anti-Feature | Why Avoid | What to Do Instead |
 |--------------|-----------|-------------------|
-| Overly precise display (12:45:32) | Unnecessary precision clutter | Round to hours and minutes |
-| Vague display ("about 13 hours") | Lacks specificity for fitness tracking | Use exact hours + minutes |
-| Separate page for this stat | Over-engineering | Integrate in existing overview |
-| Complex time breakdown chart | Scope creep | Keep as simple stat card first |
+| Tracking push/pull/legs assistance reps within the 5/3/1 block system | User explicitly stated "Accessories are bodybuilding style, not tracked in 5/3/1 system." Assistance is already logged as regular exercises in the workout. | Block system tracks only main lifts (Squat/Bench/Deadlift/OHP) and their supplemental work. Accessories remain as regular workout logging. |
 
-### Duration Display Format Recommendations
+### AF-04: Scheduling / Calendar Integration
 
-**Recommended Format:**
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| Mapping block weeks to calendar dates, setting training day reminders | JackedLog has no calendar. User trains when they train. Adding scheduling is a massive feature that doesn't match the app's philosophy. | Block tracks position (week/phase), not dates. User advances manually when ready. |
 
-```
-Total: 12h 45m
-- Clear, scannable
-- Handles edge cases gracefully
-- Matches existing duration display in app
-```
+### AF-05: Joker Sets / Beyond 5/3/1 Extensions
 
-**Format Rules:**
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| Adding Joker set calculations, Pyramid sets, or other Beyond 5/3/1 options | User's program doesn't use these. YAGNI. Can be added later if needed. | Support only 5's PRO, Original 5/3/1, BBB, FSL, 7th Week Deload, and 7th Week TM Test. |
 
-| Duration Range | Display Format | Example |
-|----------------|----------------|---------|
-| < 1 hour | Minutes only | "45m" |
-| 1-24 hours | Hours + minutes | "3h 15m" |
-| 24+ hours | Hours + minutes | "127h 30m" |
-| Zero workouts | Explicit zero | "0h" or "--" |
+### AF-06: Automatic Week Detection
 
-**Singular/Plural:** Not needed with abbreviated format ("1h" not "1 hour")
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| Automatically detecting which week the user is on based on logged workouts | Unreliable. User might log partial weeks, train out of order, miss sessions, or do extra sessions. Auto-detection creates more confusion than it solves. | Manual advancement. User explicitly marks a week as complete. Simple, predictable, no surprises. |
 
-### Implementation Recommendations
+### AF-07: Multiple Concurrent Blocks
 
-**Query:**
-```sql
-SELECT SUM(
-  CASE
-    WHEN end_time IS NOT NULL
-    THEN (end_time - start_time)
-    ELSE 0
-  END
-) as total_duration
-FROM workouts
-WHERE start_time >= [period_start_timestamp]
-```
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| Supporting multiple active blocks simultaneously | User runs one program at a time. Multiple blocks add UI complexity (which block? which lift belongs where?) for zero benefit. | Single active block. Start a new one when current is finished or abandoned. |
 
-**Edge Cases:**
+### AF-08: Block History / Archive System
 
-| Edge Case | Handling |
-|-----------|----------|
-| Workout without end_time | Exclude from sum (incomplete) |
-| Very long workout (12+ hours) | Include (may be legitimate) |
-| Zero workouts in period | Show "0h" or "--" |
-| All Time period | Sum all completed workouts |
-
-**Card Placement:**
-- Add as fifth card in stats grid
-- Icon: `Icons.schedule` or `Icons.access_time`
-- Color: Match theme tertiary or distinct from existing 4
-
-**Existing StatCard Interface:**
-```dart
-StatCard(
-  icon: Icons.schedule,
-  label: 'Total Time',
-  value: '12h 45m',  // Formatted duration
-  color: colorScheme.tertiary,
-)
-```
-
-### Sources
-
-- [UX Pickle Duration Display](https://uxpickle.com/how-to-display-duration-hhmm-so-it-isnt-confusing/) - Format recommendations (MEDIUM confidence)
-- [Prototypr Time in UI](https://blog.prototypr.io/expressing-time-in-ui-ux-design-5-rules-and-a-few-other-things-eda5531a41a7) - Best practices (MEDIUM confidence)
-- Existing codebase: stat_card.dart, overview_page.dart (HIGH confidence)
-
----
-
-## Good vs Great Implementation Summary
-
-### What Makes These Features Feel Polished vs Janky
-
-**Drag-Drop Reordering:**
-
-| Janky | Polished |
-|-------|----------|
-| Instant position swap | Items animate smoothly aside (~100ms) |
-| No pickup feedback | Haptic bump + visual elevation |
-| Precise placement required | Generous hit targets, magnetic snap |
-| Accidental triggers while scrolling | 300ms long-press delay |
-| No indication of draggable | Subtle drag handle or affordance |
-
-**Edit Completed Workout:**
-
-| Janky | Polished |
-|-------|----------|
-| Modal per edit | Inline editing, single save |
-| Confirm every change | Confirm only destructive actions |
-| Different UI than active workout | Same patterns, clear distinction |
-| No visual distinction | "Editing Past Workout" header |
-| Changes silently saved | "Updated" snackbar confirmation |
-
-**Stats Display:**
-
-| Janky | Polished |
-|-------|----------|
-| "12:45:32" format | "12h 45m" readable format |
-| Static number | Animated count-up micro-interaction |
-| Misaligned with other cards | Consistent card styling |
-| Missing for edge cases | Handles zero/null gracefully |
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| Full history of all past blocks with drill-down into each | Over-engineering for v1.2. The real value is tracking the current block. Historical TMs are already visible through the existing TM values, and workout history is in the regular history tab. | Store minimal metadata (starting TMs, block start date) for the current block only. Expand later if needed. |
 
 ---
 
 ## Feature Dependencies
 
 ```
-Drag-Drop Reordering:
-- Requires: sequence column in notes table
-- Enables: User-defined note organization
-
-Edit Completed Workout:
-- Requires: Edit mode UI (new or adapted from start_plan_page)
-- Shares: ExercisePickerModal, EditSetPage, SetRow components
-- Database: Same gym_sets and workouts tables
-
-Total Time Stat:
-- Requires: Completed workout duration data
-- Shares: StatCard component, PeriodSelector integration
-- Query: Simple aggregation, no new tables
+Block Setup (TS-06)
+  |
+  v
+Block State (new DB table)
+  |
+  +---> Block Overview Page (TS-01)
+  |       |
+  |       +---> Progress Badge on Notes Banner (DF-01)
+  |       +---> Manual Advancement (TS-05)
+  |       |       |
+  |       |       +---> TM Bump Flow (TS-04)
+  |       |               |
+  |       |               +---> Post-Block Summary (DF-05)
+  |       |               +---> TM Test Validation (DF-06)
+  |       |
+  |       +---> TM History Graph (DF-03)
+  |
+  +---> Context-Aware Calculator (TS-02)
+          |
+          +---> Supplemental Work Display (TS-03)
+          +---> "What's Today?" Quick View (DF-04)
+          +---> Plate Breakdown Integration (DF-02)
 ```
+
+**Critical path:** Block State (DB) -> Block Overview -> Context-Aware Calculator -> Supplemental Display
+
+Everything else branches off these four.
 
 ---
 
-## MVP Recommendations
+## MVP Recommendation
 
-**Prioritize:**
-1. Total workout time stat card - Low complexity, high value, uses existing components
-2. Edit workout name - Simple, addresses common user need
-3. Edit sets (via existing EditSetPage) - Already working, just needs entry point
+**For the initial milestone, prioritize all Table Stakes features.** The differentiators can be layered in during the same milestone if time permits, but the table stakes ARE the feature -- without any one of them, the block tracking is incomplete and users revert to markdown.
 
-**Phase 2:**
-4. Add/remove exercises in edit mode
-5. Reorder exercises in edit mode (mirror start_plan_page)
+### Phase ordering rationale:
 
-**Phase 3:**
-6. Drag-drop note reordering - Requires new package, sequence column
+**Phase 1: Block Data Model + Setup**
+- New database table for block state (TS-06 foundation)
+- Block setup flow (TS-06)
+- This is pure backend -- everything else depends on it
 
-**Rationale:** Start with features that leverage existing code and have lowest risk. Drag-drop reordering is more complex (grid layout, new package, schema change) and can come later.
+**Phase 2: Block Overview Page + Navigation**
+- Block overview page with vertical timeline (TS-01)
+- Manual week advancement (TS-05)
+- TM progression/bump flow (TS-04)
+- Replace Notes page banner to point to block overview (DF-01)
+
+**Phase 3: Context-Aware Calculator + Supplemental**
+- Refactor existing calculator to be block-aware (TS-02)
+- Add supplemental work display (TS-03)
+- "What's Today?" auto-context (DF-04)
+
+**Phase 4: Polish (if time)**
+- Plate breakdown in calculator (DF-02)
+- Post-block summary (DF-05)
+- TM test validation warning (DF-06)
+
+### Deferred indefinitely:
+- TM history graph (DF-03) -- nice but not essential for v1.2
+- All anti-features (AF-01 through AF-08)
 
 ---
 
 ## Confidence Summary
 
-| Feature | Overall Confidence | Notes |
-|---------|-------------------|-------|
-| Drag-drop reordering | MEDIUM | Patterns verified, package exists, implementation details need testing |
-| Edit completed workout | HIGH | Patterns match active workout, mostly UI reorganization |
-| Total time stat | HIGH | Simple aggregation, uses existing components |
+| Feature | Confidence | Reason |
+|---------|------------|--------|
+| Block structure (11 weeks) | HIGH | User provided exact specification; matches 5/3/1 Forever 2+1+1+1 pattern verified via multiple sources |
+| Set/rep schemes per phase | HIGH | Standard 5/3/1 percentages well-documented; 5's PRO, Original, 7th Week protocols all verified |
+| Supplemental work (BBB/FSL) | HIGH | Standard patterns: BBB = 5x10 @ percentage, FSL = 5x5 @ first set weight |
+| TM bump values (+2.2/+4.5) | HIGH | User-specified values; differs from standard +2.5/+5 but this is their preference |
+| 7th Week Deload scheme | MEDIUM | Multiple sources agree on 70/80/90/100% but rep schemes vary slightly across sources. User specified: 70%x5, 80%x3-5, 90%x1, 100%x1 |
+| 7th Week TM Test scheme | MEDIUM | User specified 70/80/90/100% all x5. Some sources say 100%x3-5 for TM test. Using user's specification. |
+| UX patterns (vertical timeline) | MEDIUM | Based on UX research for mobile steppers; vertical preferred over horizontal on mobile but not specific to fitness apps |
+| Block overview as separate page | HIGH | Current Notes banner is natural entry point; block overview is the standard approach in KeyLifts, Five3One |
+
+---
+
+## Sources
+
+- [KeyLifts 531 App](https://www.keylifts.com/) - Feature reference for 5/3/1 app capabilities (MEDIUM confidence)
+- [Five/Three/One App](https://fivethreeone.app/) - Feature reference for cycle management (MEDIUM confidence)
+- [Boostcamp BBB Guide](https://www.boostcamp.app/blogs/531-boring-but-big-app-program-guide) - Template implementation reference (MEDIUM confidence)
+- [Lift Vault Leader/Anchor Guide](https://liftvault.com/resources/leader-anchor-cycles/) - Leader/Anchor cycle definitions (HIGH confidence)
+- [T-Nation 7th Week Protocol Discussion](https://t-nation.com/t/confusion-on-7th-week-tm-test-after-anchor/246002) - TM Test protocol details (MEDIUM confidence)
+- [The Fitness Wiki 5/3/1 Primer](https://thefitness.wiki/5-3-1-primer/) - 5/3/1 fundamentals reference (HIGH confidence)
+- [UX Planet Progress Trackers](https://uxplanet.org/progress-trackers-in-ux-design-4319cef1c600) - Timeline/stepper UX patterns (MEDIUM confidence)
+- [Eleken Stepper UI Examples](https://www.eleken.co/blog-posts/stepper-ui-examples) - Mobile stepper design patterns (MEDIUM confidence)
+- Existing codebase: `five_three_one_calculator.dart`, `training_max_editor.dart`, `notes_page.dart`, `settings.dart` (HIGH confidence)
+- User's project context and milestone specification (HIGH confidence)

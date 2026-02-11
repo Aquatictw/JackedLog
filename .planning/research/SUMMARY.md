@@ -1,254 +1,321 @@
 # Project Research Summary
 
-**Project:** JackedLog Flutter UI Enhancements
-**Domain:** Mobile fitness tracking app
-**Researched:** 2026-02-02
+**Project:** JackedLog v1.2 - 5/3/1 Forever Block Programming
+**Domain:** Strength training periodization tracking (5/3/1 methodology)
+**Researched:** 2026-02-11
 **Confidence:** HIGH
 
 ## Executive Summary
 
-This milestone enhances JackedLog's existing Flutter app with three UI features: drag-drop reordering for notes, editing completed workouts, and a total workout time stat card. The research confirms that **all features can be implemented using Flutter's built-in widgets and the existing architecture** (Provider + Drift + fl_chart), requiring no new dependencies beyond optional `flutter_reorderable_grid_view` for grid reordering.
+The 5/3/1 Forever block programming feature transforms JackedLog from a simple 4-week cycle calculator into a full periodized program tracker. Research confirms this can be implemented with **zero new dependencies** using the existing Flutter Material 3 + Drift + Provider stack. The key architectural decision is to create a dedicated `fivethreeone_blocks` table rather than extending the already-bloated Settings table, enabling proper lifecycle management (create, advance, complete) and historical tracking without corrupting the existing calculator.
 
-The existing codebase already contains reference implementations: `start_plan_page.dart` demonstrates drag-drop reordering with database persistence, exercise editing patterns exist throughout the workout flow, and aggregation queries are established in `gym_sets.dart`. This makes the features straightforward extensions rather than architectural changes. The main implementation challenges are: (1) adding a `sequence` column to the Notes table via Drift migration, (2) creating proper edit mode isolation to avoid corrupting active workout state, and (3) maintaining timezone-consistent duration calculations.
+The feature requires three distinct but interconnected components: (1) a normalized database schema with proper TM snapshot management, (2) a full-page block overview with timeline visualization, and (3) context-aware calculator enhancement that switches between manual mode and block-driven mode. The existing calculator (562 lines with hardcoded 4-week scheme) must be refactored to consume data-driven percentage schemes, adding support for 5's PRO (Leader), PR Sets (Anchor), 7th Week Deload, TM Test, and supplemental work display (BBB 5x10, FSL 5x5).
 
-**Key risks:** Sequence/order column sync drift (UI reorder state diverging from database), edit mode without transactional rollback (corrupting workout data), and timezone mismatches in duration calculations. All risks have established mitigation patterns in the existing codebase.
+Critical risks center on three areas: (1) TM progression timing (bumping at wrong cycle boundaries corrupts all subsequent weights), (2) Settings table overload (adding block state as flat columns prevents history tracking and creates denormalized mess), and (3) export/import backward compatibility (new tables must be additive, not breaking). All three are preventable with proper schema design and declarative progression rules established before any UI work begins.
 
 ## Key Findings
 
 ### Recommended Stack
 
-No new packages needed. All features leverage Flutter's built-in Material widgets and existing project dependencies.
+**No new packages needed.** The existing stack provides everything required:
 
 **Core technologies:**
-- `ReorderableListView.builder` (Flutter SDK) — Handles drag-drop list reordering with platform-specific gestures
-- `ExpansionTile` (Flutter SDK) — Collapsible hierarchical data for workout editing
-- `TextEditingController` — Toggle-based inline editing pattern
-- Drift migrations — Adding `sequence` column to Notes table with backfill
-- Custom SQL aggregation — Duration stats calculated in database for timezone safety
+- **Drift 2.30.0:** Database schema with reactive streams — perfect for block state management using the same ChangeNotifier + stream pattern as WorkoutState
+- **Provider 6.1.1:** State propagation via FiveThreeOneState ChangeNotifier — follows existing pattern exactly
+- **Flutter Material 3:** All UI built with standard widgets (Column/Row/Container for timeline, ListTile/Card for block overview) — no custom timeline packages needed
 
-**Why these choices:**
-- Built into Flutter SDK or already dependencies (no bloat)
-- Production-ready with proper documentation
-- Patterns already exist in codebase (`start_plan_page.dart` for reorder, `gym_sets.dart` for aggregation)
-- Performance efficient (SQL aggregation, batch updates)
+**What NOT to add:**
+- Timeline packages (timelines, flutter_staggered_animations) — fixed 5-cycle layout doesn't justify dependency; custom Row+Container is 50 lines
+- TM history table — progression is deterministic from block start TMs + cycle number, can be calculated not stored
+- Charting additions — block progress is a 5-step bar, not a graph
+- Junction tables for cycles — over-normalized; cycle state is a single integer (0-4) on block row
 
-**Optional enhancement:**
-- `flutter_reorderable_grid_view` package — Only if maintaining grid layout during reorder is required (current notes page uses GridView)
+**Migration:** Manual v63→v64 migration adding one new table, following existing pattern from database.dart
 
 ### Expected Features
 
 **Must have (table stakes):**
-- **Notes reordering** — Users expect ability to organize notes, long-press drag is iOS/Android standard
-- **Edit workout data** — Users need to fix mistakes in historical workouts (wrong weight/reps entry)
-- **Duration stat display** — Total workout time is fundamental metric for fitness tracking
-- **Haptic feedback on drag** — Platform convention, confirms drag started (300-500ms long-press delay)
-- **Save/cancel workflow** — Edit mode must have explicit save or discard, not auto-save that can't be undone
+- **Block overview page** — users need to see where they are in the 11-week structure (Leader1→Leader2→Deload→Anchor→TM Test)
+- **Context-aware calculator** — scheme must auto-switch based on cycle type (5's PRO for Leader, PR Sets for Anchor, Deload percentages, TM Test scheme)
+- **Supplemental work display** — show BBB 5x10@60% for Leader, FSL 5x5 for Anchor below main sets in calculator
+- **TM auto-progression** — bump TMs at correct boundaries (after Leader1, Leader2, and Anchor; NOT after Deload or TM Test) with user's custom increments (+2.2kg upper, +4.5kg lower)
+- **Manual week/cycle advancement** — "Complete Week" button advances position; no auto-detection from workout completion
+- **Block setup flow** — create new block with starting TMs
 
-**Should have (competitive differentiators):**
-- **Visual lift during drag** — Elevation + subtle scale (1.02-1.05x) makes item feel "grabbed"
-- **Smooth reorder animation** — Items slide aside smoothly (~100ms) rather than instant swap
-- **Inline set editing** — Tap field to edit directly without modal dialog (reduced friction)
-- **Consistent edit UX** — Edit mode mirrors active workout page (same exercise cards, same set rows)
-- **Period-sensitive stats** — Duration updates with period selector like other stats
+**Should have (competitive):**
+- **At-a-glance block progress badge** — Notes page banner shows "Leader 2, W2" without opening block page
+- **Plate breakdown integration** — calculator shows weight AND plate composition using existing PlateCalculator widget
+- **Post-block summary** — completion flow showing starting vs ending TMs, total progression
+- **TM Test validation warning** — prompt to reduce TM if user cannot complete 5 reps at 100% TM
 
-**Defer to v2+ (scope control):**
-- **Undo snackbar** — "Reordered. Undo?" after drag operation (nice-to-have polish)
-- **Change history** — Tracking when workout was last edited (complex feature)
-- **Comparison to previous period** — "+15% vs last month" trend indicators (separate stats feature)
-- **Auto-scroll during drag** — Scrolling while dragging to reorder long lists (package handles this if needed)
-
-**Anti-features (explicitly avoid):**
-- **Drag mode toggle button** — Adds friction, use long-press like native apps
-- **Always-editable fields** — Performance cost, accidental edits; toggle edit mode instead
-- **Read-only historical workouts** — Users need to fix mistakes, make edits safe not impossible
-- **Overly precise duration display** — "12:45:32" is clutter, "12h 45m" is clear
+**Defer (v2+):**
+- TM history graph per lift — nice visualization but not essential for MVP
+- Template picker — user runs one specific setup (5's PRO + BBB / Original + FSL); hardcode it
+- Auto-generated workout plans — JackedLog is a logging tool, not a plan generator
+- Calendar integration — user trains when they train, not on a schedule
+- Multiple concurrent blocks — user runs one program at a time
 
 ### Architecture Approach
 
-The codebase follows Provider pattern for state management, Drift for database operations, and isolated page components. These features extend existing patterns rather than introducing new architecture.
+A dedicated `fivethreeone_blocks` table separates block state (which has lifecycle: create→advance→complete) from Settings (which stores preferences). The block table snapshots TMs at creation time, preventing mid-block corruption if user manually edits Settings. State management follows the exact WorkoutState pattern: FiveThreeOneState ChangeNotifier watches the active block, provides derived getters (currentCycleName, isLeader, isAnchor), and exposes actions (createBlock, advanceWeek, advanceCycle). The calculator checks for active block first; if present, uses block TMs and scheme; otherwise falls back to manual mode (existing Settings-based behavior).
 
 **Major components:**
+1. **Database layer** — `fivethreeone_blocks` table with columns: id, created, squat_tm, bench_tm, deadlift_tm, press_tm, unit, current_cycle (0-4), current_week (1-3), is_active, completed; Settings table unchanged (backward compat)
+2. **State management** — `FiveThreeOneState` ChangeNotifier registered in MultiProvider; loads active block on init, provides scheme getters, handles advancement logic
+3. **Block overview page** — full-screen push (not dialog) showing vertical timeline, current position, TM values per lift, advance/complete controls; replaces TrainingMaxEditor dialog as banner target
+4. **Context-aware calculator** — extended `FiveThreeOneCalculator` reads FiveThreeOneState, uses data-driven schemes module, displays supplemental work section below main sets
+5. **Pure schemes module** — `schemes.dart` with no UI/DB dependencies; defines SetScheme records (percentage, reps, amrap) for all cycle types and supplemental variations
 
-1. **Notes sequence migration (database layer)** — Add `sequence` INTEGER column to Notes table (schema v61→v62), backfill based on `updated DESC` order, follows exact pattern from `plan_exercises` migration v45→v46
-
-2. **WorkoutEditPage (presentation layer)** — NEW dedicated page for editing completed workouts, isolated from WorkoutState (active workout tracking), uses draft pattern with explicit save/cancel, direct database operations without Provider state
-
-3. **Duration aggregation queries (database layer)** — Add to `gym_sets.dart` or `workouts.dart`, SQL-based SUM(end_time - start_time) for timezone safety, stream-based for reactive UI updates with existing PeriodSelector integration
-
-4. **Notes reorder mode (presentation layer)** — Local state pattern (not Provider), toggle between GridView (display) and ReorderableListView (reorder), batch update all sequence values on reorder complete
-
-**Key patterns:**
-- **Sequence persistence:** Update UI immediately (optimistic), batch-write to database, sync in-memory sequence values (prevents drift)
-- **Edit mode isolation:** Deep copy workout data into draft, modify draft only, persist on explicit save, discard draft on cancel
-- **Drift streams:** Database changes trigger UI updates automatically, no manual refresh needed
-- **SQL aggregation:** Duration calculations in database avoid Dart timezone issues
+**Key patterns to follow:**
+- Stream-backed state with manual control (like WorkoutState, NOT auto-watching like SettingsState) — block changes are user-initiated
+- Pure data schemes module — testable in isolation, reusable across calculator and overview page
+- Graceful degradation — every component works when no active block exists (manual mode)
 
 ### Critical Pitfalls
 
-1. **Sequence/order column sync drift** — UI reorder state and database sequence become desynchronized. **Avoid by:** Batch updating ALL items' sequence values (not just moved item), awaiting database operations, syncing in-memory sequence values after persist. Pattern exists in `start_plan_page.dart:243-288`.
+1. **Settings table overload** — Adding block state as flat columns (`fivethreeone_cycle_type`, `fivethreeone_block_week`, etc.) prevents history tracking and creates denormalized mess. **Prevention:** Create normalized `fivethreeone_blocks` table; keep existing Settings columns as backward-compatible cache.
 
-2. **Edit mode without transactional rollback** — User cancels edit but changes already persisted, corrupts workout data. **Avoid by:** Draft pattern with deep copy of workout + sets, modify draft only, persist on explicit save. PopScope wrapper to confirm exit with unsaved changes.
+2. **TM progression timing errors** — Bumping TMs at wrong cycle boundaries (e.g., after Deload when it should not bump) compounds errors across remaining cycles. **Prevention:** Separate cycle transition from TM bump operations; define bump rules declaratively (`bumpAfterCycle` map); snapshot TMs per cycle to prevent mid-cycle corruption.
 
-3. **Duration calculation timezone mismatch** — Negative durations or DST-related jumps due to mixing UTC and local times. **Avoid by:** Calculate duration in SQL using Unix epoch arithmetic (SUM(end_time - start_time)), format in Dart only for display. Never mix .toLocal() and .toUtc() in same calculation.
+3. **Weight rounding produces unloadable plates** — Supplemental work percentages (60% for BBB, 65% for FSL) can round to weights like 67.3kg that cannot be loaded. **Prevention:** Single rounding function used everywhere; round AFTER all arithmetic, never in intermediate steps; test boundary values where percentages land between rounding targets.
 
-4. **ReorderableListView key management** — Using index as key causes "Multiple widgets used same GlobalKey" crash and wrong item animation. **Avoid by:** Use `ValueKey(note.id)` (stable database ID), never `ValueKey(index)` which changes when order changes.
+4. **Migration breaks export/import compatibility** — New tables crash older app versions or get lost in CSV export. **Prevention:** New tables are additive (Settings columns preserved); database import triggers migration handler; CSV export scope unchanged (workouts/gym_sets only); affirm user per CLAUDE.md requirement.
 
-5. **Drift migration column default** — Adding `sequence` column without backfill leaves existing notes with NULL or all at sequence=0. **Avoid by:** Add column with DEFAULT 0, immediately backfill with sensible order (by `updated DESC` for notes), test migration with production-like data.
+5. **Block/workout state interaction complexity** — Three ChangeNotifiers (BlockState, WorkoutState, SettingsState) create circular update chains. **Prevention:** Unidirectional flow: user action → BlockState method → DB write → stream triggers update → UI reads from BlockState; do NOT couple workout completion to block advancement (manual only).
+
+6. **Calculator scheme complexity** — Adding 5 different percentage schemes (5's PRO, Original, Deload, TM Test, plus supplemental variations) as switch cases creates unmaintainable 300+ line method. **Prevention:** Extract schemes into data not code; calculator consumes `List<SetScheme>` and renders, does not generate schemes.
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure prioritizes low-risk, high-value features that leverage existing components, then builds to more complex features.
+Based on research, suggested phase structure:
 
-### Phase 1: Stats Display Foundation
-**Rationale:** Simplest feature (no schema changes, no complex state), uses existing StatCard component and established aggregation patterns, delivers immediate user value.
+### Phase 1: Foundation - Data Model & Schema
+**Rationale:** Everything depends on the database schema being correct. This is pure backend work with zero UI, making it independently testable. Getting this right prevents all 4 critical pitfalls related to schema (Settings overload, migration errors, export/import breaks, hardcoded structure).
 
-**Delivers:** Total workout time stat card displayed on overview/history page with period selector integration.
-
-**Addresses:**
-- Must-have: Duration stat display (table stakes metric)
-- Should-have: Period-sensitive calculation (matches existing stats)
-
-**Avoids:**
-- Pitfall #3: Duration timezone mismatch (use SQL SUM calculation)
-- Pitfall #7: Display inconsistency (single formatting extension method)
-
-**Implementation:** Add `getTotalWorkoutDuration()` and `watchWorkoutStats()` queries to `gym_sets.dart`, display with existing StatCard widget, integrate with PeriodSelector.
-
-**Research flag:** Standard pattern, skip research-phase (well-documented aggregation).
-
-### Phase 2: Workout Editing Capability
-**Rationale:** High user value (fix data entry mistakes), mirrors existing workout flow UX (consistency), no schema changes required, moderate complexity with clear patterns.
-
-**Delivers:** Edit button on WorkoutDetailPage opens WorkoutEditPage, users can modify workout name, add/remove exercises, edit set values, add/remove sets, change exercise order.
+**Delivers:**
+- `fivethreeone_blocks` table definition (Drift schema)
+- Migration v63→v64 with proper error handling (IF NOT EXISTS)
+- `FiveThreeOneState` ChangeNotifier with block lifecycle methods
+- Pure `schemes.dart` module with all percentage scheme definitions
+- Registration in database.dart and main.dart MultiProvider
 
 **Addresses:**
-- Must-have: Edit workout data (fix mistakes)
-- Must-have: Save/cancel workflow (explicit persistence control)
-- Should-have: Inline editing (tap field to edit)
-- Should-have: Consistent UX (mirrors start_plan_page patterns)
+- TS-06 (Block setup foundation)
+- Database schema from STACK.md
+- Data model from ARCHITECTURE.md
 
 **Avoids:**
-- Pitfall #2: Edit mode without rollback (draft pattern with deep copy)
-- Pitfall #5: Nested state explosion (hierarchical state structure)
-- Pitfall #9: Exit without confirmation (PopScope wrapper)
+- Pitfall 1 (Settings table overload)
+- Pitfall 4 (Migration breaks compatibility)
+- Pitfall 9 (Migration error handling gaps)
+- Pitfall 10 (Hardcoded block structure)
 
-**Implementation:** Create WorkoutEditPage, reuse ExerciseSetsCard components, implement draft pattern (WorkoutDraft holds copy of data), direct database operations (no WorkoutState interaction), navigation from WorkoutDetailPage edit button.
+**Key decisions:**
+- Snapshot TMs per block (not references to Settings)
+- Single integer `current_cycle` (0-4) encodes 11-week position
+- Keep existing Settings columns for backward compatibility
+- Bump rules as declarative data
 
-**Research flag:** Standard pattern, skip research-phase (patterns exist in start_plan_page.dart).
+### Phase 2: Block Overview & Progression Logic
+**Rationale:** With data layer complete, build the primary user interface for block management. This phase implements the full lifecycle (create→advance→complete) and validates the state machine handles all transitions correctly. Establishing progression logic here prevents TM timing errors before the calculator depends on it.
 
-### Phase 3: Notes Reordering
-**Rationale:** Requires schema migration (risk), adds dependency if maintaining grid layout, lower priority than fixing workout data, builds on established patterns.
-
-**Delivers:** User-defined note order persists across app sessions, long-press drag interaction with haptic feedback, smooth animation.
+**Delivers:**
+- `FiveThreeOnePage` with vertical timeline visualization
+- Block creation flow (reusing TrainingMaxEditor for TM input)
+- Manual week/cycle advancement with "Complete Week" button
+- TM bump flow at correct boundaries (after Leader1, Leader2, Anchor)
+- Notes page banner update to show current position and navigate to overview
+- Historical blocks viewing (completed blocks with is_active=false)
 
 **Addresses:**
-- Must-have: Notes reordering (organizational feature)
-- Must-have: Haptic feedback (platform standard)
-- Should-have: Visual lift during drag (polished feel)
-- Should-have: Smooth animation (professional UX)
+- TS-01 (Block overview page)
+- TS-04 (TM progression tracking)
+- TS-05 (Manual advancement)
+- TS-06 (Block setup/initialization)
+- DF-01 (Progress badge on banner)
+- DF-05 (Post-block summary)
+
+**Uses:**
+- FiveThreeOneState from Phase 1
+- Schemes module for timeline labels
+- Existing Material 3 widgets (no custom timeline packages)
+
+**Implements:**
+- Block overview page component from ARCHITECTURE.md
+- State advancement logic
 
 **Avoids:**
-- Pitfall #1: Sequence sync drift (batch update all items, await persist)
-- Pitfall #4: Key management (use ValueKey(note.id))
-- Pitfall #6: Migration column default (backfill with sensible order)
-- Pitfall #8: Missing haptic feedback (HapticFeedback.mediumImpact())
+- Pitfall 2 (TM progression timing)
+- Pitfall 5 (Block/workout interaction — user advances manually, NOT auto-detect)
+- Pitfall 7 (Over-complex timeline UI — start with text-based status)
+- Pitfall 8 (Mid-block edge cases — validate transitions, support skip/reset)
 
-**Implementation:** Drift migration v61→v62 adds `sequence` column to Notes table with backfill by `updated DESC`, toggle between GridView (display) and ReorderableListView (reorder mode), follow `start_plan_page.dart` reorder pattern exactly, batch update sequences on reorder complete.
+**Key decisions:**
+- Full page push, not dialog (room for timeline + controls)
+- Vertical timeline (mobile-friendly, no horizontal scroll)
+- TM bump confirmation UI before applying
+- Separate advanceWeek() and advanceCycle() operations
 
-**Research flag:** Standard pattern, skip research-phase (exact pattern in start_plan_page.dart).
+### Phase 3: Calculator Enhancement & Supplemental Display
+**Rationale:** With block state working and progression logic validated, extend the calculator to consume block context. This is where the research effort pays off for users — correct weights at correct times. Refactoring the calculator to be data-driven prevents scheme complexity explosion.
 
-**Decision point:** Maintaining grid layout requires `flutter_reorderable_grid_view` package (adds dependency) or switching to list layout during reorder mode (matches existing pattern in start_plan_page.dart). **Recommend list layout toggle** for consistency.
+**Delivers:**
+- Context-aware calculator (reads FiveThreeOneState, switches scheme based on cycle type)
+- Supplemental work section in calculator (BBB 5x10@60% for Leader, FSL 5x5 for Anchor)
+- Manual mode toggle (users can still use calculator without active block)
+- "What's Today?" auto-context (calculator knows which exercise, shows correct scheme immediately)
+- Plate breakdown integration (reuse existing PlateCalculator widget)
+
+**Addresses:**
+- TS-02 (Context-aware calculator)
+- TS-03 (Supplemental work display)
+- DF-02 (Plate breakdown integration)
+- DF-04 ("What's Today?" quick view)
+
+**Uses:**
+- Schemes module from Phase 1
+- FiveThreeOneState from Phase 1
+- Block position from Phase 2
+- Existing PlateCalculator widget
+
+**Implements:**
+- Calculator context-awareness from ARCHITECTURE.md
+- Supplemental work display component
+
+**Avoids:**
+- Pitfall 3 (Weight rounding — single function, round-once rule)
+- Pitfall 6 (Scheme complexity — data-driven, calculator renders only)
+- Pitfall 11 (FSL percentage ambiguity — derive from first set)
+- Pitfall 12 (Unit switching — store unit with TM snapshot)
+
+**Key decisions:**
+- Calculator checks hasActiveBlock first, falls back to manual mode
+- Supplemental section visually separated (divider + label)
+- No auto-generation of GymSet entries (informational only)
+- FSL percentage = first working set % (varies by week)
+
+### Phase 4: Polish & Edge Cases
+**Rationale:** Core functionality complete; this phase handles refinements that improve UX and handle edge cases discovered during testing. These are incremental improvements that don't block core feature use.
+
+**Delivers:**
+- TM Test validation warning (prompt to reduce TM if struggling with 100% x5)
+- Mid-block TM adjustment flow (creates new snapshot, preserves history)
+- Block abandonment (status change, not deletion)
+- Skip week functionality (mark skipped, advance position)
+- Reset current cycle option (fresh TM snapshots without affecting history)
+- Export/import block data (add to ZIP archive, import tolerates missing files)
+
+**Addresses:**
+- DF-06 (TM Test validation warning)
+- Edge cases from PITFALLS.md
+- Export/import compatibility
+
+**Avoids:**
+- Pitfall 4 (Export/import breaks — additive schema, backward-compatible)
+- Pitfall 8 (Mid-block state corruption — validate transitions, snapshot on adjustment)
+
+**Key decisions:**
+- CSV export unchanged (workouts/sets only)
+- Database export includes new table automatically
+- Import tolerates missing block data (older exports)
+- TM adjustments create snapshots, do not overwrite history
 
 ### Phase Ordering Rationale
 
-- **Stats first:** Zero risk (no schema changes, no complex state management), immediate value, validates duration calculation approach before edit mode needs it
-- **Edit before reorder:** Higher user value (fixing mistakes vs organizing notes), no migration risk, patterns fully established in codebase
-- **Reorder last:** Only feature requiring schema migration (database risk), optional package dependency decision, lower priority than data correction capability
+**Why data layer first:** Schema mistakes are expensive to fix after UI is built. Establishing the normalized block table prevents Settings overload pitfall and enables all subsequent features. Migration must be bulletproof — this takes time and testing.
 
-**Dependencies identified:**
-- Stats phase validates duration calculation pattern used in edit mode (duration display consistency)
-- Edit mode establishes draft pattern that could be reused if notes gain more complex editing
-- All phases are independent in implementation (parallel development possible if needed)
+**Why overview before calculator:** The overview page validates the state machine (create→advance→complete lifecycle) without the complexity of percentage scheme switching. If progression logic is wrong, it's caught here before the calculator depends on it.
 
-**Risk mitigation sequence:**
-- Phase 1 has zero architectural risk, builds confidence
-- Phase 2 highest complexity but no migration risk, gets user feedback on edit UX
-- Phase 3 migration risk isolated to final phase, can defer if timeline pressure
+**Why calculator last in core phases:** Calculator refactoring touches the most code (562 lines, core feature). Doing this after state management and progression logic are proven reduces risk. Data-driven schemes from Phase 1 make the refactor tractable.
+
+**Why polish is separate:** Edge cases and export/import are refinements, not blockers. Shipping v1.2 without TM adjustment flow or block abandonment is acceptable — users can start fresh blocks. These can be added in patch releases if time runs short.
+
+**Dependency chain:**
+```
+Phase 1 (Data)
+  ↓
+Phase 2 (Overview) ← validates state machine
+  ↓
+Phase 3 (Calculator) ← consumes validated block state
+  ↓
+Phase 4 (Polish) ← handles edge cases after core works
+```
 
 ### Research Flags
 
-**Phases with standard patterns (skip research-phase):**
-- **Phase 1 (Stats):** Well-documented aggregation patterns exist in `gym_sets.dart`, StatCard component proven, Drift custom SQL established
-- **Phase 2 (Edit):** Exact patterns in `start_plan_page.dart` for exercise editing, draft pattern is standard Flutter practice, WorkoutDetailPage navigation straightforward
-- **Phase 3 (Reorder):** Reference implementation exists in `start_plan_page.dart:243-288`, Drift migration pattern proven in v45→v46, ReorderableListView officially documented
+Phases with well-documented patterns (skip research-phase):
+- **Phase 1:** Drift table creation and migration follow exact pattern from existing codebase (database.dart lines 60-413); ChangeNotifier + Provider matches WorkoutState exactly
+- **Phase 3:** Calculator refactoring is codebase-specific work, not domain research
 
-**Phases needing deeper research during planning:**
-- **None** — All features have high-confidence patterns in codebase or official documentation
-
-**Validation during implementation:**
-- Phase 2: Test draft pattern with nested data (workout → exercises → sets hierarchy) to ensure memory efficient
-- Phase 3: Test migration with production-like data volume, validate backfill query performance
+Phases likely needing deeper research during planning:
+- **Phase 2:** Timeline visualization UX — research suggests vertical over horizontal for mobile, but specific implementation details (progress indicators, completed/active/future styling) may need iteration
+- **Phase 4:** Export/import for new tables — existing code only handles workouts/gym_sets CSV; adding block data to ZIP archive needs research into format compatibility
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Built-in Flutter widgets, no new dependencies (optional grid package), existing patterns in codebase |
-| Features | HIGH | UX patterns verified from official docs and competitor analysis, table stakes well-defined |
-| Architecture | HIGH | Extends existing Provider + Drift architecture, reference implementations in codebase (start_plan_page.dart, gym_sets.dart) |
-| Pitfalls | HIGH | Based on official docs, existing codebase analysis, and established Flutter community patterns |
+| Stack | HIGH | Direct codebase analysis confirms existing stack (Drift 2.30.0, Provider 6.1.1) provides all needed capabilities; zero new dependencies required |
+| Features | HIGH | User provided exact specification (11-week structure, set schemes, TM increments); verified against 5/3/1 Forever program documentation from multiple sources |
+| Architecture | HIGH | Data model and state management patterns match existing codebase conventions exactly; integration points identified with file-level precision |
+| Pitfalls | HIGH | Critical pitfalls (Settings overload, TM timing, rounding, migration) based on direct code analysis of existing calculator and database patterns; prevention strategies validated against codebase conventions |
 
 **Overall confidence:** HIGH
 
-All three features follow established patterns with reference implementations in the codebase. The main unknowns are execution details (exact widget composition, edge case handling) rather than architectural questions.
-
 ### Gaps to Address
 
-**GridView vs ListView for reorder:**
-- Notes page currently uses GridView for visual layout
-- ReorderableListView is list-based (vertical scrolling)
-- Options: (1) Toggle to list layout during reorder mode (matches start_plan_page pattern), (2) Add flutter_reorderable_grid_view package (new dependency)
-- **Recommendation:** List layout toggle for consistency with existing patterns
-- **Validation:** During Phase 3 planning, confirm with user that list layout for reorder is acceptable UX
+**7th Week scheme variations:** Research found minor inconsistencies in 7th Week Deload and TM Test rep schemes across sources. User specified exact schemes (Deload: 70%x5, 80%x3-5, 90%x1, 100%x1; TM Test: 70/80/90/100% all x5), which differ slightly from some sources that suggest 100%x3-5 for TM Test. **Resolution:** Use user's specification; this is their program preference, not a standardization requirement.
 
-**Edit mode component reuse:**
-- start_plan_page.dart has ExerciseSetsCard and SetRow components
-- Need to verify these components work when workoutId exists but workout is not active (endTime != null)
-- May need `isEditMode` flag to disable timer integration
-- **Validation:** During Phase 2 planning, audit component dependencies on WorkoutState
+**Unit switching mid-block:** Current Settings table stores TMs without unit metadata. Storing unit alongside TM snapshot in block table prevents conversion issues, but UI flow for "user switches preferred unit mid-block" needs validation. **Resolution:** Display warning if stored TM unit doesn't match preference; offer conversion with rounding disclosure; test during Phase 4 (edge cases).
 
-**Personal records recalculation:**
-- Editing completed workout may change PR calculations (weight/reps modified)
-- Existing codebase has PR cache clearing pattern
-- **Validation:** During Phase 2 implementation, determine if PR recalculation needed or automatic via Drift stream
+**Block template extensibility:** While hardcoding the user's specific setup (2 Leaders + Anchor with BBB/FSL) is correct for v1.2, the data model should support future template additions without schema changes. **Resolution:** Define block structure as data (BlockTemplate with List<CycleDefinition>) even though only one template is supported in v1.2; this costs minutes now, saves hours later.
 
-**Duration stat placement:**
-- Research assumes integration with existing stats grid on overview/history page
-- Need to confirm which page and exact placement
-- **Validation:** During Phase 1 planning, determine StatCard location and icon choice
+**Historical block storage growth:** No performance concern identified, but should monitor. Single-active-block constraint means only 1 active row at a time; completed blocks accumulate at ~1 row per 11 weeks (4-5 blocks per year). **Resolution:** No action needed for v1.2; can add archive/cleanup in future if users request it.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- **JackedLog codebase** — `lib/plan/start_plan_page.dart` (reorder implementation), `lib/database/database.dart` (migration patterns), `lib/database/gym_sets.dart` (aggregation queries), `lib/workouts/workout_state.dart` (active workout management)
-- [Flutter ReorderableListView API](https://api.flutter.dev/flutter/material/ReorderableListView-class.html) — Official widget documentation
-- [Flutter ExpansionTile API](https://api.flutter.dev/flutter/material/ExpansionTile-class.html) — Official widget documentation
-- [Drift Migration API](https://drift.simonbinder.eu/migrations/api/) — TableMigration, ALTER TABLE patterns
-- [Dart DateTime class](https://api.flutter.dev/flutter/dart-core/DateTime-class.html) — Timezone handling
-- [fl_chart package](https://pub.dev/packages/fl_chart) — Already dependency v1.0.0
+- **Codebase analysis (JackedLog):**
+  - `lib/database/database.dart` — migration patterns (v31-v63), schema version tracking
+  - `lib/database/settings.dart` — existing 5/3/1 columns, Settings table structure
+  - `lib/widgets/five_three_one_calculator.dart` — current calculator implementation, scheme logic, rounding function
+  - `lib/widgets/training_max_editor.dart` — TM editor dialog
+  - `lib/notes/notes_page.dart` — banner entry point, TrainingMaxBanner widget
+  - `lib/settings/settings_state.dart` — ChangeNotifier + stream subscription pattern
+  - `lib/workouts/workout_state.dart` — state management with async init pattern
+  - `lib/main.dart` — Provider registration in appProviders()
+  - `lib/export_data.dart`, `lib/import_data.dart` — export/import scope and compatibility
+  - `.planning/codebase/ARCHITECTURE.md`, `STRUCTURE.md`, `CONVENTIONS.md`
+  - `.planning/PROJECT.md` — user requirements, TM increment values, manual advancement requirement
+  - `CLAUDE.md` — commit rules, backward compatibility requirement
+  - `pubspec.lock` — verified Drift 2.30.0 actual installed version
+- **Drift documentation:**
+  - [Drift Tables Documentation](https://drift.simonbinder.eu/dart_api/tables/) — foreign keys, column types
+  - [Drift Migrations Documentation](https://drift.simonbinder.eu/docs/advanced-features/migrations/) — migration patterns
+- **Flutter documentation:**
+  - [Flutter Stepper class](https://api.flutter.dev/flutter/material/Stepper-class.html) — evaluated and rejected for block timeline
 
 ### Secondary (MEDIUM confidence)
-- [NN/g Drag-Drop UX](https://www.nngroup.com/articles/drag-drop/) — Animation timing, haptic feedback standards
-- [KindaCode ReorderableListView guide](https://www.kindacode.com/article/working-with-reorderablelistview-in-flutter) — Implementation patterns
-- [Medium: Mastering ExpansionTile](https://medium.com/my-technical-journey/mastering-expansiontile-in-flutter-collapsible-ui-made-easy-cec8cec3650a) — Collapsible UI patterns
-- [Medium: Complex list editors](https://medium.com/flutter-senior/complex-list-editors-without-state-management-in-flutter-33408c35bac7) — Toggle-based editing patterns
-- [Drift migration article](https://medium.com/@tagizada.nicat/migration-with-flutter-drift-c9e21e905eeb) — Practical migration examples
+- **5/3/1 Forever program rules:**
+  - [Lift Vault Leader/Anchor Guide](https://liftvault.com/resources/leader-anchor-cycles/) — Leader/Anchor cycle definitions
+  - [The Fitness Wiki 5/3/1 Primer](https://thefitness.wiki/5-3-1-primer/) — 5/3/1 fundamentals reference
+  - [Jim Wendler - The Training Max](https://www.jimwendler.com/blogs/jimwendler-com/101082310-the-training-max-what-you-need-to-know) — TM progression rules
+  - [T-Nation 7th Week Protocol Discussion](https://t-nation.com/t/confusion-on-7th-week-tm-test-after-anchor/246002) — TM Test protocol details
+  - [T-Nation - Increasing TM After Anchor](https://t-nation.com/t/increasing-tm-after-anchor-deload/235856) — TM bump timing
+  - [T-Nation Leader/Anchor Setup](https://t-nation.com/t/doubt-about-leader-anchor-setup-in-forever/229773) — edge cases in block progression
+- **Feature reference (existing 5/3/1 apps):**
+  - [KeyLifts 531 App](https://www.keylifts.com/) — feature reference for 5/3/1 app capabilities
+  - [Five/Three/One App](https://fivethreeone.app/) — cycle management patterns
+  - [Boostcamp BBB Guide](https://www.boostcamp.app/blogs/531-boring-but-big-app-program-guide) — BBB template implementation
+- **UX patterns:**
+  - [UX Planet Progress Trackers](https://uxplanet.org/progress-trackers-in-ux-design-4319cef1c600) — timeline/stepper UX patterns
+  - [Eleken Stepper UI Examples](https://www.eleken.co/blog-posts/stepper-ui-examples) — mobile stepper design patterns
+  - [Flutter timeline packages landscape](https://fluttergems.dev/timeline/) — evaluated and rejected
 
-### Tertiary (LOW confidence, informational)
-- [UX Pickle Duration Display](https://uxpickle.com/how-to-display-duration-hhmm-so-it-isnt-confusing/) — Format recommendations
-- [Smart Interface Design Patterns](https://smart-interface-design-patterns.com/articles/drag-and-drop-ux/) — Drag-drop best practices
-- [flutter_reorderable_grid_view package](https://pub.dev/packages/flutter_reorderable_grid_view) — Optional dependency for grid reordering
+### Tertiary (LOW confidence)
+- [Floating-point rounding in barbell calculators](https://apps.apple.com/us/app/bar-is-loaded-gym-calculator/id1509374210) — weight rounding pitfall reference
+- [Drift Migration Article](https://medium.com/@tagizada.nicat/migration-with-flutter-drift-c9e21e905eeb) — migration patterns
 
 ---
-*Research completed: 2026-02-02*
+*Research completed: 2026-02-11*
 *Ready for roadmap: yes*

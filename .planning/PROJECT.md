@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A Flutter fitness tracking app for logging workouts, tracking personal records, and visualizing progress. Cross-platform (Android, iOS, Linux, macOS, Windows) with offline-first architecture using SQLite/Drift for persistence. Includes Spotify integration for workout music. Now with full edit capability for completed workouts and customizable note ordering.
+A Flutter fitness tracking app for logging workouts, tracking personal records, and visualizing progress. Cross-platform (Android, iOS, Linux, macOS, Windows) with offline-first architecture using SQLite/Drift for persistence. Includes Spotify integration for workout music, full edit capability for completed workouts, and customizable note ordering.
 
 ## Core Value
 
@@ -34,17 +34,24 @@ Users can efficiently log and track their workouts with minimal friction — eve
 - ✓ Drag-drop notes reordering with persistence — v1.0
 - ✓ History search bar cleanup (menu removed) — v1.0
 
+- ✓ Import error logging and user toast notifications — v1.1
+- ✓ Backup failure logging with status indicator in settings — v1.1
+- ✓ Active workout bar timer stability fix (mounted check) — v1.1
+- ✓ Settings initialization null safety (getSingleOrNull) — v1.1
+
 ### Active
 
-**Current Milestone: v1.1 Error Handling & Stability**
+**Current Milestone: v1.2 5/3/1 Forever Block Programming**
 
-**Goal:** Improve app reliability by surfacing silent errors and fixing stability issues.
+**Goal:** Replace manual markdown-based 5/3/1 tracking with in-app block planning, cycle awareness, and auto-calculated weights.
 
 **Target features:**
-- Import error logging and user notifications
-- Backup failure logging with status indicator in settings
-- Active workout bar timer stability fix
-- Settings initialization null safety
+- 5/3/1 block overview page (11-week timeline: Leader x2 → Deload → Anchor → TM Test)
+- Context-aware calculator showing correct scheme per cycle/week (5's PRO, PR Sets, Deload, TM Test)
+- Supplemental work display (BBB 5x10@60% for Leader, FSL 5x5 for Anchor)
+- TM auto-progression after each cycle completion
+- Manual week/cycle advancement
+- Block setup with starting TMs for 4 lifts (Squat, Bench, Deadlift, OHP)
 
 ### Out of Scope
 
@@ -56,11 +63,13 @@ Users can efficiently log and track their workouts with minimal friction — eve
 
 ## Context
 
-Shipped v1.0 UI Enhancements with ~4,000 lines added across 28 files.
+Shipped v1.0 UI Enhancements and v1.1 Error Handling & Stability.
 Tech stack: Flutter/Dart, Drift ORM (SQLite), Provider state management.
 Database version: 62 (added notes sequence column).
 
-The Edit Workout feature mirrors the active workout experience from `start_plan_page.dart` for consistency.
+Current 5/3/1 implementation: TMs stored in Settings table (4 columns), simple calculator accessible via exercise long-press, week tracker (1-4). No concept of blocks, cycles, Leader/Anchor, or supplemental work. The "5/3/1 Training Max" banner in Notes page opens a TM editor dialog — this will become the entry point for the block overview.
+
+User's training program: 5/3/1 Forever with 11-week blocks (Leader x2 + 7th Week Deload + Anchor + 7th Week TM Test). Leader = 5's PRO + BBB 5x10@60%. Anchor = Original 5/3/1 PR Sets + FSL 5x5. TM bumps after Leader 1, Leader 2, and Anchor (+2.2kg upper, +4.5kg lower).
 
 ## Constraints
 
@@ -81,4 +90,4 @@ The Edit Workout feature mirrors the active workout experience from `start_plan_
 | Sequence stored descending | Natural ordering (highest = top) | ✓ Good |
 
 ---
-*Last updated: 2026-02-05 after v1.1 milestone start*
+*Last updated: 2026-02-11 after v1.2 milestone start*
