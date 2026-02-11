@@ -18,10 +18,10 @@ Requirements for 5/3/1 Forever Block Programming milestone. Each maps to roadmap
 
 ### Calculator
 
-- [ ] **CALC-01**: Calculator shows correct main work scheme based on block position (5's PRO for Leader, PR Sets with AMRAP for Anchor)
-- [ ] **CALC-02**: Calculator shows 7th Week Deload scheme (70/80/90/100% x5,3-5,1,1)
-- [ ] **CALC-03**: Calculator shows 7th Week TM Test scheme (70/80/90/100% all x5) with validation warning
-- [ ] **CALC-04**: Calculator shows supplemental work below main sets (BBB 5x10@60% for Leader, FSL 5x5 for Anchor)
+- [x] **CALC-01**: Calculator shows correct main work scheme based on block position (5's PRO for Leader, PR Sets with AMRAP for Anchor)
+- [x] **CALC-02**: Calculator shows 7th Week Deload scheme (70/80/90/100% x5,3-5,1,1)
+- [x] **CALC-03**: Calculator shows 7th Week TM Test scheme (70/80/90/100% all x5) with validation warning
+- [x] **CALC-04**: Calculator shows supplemental work below main sets (BBB 5x10@60% for Leader, FSL 5x5 for Anchor)
 
 ### Infrastructure
 
@@ -67,16 +67,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-01 | Phase 6 | Complete |
 | INFRA-02 | Phase 6 | Complete |
 | INFRA-03 | Phase 6 | Complete |
-| BLOCK-01 | Phase 7 | Pending |
-| BLOCK-02 | Phase 7 | Pending |
-| BLOCK-03 | Phase 7 | Pending |
-| BLOCK-04 | Phase 7 | Pending |
-| BLOCK-05 | Phase 7 | Pending |
+| BLOCK-01 | Phase 7 | Complete |
+| BLOCK-02 | Phase 7 | Complete |
+| BLOCK-03 | Phase 7 | Complete |
+| BLOCK-04 | Phase 7 | Complete |
+| BLOCK-05 | Phase 7 | Complete |
 | BLOCK-06 | Phase 9 | Pending |
-| CALC-01 | Phase 8 | Pending |
-| CALC-02 | Phase 8 | Pending |
-| CALC-03 | Phase 8 | Pending |
-| CALC-04 | Phase 8 | Pending |
+| CALC-01 | Phase 8 | Complete |
+| CALC-02 | Phase 8 | Complete |
+| CALC-03 | Phase 8 | Complete |
+| CALC-04 | Phase 8 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 13 total
@@ -85,4 +85,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-11*
-*Last updated: 2026-02-11 after Phase 6 completion*
+*Last updated: 2026-02-11 after Phase 8 completion*
