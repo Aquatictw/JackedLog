@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../database/database.dart';
 import 'block_creation_dialog.dart';
+import 'block_summary_page.dart';
 import 'fivethreeone_state.dart';
 import 'schemes.dart';
 
@@ -22,15 +24,18 @@ class BlockOverviewPage extends StatelessWidget {
             ? '5/3/1 Block'
             : '5/3/1 ${state.positionLabel}'),
       ),
-      body: block == null ? _buildNoBlock(context) : _buildTimeline(context, state, block),
+      body: block == null
+          ? _buildNoBlock(context, state)
+          : _buildTimeline(context, state, block),
     );
   }
 
-  Widget _buildNoBlock(BuildContext context) {
-    return Center(
+  Widget _buildNoBlock(BuildContext context, FiveThreeOneState state) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
+          const SizedBox(height: 32),
           Text(
             'No active block',
             style: Theme.of(context).textTheme.titleMedium,
@@ -46,6 +51,8 @@ class BlockOverviewPage extends StatelessWidget {
             icon: const Icon(Icons.add),
             label: const Text('Start Block'),
           ),
+          const SizedBox(height: 32),
+          _CompletedBlockHistory(state: state),
         ],
       ),
     );
@@ -68,6 +75,8 @@ class BlockOverviewPage extends StatelessWidget {
             ),
           const SizedBox(height: 24),
           _CompleteWeekButton(block: block),
+          const SizedBox(height: 32),
+          _CompletedBlockHistory(state: state),
         ],
       ),
     );
@@ -425,15 +434,8 @@ class _CompleteWeekButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<FiveThreeOneState>();
-
-    if (state.isBlockComplete) {
-      return const Center(
-        child: Text(
-          'Block Complete',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-      );
-    }
+    final isComplete = state.isBlockComplete;
+    final label = isComplete ? 'Complete Block' : 'Complete Week';
 
     return FilledButton.icon(
       onPressed: () async {
@@ -473,13 +475,122 @@ class _CompleteWeekButton extends StatelessWidget {
             await state.bumpTms();
           }
         }
-        await state.advanceWeek();
+
+        if (isComplete) {
+          // Capture block reference before advancing (which deactivates it)
+          final completedBlock = state.activeBlock!;
+          await state.advanceWeek();
+          if (context.mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => BlockSummaryPage(block: completedBlock),
+              ),
+            );
+          }
+        } else {
+          await state.advanceWeek();
+        }
       },
-      icon: const Icon(Icons.arrow_forward),
-      label: const Text('Complete Week'),
+      icon: Icon(isComplete ? Icons.check : Icons.arrow_forward),
+      label: Text(label),
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(48),
       ),
+    );
+  }
+}
+
+class _CompletedBlockHistory extends StatelessWidget {
+  const _CompletedBlockHistory({required this.state});
+
+  final FiveThreeOneState state;
+
+  String _formatTm(double value) {
+    return value == value.roundToDouble()
+        ? value.toInt().toString()
+        : value.toStringAsFixed(1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<FiveThreeOneBlock>>(
+      future: state.getCompletedBlocks(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final blocks = snapshot.data!;
+        final colorScheme = Theme.of(context).colorScheme;
+        final dateFormat = DateFormat('MMM d, y');
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Completed Blocks',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            for (final block in blocks)
+              Card(
+                color: colorScheme.surfaceContainerLow,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => BlockSummaryPage(block: block),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${dateFormat.format(block.created)}'
+                                '${block.completed != null ? ' \u2013 ${dateFormat.format(block.completed!)}' : ''}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'S ${_formatTm(block.squatTm)}  '
+                                'B ${_formatTm(block.benchTm)}  '
+                                'D ${_formatTm(block.deadliftTm)}  '
+                                'P ${_formatTm(block.pressTm)} '
+                                '${block.unit}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

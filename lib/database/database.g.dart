@@ -5038,6 +5038,30 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
   late final GeneratedColumn<double> pressTm = GeneratedColumn<double>(
       'press_tm', aliasedName, false,
       type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _startSquatTmMeta =
+      const VerificationMeta('startSquatTm');
+  @override
+  late final GeneratedColumn<double> startSquatTm = GeneratedColumn<double>(
+      'start_squat_tm', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _startBenchTmMeta =
+      const VerificationMeta('startBenchTm');
+  @override
+  late final GeneratedColumn<double> startBenchTm = GeneratedColumn<double>(
+      'start_bench_tm', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _startDeadliftTmMeta =
+      const VerificationMeta('startDeadliftTm');
+  @override
+  late final GeneratedColumn<double> startDeadliftTm = GeneratedColumn<double>(
+      'start_deadlift_tm', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _startPressTmMeta =
+      const VerificationMeta('startPressTm');
+  @override
+  late final GeneratedColumn<double> startPressTm = GeneratedColumn<double>(
+      'start_press_tm', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
   static const VerificationMeta _unitMeta = const VerificationMeta('unit');
   @override
   late final GeneratedColumn<String> unit = GeneratedColumn<String>(
@@ -5083,6 +5107,10 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
         benchTm,
         deadliftTm,
         pressTm,
+        startSquatTm,
+        startBenchTm,
+        startDeadliftTm,
+        startPressTm,
         unit,
         currentCycle,
         currentWeek,
@@ -5134,6 +5162,30 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
     } else if (isInserting) {
       context.missing(_pressTmMeta);
     }
+    if (data.containsKey('start_squat_tm')) {
+      context.handle(
+          _startSquatTmMeta,
+          startSquatTm.isAcceptableOrUnknown(
+              data['start_squat_tm']!, _startSquatTmMeta));
+    }
+    if (data.containsKey('start_bench_tm')) {
+      context.handle(
+          _startBenchTmMeta,
+          startBenchTm.isAcceptableOrUnknown(
+              data['start_bench_tm']!, _startBenchTmMeta));
+    }
+    if (data.containsKey('start_deadlift_tm')) {
+      context.handle(
+          _startDeadliftTmMeta,
+          startDeadliftTm.isAcceptableOrUnknown(
+              data['start_deadlift_tm']!, _startDeadliftTmMeta));
+    }
+    if (data.containsKey('start_press_tm')) {
+      context.handle(
+          _startPressTmMeta,
+          startPressTm.isAcceptableOrUnknown(
+              data['start_press_tm']!, _startPressTmMeta));
+    }
     if (data.containsKey('unit')) {
       context.handle(
           _unitMeta, unit.isAcceptableOrUnknown(data['unit']!, _unitMeta));
@@ -5181,6 +5233,14 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
           .read(DriftSqlType.double, data['${effectivePrefix}deadlift_tm'])!,
       pressTm: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}press_tm'])!,
+      startSquatTm: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}start_squat_tm']),
+      startBenchTm: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}start_bench_tm']),
+      startDeadliftTm: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}start_deadlift_tm']),
+      startPressTm: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}start_press_tm']),
       unit: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}unit'])!,
       currentCycle: attachedDatabase.typeMapping
@@ -5208,6 +5268,10 @@ class FiveThreeOneBlock extends DataClass
   final double benchTm;
   final double deadliftTm;
   final double pressTm;
+  final double? startSquatTm;
+  final double? startBenchTm;
+  final double? startDeadliftTm;
+  final double? startPressTm;
   final String unit;
 
   /// 0=Leader1, 1=Leader2, 2=7th Week Deload, 3=Anchor, 4=TM Test
@@ -5224,6 +5288,10 @@ class FiveThreeOneBlock extends DataClass
       required this.benchTm,
       required this.deadliftTm,
       required this.pressTm,
+      this.startSquatTm,
+      this.startBenchTm,
+      this.startDeadliftTm,
+      this.startPressTm,
       required this.unit,
       required this.currentCycle,
       required this.currentWeek,
@@ -5238,6 +5306,18 @@ class FiveThreeOneBlock extends DataClass
     map['bench_tm'] = Variable<double>(benchTm);
     map['deadlift_tm'] = Variable<double>(deadliftTm);
     map['press_tm'] = Variable<double>(pressTm);
+    if (!nullToAbsent || startSquatTm != null) {
+      map['start_squat_tm'] = Variable<double>(startSquatTm);
+    }
+    if (!nullToAbsent || startBenchTm != null) {
+      map['start_bench_tm'] = Variable<double>(startBenchTm);
+    }
+    if (!nullToAbsent || startDeadliftTm != null) {
+      map['start_deadlift_tm'] = Variable<double>(startDeadliftTm);
+    }
+    if (!nullToAbsent || startPressTm != null) {
+      map['start_press_tm'] = Variable<double>(startPressTm);
+    }
     map['unit'] = Variable<String>(unit);
     map['current_cycle'] = Variable<int>(currentCycle);
     map['current_week'] = Variable<int>(currentWeek);
@@ -5256,6 +5336,18 @@ class FiveThreeOneBlock extends DataClass
       benchTm: Value(benchTm),
       deadliftTm: Value(deadliftTm),
       pressTm: Value(pressTm),
+      startSquatTm: startSquatTm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startSquatTm),
+      startBenchTm: startBenchTm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startBenchTm),
+      startDeadliftTm: startDeadliftTm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startDeadliftTm),
+      startPressTm: startPressTm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startPressTm),
       unit: Value(unit),
       currentCycle: Value(currentCycle),
       currentWeek: Value(currentWeek),
@@ -5276,6 +5368,10 @@ class FiveThreeOneBlock extends DataClass
       benchTm: serializer.fromJson<double>(json['benchTm']),
       deadliftTm: serializer.fromJson<double>(json['deadliftTm']),
       pressTm: serializer.fromJson<double>(json['pressTm']),
+      startSquatTm: serializer.fromJson<double?>(json['startSquatTm']),
+      startBenchTm: serializer.fromJson<double?>(json['startBenchTm']),
+      startDeadliftTm: serializer.fromJson<double?>(json['startDeadliftTm']),
+      startPressTm: serializer.fromJson<double?>(json['startPressTm']),
       unit: serializer.fromJson<String>(json['unit']),
       currentCycle: serializer.fromJson<int>(json['currentCycle']),
       currentWeek: serializer.fromJson<int>(json['currentWeek']),
@@ -5293,6 +5389,10 @@ class FiveThreeOneBlock extends DataClass
       'benchTm': serializer.toJson<double>(benchTm),
       'deadliftTm': serializer.toJson<double>(deadliftTm),
       'pressTm': serializer.toJson<double>(pressTm),
+      'startSquatTm': serializer.toJson<double?>(startSquatTm),
+      'startBenchTm': serializer.toJson<double?>(startBenchTm),
+      'startDeadliftTm': serializer.toJson<double?>(startDeadliftTm),
+      'startPressTm': serializer.toJson<double?>(startPressTm),
       'unit': serializer.toJson<String>(unit),
       'currentCycle': serializer.toJson<int>(currentCycle),
       'currentWeek': serializer.toJson<int>(currentWeek),
@@ -5308,6 +5408,10 @@ class FiveThreeOneBlock extends DataClass
           double? benchTm,
           double? deadliftTm,
           double? pressTm,
+          Value<double?> startSquatTm = const Value.absent(),
+          Value<double?> startBenchTm = const Value.absent(),
+          Value<double?> startDeadliftTm = const Value.absent(),
+          Value<double?> startPressTm = const Value.absent(),
           String? unit,
           int? currentCycle,
           int? currentWeek,
@@ -5320,6 +5424,15 @@ class FiveThreeOneBlock extends DataClass
         benchTm: benchTm ?? this.benchTm,
         deadliftTm: deadliftTm ?? this.deadliftTm,
         pressTm: pressTm ?? this.pressTm,
+        startSquatTm:
+            startSquatTm.present ? startSquatTm.value : this.startSquatTm,
+        startBenchTm:
+            startBenchTm.present ? startBenchTm.value : this.startBenchTm,
+        startDeadliftTm: startDeadliftTm.present
+            ? startDeadliftTm.value
+            : this.startDeadliftTm,
+        startPressTm:
+            startPressTm.present ? startPressTm.value : this.startPressTm,
         unit: unit ?? this.unit,
         currentCycle: currentCycle ?? this.currentCycle,
         currentWeek: currentWeek ?? this.currentWeek,
@@ -5335,6 +5448,18 @@ class FiveThreeOneBlock extends DataClass
       deadliftTm:
           data.deadliftTm.present ? data.deadliftTm.value : this.deadliftTm,
       pressTm: data.pressTm.present ? data.pressTm.value : this.pressTm,
+      startSquatTm: data.startSquatTm.present
+          ? data.startSquatTm.value
+          : this.startSquatTm,
+      startBenchTm: data.startBenchTm.present
+          ? data.startBenchTm.value
+          : this.startBenchTm,
+      startDeadliftTm: data.startDeadliftTm.present
+          ? data.startDeadliftTm.value
+          : this.startDeadliftTm,
+      startPressTm: data.startPressTm.present
+          ? data.startPressTm.value
+          : this.startPressTm,
       unit: data.unit.present ? data.unit.value : this.unit,
       currentCycle: data.currentCycle.present
           ? data.currentCycle.value
@@ -5355,6 +5480,10 @@ class FiveThreeOneBlock extends DataClass
           ..write('benchTm: $benchTm, ')
           ..write('deadliftTm: $deadliftTm, ')
           ..write('pressTm: $pressTm, ')
+          ..write('startSquatTm: $startSquatTm, ')
+          ..write('startBenchTm: $startBenchTm, ')
+          ..write('startDeadliftTm: $startDeadliftTm, ')
+          ..write('startPressTm: $startPressTm, ')
           ..write('unit: $unit, ')
           ..write('currentCycle: $currentCycle, ')
           ..write('currentWeek: $currentWeek, ')
@@ -5365,8 +5494,22 @@ class FiveThreeOneBlock extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(id, created, squatTm, benchTm, deadliftTm,
-      pressTm, unit, currentCycle, currentWeek, isActive, completed);
+  int get hashCode => Object.hash(
+      id,
+      created,
+      squatTm,
+      benchTm,
+      deadliftTm,
+      pressTm,
+      startSquatTm,
+      startBenchTm,
+      startDeadliftTm,
+      startPressTm,
+      unit,
+      currentCycle,
+      currentWeek,
+      isActive,
+      completed);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5377,6 +5520,10 @@ class FiveThreeOneBlock extends DataClass
           other.benchTm == this.benchTm &&
           other.deadliftTm == this.deadliftTm &&
           other.pressTm == this.pressTm &&
+          other.startSquatTm == this.startSquatTm &&
+          other.startBenchTm == this.startBenchTm &&
+          other.startDeadliftTm == this.startDeadliftTm &&
+          other.startPressTm == this.startPressTm &&
           other.unit == this.unit &&
           other.currentCycle == this.currentCycle &&
           other.currentWeek == this.currentWeek &&
@@ -5391,6 +5538,10 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
   final Value<double> benchTm;
   final Value<double> deadliftTm;
   final Value<double> pressTm;
+  final Value<double?> startSquatTm;
+  final Value<double?> startBenchTm;
+  final Value<double?> startDeadliftTm;
+  final Value<double?> startPressTm;
   final Value<String> unit;
   final Value<int> currentCycle;
   final Value<int> currentWeek;
@@ -5403,6 +5554,10 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     this.benchTm = const Value.absent(),
     this.deadliftTm = const Value.absent(),
     this.pressTm = const Value.absent(),
+    this.startSquatTm = const Value.absent(),
+    this.startBenchTm = const Value.absent(),
+    this.startDeadliftTm = const Value.absent(),
+    this.startPressTm = const Value.absent(),
     this.unit = const Value.absent(),
     this.currentCycle = const Value.absent(),
     this.currentWeek = const Value.absent(),
@@ -5416,6 +5571,10 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     required double benchTm,
     required double deadliftTm,
     required double pressTm,
+    this.startSquatTm = const Value.absent(),
+    this.startBenchTm = const Value.absent(),
+    this.startDeadliftTm = const Value.absent(),
+    this.startPressTm = const Value.absent(),
     required String unit,
     this.currentCycle = const Value.absent(),
     this.currentWeek = const Value.absent(),
@@ -5434,6 +5593,10 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     Expression<double>? benchTm,
     Expression<double>? deadliftTm,
     Expression<double>? pressTm,
+    Expression<double>? startSquatTm,
+    Expression<double>? startBenchTm,
+    Expression<double>? startDeadliftTm,
+    Expression<double>? startPressTm,
     Expression<String>? unit,
     Expression<int>? currentCycle,
     Expression<int>? currentWeek,
@@ -5447,6 +5610,10 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
       if (benchTm != null) 'bench_tm': benchTm,
       if (deadliftTm != null) 'deadlift_tm': deadliftTm,
       if (pressTm != null) 'press_tm': pressTm,
+      if (startSquatTm != null) 'start_squat_tm': startSquatTm,
+      if (startBenchTm != null) 'start_bench_tm': startBenchTm,
+      if (startDeadliftTm != null) 'start_deadlift_tm': startDeadliftTm,
+      if (startPressTm != null) 'start_press_tm': startPressTm,
       if (unit != null) 'unit': unit,
       if (currentCycle != null) 'current_cycle': currentCycle,
       if (currentWeek != null) 'current_week': currentWeek,
@@ -5462,6 +5629,10 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
       Value<double>? benchTm,
       Value<double>? deadliftTm,
       Value<double>? pressTm,
+      Value<double?>? startSquatTm,
+      Value<double?>? startBenchTm,
+      Value<double?>? startDeadliftTm,
+      Value<double?>? startPressTm,
       Value<String>? unit,
       Value<int>? currentCycle,
       Value<int>? currentWeek,
@@ -5474,6 +5645,10 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
       benchTm: benchTm ?? this.benchTm,
       deadliftTm: deadliftTm ?? this.deadliftTm,
       pressTm: pressTm ?? this.pressTm,
+      startSquatTm: startSquatTm ?? this.startSquatTm,
+      startBenchTm: startBenchTm ?? this.startBenchTm,
+      startDeadliftTm: startDeadliftTm ?? this.startDeadliftTm,
+      startPressTm: startPressTm ?? this.startPressTm,
       unit: unit ?? this.unit,
       currentCycle: currentCycle ?? this.currentCycle,
       currentWeek: currentWeek ?? this.currentWeek,
@@ -5503,6 +5678,18 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     if (pressTm.present) {
       map['press_tm'] = Variable<double>(pressTm.value);
     }
+    if (startSquatTm.present) {
+      map['start_squat_tm'] = Variable<double>(startSquatTm.value);
+    }
+    if (startBenchTm.present) {
+      map['start_bench_tm'] = Variable<double>(startBenchTm.value);
+    }
+    if (startDeadliftTm.present) {
+      map['start_deadlift_tm'] = Variable<double>(startDeadliftTm.value);
+    }
+    if (startPressTm.present) {
+      map['start_press_tm'] = Variable<double>(startPressTm.value);
+    }
     if (unit.present) {
       map['unit'] = Variable<String>(unit.value);
     }
@@ -5530,6 +5717,10 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
           ..write('benchTm: $benchTm, ')
           ..write('deadliftTm: $deadliftTm, ')
           ..write('pressTm: $pressTm, ')
+          ..write('startSquatTm: $startSquatTm, ')
+          ..write('startBenchTm: $startBenchTm, ')
+          ..write('startDeadliftTm: $startDeadliftTm, ')
+          ..write('startPressTm: $startPressTm, ')
           ..write('unit: $unit, ')
           ..write('currentCycle: $currentCycle, ')
           ..write('currentWeek: $currentWeek, ')
@@ -8179,6 +8370,10 @@ typedef $$FiveThreeOneBlocksTableCreateCompanionBuilder
   required double benchTm,
   required double deadliftTm,
   required double pressTm,
+  Value<double?> startSquatTm,
+  Value<double?> startBenchTm,
+  Value<double?> startDeadliftTm,
+  Value<double?> startPressTm,
   required String unit,
   Value<int> currentCycle,
   Value<int> currentWeek,
@@ -8193,6 +8388,10 @@ typedef $$FiveThreeOneBlocksTableUpdateCompanionBuilder
   Value<double> benchTm,
   Value<double> deadliftTm,
   Value<double> pressTm,
+  Value<double?> startSquatTm,
+  Value<double?> startBenchTm,
+  Value<double?> startDeadliftTm,
+  Value<double?> startPressTm,
   Value<String> unit,
   Value<int> currentCycle,
   Value<int> currentWeek,
@@ -8226,6 +8425,19 @@ class $$FiveThreeOneBlocksTableFilterComposer
 
   ColumnFilters<double> get pressTm => $composableBuilder(
       column: $table.pressTm, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get startSquatTm => $composableBuilder(
+      column: $table.startSquatTm, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get startBenchTm => $composableBuilder(
+      column: $table.startBenchTm, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get startDeadliftTm => $composableBuilder(
+      column: $table.startDeadliftTm,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get startPressTm => $composableBuilder(
+      column: $table.startPressTm, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get unit => $composableBuilder(
       column: $table.unit, builder: (column) => ColumnFilters(column));
@@ -8270,6 +8482,22 @@ class $$FiveThreeOneBlocksTableOrderingComposer
   ColumnOrderings<double> get pressTm => $composableBuilder(
       column: $table.pressTm, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<double> get startSquatTm => $composableBuilder(
+      column: $table.startSquatTm,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get startBenchTm => $composableBuilder(
+      column: $table.startBenchTm,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get startDeadliftTm => $composableBuilder(
+      column: $table.startDeadliftTm,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get startPressTm => $composableBuilder(
+      column: $table.startPressTm,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get unit => $composableBuilder(
       column: $table.unit, builder: (column) => ColumnOrderings(column));
 
@@ -8313,6 +8541,18 @@ class $$FiveThreeOneBlocksTableAnnotationComposer
 
   GeneratedColumn<double> get pressTm =>
       $composableBuilder(column: $table.pressTm, builder: (column) => column);
+
+  GeneratedColumn<double> get startSquatTm => $composableBuilder(
+      column: $table.startSquatTm, builder: (column) => column);
+
+  GeneratedColumn<double> get startBenchTm => $composableBuilder(
+      column: $table.startBenchTm, builder: (column) => column);
+
+  GeneratedColumn<double> get startDeadliftTm => $composableBuilder(
+      column: $table.startDeadliftTm, builder: (column) => column);
+
+  GeneratedColumn<double> get startPressTm => $composableBuilder(
+      column: $table.startPressTm, builder: (column) => column);
 
   GeneratedColumn<String> get unit =>
       $composableBuilder(column: $table.unit, builder: (column) => column);
@@ -8364,6 +8604,10 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             Value<double> benchTm = const Value.absent(),
             Value<double> deadliftTm = const Value.absent(),
             Value<double> pressTm = const Value.absent(),
+            Value<double?> startSquatTm = const Value.absent(),
+            Value<double?> startBenchTm = const Value.absent(),
+            Value<double?> startDeadliftTm = const Value.absent(),
+            Value<double?> startPressTm = const Value.absent(),
             Value<String> unit = const Value.absent(),
             Value<int> currentCycle = const Value.absent(),
             Value<int> currentWeek = const Value.absent(),
@@ -8377,6 +8621,10 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             benchTm: benchTm,
             deadliftTm: deadliftTm,
             pressTm: pressTm,
+            startSquatTm: startSquatTm,
+            startBenchTm: startBenchTm,
+            startDeadliftTm: startDeadliftTm,
+            startPressTm: startPressTm,
             unit: unit,
             currentCycle: currentCycle,
             currentWeek: currentWeek,
@@ -8390,6 +8638,10 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             required double benchTm,
             required double deadliftTm,
             required double pressTm,
+            Value<double?> startSquatTm = const Value.absent(),
+            Value<double?> startBenchTm = const Value.absent(),
+            Value<double?> startDeadliftTm = const Value.absent(),
+            Value<double?> startPressTm = const Value.absent(),
             required String unit,
             Value<int> currentCycle = const Value.absent(),
             Value<int> currentWeek = const Value.absent(),
@@ -8403,6 +8655,10 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             benchTm: benchTm,
             deadliftTm: deadliftTm,
             pressTm: pressTm,
+            startSquatTm: startSquatTm,
+            startBenchTm: startBenchTm,
+            startDeadliftTm: startDeadliftTm,
+            startPressTm: startPressTm,
             unit: unit,
             currentCycle: currentCycle,
             currentWeek: currentWeek,

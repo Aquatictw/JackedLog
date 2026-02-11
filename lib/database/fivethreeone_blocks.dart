@@ -8,6 +8,10 @@ class FiveThreeOneBlocks extends Table {
   RealColumn get benchTm => real()();
   RealColumn get deadliftTm => real()();
   RealColumn get pressTm => real()();
+  RealColumn get startSquatTm => real().nullable()();
+  RealColumn get startBenchTm => real().nullable()();
+  RealColumn get startDeadliftTm => real().nullable()();
+  RealColumn get startPressTm => real().nullable()();
   TextColumn get unit => text()();
 
   /// 0=Leader1, 1=Leader2, 2=7th Week Deload, 3=Anchor, 4=TM Test

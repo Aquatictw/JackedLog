@@ -414,10 +414,10 @@ class AppDatabase extends _$AppDatabase {
           ).catchError((e) {});
         }
 
-        // from63To64: Add fivethreeone_blocks table for block programming
+        // from63To64: Add five_three_one_blocks table for block programming
         if (from < 64 && to >= 64) {
           await m.database.customStatement('''
-            CREATE TABLE IF NOT EXISTS fivethreeone_blocks (
+            CREATE TABLE IF NOT EXISTS five_three_one_blocks (
               id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
               created INTEGER NOT NULL,
               squat_tm REAL NOT NULL,
@@ -431,6 +431,26 @@ class AppDatabase extends _$AppDatabase {
               completed INTEGER
             )
           ''');
+        }
+
+        // from64To65: Add starting TM columns for block completion tracking
+        if (from < 65 && to >= 65) {
+          await m.database.customStatement(
+            'ALTER TABLE five_three_one_blocks ADD COLUMN start_squat_tm REAL',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE five_three_one_blocks ADD COLUMN start_bench_tm REAL',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE five_three_one_blocks ADD COLUMN start_deadlift_tm REAL',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE five_three_one_blocks ADD COLUMN start_press_tm REAL',
+          ).catchError((e) {});
+          // Backfill existing blocks with current TMs as starting TMs
+          await m.database.customStatement(
+            'UPDATE five_three_one_blocks SET start_squat_tm = squat_tm, start_bench_tm = bench_tm, start_deadlift_tm = deadlift_tm, start_press_tm = press_tm',
+          ).catchError((e) {});
         }
       },
       beforeOpen: (details) async {
@@ -451,10 +471,13 @@ class AppDatabase extends _$AppDatabase {
         } catch (e) {
           // Column might not exist, ignore error
         }
+
+        // five_three_one_blocks table safety check moved to
+        // _ensureTables() in database_connection_native.dart (setup callback)
       },
     );
   }
 
   @override
-  int get schemaVersion => 64;
+  int get schemaVersion => 65;
 }

@@ -14,6 +14,30 @@ class FiveThreeOneState extends ChangeNotifier {
 
   FiveThreeOneBlock? _activeBlock;
 
+  /// Ensure the five_three_one_blocks table exists (handles imported databases
+  /// from before the table was added).
+  Future<void> _ensureTable() async {
+    await db.customStatement('''
+      CREATE TABLE IF NOT EXISTS five_three_one_blocks (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        created INTEGER NOT NULL,
+        squat_tm REAL NOT NULL,
+        bench_tm REAL NOT NULL,
+        deadlift_tm REAL NOT NULL,
+        press_tm REAL NOT NULL,
+        start_squat_tm REAL,
+        start_bench_tm REAL,
+        start_deadlift_tm REAL,
+        start_press_tm REAL,
+        unit TEXT NOT NULL,
+        current_cycle INTEGER NOT NULL DEFAULT 0,
+        current_week INTEGER NOT NULL DEFAULT 1,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        completed INTEGER
+      )
+    ''');
+  }
+
   FiveThreeOneBlock? get activeBlock => _activeBlock;
   bool get hasActiveBlock => _activeBlock != null;
 
@@ -53,6 +77,7 @@ class FiveThreeOneState extends ChangeNotifier {
   }
 
   Future<void> _loadActiveBlock() async {
+    await _ensureTable();
     _activeBlock = await (db.select(db.fiveThreeOneBlocks)
           ..where((b) => b.isActive.equals(true))
           ..limit(1))
@@ -73,6 +98,7 @@ class FiveThreeOneState extends ChangeNotifier {
     required double pressTm,
     required String unit,
   }) async {
+    await _ensureTable();
     // Deactivate any existing active block
     await (db.update(db.fiveThreeOneBlocks)
           ..where((b) => b.isActive.equals(true)))
@@ -91,6 +117,10 @@ class FiveThreeOneState extends ChangeNotifier {
             benchTm: benchTm,
             deadliftTm: deadliftTm,
             pressTm: pressTm,
+            startSquatTm: Value(squatTm),
+            startBenchTm: Value(benchTm),
+            startDeadliftTm: Value(deadliftTm),
+            startPressTm: Value(pressTm),
             unit: unit,
           ),
         );
@@ -149,6 +179,18 @@ class FiveThreeOneState extends ChangeNotifier {
     );
 
     await refresh();
+  }
+
+  /// Get all completed blocks, most recent first
+  Future<List<FiveThreeOneBlock>> getCompletedBlocks() async {
+    return (db.select(db.fiveThreeOneBlocks)
+          ..where((b) => b.isActive.equals(false))
+          ..where((b) => b.completed.isNotNull())
+          ..orderBy([
+            (b) => OrderingTerm(
+                expression: b.completed, mode: OrderingMode.desc),
+          ]))
+        .get();
   }
 
   /// Update a single training max value for inline editing
