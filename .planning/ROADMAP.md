@@ -106,10 +106,10 @@ Plans:
   3. When block is in TM Test position, calculator shows TM Test scheme (70/80/90/100% all x5) with a validation warning if user struggles at 100%
   4. Calculator displays supplemental work section below main sets: BBB 5x10 at 60% during Leader cycles, FSL 5x5 during Anchor cycle
   5. Calculator still works in manual mode (existing behavior) when no active block exists
-**Plans**: TBD
+**Plans**: 1 plan (complete)
 
 Plans:
-- [ ] 08-01-PLAN.md — Context-aware calculator with scheme switching and supplemental display
+- [x] 08-01-PLAN.md — Context-aware calculator with scheme switching and supplemental display
 
 #### Phase 9: Block Completion
 **Goal**: When a block finishes, user sees a meaningful summary of their TM progression across the entire 11-week block
@@ -137,9 +137,9 @@ Plans:
 | 5. Backup Status & Stability | v1.1 | 1/1 | Complete | 2026-02-05 |
 | 6. Data Foundation | v1.2 | 1/1 | Complete | 2026-02-11 |
 | 7. Block Management | v1.2 | 2/2 | Complete | 2026-02-11 |
-| 8. Calculator Enhancement | v1.2 | 0/1 | Not started | - |
+| 8. Calculator Enhancement | v1.2 | 1/1 | Complete | 2026-02-11 |
 | 9. Block Completion | v1.2 | 0/1 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-05*
-*Last updated: 2026-02-11 after Phase 7 completion*
+*Last updated: 2026-02-11 after Phase 8 completion*

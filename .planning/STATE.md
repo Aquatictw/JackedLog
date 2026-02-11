@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Users can efficiently log and track their workouts with minimal friction
-**Current focus:** v1.2 5/3/1 Forever Block Programming - Phase 8: Calculator Enhancement
+**Current focus:** v1.2 5/3/1 Forever Block Programming - Phase 9: Block Completion
 
 ## Current Position
 
-Phase: 8 of 9 (Calculator Enhancement) — Not started
-Plan: 0 of 1 in current phase
-Status: Not started
-Last activity: 2026-02-11 — Completed Phase 7 (Block Management)
+Phase: 8 of 9 (Calculator Enhancement) — Complete
+Plan: 1 of 1 in current phase
+Status: Phase complete
+Last activity: 2026-02-11 — Completed 08-01-PLAN.md
 
-Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [███████░░░] 62% (v1.2)
+Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [████████░░] 75% (v1.2)
 
 ## Performance Metrics
 
@@ -29,9 +29,9 @@ Progress: [██████████] 100% (v1.0) | [███████�
 - Total execution time: 5 min
 
 **v1.2 Velocity:**
-- Total plans completed: 3
-- Average duration: 2.7 min
-- Total execution time: 6 min
+- Total plans completed: 4
+- Average duration: 2.8 min
+- Total execution time: 9 min
 
 **By Phase:**
 
@@ -44,6 +44,7 @@ Progress: [██████████] 100% (v1.0) | [███████�
 | 05-backup-status-stability | 1 | 3 min | 3 min |
 | 06-data-foundation | 1 | 2 min | 2 min |
 | 07-block-management | 2/2 | 4 min | 2 min |
+| 08-calculator-enhancement | 1/1 | 3 min | 3 min |
 
 *Updated after each plan completion*
 
@@ -63,6 +64,8 @@ v1.0 and v1.1 decisions archived with milestones.
 - TM snapshots stored per block (not references to Settings values)
 - StatelessWidget for BlockOverviewPage since state comes from Provider watch
 - Private extracted widgets (_CycleEntry, _CompleteWeekButton) for timeline structure
+- Single widget with `_isBlockMode` flag for dual-mode calculator (avoids widget duplication)
+- Compact single-line supplemental display format ("BBB 5x10 @ weight") instead of repeating identical rows
 
 ### Pending Todos
 
@@ -84,12 +87,12 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed Phase 7 (Block Management) - all plans executed and verified
+Stopped at: Completed 08-01-PLAN.md (Calculator Enhancement phase complete)
 Resume file: None
 
 ## Next Steps
 
-Plan and execute Phase 8: Calculator Enhancement (context-aware calculator with scheme switching and supplemental display).
+Plan and execute Phase 9: Block Completion (post-block summary and block completion flow).
 
 ---
-*Last updated: 2026-02-11 after Phase 7 completion*
+*Last updated: 2026-02-11 after Phase 8 completion*
