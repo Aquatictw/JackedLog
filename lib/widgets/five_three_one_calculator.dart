@@ -348,6 +348,17 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                                         .withValues(alpha: 0.7),
                                   ),
                             ),
+                            if (_isBlockMode)
+                              Text(
+                                '${cycleNames[_blockCycleType]} \u2014 Week $_blockWeek',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
                           ],
                         ),
                       ),
@@ -396,7 +407,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                       },
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
                     // Week Selector / Block position header
                     if (_isBlockMode)
@@ -572,6 +583,14 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                         const SizedBox(height: 16),
                         Divider(color: colorScheme.outlineVariant),
                         const SizedBox(height: 8),
+                        Text(
+                          'Supplemental Work',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
                         Builder(builder: (context) {
                           final weight = _calculateWeight(
                               supplemental.first.percentage);
@@ -674,7 +693,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'TM should be 90% of your true 1RM',
+                      'TM should be 85% of your true 1RM',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),

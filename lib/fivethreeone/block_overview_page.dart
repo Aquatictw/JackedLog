@@ -341,7 +341,7 @@ class _TmCardState extends State<_TmCard> {
       color: colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -564,17 +564,53 @@ class _CompletedBlockHistory extends StatelessWidget {
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 6),
                               Text(
-                                'S ${_formatTm(block.squatTm)}  '
-                                'B ${_formatTm(block.benchTm)}  '
-                                'D ${_formatTm(block.deadliftTm)}  '
-                                'P ${_formatTm(block.pressTm)} '
-                                '${block.unit}',
+                                'Training Max',
                                 style: Theme.of(context)
                                     .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(fontWeight: FontWeight.w500),
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  for (final entry in [
+                                    ('Squat', _formatTm(block.squatTm)),
+                                    ('Bench', _formatTm(block.benchTm)),
+                                    ('Deadlift', _formatTm(block.deadliftTm)),
+                                    ('OHP', _formatTm(block.pressTm)),
+                                  ])
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            entry.$1,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
+                                          Text(
+                                            '${entry.$2} ${block.unit}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
                               ),
                             ],
                           ),
