@@ -14,7 +14,7 @@ Requirements for 5/3/1 Forever Block Programming milestone. Each maps to roadmap
 - [ ] **BLOCK-03**: User can manually advance to the next week within a cycle
 - [ ] **BLOCK-04**: When advancing past a cycle (Leader 1, Leader 2, Anchor), TMs auto-bump with confirmation (+2.2kg upper, +4.5kg lower)
 - [ ] **BLOCK-05**: Notes page banner shows current block position (e.g., "Leader 2 - Week 5") and navigates to block overview
-- [ ] **BLOCK-06**: When block completes (after TM Test), post-block summary shows TM progression across the block
+- [x] **BLOCK-06**: When block completes (after TM Test), post-block summary shows TM progression across the block
 
 ### Calculator
 
@@ -72,7 +72,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BLOCK-03 | Phase 7 | Complete |
 | BLOCK-04 | Phase 7 | Complete |
 | BLOCK-05 | Phase 7 | Complete |
-| BLOCK-06 | Phase 9 | Pending |
+| BLOCK-06 | Phase 9 | Complete |
 | CALC-01 | Phase 8 | Complete |
 | CALC-02 | Phase 8 | Complete |
 | CALC-03 | Phase 8 | Complete |
@@ -85,4 +85,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-11*
-*Last updated: 2026-02-11 after Phase 8 completion*
+*Last updated: 2026-02-11 after Phase 9 completion*

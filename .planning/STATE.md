@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Users can efficiently log and track their workouts with minimal friction
-**Current focus:** v1.2 5/3/1 Forever Block Programming - Phase 9: Block Completion
+**Current focus:** v1.2 5/3/1 Forever Block Programming - Complete
 
 ## Current Position
 
-Phase: 8 of 9 (Calculator Enhancement) — Complete
+Phase: 9 of 9 (Block Completion) -- Complete
 Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-02-11 — Completed 08-01-PLAN.md
+Status: v1.2 complete
+Last activity: 2026-02-11 -- Completed 09-01-PLAN.md
 
-Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [████████░░] 75% (v1.2)
+Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2)
 
 ## Performance Metrics
 
@@ -29,9 +29,9 @@ Progress: [██████████] 100% (v1.0) | [███████�
 - Total execution time: 5 min
 
 **v1.2 Velocity:**
-- Total plans completed: 4
-- Average duration: 2.8 min
-- Total execution time: 9 min
+- Total plans completed: 5
+- Average duration: 3.0 min
+- Total execution time: 13 min
 
 **By Phase:**
 
@@ -45,6 +45,7 @@ Progress: [██████████] 100% (v1.0) | [███████�
 | 06-data-foundation | 1 | 2 min | 2 min |
 | 07-block-management | 2/2 | 4 min | 2 min |
 | 08-calculator-enhancement | 1/1 | 3 min | 3 min |
+| 09-block-completion | 1/1 | 4 min | 4 min |
 
 *Updated after each plan completion*
 
@@ -66,6 +67,9 @@ v1.0 and v1.1 decisions archived with milestones.
 - Private extracted widgets (_CycleEntry, _CompleteWeekButton) for timeline structure
 - Single widget with `_isBlockMode` flag for dual-mode calculator (avoids widget duplication)
 - Compact single-line supplemental display format ("BBB 5x10 @ weight") instead of repeating identical rows
+- Nullable start TM columns with fallback to current TMs for pre-migration block compatibility
+- pushReplacement navigation for block completion (prevents back-nav to stale overview)
+- Pre-fill new block TMs from last completed block's ending TMs
 
 ### Pending Todos
 
@@ -84,16 +88,17 @@ None.
 | 003 | Fix notes edits not persisting after save | 2026-02-06 | bf80d088 | [003-fix-notes-saving-not-persisting](./quick/003-fix-notes-saving-not-persisting/) |
 | 004 | Fix notes stale cache after edit | 2026-02-06 | c2e03f73 | [004-fix-notes-stale-cache-after-edit](./quick/004-fix-notes-stale-cache-after-edit/) |
 | 005 | 5/3/1 UI: compact TM, editable TMs, phase labels | 2026-02-11 | 7f694e65 | [005-531-ui-compact-tm-editable-phase-labels](./quick/005-531-ui-compact-tm-editable-phase-labels/) |
+| 006 | Fix start TM columns migration self-heal | 2026-02-11 | 94de8641 | [006-fix-start-tm-columns-migration](./quick/006-fix-start-tm-columns-migration/) |
 
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed quick-005 (compact TM, editable TMs, phase labels)
+Stopped at: Completed quick-006
 Resume file: None
 
 ## Next Steps
 
-Plan and execute Phase 9: Block Completion (post-block summary and block completion flow).
+v1.2 5/3/1 Forever Block Programming milestone is complete. All 9 phases delivered.
 
 ---
-*Last updated: 2026-02-11 after quick-005 completion*
+*Last updated: 2026-02-11 after phase 9 completion*

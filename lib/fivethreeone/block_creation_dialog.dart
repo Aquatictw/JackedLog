@@ -30,9 +30,32 @@ class _BlockCreationDialogState extends State<BlockCreationDialog> {
     _loadSettings();
   }
 
-  void _loadSettings() {
+  String _formatTm(double value) {
+    return value == value.roundToDouble()
+        ? value.toInt().toString()
+        : value.toStringAsFixed(1);
+  }
+
+  Future<void> _loadSettings() async {
     final settings = context.read<SettingsState>().value;
     _unit = settings.strengthUnit;
+
+    // Try to pre-fill from last completed block first
+    final completedBlocks =
+        await context.read<FiveThreeOneState>().getCompletedBlocks();
+    if (completedBlocks.isNotEmpty) {
+      final last = completedBlocks.first;
+      _unit = last.unit;
+      setState(() {
+        _squatController.text = _formatTm(last.squatTm);
+        _benchController.text = _formatTm(last.benchTm);
+        _deadliftController.text = _formatTm(last.deadliftTm);
+        _pressController.text = _formatTm(last.pressTm);
+      });
+      return;
+    }
+
+    // Fall back to Settings-based TMs
     setState(() {
       _squatController.text =
           settings.fivethreeoneSquatTm?.toStringAsFixed(1) ?? '';

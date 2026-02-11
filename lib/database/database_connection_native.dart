@@ -8,6 +8,28 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
+void _ensureTables(Database database) {
+  database.execute('''
+    CREATE TABLE IF NOT EXISTS five_three_one_blocks (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      created INTEGER NOT NULL,
+      squat_tm REAL NOT NULL,
+      bench_tm REAL NOT NULL,
+      deadlift_tm REAL NOT NULL,
+      press_tm REAL NOT NULL,
+      start_squat_tm REAL,
+      start_bench_tm REAL,
+      start_deadlift_tm REAL,
+      start_press_tm REAL,
+      unit TEXT NOT NULL,
+      current_cycle INTEGER NOT NULL DEFAULT 0,
+      current_week INTEGER NOT NULL DEFAULT 1,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      completed INTEGER
+    )
+  ''');
+}
+
 LazyDatabase createNativeConnection() {
   return LazyDatabase(() async {
     final folder = await getApplicationDocumentsDirectory();
@@ -44,6 +66,7 @@ LazyDatabase createNativeConnection() {
         return NativeDatabase.createInBackground(
           file,
           logStatements: kDebugMode,
+          setup: _ensureTables,
         );
       }
     }
@@ -59,6 +82,7 @@ LazyDatabase createNativeConnection() {
     return NativeDatabase.createInBackground(
       file,
       logStatements: kDebugMode,
+      setup: _ensureTables,
     );
   });
 }

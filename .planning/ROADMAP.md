@@ -119,10 +119,10 @@ Plans:
   1. When user completes the final cycle (TM Test), a post-block summary screen appears showing starting TMs vs ending TMs for all 4 lifts
   2. Summary shows total weight gained per lift across the block (e.g., "+6.6kg Squat, +4.4kg Bench")
   3. After viewing summary, the block is marked complete and user can start a new block
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 09-01-PLAN.md — Post-block summary and block completion flow
+- [x] 09-01-PLAN.md — Post-block summary and block completion flow
 
 ## Progress
 
@@ -138,8 +138,8 @@ Plans:
 | 6. Data Foundation | v1.2 | 1/1 | Complete | 2026-02-11 |
 | 7. Block Management | v1.2 | 2/2 | Complete | 2026-02-11 |
 | 8. Calculator Enhancement | v1.2 | 1/1 | Complete | 2026-02-11 |
-| 9. Block Completion | v1.2 | 0/1 | Not started | - |
+| 9. Block Completion | v1.2 | 1/1 | Complete | 2026-02-11 |
 
 ---
 *Roadmap created: 2026-02-05*
-*Last updated: 2026-02-11 after Phase 8 completion*
+*Last updated: 2026-02-11 after Phase 9 completion*
