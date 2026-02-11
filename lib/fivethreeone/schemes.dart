@@ -12,9 +12,9 @@ const int cycleTmTest = 4;
 const List<String> cycleNames = [
   'Leader 1',
   'Leader 2',
-  '7th Week Deload',
+  '7th Week Protocol',
   'Anchor',
-  'TM Test',
+  '7th Week Protocol',
 ];
 
 /// Number of weeks per cycle type
@@ -135,6 +135,23 @@ List<SetScheme> getSupplementalScheme({
       return [];
     default:
       return [];
+  }
+}
+
+/// Returns the main scheme type name for display
+String getMainSchemeName(int cycleType) {
+  switch (cycleType) {
+    case cycleLeader1:
+    case cycleLeader2:
+      return "5's PRO";
+    case cycleAnchor:
+      return 'PR Sets';
+    case cycleDeload:
+      return 'Deload';
+    case cycleTmTest:
+      return 'TM Test';
+    default:
+      return '';
   }
 }
 

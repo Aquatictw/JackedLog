@@ -90,11 +90,11 @@ Plans:
   3. User can tap "Complete Week" to advance to the next week; advancing past Week 3 moves to the next cycle
   4. When advancing past Leader 1, Leader 2, or Anchor cycles, TMs auto-bump (+2.2kg upper, +4.5kg lower) with a confirmation dialog before applying
   5. Notes page banner shows current block position (e.g., "Leader 2 - Week 2") and tapping it navigates to the block overview page
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Block creation flow and overview page
-- [ ] 07-02-PLAN.md — Week/cycle advancement and TM progression
+- [x] 07-01-PLAN.md — Block creation, state methods, and overview page with advancement
+- [x] 07-02-PLAN.md — Notes page banner and human verification
 
 #### Phase 8: Calculator Enhancement
 **Goal**: Calculator automatically shows the correct work scheme and supplemental sets based on block position, so users see exactly what to lift today
@@ -136,10 +136,10 @@ Plans:
 | 4. Error Handling | v1.1 | 1/1 | Complete | 2026-02-05 |
 | 5. Backup Status & Stability | v1.1 | 1/1 | Complete | 2026-02-05 |
 | 6. Data Foundation | v1.2 | 1/1 | Complete | 2026-02-11 |
-| 7. Block Management | v1.2 | 0/2 | Not started | - |
+| 7. Block Management | v1.2 | 2/2 | Complete | 2026-02-11 |
 | 8. Calculator Enhancement | v1.2 | 0/1 | Not started | - |
 | 9. Block Completion | v1.2 | 0/1 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-05*
-*Last updated: 2026-02-11 after Phase 6 completion*
+*Last updated: 2026-02-11 after Phase 7 completion*
