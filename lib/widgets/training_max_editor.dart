@@ -215,7 +215,7 @@ class _TrainingMaxEditorState extends State<TrainingMaxEditor> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'TM should be 90% of your true 1RM',
+                          'TM should be 85% of your true 1RM',
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: colorScheme.onSurfaceVariant,

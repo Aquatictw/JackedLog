@@ -451,7 +451,9 @@ class _TrainingMaxBanner extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: iconColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
