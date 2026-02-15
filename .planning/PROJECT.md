@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A Flutter fitness tracking app for logging workouts, tracking personal records, and visualizing progress. Cross-platform (Android, iOS, Linux, macOS, Windows) with offline-first architecture using SQLite/Drift for persistence. Includes Spotify integration for workout music, full edit capability for completed workouts, and customizable note ordering.
+A Flutter fitness tracking app for logging workouts, tracking personal records, and visualizing progress. Cross-platform (Android, iOS, Linux, macOS, Windows) with offline-first architecture using SQLite/Drift for persistence. Includes Spotify integration for workout music, full edit capability for completed workouts, customizable note ordering, and 5/3/1 Forever block programming with cycle-aware calculator.
 
 ## Core Value
 
@@ -39,19 +39,18 @@ Users can efficiently log and track their workouts with minimal friction — eve
 - ✓ Active workout bar timer stability fix (mounted check) — v1.1
 - ✓ Settings initialization null safety (getSingleOrNull) — v1.1
 
+- ✓ 5/3/1 block creation with starting TMs for 4 lifts — v1.2
+- ✓ Block overview page with 5-cycle timeline and position tracking — v1.2
+- ✓ Manual week advancement with TM auto-bump at cycle boundaries — v1.2
+- ✓ Notes page banner with block position and navigation — v1.2
+- ✓ Context-aware calculator (5's PRO, PR Sets, Deload, TM Test) — v1.2
+- ✓ Supplemental work display (BBB 5x10@60% Leader, FSL 5x5 Anchor) — v1.2
+- ✓ Block completion summary with TM progression and history — v1.2
+- ✓ fivethreeone_blocks table, FiveThreeOneState, schemes module — v1.2
+
 ### Active
 
-**Current Milestone: v1.2 5/3/1 Forever Block Programming**
-
-**Goal:** Replace manual markdown-based 5/3/1 tracking with in-app block planning, cycle awareness, and auto-calculated weights.
-
-**Target features:**
-- 5/3/1 block overview page (11-week timeline: Leader x2 → Deload → Anchor → TM Test)
-- Context-aware calculator showing correct scheme per cycle/week (5's PRO, PR Sets, Deload, TM Test)
-- Supplemental work display (BBB 5x10@60% for Leader, FSL 5x5 for Anchor)
-- TM auto-progression after each cycle completion
-- Manual week/cycle advancement
-- Block setup with starting TMs for 4 lifts (Squat, Bench, Deadlift, OHP)
+None — planning next milestone.
 
 ### Out of Scope
 
@@ -60,16 +59,18 @@ Users can efficiently log and track their workouts with minimal friction — eve
 - AI/ML workout recommendations — keep it simple
 - PR recalculation on edit — edits to historical data shouldn't retroactively change records
 - Notes grid drag-drop — requires custom implementation, list layout works well
+- Auto-generated workout plans — logging tool, not a plan generator
+- Assistance work tracking in block system — accessories tracked as regular exercises
+- Multiple concurrent blocks — single active block design
+- Automatic week detection from logged workouts — unreliable, manual advancement preferred
 
 ## Context
 
-Shipped v1.0 UI Enhancements and v1.1 Error Handling & Stability.
+Shipped v1.0 UI Enhancements, v1.1 Error Handling & Stability, and v1.2 5/3/1 Forever Block Programming.
 Tech stack: Flutter/Dart, Drift ORM (SQLite), Provider state management.
-Database version: 62 (added notes sequence column).
+Database version: 65 (added start TM columns to fivethreeone_blocks).
 
-Current 5/3/1 implementation: TMs stored in Settings table (4 columns), simple calculator accessible via exercise long-press, week tracker (1-4). No concept of blocks, cycles, Leader/Anchor, or supplemental work. The "5/3/1 Training Max" banner in Notes page opens a TM editor dialog — this will become the entry point for the block overview.
-
-User's training program: 5/3/1 Forever with 11-week blocks (Leader x2 + 7th Week Deload + Anchor + 7th Week TM Test). Leader = 5's PRO + BBB 5x10@60%. Anchor = Original 5/3/1 PR Sets + FSL 5x5. TM bumps after Leader 1, Leader 2, and Anchor (+2.2kg upper, +4.5kg lower).
+5/3/1 implementation: Dedicated `fivethreeone_blocks` table with block lifecycle (create → advance → complete). Pure `schemes.dart` module for all percentage/rep data. `FiveThreeOneState` ChangeNotifier in Provider tree. Context-aware calculator shows correct scheme per cycle/week with supplemental work. Block overview page with vertical timeline. Notes page banner shows block position.
 
 ## Constraints
 
@@ -88,6 +89,15 @@ User's training program: 5/3/1 Forever with 11-week blocks (Leader x2 + 7th Week
 | tertiaryContainer for edit mode | Clear visual indicator | ✓ Good |
 | Selfie in edit mode only | Cleaner top bar, grouped with edit actions | ✓ Good |
 | Sequence stored descending | Natural ordering (highest = top) | ✓ Good |
+| Dedicated fivethreeone_blocks table | Proper lifecycle management, not extending Settings | ✓ Good |
+| Single current_cycle integer (0-4) | Simple encoding for 5 cycle types | ✓ Good |
+| Pure schemes.dart module | No UI/DB dependencies, easily testable | ✓ Good |
+| Manual week advancement only | No unreliable auto-detection | ✓ Good |
+| Single widget with _isBlockMode flag | Avoids calculator widget duplication | ✓ Good |
+| Compact supplemental display | Single-line format cleaner than repeating identical rows | ✓ Good |
+| Nullable start TM columns with fallback | Graceful pre-migration block compatibility | ✓ Good |
+| pushReplacement for block completion | Prevents back-nav to stale overview | ✓ Good |
+| Pre-fill new block TMs from last completed | Smoother block-to-block workflow | ✓ Good |
 
 ---
-*Last updated: 2026-02-11 after v1.2 milestone start*
+*Last updated: 2026-02-15 after v1.2 milestone completion*

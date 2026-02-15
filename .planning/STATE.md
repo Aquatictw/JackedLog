@@ -2,17 +2,17 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-11)
+See: .planning/PROJECT.md (updated 2026-02-15)
 
 **Core value:** Users can efficiently log and track their workouts with minimal friction
-**Current focus:** v1.2 5/3/1 Forever Block Programming - Complete
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 9 of 9 (Block Completion) -- Complete
-Plan: 1 of 1 in current phase
-Status: v1.2 complete
-Last activity: 2026-02-11 -- Completed quick-008
+Phase: Between milestones
+Plan: N/A
+Status: v1.2 complete, ready for next milestone
+Last activity: 2026-02-15 — v1.2 milestone archived
 
 Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2)
 
@@ -43,33 +43,16 @@ Progress: [██████████] 100% (v1.0) | [███████�
 | 04-error-handling | 1 | 2 min | 2 min |
 | 05-backup-status-stability | 1 | 3 min | 3 min |
 | 06-data-foundation | 1 | 2 min | 2 min |
-| 07-block-management | 2/2 | 4 min | 2 min |
-| 08-calculator-enhancement | 1/1 | 3 min | 3 min |
-| 09-block-completion | 1/1 | 4 min | 4 min |
-
-*Updated after each plan completion*
+| 07-block-management | 2 | 4 min | 2 min |
+| 08-calculator-enhancement | 1 | 3 min | 3 min |
+| 09-block-completion | 1 | 4 min | 4 min |
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-v1.0 and v1.1 decisions archived with milestones.
-
-**v1.2 Decisions:**
-
-- Dedicated `fivethreeone_blocks` table (not extending Settings) for proper lifecycle management
-- Single integer `current_cycle` (0-4) encodes block position across 5 cycle types
-- Pure `schemes.dart` module with no UI/DB dependencies for all percentage/rep data
-- Manual week advancement only (no auto-detection from workout completion)
-- TM snapshots stored per block (not references to Settings values)
-- StatelessWidget for BlockOverviewPage since state comes from Provider watch (TmCard upgraded to StatefulWidget for inline editing)
-- Private extracted widgets (_CycleEntry, _CompleteWeekButton) for timeline structure
-- Single widget with `_isBlockMode` flag for dual-mode calculator (avoids widget duplication)
-- Compact single-line supplemental display format ("BBB 5x10 @ weight") instead of repeating identical rows
-- Nullable start TM columns with fallback to current TMs for pre-migration block compatibility
-- pushReplacement navigation for block completion (prevents back-nav to stale overview)
-- Pre-fill new block TMs from last completed block's ending TMs
+v1.0, v1.1, and v1.2 decisions archived with milestones.
 
 ### Pending Todos
 
@@ -94,13 +77,13 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-11
-Stopped at: Completed quick-007
+Last session: 2026-02-15
+Stopped at: Completed v1.2 milestone archival
 Resume file: None
 
 ## Next Steps
 
-v1.2 5/3/1 Forever Block Programming milestone is complete. All 9 phases delivered.
+v1.2 milestone archived. Run `/gsd:new-milestone` to plan the next milestone.
 
 ---
-*Last updated: 2026-02-11 after quick-007 completion*
+*Last updated: 2026-02-15 after v1.2 milestone completion*
