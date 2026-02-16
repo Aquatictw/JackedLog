@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -30,13 +31,12 @@ class BackupPushService {
         request.add(bytes);
         final response = await request.close();
         final statusCode = response.statusCode;
-        // Drain the response body
-        await response.drain<void>();
+        final responseBody = await response.transform(utf8.decoder).join();
         if (statusCode == 401 || statusCode == 403) {
           throw Exception('Authentication failed. Check your API key.');
         }
         if (statusCode != 200 && statusCode != 201) {
-          throw Exception('Server returned status $statusCode');
+          throw Exception('Server returned status $statusCode: $responseBody');
         }
       } finally {
         client.close();
