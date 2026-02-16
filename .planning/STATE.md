@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-15)
 
 **Core value:** Users can efficiently log and track their workouts with minimal friction
-**Current focus:** Planning next milestone
+**Current focus:** Phase 10 - Server Foundation
 
 ## Current Position
 
-Phase: Between milestones
-Plan: N/A
-Status: v1.2 complete, ready for next milestone
-Last activity: 2026-02-15 — v1.2 milestone archived
+Phase: 10 of 14 (Server Foundation)
+Plan: 0 of 0 in current phase (ready to plan)
+Status: Ready to plan
+Last activity: 2026-02-15 — Roadmap created for v1.3 Self-Hosted Web Companion milestone
 
-Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2)
+Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2) | [░░░░░░░░░░] 0% (v1.3)
 
 ## Performance Metrics
 
@@ -32,6 +32,11 @@ Progress: [██████████] 100% (v1.0) | [███████�
 - Total plans completed: 5
 - Average duration: 3.0 min
 - Total execution time: 13 min
+
+**v1.3 Velocity (current):**
+- Total plans completed: 0
+- Average duration: N/A
+- Total execution time: 0 min
 
 **By Phase:**
 
@@ -52,7 +57,12 @@ Progress: [██████████] 100% (v1.0) | [███████�
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-v1.0, v1.1, and v1.2 decisions archived with milestones.
+Recent decisions affecting current work:
+
+- v1.3: Dart server (Shelf/dart_frog) for backend — Same language as app, shared understanding
+- v1.3: Docker for deployment — Standard self-hosting, easy for users
+- v1.3: API key auth (single-user) — Simplest secure auth for self-hosted single-user
+- v1.3: Manual backup push (not auto-sync) — Keeps app offline-first, user controls when data leaves device
 
 ### Pending Todos
 
@@ -60,7 +70,7 @@ None.
 
 ### Blockers/Concerns
 
-None.
+None yet.
 
 ### Quick Tasks Completed
 
@@ -78,12 +88,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed v1.2 milestone archival
+Stopped at: Roadmap and STATE.md created for v1.3 milestone
 Resume file: None
 
-## Next Steps
-
-v1.2 milestone archived. Run `/gsd:new-milestone` to plan the next milestone.
-
 ---
-*Last updated: 2026-02-15 after v1.2 milestone completion*
+*Last updated: 2026-02-15 after v1.3 roadmap creation*

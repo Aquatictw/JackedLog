@@ -1,432 +1,416 @@
-# Feature Landscape: 5/3/1 Forever Block Programming
+# Feature Research
 
-**Domain:** Strength training program tracking (5/3/1 Forever methodology)
-**Researched:** 2026-02-11
-**Confidence:** HIGH (domain rules well-defined, user's specific setup documented, existing codebase thoroughly analyzed)
+**Domain:** Self-hosted fitness companion server + web dashboard
+**Researched:** 2026-02-15
+**Confidence:** HIGH
 
----
+## Overview
 
-## Current State Analysis
+This research covers what features a self-hosted backup server and read-only web dashboard should offer for a strength-training-focused fitness app. The analysis draws from the existing JackedLog app data model (SQLite with workouts, gym_sets, bodyweight_entries, fivethreeone_blocks, plans, metadata, notes tables), the self-hosted fitness tracker ecosystem (wger, workout-tracker, FitTrackee, Endurain), and self-hosted deployment best practices.
 
-**What exists today:**
-- Basic 5/3/1 calculator dialog (accessible via long-press on powerlifting exercises during workout)
-- 4-week cycle: W1 (5s), W2 (3s), W3 (5/3/1), W4 (Deload) with AMRAP on last set of W1-W3
-- Training Max editor dialog (4 lifts: Squat, Bench, Deadlift, OHP) stored in Settings table
-- TM auto-increment after deload week (+2.5kg upper / +5kg lower)
-- Week selector (W1-W4 SegmentedButton) with persistence in `fivethreeoneWeek` settings column
-- Single global week counter shared across all lifts
-- `_TrainingMaxBanner` on Notes page as entry point to TM editor
-
-**What needs to change for Forever:**
-- Single 4-week cycle becomes 11-week block with distinct phase types (Leader, Anchor, Deload, TM Test)
-- Week selector (W1-W4) becomes block position tracker (week 1-11 across 5 phases)
-- AMRAP-always calculator becomes context-aware (5's PRO for Leader, AMRAP for Anchor, special schemes for 7th Week)
-- No supplemental work display becomes BBB 5x10 and FSL 5x5 calculated displays
-- TM bump once per cycle becomes 3 bumps per block (after Leader 1, Leader 2, and Anchor)
-- TM increment values change: +2.5kg/+5kg becomes +2.2kg/+4.5kg per user preference
-- Notes page banner becomes entry point to full block overview page
+Key constraint: The app stays offline-first. The server is optional, single-user, and read-only. No cloud sync, no multi-user, no data entry on the web.
 
 ---
 
-## Table Stakes
+## Feature Landscape
 
-Features users expect for 5/3/1 block tracking. Missing any of these means the feature is incomplete and users fall back to spreadsheets/markdown.
+### Table Stakes (Users Expect These)
 
-### TS-01: Block Overview Page
+These features are the bare minimum for a self-hosted backup + dashboard to feel worth deploying. Missing any of these makes the server feel incomplete or pointless.
 
-| Aspect | Detail |
-|--------|--------|
-| **What** | Dedicated page showing the full 11-week block structure with current position highlighted |
-| **Why Expected** | Without seeing where you are in the block, you lose the whole point of structured periodization. Every 5/3/1 app (KeyLifts, Five3One, 531 BBB) shows cycle structure upfront. |
-| **Complexity** | Medium |
-| **Dependencies** | New database table for block state; replaces current `fivethreeoneWeek` single-integer tracking |
+#### Backup Server Features
 
-**Expected layout (vertical timeline, not horizontal -- works better on mobile per UX research):**
+| Feature | Why Expected | Complexity | Notes |
+|---------|-------------|------------|-------|
+| **Receive backup push (SQLite file)** | Core purpose of the server | Low | POST endpoint receives the .sqlite file from app. WAL checkpoint before send (app already does this in export_data.dart). |
+| **Backup history list** | Users need to see what backups exist | Low | Timestamped list showing: date, file size, DB version. Sorted newest-first. |
+| **Download backup** | Users must be able to retrieve their data | Low | Direct download of any historical backup file. This is the entire point of off-device backup. |
+| **Delete backup** | Storage management | Low | Delete individual backups. Confirmation dialog to prevent accidents. |
+| **Backup file integrity check** | Users need confidence backups are valid | Low | `PRAGMA integrity_check` on received file before accepting. Reject corrupt uploads. |
+| **API key authentication** | Security for exposed endpoints | Low | Single API key via environment variable. Bearer token in Authorization header. |
+| **Health check endpoint** | Docker/monitoring standard | Low | `GET /api/health` returns 200 + JSON status. Used by Docker HEALTHCHECK and monitoring tools. |
+| **Storage usage display** | Users need to know disk consumption | Low | Total backup storage used, per-backup sizes. Shown on backup management page. |
 
-```
-Block: BBB Leader / FSL Anchor
-Started: Jan 13, 2026
+#### Web Dashboard Features
 
-[*] Leader 1    Week 1 - 5s PRO     [completed]
-                Week 2 - 3s PRO     [completed]
-                Week 3 - 5/3/1 PRO  [completed]
-                TM: +2.2/+4.5kg
+| Feature | Why Expected | Complexity | Depends On |
+|---------|-------------|------------|------------|
+| **Workout history list** | Primary data view | Medium | Latest backup DB, workouts + gym_sets tables |
+| **Workout detail view** | Users want to see individual sessions | Medium | gym_sets table joined with workouts |
+| **Exercise progress charts** | Core value of a dashboard | Medium | gym_sets table, same getStrengthData() SQL logic |
+| **Personal records display** | Users want to see PRs at a glance | Medium | gym_sets table, same getExerciseRecords() SQL logic |
+| **Training heatmap** | Visual consistency indicator | Medium | workouts table, same as OverviewPage heatmap |
+| **Overview stats** | Summary dashboard landing page | Medium | Multiple tables (workouts, gym_sets, bodyweight_entries) |
+| **Muscle group volume chart** | Body part balance visualization | Medium | gym_sets.category column |
+| **Period selector** | Time-scoped analysis | Low | All views (Week, Month, 3M, 6M, Year, All Time) |
+| **Responsive web layout** | Must work on desktop and mobile browsers | Medium | CSS/HTML, sidebar nav on desktop, hamburger on mobile |
 
-[ ] Leader 2    Week 4 - 5s PRO     [current] <-- highlighted
-                Week 5 - 3s PRO
-                Week 6 - 5/3/1 PRO
-                TM: +2.2/+4.5kg
+#### Deployment Features
 
-[ ] 7th Week    Week 7 - Deload
+| Feature | Why Expected | Complexity | Notes |
+|---------|-------------|------------|-------|
+| **Docker image** | Standard self-hosted deployment | Low | Single container. Dart server binary in minimal base image. |
+| **docker-compose.yml example** | Users expect copy-paste deployment | Low | Working compose file with volume mounts, env vars, port mapping. |
+| **Environment variable config** | Standard Docker pattern | Low | API_KEY, PORT, DATA_DIR, MAX_BACKUPS. No config files needed. |
+| **Persistent volume for data** | Backups must survive container restarts | Low | Named volume or bind mount for /data directory. |
 
-[ ] Anchor      Week 8 - 5s Week
-                Week 9 - 3s Week
-                Week 10 - 5/3/1 Week
-                TM: +2.2/+4.5kg
+#### App-Side Features
 
-[ ] 7th Week    Week 11 - TM Test
-```
+| Feature | Why Expected | Complexity | Depends On |
+|---------|-------------|------------|------------|
+| **Server URL + API key settings** | Configure where to push | Low | New fields in Settings table |
+| **Manual backup push button** | User-initiated backup to server | Medium | Server URL, existing backup WAL checkpoint logic |
+| **Connection test** | Verify server is reachable | Low | Ping GET /api/health with API key |
+| **Last push status** | Know if last push succeeded | Low | Timestamp + status in Settings table |
 
-**Key UX decisions:**
-- Vertical timeline (not horizontal stepper) -- mobile-friendly, shows all phases without scrolling
-- Current week/phase visually prominent (filled circle, highlight color, "CURRENT" label)
-- Completed phases show checkmark and are visually dimmed/de-emphasized
-- Future phases visible but subdued
-- Each phase shows its TM values (so user can see progression across the block)
+### Differentiators (Competitive Advantage)
 
-### TS-02: Context-Aware Calculator
+Features that go beyond what basic self-hosted fitness dashboards offer. NOT required for MVP but add significant value with relatively low effort.
 
-| Aspect | Detail |
-|--------|--------|
-| **What** | Calculator automatically shows correct set/rep scheme based on current block position |
-| **Why Expected** | The whole point of block programming is different schemes per phase. A calculator that doesn't know Leader vs Anchor is useless for Forever. |
-| **Complexity** | Medium |
-| **Dependencies** | Block state (TS-01), refactors existing `FiveThreeOneCalculator` |
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| **Rep records table** | Per-exercise best weight at each rep count (1-15). Rare in web dashboards. | Low | App already computes this via getRepRecords(). Direct SQL on backup DB. |
+| **5/3/1 block history** | View completed training blocks with TM progression over time. | Medium | Unique to JackedLog. Uses fivethreeone_blocks table. No competitor has this. |
+| **Bodyweight trend chart** | Track bodyweight alongside training data on a single dashboard. | Low | bodyweight_entries table. Line chart with trend line. |
+| **Exercise search/filter** | Find specific exercises across all workout history. | Low | Text search + category filter on gym_sets.name. |
+| **Dark/light theme toggle** | Match app's theming philosophy. | Low | CSS custom properties toggle. |
+| **Estimated 1RM leaderboard** | Rank all exercises by estimated 1RM. Quick strength overview. | Low | Brzycki formula already in gym_sets.dart (ormCol). |
+| **Workout frequency by weekday** | When do you train most? Bar chart of workout distribution. | Low | Simple SQL GROUP BY on workouts.startTime weekday. |
+| **Backup retention policy (server-side)** | Automatic cleanup of old backups using GFS strategy. | Medium | App already implements this in auto_backup_service.dart. Port the logic. |
+| **Export from server** | Download CSV/JSON from web dashboard. | Medium | Generate from backup DB. Useful for external analysis. |
+| **Backup diff summary** | Show what changed between backups (new workouts, new PRs). | High | Compare two SQLite files. Impressive but complex. Defer. |
+| **Muscle set count chart** | Sets per muscle group (distinct from volume chart). | Low | App already has this in OverviewPage. |
 
-**Scheme by phase:**
+### Anti-Features (Commonly Requested, Often Problematic)
 
-| Phase | Week Pattern | Main Work | Last Set | Supplemental |
-|-------|-------------|-----------|----------|-------------|
-| Leader 1 | W1: 65/75/85% | 3x5 (all sets x5) | No AMRAP (5's PRO) | BBB 5x10 @ 60% TM |
-| Leader 1 | W2: 70/80/90% | 3x5 (all sets x5) | No AMRAP (5's PRO) | BBB 5x10 @ 60% TM |
-| Leader 1 | W3: 75/85/95% | 3x5 (all sets x5) | No AMRAP (5's PRO) | BBB 5x10 @ 60% TM |
-| Leader 2 | Same as Leader 1 but with bumped TMs | Same | Same | Same |
-| 7th Week Deload | 70/80/90/100% | 5, 3-5, 1, 1 | No AMRAP | None |
-| Anchor | W1: 65/75/85% | 5/5/5+ | AMRAP last set | FSL 5x5 @ 65% |
-| Anchor | W2: 70/80/90% | 3/3/3+ | AMRAP last set | FSL 5x5 @ 70% |
-| Anchor | W3: 75/85/95% | 5/3/1+ | AMRAP last set | FSL 5x5 @ 75% |
-| 7th Week TM Test | 70/80/90/100% | 5, 5, 5, 5 | No AMRAP | None |
+Features to deliberately NOT build. These are scope-creep traps that violate the project's constraints (offline-first, single-user, read-only dashboard, manual push).
 
-**Calculator must clearly show:**
-- Phase name and week label in header (e.g., "Leader 1 -- Week 2: 3s PRO")
-- Whether AMRAP is active (prominent visual indicator, same border highlight as current)
-- "5's PRO" label when all sets are straight 5s (Leader phases)
-- Supplemental work section below main sets
-
-### TS-03: Supplemental Work Display
-
-| Aspect | Detail |
-|--------|--------|
-| **What** | Show supplemental sets (BBB or FSL) with calculated weights below main work in calculator |
-| **Why Expected** | Supplemental work is integral to 5/3/1 Forever. Without it, users must calculate 60% of TM for BBB or remember first-set weight for FSL manually. Defeats the purpose of having a calculator. |
-| **Complexity** | Low |
-| **Dependencies** | Block state (TS-01) to know Leader vs Anchor |
-
-**Display format in calculator:**
-
-```
---- Main Work ---
-Set 1: 65.0 kg x5   (65% TM)
-Set 2: 75.0 kg x5   (75% TM)
-Set 3: 85.0 kg x5   (85% TM)
-
---- Supplemental: BBB ---
-5 x 10 @ 60.0 kg    (60% TM)
-```
-
-For Anchor FSL:
-```
---- Main Work ---
-Set 1: 65.0 kg x5   (65% TM)
-Set 2: 75.0 kg x3   (75% TM)
-Set 3: 85.0 kg x1+  (85% TM) AMRAP
-
---- Supplemental: FSL ---
-5 x 5 @ 65.0 kg     (first set weight)
-```
-
-**Key points:**
-- Supplemental section visually separated from main work (divider or card boundary)
-- Weight pre-calculated and rounded to plate increments
-- Label identifies the template (BBB / FSL) so user knows what they're doing
-- For 7th Week phases: no supplemental section displayed
-
-### TS-04: TM Progression Tracking Across Block
-
-| Aspect | Detail |
-|--------|--------|
-| **What** | TMs auto-bump at correct points in the block and show history of TM values per phase |
-| **Why Expected** | 5/3/1 Forever bumps TMs 3 times per block (after Leader 1, Leader 2, Anchor). Getting this wrong cascades incorrect weights through remaining phases. Users tracking in spreadsheets always have a TM column per cycle -- the app must match. |
-| **Complexity** | Medium |
-| **Dependencies** | Block state (TS-01), modifies existing TM storage |
-
-**Bump schedule per block:**
-
-```
-Block start:  Squat=100, Bench=70, Deadlift=120, OHP=50
-After Leader 1: Squat=104.5, Bench=72.2, Deadlift=124.5, OHP=52.2
-After Leader 2: Squat=109, Bench=74.4, Deadlift=129, OHP=54.4
-After Anchor:   Squat=113.5, Bench=76.6, Deadlift=133.5, OHP=56.6
-```
-
-**User's specific increments:** +2.2kg upper (Bench, OHP), +4.5kg lower (Squat, Deadlift)
-
-**UX for bump:**
-- When advancing past a cycle that triggers TM bump, show confirmation: "Cycle complete. Bump TMs? Squat +4.5kg (104.5 -> 109.0), Bench +2.2kg (72.2 -> 74.4)..."
-- User confirms or can edit individual TMs before confirming (for cases where TM test indicates a reduction)
-- Block overview page shows TM values at each phase boundary
-
-### TS-05: Manual Week/Cycle Advancement
-
-| Aspect | Detail |
-|--------|--------|
-| **What** | User can manually advance to the next week or cycle within the block |
-| **Why Expected** | The app cannot know when the user actually trained. Unlike apps that auto-generate and schedule workouts, JackedLog is a logging tool -- the user decides when they've done a week's work and advances manually. This matches the existing W1-W4 week selector pattern. |
-| **Complexity** | Low |
-| **Dependencies** | Block state (TS-01) |
-
-**UX options (recommend option A):**
-
-**Option A: "Complete Week" button on block overview page**
-- After training all 4 lifts for the current week, user taps "Complete Week"
-- Advances to next week in the block
-- If this crosses a cycle boundary, triggers TM bump flow (TS-04)
-- Simple, explicit, matches mental model
-
-**Option B: Auto-advance when calculator is opened on a new week (implicit)**
-- Reject this. User might open calculator to look ahead, or might train out of order
-- Explicit is better for a tool like this
-
-**Edge cases:**
-- User wants to skip a week (e.g., skip deload): allow advancing past it
-- User wants to go back (made a mistake): allow navigating backward
-- User wants to restart block: "New Block" button
-
-### TS-06: Block Setup / Initialization
-
-| Aspect | Detail |
-|--------|--------|
-| **What** | Flow to create a new 11-week block with starting TMs |
-| **Why Expected** | User needs to set up initial TMs and start tracking. Without a clear setup flow, the block state has no starting point. |
-| **Complexity** | Low-Medium |
-| **Dependencies** | New database table, TM editor (existing) |
-
-**Setup flow:**
-
-```
-1. User taps "Start New Block" (on block overview page or banner)
-2. If existing TMs are set: "Use current TMs? Squat: 100kg, Bench: 70kg..."
-   - Confirm: block created with those TMs
-   - Edit: opens TM editor, then creates block
-3. If no TMs set: opens TM editor first, then creates block
-4. Block starts at Week 1 (Leader 1, Week 1)
-```
-
-**Key decisions:**
-- Hardcoded template (user's specific Leader/Anchor setup) -- no template picker needed
-- Re-use existing TrainingMaxEditor dialog for TM input
-- Store block start date for reference
-- Previous block data (if any) remains in history
+| Anti-Feature | Why Requested | Why Problematic | Alternative |
+|--------------|---------------|-----------------|-------------|
+| **Automatic background sync** | "Server should always be up to date" | Breaks offline-first design. Requires background services, network state management, conflict resolution. Massive complexity for a manual-push model. | Manual push button. User pushes when they want to. |
+| **Two-way sync / web editing** | "I want to edit workouts on the web" | Requires conflict resolution, merge strategies, real-time sync protocol. Entirely different product. | Dashboard is read-only. Edit in the app. |
+| **Multi-user support** | "My partner wants their own dashboard" | Auth system, user management, role-based access, data isolation. Massive scope creep. | Single API key. Run separate containers per user. |
+| **Workout logging on web** | "I want to log from my computer" | Duplicates all app functionality, requires write API, data validation, plan state management. | Read-only dashboard. The app IS the logging tool. |
+| **OAuth/SSO integration** | "Sign in with Google" | Overkill for single-user self-hosted. External dependencies, token management, redirect flows. | Single API key -- simpler and more reliable. |
+| **Nutrition tracking** | "wger has it" | Entirely different domain, different data model, different UI. Feature bloat. | Out of scope. Use a dedicated nutrition tool. |
+| **Push notifications from server** | "Remind me to back up" | Requires push notification infrastructure (FCM/APNs). Disproportionate complexity. | App can show "last pushed X days ago" locally. |
+| **Real-time WebSocket updates** | "Dashboard should update live" | No data changes between backups. WebSockets add complexity for zero benefit. | Load data on page load. Refresh button. |
+| **Custom dashboard widgets/layout** | "Drag and arrange my dashboard" | Widget system, layout persistence, drag-and-drop framework. High complexity, low value for single-user. | Opinionated fixed layout that shows the right things. |
+| **Companion mobile app for server** | "I want an app to view server data" | The main app already has all data locally. Second app is redundant. | Web dashboard in mobile browser. Responsive CSS. |
+| **Scheduled server-initiated backups** | "Server should pull from app" | Requires app to expose a server endpoint (reverses architecture). Unreliable on mobile. | Manual push. User controls when data leaves device. |
+| **Progress photo gallery** | "Show selfies on the web" | Binary file transfer, storage, image serving, privacy concerns with photos on network server. | Selfie paths exist in DB but files stay on device. |
 
 ---
 
-## Differentiators
+## Backup Management UX
 
-Features that make this better than a spreadsheet or markdown file. Not expected, but valued. These are what justify building an in-app feature versus the user continuing to track in their notes.
+Based on analysis of backup management UIs (Proxmox, Veeam, Backblaze, ManageWP) and self-hosted patterns (Sentry, Healthchecks.io), here is what the backup management experience should look like.
 
-### DF-01: At-a-Glance Block Progress Badge
+### Backup List View
 
-| Aspect | Detail |
-|--------|--------|
-| **What** | Small badge/chip on the Notes page banner (replacing current TrainingMaxBanner) showing current block position at a glance |
-| **Value Proposition** | User sees "Leader 2, W2" without opening the block page. Quick context for "what am I doing today?" |
-| **Complexity** | Low |
-| **Dependencies** | Block state (TS-01) |
+The primary backup management view is a simple table:
 
-**Current:** Notes page shows "5/3/1 Training Max" banner that opens TM editor.
-**Proposed:** Banner shows "5/3/1 Block: Leader 2 - Week 5" and opens block overview page.
+```
++------------------------------------------------------------------+
+| Backups                                     Storage: 45 MB used  |
+|------------------------------------------------------------------|
+| Date               | Size     | DB Ver | Status |   Actions      |
+|--------------------|----------|--------|--------|----------------|
+| 2026-02-15 14:30   | 2.4 MB   | v65    | Valid  | Download | Del |
+| 2026-02-13 09:15   | 2.3 MB   | v65    | Valid  | Download | Del |
+| 2026-02-10 18:45   | 2.1 MB   | v65    | Valid  | Download | Del |
+| 2026-02-05 11:00   | 1.9 MB   | v63    | Valid  | Download | Del |
++------------------------------------------------------------------+
+| Active backup: 2026-02-15 14:30 (dashboard reads from this)     |
++------------------------------------------------------------------+
+```
 
-### DF-02: Calculated Weight with Plate Breakdown Integration
+Key UX patterns:
+- **Newest first** -- most relevant backup at top
+- **File size visible** -- users monitor storage consumption
+- **DB version shown** -- important for compatibility awareness
+- **Integrity status** -- green for valid, red warning for corrupt
+- **One-click download** -- direct file download, no intermediate steps
+- **Delete with confirmation** -- "Are you sure? This cannot be undone."
+- **Active backup indicator** -- which backup the dashboard currently reads from (always latest valid)
+- **Total storage display** -- how much disk space backups consume
 
-| Aspect | Detail |
-|--------|--------|
-| **What** | Calculator shows both the weight AND the plate breakdown for each set |
-| **Value Proposition** | Eliminates mental math at the rack. User sees "85.0 kg = 20kg bar + 2x20kg + 2x10kg + 2x2.5kg". Existing PlateCalculator widget can be reused. |
-| **Complexity** | Low (widget exists) |
-| **Dependencies** | Existing `plate_calculator.dart` widget |
+### Backup Upload Flow (from app)
 
-### DF-03: TM History Graph per Lift
+```
+[App Settings > Server] -> [Push Backup] -> Progress bar -> Success/Error toast
+```
 
-| Aspect | Detail |
-|--------|--------|
-| **What** | Graph showing TM progression for each lift across blocks over time |
-| **Value Proposition** | Visualizes long-term strength progression through TM increases. More meaningful than 1RM graphs because TM is what you actually train with. |
-| **Complexity** | Medium |
-| **Dependencies** | TM history stored per bump event, existing graph infrastructure |
+1. User taps "Push Backup" in app settings
+2. App runs WAL checkpoint (already in backup service)
+3. App reads DB file, shows upload progress
+4. Server validates file integrity (`PRAGMA integrity_check`)
+5. Server stores file with timestamp, returns success
+6. App shows "Last pushed: just now" with green status
+7. On failure: app shows error toast with reason
 
-### DF-04: "What's Today?" Quick View
-
-| Aspect | Detail |
-|--------|--------|
-| **What** | When opening the calculator from a specific exercise during a workout, it immediately shows the correct sets/weights for that exercise in the current block week -- no manual selection needed |
-| **Value Proposition** | Zero-tap access to today's weights. Open calculator from Squat exercise -> immediately see "Leader 2, Week 5: Squat 70/80/90kg x5, then BBB 5x10 @ 60kg". Current calculator already knows which exercise it's opened from via `exerciseName` parameter. |
-| **Complexity** | Low (extends existing pattern) |
-| **Dependencies** | Block state (TS-01), exercise-to-lift mapping (already exists in `exerciseMapping`) |
-
-### DF-05: Post-Block Summary
-
-| Aspect | Detail |
-|--------|--------|
-| **What** | When completing the final week (TM Test), show a summary of the entire block: starting TMs, ending TMs, total weight progression, weeks completed |
-| **Value Proposition** | Sense of accomplishment. Seeing "+13.5kg on Squat over 11 weeks" is motivating. Spreadsheets don't celebrate your progress. |
-| **Complexity** | Low |
-| **Dependencies** | Block state with TM history |
-
-### DF-06: TM Test Validation Warning
-
-| Aspect | Detail |
-|--------|--------|
-| **What** | During 7th Week TM Test, if user reports struggling with 100% TM x5, prompt them to consider reducing TM before starting next block |
-| **Value Proposition** | Implements Wendler's key rule: "If you can't get 5 strong reps at 100% TM, your TM is too high." Apps that blindly auto-increment miss this crucial self-regulation. |
-| **Complexity** | Low |
-| **Dependencies** | TM Test phase detection, user input |
+### What NOT to include in backup management:
+- No "restore to app" from web (download the file, import in app instead)
+- No backup scheduling on server side (app pushes, server receives)
+- No backup comparison/diff in v1 (defer to differentiator)
 
 ---
 
-## Anti-Features
+## Web Dashboard Visualization Design
 
-Things to deliberately NOT build. Building these would add complexity without matching the user's actual workflow, or would violate KISS/YAGNI principles.
+### What to prioritize on web vs mobile
 
-### AF-01: Template Picker / Custom Program Builder
+The web dashboard's advantage over the mobile app is screen real estate. Prioritize visualizations that benefit from wider display:
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Letting users choose from dozens of 5/3/1 Forever templates (BBB, BBS, SSL, God is a Beast, etc.) | User has ONE specific setup they run. Building a template system is massive scope. KeyLifts has 150+ templates and still gets complaints about bugs/incorrect percentages. | Hardcode the user's specific Leader (5's PRO + BBB) and Anchor (Original + FSL) templates. If they ever change programs, a code update is fine. |
+1. **Overview page (landing)** -- Stats cards (workouts, volume, streak, time) + training heatmap + muscle group charts. Mirrors app's OverviewPage. Wide heatmap looks better than the cramped mobile version.
 
-### AF-02: Auto-Generated Workout Plans
+2. **Exercise detail page** -- Progress chart (Best Weight / 1RM / Volume) + period selector + personal records + rep records table. Mirrors app's StrengthPage. Wider line charts with more data points visible.
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Generating full workout sessions with exercises pre-populated | JackedLog is a logging tool, not a plan generator. The user builds their own workouts. The 5/3/1 calculator is a reference tool opened during workouts, not a workout builder. | Keep calculator as reference. User logs sets manually as they always have. |
+3. **Workout history** -- Paginated list with search. Click to expand full set/rep/weight details. Table format benefits from wide screen.
 
-### AF-03: Assistance Work Tracking in Block System
+4. **Bodyweight page** -- Line chart with trend. Low complexity, high value.
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Tracking push/pull/legs assistance reps within the 5/3/1 block system | User explicitly stated "Accessories are bodybuilding style, not tracked in 5/3/1 system." Assistance is already logged as regular exercises in the workout. | Block system tracks only main lifts (Squat/Bench/Deadlift/OHP) and their supplemental work. Accessories remain as regular workout logging. |
+### Visualization features mapped to existing app queries
 
-### AF-04: Scheduling / Calendar Integration
+Every dashboard visualization maps to SQL queries that already exist in the app codebase:
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Mapping block weeks to calendar dates, setting training day reminders | JackedLog has no calendar. User trains when they train. Adding scheduling is a massive feature that doesn't match the app's philosophy. | Block tracks position (week/phase), not dates. User advances manually when ready. |
+| Visualization | App Source | Reuse SQL? | Web Complexity |
+|---------------|-----------|------------|----------------|
+| Stats cards | OverviewPage._loadData() (4 queries) | Yes, identical | Low |
+| Training heatmap | OverviewPage (DATE + COUNT GROUP BY) | Yes, identical | Medium (SVG grid) |
+| Muscle group volume bar chart | OverviewPage (SUM weight*reps GROUP BY category) | Yes, identical | Low |
+| Muscle group set count bar chart | OverviewPage (COUNT GROUP BY category) | Yes, identical | Low |
+| Exercise progress line chart | getStrengthData() in gym_sets.dart | Yes, identical | Low |
+| Personal records cards | getExerciseRecords() in gym_sets.dart | Yes, identical | Low |
+| Rep records table | getRepRecords() in gym_sets.dart | Yes, identical | Low (HTML table) |
+| Workout detail | JOIN workouts + gym_sets | Yes | Medium (nested list) |
+| Bodyweight chart | SELECT from bodyweight_entries | Yes | Low |
+| Exercise list | watchGraphs() aggregate query | Yes | Low |
 
-### AF-05: Joker Sets / Beyond 5/3/1 Extensions
+The critical insight: **all dashboard data is read from the same SQLite DB the app uses.** The server opens the latest backup file read-only and runs the same SQL. No new data model needed. This is the simplest possible architecture.
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Adding Joker set calculations, Pyramid sets, or other Beyond 5/3/1 options | User's program doesn't use these. YAGNI. Can be added later if needed. | Support only 5's PRO, Original 5/3/1, BBB, FSL, 7th Week Deload, and 7th Week TM Test. |
+---
 
-### AF-06: Automatic Week Detection
+## Self-Hosted Deployment Features
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Automatically detecting which week the user is on based on logged workouts | Unreliable. User might log partial weeks, train out of order, miss sessions, or do extra sessions. Auto-detection creates more confusion than it solves. | Manual advancement. User explicitly marks a week as complete. Simple, predictable, no surprises. |
+### What self-hosters expect
 
-### AF-07: Multiple Concurrent Blocks
+Based on analysis of popular self-hosted projects (wger, Healthchecks.io, workout-tracker, FitTrackee):
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Supporting multiple active blocks simultaneously | User runs one program at a time. Multiple blocks add UI complexity (which block? which lift belongs where?) for zero benefit. | Single active block. Start a new one when current is finished or abandoned. |
+**Must have:**
+1. **Single `docker-compose.yml`** -- Copy, edit 2-3 env vars, `docker compose up -d`. Done in under 5 minutes.
+2. **Environment variable configuration** -- No config files. Everything via env vars.
+3. **Persistent volume** -- Backup data survives container restarts/updates.
+4. **Health check** -- `HEALTHCHECK` in Dockerfile pointing to `/api/health`.
+5. **README with deployment instructions** -- Quick start guide.
 
-### AF-08: Block History / Archive System
+**Nice to have (post-MVP):**
+1. **ARM64 Docker image** -- For Raspberry Pi (common in self-hosting community).
+2. **Reverse proxy examples** -- Nginx/Caddy snippets for HTTPS termination.
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Full history of all past blocks with drill-down into each | Over-engineering for v1.2. The real value is tracking the current block. Historical TMs are already visible through the existing TM values, and workout history is in the regular history tab. | Store minimal metadata (starting TMs, block start date) for the current block only. Expand later if needed. |
+### Standard docker-compose pattern
+
+```yaml
+services:
+  jackedlog-server:
+    image: jackedlog/server:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - API_KEY=your-secret-key-here
+      - PORT=8080
+      - MAX_BACKUPS=50
+    volumes:
+      - jackedlog-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  jackedlog-data:
+```
+
+### Environment variables
+
+| Variable | Required | Default | Purpose |
+|----------|----------|---------|---------|
+| `API_KEY` | Yes | None (server refuses to start without it) | Authentication for all API requests |
+| `PORT` | No | 8080 | Server listen port |
+| `DATA_DIR` | No | /data | Backup storage directory |
+| `MAX_BACKUPS` | No | 50 | Maximum retained backups (oldest deleted first) |
+| `LOG_LEVEL` | No | info | Logging verbosity |
 
 ---
 
 ## Feature Dependencies
 
 ```
-Block Setup (TS-06)
-  |
-  v
-Block State (new DB table)
-  |
-  +---> Block Overview Page (TS-01)
-  |       |
-  |       +---> Progress Badge on Notes Banner (DF-01)
-  |       +---> Manual Advancement (TS-05)
-  |       |       |
-  |       |       +---> TM Bump Flow (TS-04)
-  |       |               |
-  |       |               +---> Post-Block Summary (DF-05)
-  |       |               +---> TM Test Validation (DF-06)
-  |       |
-  |       +---> TM History Graph (DF-03)
-  |
-  +---> Context-Aware Calculator (TS-02)
-          |
-          +---> Supplemental Work Display (TS-03)
-          +---> "What's Today?" Quick View (DF-04)
-          +---> Plate Breakdown Integration (DF-02)
+Server infrastructure (must come first):
+  Dart server binary (Shelf/dart_frog)
+  -> API key auth middleware
+  -> Health check endpoint (GET /api/health)
+  -> Backup endpoints:
+     POST /api/backups (receive)
+     GET /api/backups (list)
+     GET /api/backups/:id/download
+     DELETE /api/backups/:id
+  -> Static file serving (web dashboard assets)
+  -> Dockerfile + docker-compose.yml
+
+Dashboard API (requires backup on disk):
+  Open latest backup DB read-only
+  -> GET /api/dashboard/overview (stats, heatmap data, muscle charts)
+  -> GET /api/dashboard/exercises (exercise list)
+  -> GET /api/dashboard/exercises/:name (progress data, PRs, rep records)
+  -> GET /api/dashboard/workouts (paginated history)
+  -> GET /api/dashboard/workouts/:id (detail with sets)
+
+Web frontend (can develop with mock data):
+  HTML/CSS/JS served as static files
+  -> Overview page (stats cards, heatmap, muscle charts)
+  -> Exercise list + detail pages (charts, PRs, rep records)
+  -> Workout history + detail pages
+  -> Backup management page
+
+App-side (parallel with server):
+  New Settings fields (serverUrl, serverApiKey)
+  -> Connection test button (GET /api/health)
+  -> Manual push button (POST /api/backups)
+  -> Last push status display
 ```
 
-**Critical path:** Block State (DB) -> Block Overview -> Context-Aware Calculator -> Supplemental Display
+### Critical path:
+1. Server binary with API auth + backup receive endpoint
+2. App settings + push button (data gets to server)
+3. Dashboard API endpoints reading from backup DB
+4. Web frontend rendering dashboard pages
 
-Everything else branches off these four.
-
----
-
-## MVP Recommendation
-
-**For the initial milestone, prioritize all Table Stakes features.** The differentiators can be layered in during the same milestone if time permits, but the table stakes ARE the feature -- without any one of them, the block tracking is incomplete and users revert to markdown.
-
-### Phase ordering rationale:
-
-**Phase 1: Block Data Model + Setup**
-- New database table for block state (TS-06 foundation)
-- Block setup flow (TS-06)
-- This is pure backend -- everything else depends on it
-
-**Phase 2: Block Overview Page + Navigation**
-- Block overview page with vertical timeline (TS-01)
-- Manual week advancement (TS-05)
-- TM progression/bump flow (TS-04)
-- Replace Notes page banner to point to block overview (DF-01)
-
-**Phase 3: Context-Aware Calculator + Supplemental**
-- Refactor existing calculator to be block-aware (TS-02)
-- Add supplemental work display (TS-03)
-- "What's Today?" auto-context (DF-04)
-
-**Phase 4: Polish (if time)**
-- Plate breakdown in calculator (DF-02)
-- Post-block summary (DF-05)
-- TM test validation warning (DF-06)
-
-### Deferred indefinitely:
-- TM history graph (DF-03) -- nice but not essential for v1.2
-- All anti-features (AF-01 through AF-08)
+### Parallelizable:
+- Docker packaging alongside server development
+- Web frontend with mock JSON while API endpoints are built
+- App-side settings independently of server code
 
 ---
 
-## Confidence Summary
+## MVP Definition
 
-| Feature | Confidence | Reason |
-|---------|------------|--------|
-| Block structure (11 weeks) | HIGH | User provided exact specification; matches 5/3/1 Forever 2+1+1+1 pattern verified via multiple sources |
-| Set/rep schemes per phase | HIGH | Standard 5/3/1 percentages well-documented; 5's PRO, Original, 7th Week protocols all verified |
-| Supplemental work (BBB/FSL) | HIGH | Standard patterns: BBB = 5x10 @ percentage, FSL = 5x5 @ first set weight |
-| TM bump values (+2.2/+4.5) | HIGH | User-specified values; differs from standard +2.5/+5 but this is their preference |
-| 7th Week Deload scheme | MEDIUM | Multiple sources agree on 70/80/90/100% but rep schemes vary slightly across sources. User specified: 70%x5, 80%x3-5, 90%x1, 100%x1 |
-| 7th Week TM Test scheme | MEDIUM | User specified 70/80/90/100% all x5. Some sources say 100%x3-5 for TM test. Using user's specification. |
-| UX patterns (vertical timeline) | MEDIUM | Based on UX research for mobile steppers; vertical preferred over horizontal on mobile but not specific to fitness apps |
-| Block overview as separate page | HIGH | Current Notes banner is natural entry point; block overview is the standard approach in KeyLifts, Five3One |
+### MVP (v1.3.0)
+
+**Server:**
+1. Dart server binary (Shelf or dart_frog)
+2. API key auth via env var (Bearer token in Authorization header)
+3. `POST /api/backups` -- receive SQLite file, validate integrity, store with timestamp
+4. `GET /api/backups` -- list backups (date, size, DB version)
+5. `GET /api/backups/:id/download` -- download backup file
+6. `DELETE /api/backups/:id` -- delete backup with confirmation
+7. `GET /api/health` -- health check endpoint
+8. Dashboard API endpoints (overview stats, exercises, workouts, exercise detail)
+9. Static file serving for web frontend
+10. Dockerfile + docker-compose.yml + env var configuration
+
+**Dashboard:**
+1. Overview page: stats cards + training heatmap + muscle group volume/set charts
+2. Exercise list with search
+3. Exercise detail: progress chart (Best Weight, 1RM, Volume) + period selector + PRs + rep records
+4. Workout history (paginated) with expandable detail
+5. Backup management page (list, download, delete, storage usage)
+6. Responsive layout (desktop sidebar + mobile hamburger)
+7. Dark/light theme toggle
+
+**App:**
+1. Server URL + API key fields in Data Settings
+2. Test connection button (green/red status)
+3. Manual push backup button with progress indicator + success/error feedback
+4. Last push timestamp + status display
+
+### Post-MVP (v1.3.x or v1.4)
+
+- Bodyweight trend page on dashboard
+- 5/3/1 block history page on dashboard
+- Server-side backup retention policy (GFS cleanup, port from auto_backup_service.dart)
+- Export from web dashboard (CSV download)
+- Estimated 1RM leaderboard page
+- Workout frequency by weekday chart
+- ARM64 Docker image
+- Reverse proxy documentation (Nginx, Caddy)
+
+### Out of Scope (Never)
+
+- Auto sync, two-way sync, multi-user, workout logging on web
+- OAuth/SSO, push notifications, WebSocket updates
+- Nutrition tracking, progress photos on web
+- Companion mobile app for server data
+
+---
+
+## Feature Prioritization Matrix
+
+| Feature | Impact | Complexity | MVP? | Rationale |
+|---------|--------|------------|------|-----------|
+| Backup receive endpoint | Critical | Low | Yes | Core purpose of the server |
+| API key auth | Critical | Low | Yes | Security baseline |
+| Backup list/download/delete | Critical | Low | Yes | Backup management essentials |
+| Health check endpoint | High | Low | Yes | Docker standard, monitoring |
+| Docker packaging | Critical | Low | Yes | Deployment method |
+| Overview stats page | High | Medium | Yes | Landing page value |
+| Training heatmap | High | Medium | Yes | Visual impact, biggest web advantage |
+| Exercise progress charts | High | Medium | Yes | Core dashboard value |
+| Personal records display | High | Low | Yes | Quick glance, low effort |
+| Rep records table | Medium | Low | Yes | Low effort, unique value |
+| Workout history + detail | High | Medium | Yes | Data exploration |
+| Muscle group charts | Medium | Medium | Yes | App parity, training balance insight |
+| App server settings | Critical | Low | Yes | Required for push |
+| Manual push button | Critical | Medium | Yes | Data gets to server |
+| Connection test | High | Low | Yes | UX validation |
+| Responsive layout | Medium | Medium | Yes | Usability on all screens |
+| Dark/light theme | Low | Low | Yes | Quick win, polish |
+| Backup integrity check | Medium | Low | Yes | Data safety |
+| Bodyweight trends | Medium | Low | No | Post-MVP, low effort when ready |
+| 5/3/1 block history | Medium | Medium | No | Post-MVP differentiator |
+| Server-side retention | Medium | Medium | No | Port existing logic later |
+| Export from web | Low | Medium | No | Nice-to-have |
+| Backup diff summary | Low | High | No | Cool but complex, defer |
 
 ---
 
 ## Sources
 
-- [KeyLifts 531 App](https://www.keylifts.com/) - Feature reference for 5/3/1 app capabilities (MEDIUM confidence)
-- [Five/Three/One App](https://fivethreeone.app/) - Feature reference for cycle management (MEDIUM confidence)
-- [Boostcamp BBB Guide](https://www.boostcamp.app/blogs/531-boring-but-big-app-program-guide) - Template implementation reference (MEDIUM confidence)
-- [Lift Vault Leader/Anchor Guide](https://liftvault.com/resources/leader-anchor-cycles/) - Leader/Anchor cycle definitions (HIGH confidence)
-- [T-Nation 7th Week Protocol Discussion](https://t-nation.com/t/confusion-on-7th-week-tm-test-after-anchor/246002) - TM Test protocol details (MEDIUM confidence)
-- [The Fitness Wiki 5/3/1 Primer](https://thefitness.wiki/5-3-1-primer/) - 5/3/1 fundamentals reference (HIGH confidence)
-- [UX Planet Progress Trackers](https://uxplanet.org/progress-trackers-in-ux-design-4319cef1c600) - Timeline/stepper UX patterns (MEDIUM confidence)
-- [Eleken Stepper UI Examples](https://www.eleken.co/blog-posts/stepper-ui-examples) - Mobile stepper design patterns (MEDIUM confidence)
-- Existing codebase: `five_three_one_calculator.dart`, `training_max_editor.dart`, `notes_page.dart`, `settings.dart` (HIGH confidence)
-- User's project context and milestone specification (HIGH confidence)
+### Self-Hosted Fitness Trackers
+- [wger - Self-hosted FLOSS fitness tracker](https://github.com/wger-project/wger) -- Full-featured, multi-user, Django-based. Reference for dashboard feature set.
+- [workout-tracker - Self-hosted single binary](https://github.com/jovandeginste/workout-tracker) -- Go-based, GPX focus, API key auth pattern. Reference for simple deployment.
+- [FitTrackee - Self-hosted outdoor activity tracker](https://github.com/SamR1/FitTrackee) -- Python/Flask, Docker deployment. Reference for self-hosted UX.
+- [Endurain - Self-hosted fitness tracking](https://github.com/endurain-project/endurain) -- Docker-first, env var config. Reference for deployment pattern.
+- [awesome-selfhosted Health and Fitness](https://awesome-selfhosted.net/tags/health-and-fitness.html) -- Ecosystem overview.
+
+### Fitness Dashboard Visualization
+- [Fito - Best Workout Data Insights](https://getfitoapp.com/en/best-workout-data-insight-and-charts-design-app/) -- Chart types for fitness dashboards.
+- [Fito - Best Fitness Data Analysis](https://getfitoapp.com/en/best-fitness-data-analysis/) -- Heatmap and multi-scale view patterns.
+- [Strength Journeys PR Analyzer](https://www.strengthjourneys.xyz/articles/getting-the-most-out-of-the-strength-journeys-pr-analyzer) -- PR visualization patterns.
+- [FitNotes Progress Tracking](http://www.fitnotesapp.com/progress_tracking/) -- 1RM/rep record display patterns.
+- [Hevy Gym Performance Tracking](https://www.hevyapp.com/features/gym-performance/) -- Strength dashboard feature set.
+- [Exercise Data Visualization](https://www.numberanalytics.com/blog/exercise-data-visualization) -- Best practices for fitness charts.
+
+### Self-Hosted Deployment Patterns
+- [Docker Health Check Best Practices](https://oneuptime.com/blog/post/2026-01-30-docker-health-check-best-practices/view)
+- [Docker Compose Healthchecks](https://www.furkanbaytekin.dev/blogs/software/writing-reliable-docker-healthchecks-that-actually-work)
+- [Docker Secrets in Compose](https://docs.docker.com/compose/how-tos/use-secrets/)
+- [Docker Environment Variables](https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables)
+- [Self-hosted apps Docker guide](https://github.com/DoTheEvo/selfhosted-apps-docker)
+
+### Backup Management UX
+- [Backblaze Web UI Restore](https://www.backblaze.com/computer-backup/docs/create-a-restore-web-ui)
+- [Proxmox Backup and Restore](https://pve.proxmox.com/wiki/Backup_and_Restore)
+- [Sentry Self-Hosted Backup](https://develop.sentry.dev/self-hosted/backup/)
+
+### Primary Sources (Existing JackedLog Codebase)
+- `lib/graph/overview_page.dart` -- Overview stats, heatmap, muscle charts (all SQL queries reusable)
+- `lib/graph/strength_page.dart` -- Exercise progress charts, PRs, rep records
+- `lib/database/gym_sets.dart` -- Data model, all metric SQL queries (1RM, volume, best weight)
+- `lib/backup/auto_backup_service.dart` -- Backup creation, GFS retention policy logic
+- `lib/export_data.dart` -- WAL checkpoint + DB file export flow
+- `lib/database/workouts.dart` -- Workout table schema
+- `lib/database/bodyweight_entries.dart` -- Bodyweight table schema
+- `lib/database/fivethreeone_blocks.dart` -- 5/3/1 block schema (unique data for dashboard)
