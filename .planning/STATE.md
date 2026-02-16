@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-15)
 
 **Core value:** Users can efficiently log and track their workouts with minimal friction
-**Current focus:** Phase 11 complete — ready for Phase 12
+**Current focus:** Phase 12 complete — ready for Phase 13
 
 ## Current Position
 
-Phase: 11 of 14 (App Integration)
+Phase: 12 of 14 (Dashboard Query Layer)
 Plan: 2 of 2 in current phase
 Status: Phase complete
-Last activity: 2026-02-15 — Completed 11-02-PLAN.md (Backup push service & push button)
+Last activity: 2026-02-15 — Completed 12-02-PLAN.md (Exercise query methods)
 
-Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2) | [██████░░░░] 60% (v1.3)
+Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2) | [████████░░] 80% (v1.3)
 
 ## Performance Metrics
 
@@ -34,9 +34,9 @@ Progress: [██████████] 100% (v1.0) | [███████�
 - Total execution time: 13 min
 
 **v1.3 Velocity (current):**
-- Total plans completed: 5
-- Average duration: 2.0 min
-- Total execution time: 10 min
+- Total plans completed: 7
+- Average duration: 1.7 min
+- Total execution time: 12 min
 
 **By Phase:**
 
@@ -53,6 +53,7 @@ Progress: [██████████] 100% (v1.0) | [███████�
 | 09-block-completion | 1 | 4 min | 4 min |
 | 10-server-foundation | 3 | 7 min | 2.3 min |
 | 11-app-integration | 2 | 3 min | 1.5 min |
+| 12-dashboard-query-layer | 2 | 2 min | 1 min |
 
 ## Accumulated Context
 
@@ -66,6 +67,10 @@ Recent decisions affecting current work:
 - v1.3: API key auth (single-user) — Simplest secure auth for self-hosted single-user
 - v1.3: Manual backup push (not auto-sync) — Keeps app offline-first, user controls when data leaves device
 - v1.3: Nullable server columns for backward-compatible exports — Existing exports remain importable
+- v1.3: Plain Maps for query return types — Serialize directly to JSON for HTTP responses
+- v1.3: db.close() for sqlite3 handle cleanup — Matches existing sqlite_validator.dart pattern
+- v1.3: Brzycki formula with negative weight branch for 1RM — Matches app's existing calculation
+- v1.3: Integer-only rep filtering for rep records — Excludes fractional reps from rep PR table
 
 ### Pending Todos
 
@@ -91,8 +96,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 11-02-PLAN.md — Phase 11 complete
+Stopped at: Completed 12-02-PLAN.md — Phase 12 complete
 Resume file: None
 
 ---
-*Last updated: 2026-02-15 after 11-02 plan execution complete*
+*Last updated: 2026-02-15 after 12-02 plan execution complete*
