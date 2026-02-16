@@ -1,321 +1,290 @@
 # Project Research Summary
 
-**Project:** JackedLog v1.2 - 5/3/1 Forever Block Programming
-**Domain:** Strength training periodization tracking (5/3/1 methodology)
-**Researched:** 2026-02-11
+**Project:** JackedLog v1.3 - Self-Hosted Web Companion
+**Domain:** Self-hosted Dart server + web dashboard for fitness tracking
+**Researched:** 2026-02-15
 **Confidence:** HIGH
 
 ## Executive Summary
 
-The 5/3/1 Forever block programming feature transforms JackedLog from a simple 4-week cycle calculator into a full periodized program tracker. Research confirms this can be implemented with **zero new dependencies** using the existing Flutter Material 3 + Drift + Provider stack. The key architectural decision is to create a dedicated `fivethreeone_blocks` table rather than extending the already-bloated Settings table, enabling proper lifecycle management (create, advance, complete) and historical tracking without corrupting the existing calculator.
+The v1.3 self-hosted web companion should be built as a separate Dart server project (monorepo workspace) packaged as a Docker container. The server receives SQLite database backup files via manual push from the Flutter app, stores them, and serves a read-only web dashboard for viewing workout statistics and progress graphs. The recommended architecture is Shelf (official Dart HTTP server) with raw sqlite3 database access (no Drift on server) and vanilla HTML/CSS/JS with Chart.js for the dashboard frontend.
 
-The feature requires three distinct but interconnected components: (1) a normalized database schema with proper TM snapshot management, (2) a full-page block overview with timeline visualization, and (3) context-aware calculator enhancement that switches between manual mode and block-driven mode. The existing calculator (562 lines with hardcoded 4-week scheme) must be refactored to consume data-driven percentage schemes, adding support for 5's PRO (Leader), PR Sets (Anchor), 7th Week Deload, TM Test, and supplemental work display (BBB 5x10, FSL 5x5).
+The critical architectural decision is to avoid using Drift ORM on the server. The server should open uploaded SQLite files directly with the sqlite3 package in read-only mode and run raw SQL queries. This decouples the server from the app's complex 65-version migration history and prevents accidental backup file modification. All SQL query patterns already exist in the app codebase (lib/database/gym_sets.dart) and can be replicated on the server with minimal adaptation.
 
-Critical risks center on three areas: (1) TM progression timing (bumping at wrong cycle boundaries corrupts all subsequent weights), (2) Settings table overload (adding block state as flat columns prevents history tracking and creates denormalized mess), and (3) export/import backward compatibility (new tables must be additive, not breaking). All three are preventable with proper schema design and declarative progression rules established before any UI work begins.
+The top risks are SQLite WAL corruption during backup upload, schema version mismatch handling, and Docker packaging complexity (sqlite3 v3 build hooks + scratch image). These are all mitigable with careful implementation: WAL checkpoint before upload (existing pattern), read-only database opening with version checks, and multi-stage Docker builds. The server feature is entirely optional -- if both server_url and server_api_key settings are null, no server UI appears in the app.
 
 ## Key Findings
 
 ### Recommended Stack
 
-**No new packages needed.** The existing stack provides everything required:
+The stack is pure Dart end-to-end: Shelf 1.4.2 for the HTTP server, sqlite3 3.1.5 for direct database access, and vanilla web technologies for the dashboard. No JavaScript framework, no Node.js build toolchain, no separate SPA.
 
 **Core technologies:**
-- **Drift 2.30.0:** Database schema with reactive streams — perfect for block state management using the same ChangeNotifier + stream pattern as WorkoutState
-- **Provider 6.1.1:** State propagation via FiveThreeOneState ChangeNotifier — follows existing pattern exactly
-- **Flutter Material 3:** All UI built with standard widgets (Column/Row/Container for timeline, ListTile/Card for block overview) — no custom timeline packages needed
+- **Shelf 1.4.2** (HTTP server) — Official Dart team package with composable middleware. Mature and stable (20 months since last release). Every other Dart framework wraps Shelf anyway.
+- **sqlite3 3.1.5** (database access) — Pure Dart bindings via dart:ffi. Version 3.x uses build hooks to bundle SQLite natively, eliminating Docker runtime dependency issues.
+- **Vanilla HTML/CSS/JS + Chart.js 4.5.1** (dashboard) — No build step, no node_modules. For a read-only dashboard with ~5 pages, a framework is overkill. Chart.js is the most popular lightweight charting library.
+- **Docker (dart:stable + scratch)** — Multi-stage build produces ~10-15MB final image. AOT-compiled Dart binary with bundled SQLite.
+- **API key authentication** (custom middleware) — Single-user self-hosted app. ~20 lines of middleware. SHA-256 hashed storage with Bearer token header.
 
-**What NOT to add:**
-- Timeline packages (timelines, flutter_staggered_animations) — fixed 5-cycle layout doesn't justify dependency; custom Row+Container is 50 lines
-- TM history table — progression is deterministic from block start TMs + cycle number, can be calculated not stored
-- Charting additions — block progress is a 5-step bar, not a graph
-- Junction tables for cycles — over-normalized; cycle state is a single integer (0-4) on block row
+**Why NOT dart_frog:** Adds abstraction layer, custom build step, community-maintained since July 2025. Shelf is simpler for 5 endpoints.
 
-**Migration:** Manual v63→v64 migration adding one new table, following existing pattern from database.dart
+**Why NOT Drift on server:** Would require duplicating 9 table definitions, build_runner codegen, and keeping server schema in sync with app schema v65+. Read-only queries don't need ORM.
+
+**Why NOT React/Vue/Svelte:** Adds Node.js build pipeline, increases Docker complexity, overkill for read-only data display.
 
 ### Expected Features
 
+The research identified clear table stakes vs. differentiators based on self-hosted fitness tracker ecosystem analysis (wger, workout-tracker, FitTrackee).
+
 **Must have (table stakes):**
-- **Block overview page** — users need to see where they are in the 11-week structure (Leader1→Leader2→Deload→Anchor→TM Test)
-- **Context-aware calculator** — scheme must auto-switch based on cycle type (5's PRO for Leader, PR Sets for Anchor, Deload percentages, TM Test scheme)
-- **Supplemental work display** — show BBB 5x10@60% for Leader, FSL 5x5 for Anchor below main sets in calculator
-- **TM auto-progression** — bump TMs at correct boundaries (after Leader1, Leader2, and Anchor; NOT after Deload or TM Test) with user's custom increments (+2.2kg upper, +4.5kg lower)
-- **Manual week/cycle advancement** — "Complete Week" button advances position; no auto-detection from workout completion
-- **Block setup flow** — create new block with starting TMs
+- Receive backup push (SQLite file) with integrity check
+- Backup history list with download/delete
+- API key authentication for endpoints
+- Health check endpoint (Docker standard)
+- Overview dashboard with stats cards + training heatmap
+- Exercise progress charts (Best Weight, 1RM, Volume) with period selector
+- Personal records display and rep records table
+- Workout history with detail view
+- Docker image + docker-compose.yml with env var config
+- App-side: server URL/API key settings + manual push button + connection test
 
-**Should have (competitive):**
-- **At-a-glance block progress badge** — Notes page banner shows "Leader 2, W2" without opening block page
-- **Plate breakdown integration** — calculator shows weight AND plate composition using existing PlateCalculator widget
-- **Post-block summary** — completion flow showing starting vs ending TMs, total progression
-- **TM Test validation warning** — prompt to reduce TM if user cannot complete 5 reps at 100% TM
+**Should have (competitive differentiators):**
+- 5/3/1 block history (unique to JackedLog, no competitor has this)
+- Rep records table (per-exercise best weight at each rep count 1-15)
+- Bodyweight trend chart alongside training data
+- Estimated 1RM leaderboard ranked across all exercises
+- Workout frequency by weekday bar chart
+- Dark/light theme toggle
+- Server-side backup retention policy (GFS strategy from auto_backup_service.dart)
 
-**Defer (v2+):**
-- TM history graph per lift — nice visualization but not essential for MVP
-- Template picker — user runs one specific setup (5's PRO + BBB / Original + FSL); hardcode it
-- Auto-generated workout plans — JackedLog is a logging tool, not a plan generator
-- Calendar integration — user trains when they train, not on a schedule
-- Multiple concurrent blocks — user runs one program at a time
+**Defer (v2+ or never):**
+- Automatic background sync (violates offline-first principle)
+- Two-way sync / web editing (entirely different product)
+- Multi-user support (massive scope creep)
+- OAuth/SSO (overkill for single-user)
+- Nutrition tracking (feature bloat)
 
 ### Architecture Approach
 
-A dedicated `fivethreeone_blocks` table separates block state (which has lifecycle: create→advance→complete) from Settings (which stores preferences). The block table snapshots TMs at creation time, preventing mid-block corruption if user manually edits Settings. State management follows the exact WorkoutState pattern: FiveThreeOneState ChangeNotifier watches the active block, provides derived getters (currentCycleName, isLeader, isAnchor), and exposes actions (createBlock, advanceWeek, advanceCycle). The calculator checks for active block first; if present, uses block TMs and scheme; otherwise falls back to manual mode (existing Settings-based behavior).
+The architecture is a monorepo with Pub workspaces: the server is a separate Dart package (server/pubspec.yaml) with its own dependency tree, independent of Flutter. The server stores backup files as-is on disk (/data/backups/) with timestamped filenames and opens the latest backup in read-only mode for dashboard queries.
 
 **Major components:**
-1. **Database layer** — `fivethreeone_blocks` table with columns: id, created, squat_tm, bench_tm, deadlift_tm, press_tm, unit, current_cycle (0-4), current_week (1-3), is_active, completed; Settings table unchanged (backward compat)
-2. **State management** — `FiveThreeOneState` ChangeNotifier registered in MultiProvider; loads active block on init, provides scheme getters, handles advancement logic
-3. **Block overview page** — full-screen push (not dialog) showing vertical timeline, current position, TM values per lift, advance/complete controls; replaces TrainingMaxEditor dialog as banner target
-4. **Context-aware calculator** — extended `FiveThreeOneCalculator` reads FiveThreeOneState, uses data-driven schemes module, displays supplemental work section below main sets
-5. **Pure schemes module** — `schemes.dart` with no UI/DB dependencies; defines SetScheme records (percentage, reps, amrap) for all cycle types and supplemental variations
+1. **Shelf HTTP server** — Entry point (bin/server.dart) with middleware pipeline (logging, API key auth, routing). Serves both API endpoints and static web assets.
+2. **BackupStore** — Manages backup file storage, lists backups with metadata (date, size, DB version), handles upload/download/delete.
+3. **BackupDatabase** — Opens uploaded SQLite file in read-only mode (sqlite3 package), runs raw SQL queries for dashboard data. Lazy-loaded and cached per backup.
+4. **Dashboard routes** — Server-rendered HTML using Dart string interpolation. No template engine for MVP (5-6 pages). Serves static CSS/JS from server/web/.
+5. **API routes** — JSON endpoints for backup upload (POST /api/backup), backup list/download/delete, health check, dashboard data.
+6. **App integration** — New Settings table columns (server_url, server_api_key), new ServerSettingsPage, new ServerPushService using existing http package.
 
-**Key patterns to follow:**
-- Stream-backed state with manual control (like WorkoutState, NOT auto-watching like SettingsState) — block changes are user-initiated
-- Pure data schemes module — testable in isolation, reusable across calculator and overview page
-- Graceful degradation — every component works when no active block exists (manual mode)
+**Data flow:** App -> WAL checkpoint -> read SQLite file -> POST /api/backup with Bearer token -> Server validates checksum + integrity -> Store timestamped file -> Dashboard opens latest backup read-only -> Run SQL queries -> Render HTML/JSON.
+
+**Key pattern:** Server reads data, never writes. Opens backup files with `sqlite3.open(path, mode: OpenMode.readOnly)` to prevent accidental modification. Each upload creates a new timestamped file; "latest" determined by filename sorting.
 
 ### Critical Pitfalls
 
-1. **Settings table overload** — Adding block state as flat columns (`fivethreeone_cycle_type`, `fivethreeone_block_week`, etc.) prevents history tracking and creates denormalized mess. **Prevention:** Create normalized `fivethreeone_blocks` table; keep existing Settings columns as backward-compatible cache.
+Based on codebase analysis and verified research, five critical pitfalls must be addressed in Phase 10:
 
-2. **TM progression timing errors** — Bumping TMs at wrong cycle boundaries (e.g., after Deload when it should not bump) compounds errors across remaining cycles. **Prevention:** Separate cycle transition from TM bump operations; define bump rules declaratively (`bumpAfterCycle` map); snapshot TMs per cycle to prevent mid-cycle corruption.
+1. **SQLite WAL corruption during backup upload** — The app uses WAL mode (3 files: .sqlite, .sqlite-wal, .sqlite-shm). Copying the main file without checkpointing first loses uncommitted data or creates corrupt backups. **Mitigation:** Reuse existing PRAGMA wal_checkpoint(TRUNCATE) pattern from export_data.dart:158-159 before reading DB file for upload. Validate on server with PRAGMA quick_check before accepting.
 
-3. **Weight rounding produces unloadable plates** — Supplemental work percentages (60% for BBB, 65% for FSL) can round to weights like 67.3kg that cannot be loaded. **Prevention:** Single rounding function used everywhere; round AFTER all arithmetic, never in intermediate steps; test boundary values where percentages land between rounding targets.
+2. **Schema version mismatch** — App has 65 schema versions. Server opening a v63 backup with Drift would trigger migration (modifying the file). Opening a v66 backup would fail (unknown version). **Mitigation:** Use raw sqlite3 package, not Drift. Open read-only. Check PRAGMA user_version and handle gracefully (minimum supported version: 48).
 
-4. **Migration breaks export/import compatibility** — New tables crash older app versions or get lost in CSV export. **Prevention:** New tables are additive (Settings columns preserved); database import triggers migration handler; CSV export scope unchanged (workouts/gym_sets only); affirm user per CLAUDE.md requirement.
+3. **Backup file corruption during HTTP transfer** — Network interruption can produce truncated files that appear valid (have SQLite header) but are missing pages. **Mitigation:** SHA-256 checksum on client, verify on server. Never overwrite previous backup until new one passes integrity check. Reasonable timeout (5 minutes for 20MB file).
 
-5. **Block/workout state interaction complexity** — Three ChangeNotifiers (BlockState, WorkoutState, SettingsState) create circular update chains. **Prevention:** Unidirectional flow: user action → BlockState method → DB write → stream triggers update → UI reads from BlockState; do NOT couple workout completion to block advancement (manual only).
+4. **API key security** — Plaintext storage or HTTP transmission exposes all backup data. **Mitigation:** Generate strong random key on first run, store as SHA-256 hash, use constant-time comparison. Support Docker secrets. Document HTTPS as strongly recommended (Caddy example).
 
-6. **Calculator scheme complexity** — Adding 5 different percentage schemes (5's PRO, Original, Deload, TM Test, plus supplemental variations) as switch cases creates unmaintainable 300+ line method. **Prevention:** Extract schemes into data not code; calculator consumes `List<SetScheme>` and renders, does not generate schemes.
+5. **Docker image missing SQLite native library** — Dart sqlite3 package uses dart:ffi to load libsqlite3.so at runtime. FROM scratch image has no system libraries. **Mitigation:** Multi-stage build copies libsqlite3.so from build image to runtime, or rely on sqlite3 v3 build hooks to bundle SQLite. Test on both amd64 and arm64.
+
+**Additional gotchas:** Always filter `WHERE hidden = 0` on gym_sets queries (template rows). Handle workout_id = NULL (pre-v48 data). Timestamps are epoch seconds, not milliseconds. Timezone handling (app uses 'localtime', server likely runs UTC). The notes table is standalone notes, not workout notes.
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+Based on research, the roadmap should have 5 phases starting from Phase 10 (previous milestone ended at Phase 9). The critical path is: server infrastructure -> app integration -> dashboard API -> dashboard frontend. Docker packaging can parallelize with Phase 10-11.
 
-### Phase 1: Foundation - Data Model & Schema
-**Rationale:** Everything depends on the database schema being correct. This is pure backend work with zero UI, making it independently testable. Getting this right prevents all 4 critical pitfalls related to schema (Settings overload, migration errors, export/import breaks, hardcoded structure).
-
-**Delivers:**
-- `fivethreeone_blocks` table definition (Drift schema)
-- Migration v63→v64 with proper error handling (IF NOT EXISTS)
-- `FiveThreeOneState` ChangeNotifier with block lifecycle methods
-- Pure `schemes.dart` module with all percentage scheme definitions
-- Registration in database.dart and main.dart MultiProvider
-
-**Addresses:**
-- TS-06 (Block setup foundation)
-- Database schema from STACK.md
-- Data model from ARCHITECTURE.md
-
-**Avoids:**
-- Pitfall 1 (Settings table overload)
-- Pitfall 4 (Migration breaks compatibility)
-- Pitfall 9 (Migration error handling gaps)
-- Pitfall 10 (Hardcoded block structure)
-
-**Key decisions:**
-- Snapshot TMs per block (not references to Settings)
-- Single integer `current_cycle` (0-4) encodes 11-week position
-- Keep existing Settings columns for backward compatibility
-- Bump rules as declarative data
-
-### Phase 2: Block Overview & Progression Logic
-**Rationale:** With data layer complete, build the primary user interface for block management. This phase implements the full lifecycle (create→advance→complete) and validates the state machine handles all transitions correctly. Establishing progression logic here prevents TM timing errors before the calculator depends on it.
+### Phase 10: Server Foundation
+**Rationale:** Validate the entire Docker + Shelf + sqlite3 stack before building anything on top. This phase proves the critical dependencies work (build hooks, scratch image, SQLite bundling) and establishes authentication.
 
 **Delivers:**
-- `FiveThreeOnePage` with vertical timeline visualization
-- Block creation flow (reusing TrainingMaxEditor for TM input)
-- Manual week/cycle advancement with "Complete Week" button
-- TM bump flow at correct boundaries (after Leader1, Leader2, Anchor)
-- Notes page banner update to show current position and navigate to overview
-- Historical blocks viewing (completed blocks with is_active=false)
+- Shelf server binary with API key auth middleware
+- Backup upload endpoint (POST /api/backup) with checksum validation + PRAGMA quick_check
+- Backup storage (timestamped files in /data/backups/)
+- Health check endpoint (GET /api/health)
+- Dockerfile + docker-compose.yml (multi-stage, <50MB image)
+- Backup list/download/delete endpoints (GET/DELETE /api/backups)
 
-**Addresses:**
-- TS-01 (Block overview page)
-- TS-04 (TM progression tracking)
-- TS-05 (Manual advancement)
-- TS-06 (Block setup/initialization)
-- DF-01 (Progress badge on banner)
-- DF-05 (Post-block summary)
+**Addresses:** Pitfalls 1, 3, 4, 5 (WAL corruption, transfer corruption, API key security, Docker SQLite). All table stakes backup management features. File-based storage pattern.
 
-**Uses:**
-- FiveThreeOneState from Phase 1
-- Schemes module for timeline labels
-- Existing Material 3 widgets (no custom timeline packages)
+**Avoids:** Building dashboard code before proving the server can receive and store backups correctly. Avoids using Drift on server (Pitfall 2).
 
-**Implements:**
-- Block overview page component from ARCHITECTURE.md
-- State advancement logic
+**Research flag:** Standard patterns. Shelf + Docker docs are excellent. No deep research needed.
 
-**Avoids:**
-- Pitfall 2 (TM progression timing)
-- Pitfall 5 (Block/workout interaction — user advances manually, NOT auto-detect)
-- Pitfall 7 (Over-complex timeline UI — start with text-based status)
-- Pitfall 8 (Mid-block edge cases — validate transitions, support skip/reset)
-
-**Key decisions:**
-- Full page push, not dialog (room for timeline + controls)
-- Vertical timeline (mobile-friendly, no horizontal scroll)
-- TM bump confirmation UI before applying
-- Separate advanceWeek() and advanceCycle() operations
-
-### Phase 3: Calculator Enhancement & Supplemental Display
-**Rationale:** With block state working and progression logic validated, extend the calculator to consume block context. This is where the research effort pays off for users — correct weights at correct times. Refactoring the calculator to be data-driven prevents scheme complexity explosion.
+### Phase 11: App Integration
+**Rationale:** Server is functional and testable. App changes are minimal (2 Settings columns, 1 new page, HTTP service). This completes the data flow: app can now push backups to the deployed server.
 
 **Delivers:**
-- Context-aware calculator (reads FiveThreeOneState, switches scheme based on cycle type)
-- Supplemental work section in calculator (BBB 5x10@60% for Leader, FSL 5x5 for Anchor)
-- Manual mode toggle (users can still use calculator without active block)
-- "What's Today?" auto-context (calculator knows which exercise, shows correct scheme immediately)
-- Plate breakdown integration (reuse existing PlateCalculator widget)
+- Database migration v65 -> v66 (add server_url, server_api_key to Settings)
+- ServerSettingsPage (URL/API key fields, connection test, push button)
+- ServerPushService (WAL checkpoint + HTTP POST with multipart file + Bearer token)
+- Last push status display (timestamp + success/error)
+- Link from Data Settings to Server settings
 
-**Addresses:**
-- TS-02 (Context-aware calculator)
-- TS-03 (Supplemental work display)
-- DF-02 (Plate breakdown integration)
-- DF-04 ("What's Today?" quick view)
+**Addresses:** Uses existing http package 1.2.0 (already in pubspec). Reuses WAL checkpoint pattern from export_data.dart and auto_backup_service.dart.
 
-**Uses:**
-- Schemes module from Phase 1
-- FiveThreeOneState from Phase 1
-- Block position from Phase 2
-- Existing PlateCalculator widget
+**Avoids:** Changing backup file format (sends raw SQLite file, same as existing export). Auto-sync (manual push only).
 
-**Implements:**
-- Calculator context-awareness from ARCHITECTURE.md
-- Supplemental work display component
+**Research flag:** Standard patterns. Existing codebase has all the patterns needed (WAL checkpoint, HTTP multipart upload, Settings migration).
 
-**Avoids:**
-- Pitfall 3 (Weight rounding — single function, round-once rule)
-- Pitfall 6 (Scheme complexity — data-driven, calculator renders only)
-- Pitfall 11 (FSL percentage ambiguity — derive from first set)
-- Pitfall 12 (Unit switching — store unit with TM snapshot)
-
-**Key decisions:**
-- Calculator checks hasActiveBlock first, falls back to manual mode
-- Supplemental section visually separated (divider + label)
-- No auto-generation of GymSet entries (informational only)
-- FSL percentage = first working set % (varies by week)
-
-### Phase 4: Polish & Edge Cases
-**Rationale:** Core functionality complete; this phase handles refinements that improve UX and handle edge cases discovered during testing. These are incremental improvements that don't block core feature use.
+### Phase 12: Dashboard Query Layer
+**Rationale:** With backups on the server, the server needs to read and query them for the dashboard. This phase builds the BackupDatabase abstraction and replicates the app's SQL analytics queries.
 
 **Delivers:**
-- TM Test validation warning (prompt to reduce TM if struggling with 100% x5)
-- Mid-block TM adjustment flow (creates new snapshot, preserves history)
-- Block abandonment (status change, not deletion)
-- Skip week functionality (mark skipped, advance position)
-- Reset current cycle option (fresh TM snapshots without affecting history)
-- Export/import block data (add to ZIP archive, import tolerates missing files)
+- BackupDatabase class (opens latest backup read-only with sqlite3)
+- SQL queries for dashboard data (replicates gym_sets.dart patterns):
+  - Overview stats (workout count, total volume, streak, training time)
+  - Exercise list (grouped by category, with last-trained date)
+  - Exercise detail (strength data, 1RM, volume, PRs, rep records)
+  - Workout history (with set count, duration)
+  - Workout detail (joined gym_sets with exercise grouping)
+- Schema version checking (PRAGMA user_version, minimum v48)
+- Cached read-only database connection (lazy-loaded)
 
-**Addresses:**
-- DF-06 (TM Test validation warning)
-- Edge cases from PITFALLS.md
-- Export/import compatibility
+**Addresses:** Pitfall 2 (schema version mismatch) with version checking. Gotchas 1-4 (epoch seconds, hidden filter, workout_id NULL handling, notes table). Debt 1 (query logic reuse) by extracting SQL patterns. Debt 2 (timezone) by setting TZ env var in docker-compose.
 
-**Avoids:**
-- Pitfall 4 (Export/import breaks — additive schema, backward-compatible)
-- Pitfall 8 (Mid-block state corruption — validate transitions, snapshot on adjustment)
+**Avoids:** Running PRAGMA integrity_check on every request (Trap 1). Opening/closing DB per request (Trap 2).
 
-**Key decisions:**
-- CSV export unchanged (workouts/sets only)
-- Database export includes new table automatically
-- Import tolerates missing block data (older exports)
-- TM adjustments create snapshots, do not overwrite history
+**Research flag:** Requires careful mapping of app SQL queries to server. Medium complexity. Use gym_sets.dart as canonical reference.
+
+### Phase 13: Dashboard Frontend
+**Rationale:** Query layer is functional. Now build the HTML pages and Chart.js visualizations that consume the API data.
+
+**Delivers:**
+- Server-rendered HTML templates (Dart string interpolation)
+- Dashboard routes: overview (/), workouts (/workouts), workout detail (/workouts/:id), exercises (/exercises), exercise detail (/exercises/:name), backups (/backups)
+- Static assets (CSS, Chart.js from CDN)
+- Charts: training heatmap (SVG grid), muscle group volume (bar), strength progress (line), bodyweight trend (line)
+- Responsive layout (desktop sidebar, mobile hamburger)
+- Dark/light theme toggle (CSS custom properties)
+- Period selector (Week, Month, 3M, 6M, Year, All Time)
+
+**Addresses:** All table stakes dashboard features. Visual parity with app's OverviewPage and StrengthPage.
+
+**Avoids:** Building a SPA (Anti-Pattern 3). Using a JS framework (overkill for read-only pages). Using a Dart template engine (string interpolation sufficient for 5-6 pages).
+
+**Research flag:** Standard web dev. Chart.js docs are excellent. No deep research needed.
+
+### Phase 14: Dashboard Differentiators (Optional/Post-MVP)
+**Rationale:** Core loop works (push backup -> view dashboard). This phase adds competitive features that leverage JackedLog's unique data model.
+
+**Delivers:**
+- 5/3/1 block history page (fivethreeone_blocks table, TM progression over time)
+- Bodyweight trend page (bodyweight_entries table)
+- Estimated 1RM leaderboard (ranked across all exercises)
+- Workout frequency by weekday chart
+- Server-side backup retention policy (port GFS logic from auto_backup_service.dart)
+- Export from web dashboard (CSV download)
+
+**Addresses:** Differentiator features from FEATURES.md. These are "should have" not "must have."
+
+**Research flag:** Low complexity. All SQL patterns exist in app or are straightforward aggregations.
 
 ### Phase Ordering Rationale
 
-**Why data layer first:** Schema mistakes are expensive to fix after UI is built. Establishing the normalized block table prevents Settings overload pitfall and enables all subsequent features. Migration must be bulletproof — this takes time and testing.
+- **Phase 10 first:** Validate the riskiest unknowns (Docker + SQLite build hooks, scratch image, Shelf + sqlite3 integration) before building anything on top. If this fails, nothing else matters.
+- **Phase 11 before 12-13:** Server must be able to receive backups before it can display them. App integration is independent of dashboard work and can be done early.
+- **Phase 12 before 13:** Dashboard frontend needs API endpoints and query layer. Building HTML before queries exist means working with mock data.
+- **Phase 14 last:** Differentiators are additive. MVP is functional without them.
+- **Docker in Phase 10:** Docker packaging is part of the foundation. The server is deployed via Docker from day one, not added later.
 
-**Why overview before calculator:** The overview page validates the state machine (create→advance→complete lifecycle) without the complexity of percentage scheme switching. If progression logic is wrong, it's caught here before the calculator depends on it.
-
-**Why calculator last in core phases:** Calculator refactoring touches the most code (562 lines, core feature). Doing this after state management and progression logic are proven reduces risk. Data-driven schemes from Phase 1 make the refactor tractable.
-
-**Why polish is separate:** Edge cases and export/import are refinements, not blockers. Shipping v1.2 without TM adjustment flow or block abandonment is acceptable — users can start fresh blocks. These can be added in patch releases if time runs short.
-
-**Dependency chain:**
-```
-Phase 1 (Data)
-  ↓
-Phase 2 (Overview) ← validates state machine
-  ↓
-Phase 3 (Calculator) ← consumes validated block state
-  ↓
-Phase 4 (Polish) ← handles edge cases after core works
-```
+**Parallelizable work:**
+- Phase 11 (app) can overlap with Phase 12 (server queries) — different codebases, no conflicts
+- Phase 13 (frontend) can start before Phase 12 completes if using mock API data
+- Phase 14 features can be built independently of each other
 
 ### Research Flags
 
-Phases with well-documented patterns (skip research-phase):
-- **Phase 1:** Drift table creation and migration follow exact pattern from existing codebase (database.dart lines 60-413); ChangeNotifier + Provider matches WorkoutState exactly
-- **Phase 3:** Calculator refactoring is codebase-specific work, not domain research
+Phases with standard patterns (skip research-phase):
+- **Phase 10:** Shelf, Docker, and sqlite3 docs are excellent. Patterns are well-established.
+- **Phase 11:** Existing codebase has all the patterns (Settings migration, HTTP multipart, WAL checkpoint).
+- **Phase 13:** Chart.js docs are excellent. Server-rendered HTML is standard web dev.
+- **Phase 14:** Straightforward extensions of Phase 12-13 patterns.
 
-Phases likely needing deeper research during planning:
-- **Phase 2:** Timeline visualization UX — research suggests vertical over horizontal for mobile, but specific implementation details (progress indicators, completed/active/future styling) may need iteration
-- **Phase 4:** Export/import for new tables — existing code only handles workouts/gym_sets CSV; adding block data to ZIP archive needs research into format compatibility
+**Phase 12 needs careful execution** (not deep research, but attention to detail):
+- Replicating SQL queries exactly from gym_sets.dart (1RM formula, volume calculation, date grouping)
+- Timezone handling (avoid 'localtime' on server, set TZ env var)
+- Schema version edge cases (handling v48-v65 range)
+- Hidden filter on every gym_sets query
+
+No phase needs `/gsd:research-phase` — all patterns are known. Execution requires care, not research.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Direct codebase analysis confirms existing stack (Drift 2.30.0, Provider 6.1.1) provides all needed capabilities; zero new dependencies required |
-| Features | HIGH | User provided exact specification (11-week structure, set schemes, TM increments); verified against 5/3/1 Forever program documentation from multiple sources |
-| Architecture | HIGH | Data model and state management patterns match existing codebase conventions exactly; integration points identified with file-level precision |
-| Pitfalls | HIGH | Critical pitfalls (Settings overload, TM timing, rounding, migration) based on direct code analysis of existing calculator and database patterns; prevention strategies validated against codebase conventions |
+| Stack | HIGH | Shelf, sqlite3, Chart.js all well-documented official packages. Docker multi-stage builds are standard. |
+| Features | HIGH | Table stakes derived from self-hosted tracker ecosystem analysis. Differentiators from app's unique data model. |
+| Architecture | HIGH | Direct sqlite3 access proven by existing app dependencies. Monorepo workspace supported in Dart 3.6+. Server-rendered HTML is straightforward. |
+| Pitfalls | HIGH | All critical pitfalls derived from codebase analysis (WAL checkpoint pattern exists, 65 schema versions documented, timestamp handling visible in code). |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-**7th Week scheme variations:** Research found minor inconsistencies in 7th Week Deload and TM Test rep schemes across sources. User specified exact schemes (Deload: 70%x5, 80%x3-5, 90%x1, 100%x1; TM Test: 70/80/90/100% all x5), which differ slightly from some sources that suggest 100%x3-5 for TM Test. **Resolution:** Use user's specification; this is their program preference, not a standardization requirement.
+**Low confidence areas requiring validation during Phase 10:**
 
-**Unit switching mid-block:** Current Settings table stores TMs without unit metadata. Storing unit alongside TM snapshot in block table prevents conversion issues, but UI flow for "user switches preferred unit mid-block" needs validation. **Resolution:** Display warning if stored TM unit doesn't match preference; offer conversion with rounding disclosure; test during Phase 4 (edge cases).
+1. **sqlite3 v3 build hooks + dart build cli + scratch Docker image:** The mechanism should work (build hooks produce native assets that dart build cli bundles), but this specific combination needs first-run validation. The Dart SDK version in dart:stable (3.11.x) should fully support build hooks (stabilized in 3.10), but verify the compiled .so is correctly included in the scratch runtime image.
 
-**Block template extensibility:** While hardcoding the user's specific setup (2 Leaders + Anchor with BBB/FSL) is correct for v1.2, the data model should support future template additions without schema changes. **Resolution:** Define block structure as data (BlockTemplate with List<CycleDefinition>) even though only one template is supported in v1.2; this costs minutes now, saves hours later.
+   **Mitigation:** Validate in Phase 10 first task. If build hooks don't work as expected, fall back to explicitly copying libsqlite3.so from build stage (pattern documented in PITFALLS.md).
 
-**Historical block storage growth:** No performance concern identified, but should monitor. Single-active-block constraint means only 1 active row at a time; completed blocks accumulate at ~1 row per 11 weeks (4-5 blocks per year). **Resolution:** No action needed for v1.2; can add archive/cleanup in future if users request it.
+2. **ARM64 Docker compatibility:** sqlite3 native library paths differ between amd64 and arm64. Many self-hosted users run Raspberry Pi.
+
+   **Mitigation:** Test both architectures in Phase 10. Add to CI pipeline. Multi-arch Docker builds are standard (Docker buildx).
+
+3. **Schema version compatibility:** Server needs to handle backups from v48-v65+ gracefully. Edge cases may exist.
+
+   **Mitigation:** Test with actual backup files from different app versions during Phase 12. The app's export_data.dart creates perfect test fixtures.
+
+**Medium confidence:**
+- Whether dashboard queries will be fast enough on large databases (years of data) without additional indexes. The app already has indexes on gym_sets(name, created) and gym_sets(workout_id), which should suffice.
+
+   **Mitigation:** Test with real user backup (1+ year of data) in Phase 12. Add indexes if queries are slow (unlikely).
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- **Codebase analysis (JackedLog):**
-  - `lib/database/database.dart` — migration patterns (v31-v63), schema version tracking
-  - `lib/database/settings.dart` — existing 5/3/1 columns, Settings table structure
-  - `lib/widgets/five_three_one_calculator.dart` — current calculator implementation, scheme logic, rounding function
-  - `lib/widgets/training_max_editor.dart` — TM editor dialog
-  - `lib/notes/notes_page.dart` — banner entry point, TrainingMaxBanner widget
-  - `lib/settings/settings_state.dart` — ChangeNotifier + stream subscription pattern
-  - `lib/workouts/workout_state.dart` — state management with async init pattern
-  - `lib/main.dart` — Provider registration in appProviders()
-  - `lib/export_data.dart`, `lib/import_data.dart` — export/import scope and compatibility
-  - `.planning/codebase/ARCHITECTURE.md`, `STRUCTURE.md`, `CONVENTIONS.md`
-  - `.planning/PROJECT.md` — user requirements, TM increment values, manual advancement requirement
-  - `CLAUDE.md` — commit rules, backward compatibility requirement
-  - `pubspec.lock` — verified Drift 2.30.0 actual installed version
-- **Drift documentation:**
-  - [Drift Tables Documentation](https://drift.simonbinder.eu/dart_api/tables/) — foreign keys, column types
-  - [Drift Migrations Documentation](https://drift.simonbinder.eu/docs/advanced-features/migrations/) — migration patterns
-- **Flutter documentation:**
-  - [Flutter Stepper class](https://api.flutter.dev/flutter/material/Stepper-class.html) — evaluated and rejected for block timeline
+
+**Codebase analysis:**
+- lib/export_data.dart — WAL checkpoint pattern (line 158-159), database export flow
+- lib/import_data.dart — WAL/SHM file deletion (lines 101-104)
+- lib/database/database.dart — 65 schema versions, migration system
+- lib/database/gym_sets.dart — Query patterns, SQL formulas, timestamp handling, hidden filter
+- lib/backup/auto_backup_service.dart — Backup file creation, GFS retention policy
+- pubspec.yaml — Existing dependencies (http 1.2.0, sqlite3 2.4.0)
+
+**Official documentation:**
+- [shelf 1.4.2 on pub.dev](https://pub.dev/packages/shelf) — Dart team maintained
+- [shelf_router 1.1.4 on pub.dev](https://pub.dev/packages/shelf_router)
+- [shelf_static 1.1.3 on pub.dev](https://pub.dev/packages/shelf_static)
+- [sqlite3 3.1.5 on pub.dev](https://pub.dev/packages/sqlite3) — Build hooks for bundling
+- [Official Dart Docker image](https://hub.docker.com/_/dart) — Multi-stage builds
+- [Dart build hooks documentation](https://dart.dev/tools/hooks)
+- [Chart.js 4.5.1](https://www.chartjs.org/)
+- [SQLite WAL Documentation](https://sqlite.org/wal.html)
+- [SQLite PRAGMA Documentation](https://www.sqlite.org/pragma.html)
+
+**Self-hosted ecosystem:**
+- [wger - Self-hosted FLOSS fitness tracker](https://github.com/wger-project/wger) — Feature benchmarking
+- [workout-tracker](https://github.com/jovandeginste/workout-tracker) — API key auth pattern
+- [FitTrackee](https://github.com/SamR1/FitTrackee) — Self-hosted UX patterns
 
 ### Secondary (MEDIUM confidence)
-- **5/3/1 Forever program rules:**
-  - [Lift Vault Leader/Anchor Guide](https://liftvault.com/resources/leader-anchor-cycles/) — Leader/Anchor cycle definitions
-  - [The Fitness Wiki 5/3/1 Primer](https://thefitness.wiki/5-3-1-primer/) — 5/3/1 fundamentals reference
-  - [Jim Wendler - The Training Max](https://www.jimwendler.com/blogs/jimwendler-com/101082310-the-training-max-what-you-need-to-know) — TM progression rules
-  - [T-Nation 7th Week Protocol Discussion](https://t-nation.com/t/confusion-on-7th-week-tm-test-after-anchor/246002) — TM Test protocol details
-  - [T-Nation - Increasing TM After Anchor](https://t-nation.com/t/increasing-tm-after-anchor-deload/235856) — TM bump timing
-  - [T-Nation Leader/Anchor Setup](https://t-nation.com/t/doubt-about-leader-anchor-setup-in-forever/229773) — edge cases in block progression
-- **Feature reference (existing 5/3/1 apps):**
-  - [KeyLifts 531 App](https://www.keylifts.com/) — feature reference for 5/3/1 app capabilities
-  - [Five/Three/One App](https://fivethreeone.app/) — cycle management patterns
-  - [Boostcamp BBB Guide](https://www.boostcamp.app/blogs/531-boring-but-big-app-program-guide) — BBB template implementation
-- **UX patterns:**
-  - [UX Planet Progress Trackers](https://uxplanet.org/progress-trackers-in-ux-design-4319cef1c600) — timeline/stepper UX patterns
-  - [Eleken Stepper UI Examples](https://www.eleken.co/blog-posts/stepper-ui-examples) — mobile stepper design patterns
-  - [Flutter timeline packages landscape](https://fluttergems.dev/timeline/) — evaluated and rejected
+- [dart_frog 1.2.6 community transition](https://www.verygood.ventures/blog/dart-frog-has-found-a-new-pond) — July 2025
+- [Dart Docker SQLite3 issue #171](https://github.com/dart-lang/dart-docker/issues/171) — Solved by v3 build hooks
+- [SQLite forum: WAL backup corruption](https://sqlite.org/forum/forumpost/905eb5e564d4df44)
+- [API Key Best Practices - Google Cloud](https://docs.google.com/docs/authentication/api-keys-best-practices)
 
-### Tertiary (LOW confidence)
-- [Floating-point rounding in barbell calculators](https://apps.apple.com/us/app/bar-is-loaded-gym-calculator/id1509374210) — weight rounding pitfall reference
-- [Drift Migration Article](https://medium.com/@tagizada.nicat/migration-with-flutter-drift-c9e21e905eeb) — migration patterns
+### Tertiary (LOW confidence - needs Phase 10 validation)
+- Whether dart build cli properly bundles sqlite3 v3 native assets into scratch Docker image
+- Whether Dart SDK 3.11.x in dart:stable fully supports build hooks for AOT compilation
 
 ---
-*Research completed: 2026-02-11*
+*Research completed: 2026-02-15*
 *Ready for roadmap: yes*

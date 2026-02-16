@@ -1,316 +1,373 @@
-# Technology Stack: 5/3/1 Forever Block Programming
+# Stack Research: Self-Hosted Web Companion Server
 
-**Project:** JackedLog v1.2 - 5/3/1 Block Programming Milestone
-**Researched:** 2026-02-11
-**Focus:** Database schema for block model, UI for timeline/overview, calculator enhancement, supplemental work display
-**Overall Confidence:** HIGH
+**Domain:** Self-hosted Dart web server + read-only dashboard for fitness tracking app
+**Researched:** 2026-02-15
+**Confidence:** HIGH
 
 ---
 
 ## Executive Summary
 
-The 5/3/1 block programming feature requires **database schema additions** (new table + settings columns) and **no new Flutter packages**. The existing stack (Drift 2.30.0, Provider 6.1.1, Flutter Material 3) provides everything needed. The main technical work is designing the right data model and wiring it through the existing Provider/Drift reactive pipeline.
+The v1.3 self-hosted web companion requires a separate Dart server project within the monorepo, packaged as a Docker container. The server receives SQLite database backup files from the Flutter app, stores them, and serves a read-only web dashboard with workout statistics and progress graphs.
 
-The key architectural decision is: **one new `fivethreeone_blocks` table** rather than extending the Settings table further. The current Settings table already has 5 columns for 5/3/1 data (4 TMs + week). Adding block/cycle/supplemental state to Settings would bloat a single-row config table into a domain model, violating single responsibility.
+The recommended stack is **Shelf** (official Dart team HTTP server) with **shelf_router** for routing and **shelf_static** for serving the web dashboard's static assets. The dashboard frontend uses **vanilla HTML/CSS/JS with Chart.js** for graphs -- no SPA framework. The server reads uploaded SQLite databases using the **sqlite3** package (v3.x with build hooks that bundle SQLite natively). Authentication uses a simple **API key middleware** (custom, ~20 lines) checked via Bearer token header.
+
+Key architectural decision: the server does NOT use Drift ORM. It opens the uploaded `.sqlite` file directly with the `sqlite3` package and runs raw SQL queries. This avoids pulling Flutter-specific Drift codegen into the server project, and since the dashboard is read-only, there is no need for type-safe query builders or migrations.
 
 ---
 
-## Recommended Stack Changes
+## Recommended Stack
 
-### Database: New Table + Migration (v63 -> v64)
+### Server Framework
 
-**Current schema version:** 63 (added `last_backup_status` to settings)
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| `shelf` | 1.4.2 | HTTP server foundation | Official Dart team package. Minimal, composable middleware architecture. Battle-tested, stable (20 months since last release = mature, not abandoned). Every other Dart server framework is built on top of Shelf anyway. |
+| `shelf_router` | 1.1.4 | Request routing | Official companion to Shelf. Express.js-style route patterns (`app.get('/api/backups', handler)`). Lightweight -- just routing, nothing more. |
+| `shelf_static` | 1.1.3 | Serve static files | Official companion to Shelf. Serves the HTML/CSS/JS dashboard files from a directory. Handles mime types, caching headers. |
+| `shelf_cors_headers` | ~0.1.x | CORS middleware | Only needed if dashboard and API are on different origins. May not be needed since both are served from the same server. Evaluate during implementation. |
 
-The block model requires tracking:
-- Which block is active (or historical)
-- Current position within the 11-week structure
-- Starting TMs for each block (snapshot, not live)
-- Completed status per cycle
+**Why Shelf over dart_frog:**
 
-#### New Table: `fivethreeone_blocks`
+dart_frog (v1.2.6, community-maintained since July 2025) is a higher-level wrapper around Shelf that adds file-based routing, middleware, and dependency injection. It is designed for rapid API prototyping. However:
 
-| Column | Type | Purpose | Why |
-|--------|------|---------|-----|
-| `id` | INTEGER PK AUTO | Row identity | Standard Drift pattern |
-| `created` | DATETIME | When block was created | Ordering, history |
-| `squat_tm` | REAL NOT NULL | Squat TM at block start | Snapshot TM for this block's calculations |
-| `bench_tm` | REAL NOT NULL | Bench TM at block start | Same |
-| `deadlift_tm` | REAL NOT NULL | Deadlift TM at block start | Same |
-| `press_tm` | REAL NOT NULL | OHP TM at block start | Same |
-| `unit` | TEXT NOT NULL | kg or lb | Captured at block creation time |
-| `current_cycle` | INTEGER NOT NULL DEFAULT 0 | 0=Leader1, 1=Leader2, 2=Deload, 3=Anchor, 4=TMTest | Single integer encodes 11-week position |
-| `current_week` | INTEGER NOT NULL DEFAULT 1 | 1-3 within the current cycle | Week within cycle (1=5s, 2=3s, 3=5/3/1 or varies by cycle type) |
-| `is_active` | INTEGER NOT NULL DEFAULT 1 | Whether this is the current block | Only one block active at a time |
-| `completed` | DATETIME NULLABLE | When block was completed | NULL = in progress, set when TM Test done |
+1. **Overhead for this use case.** dart_frog's file-based routing and DI system add complexity for what is a 5-endpoint API server. The CLI tooling (`dart_frog dev`, `dart_frog build`) introduces another build step that complicates Docker builds.
+2. **dart_frog generates a Shelf app underneath.** Using Shelf directly removes a layer of abstraction with no loss of capability.
+3. **Docker builds.** Shelf compiles with standard `dart build cli`. dart_frog requires `dart_frog build` first, then compilation -- an extra step.
+4. **Maintenance trajectory.** Shelf is maintained by the Dart team (tools.dart.dev publisher). dart_frog transitioned to community-led maintenance in July 2025 -- viable but less certain long-term.
 
-**Why this structure:**
+**Why NOT shelf_plus:** shelf_plus (v1.11.0) bundles shelf + shelf_router + shelf_static + shelf_web_socket + hot reload into one package. Convenient for development but adds unnecessary WebSocket support and hot-reload dependencies to the production build. Prefer explicit, minimal dependencies.
 
-1. **Snapshot TMs:** Each block records starting TMs. TM progression happens within the block (Leader1 complete -> bump TMs -> continue to Leader2). The settings table TMs remain the "live" values for the calculator. Block TMs are the starting reference point for history.
+### Database / SQLite Access
 
-2. **Single `current_cycle` integer:** The 11-week structure maps cleanly to 5 cycles (0-4). No need for separate tables per cycle. The cycle index determines the set scheme (Leader uses 5's PRO, Anchor uses PR Sets, etc.).
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| `sqlite3` | 3.1.5 | Read uploaded SQLite backup files | Pure Dart bindings via dart:ffi. Version 3.x uses build hooks to bundle SQLite natively -- no system `libsqlite3.so` needed in Docker. Eliminates the Docker runtime dependency problem entirely. |
 
-3. **`current_week` within cycle:** Each cycle has 3 weeks. Combined with `current_cycle`, this gives exact position in the 11-week block (e.g., cycle=1, week=2 means Leader 2, Week 2 = "3s Week").
+**Why sqlite3 directly, NOT Drift:**
 
-4. **Historical blocks:** When a block completes, `is_active` = 0 and `completed` is set. Users can see past blocks. When starting a new block, the old one is marked complete.
+The server opens user-uploaded `.sqlite` files in **read-only mode** to query workout data for the dashboard. It does NOT manage its own schema, run migrations, or write data to the workout database. Using Drift would require:
 
-**What NOT to add:**
-- No `fivethreeone_cycles` sub-table. Cycles are derived from the `current_cycle` enum. Adding a table per cycle is over-engineering for what is fundamentally a counter (0-4).
-- No `fivethreeone_weeks` table. Week state is a simple integer on the block.
-- No per-exercise TM history table. TM progression is deterministic (add 2.5kg upper / 5kg lower per cycle). Historical TMs can be calculated from the block's starting TMs + cycle position.
+1. Duplicating all 9 table definitions from the Flutter app in the server project
+2. Running `build_runner` code generation in the server project
+3. Keeping the server's Drift schema in sync with the app's schema (version 65+)
+4. Pulling in Drift's reactive stream infrastructure that serves no purpose server-side
 
-#### Settings Table: No Changes Needed
+Instead, raw SQL via `sqlite3.open(filePath, mode: OpenMode.readOnly)` is simpler and decoupled. The server queries the same tables (`gym_sets`, `workouts`, `bodyweight_entries`, `five_three_one_blocks`, `notes`) using the same SQL the app already uses (see `lib/database/gym_sets.dart` for query patterns). If the app's schema changes, the server's SQL queries may need updating, but this is a small surface area vs. maintaining a parallel Drift schema.
 
-The existing 5/3/1 columns in Settings remain as-is:
+**Server-own metadata:** The server needs a tiny amount of its own state (backup history, API key hash). This uses a separate small SQLite database (`server_meta.db`) managed via raw `sqlite3` -- no Drift needed for a 2-table config database.
 
-| Column | Current Use | New Use |
-|--------|-------------|---------|
-| `fivethreeone_squat_tm` | Live TM for calculator | Same -- updated as cycles progress |
-| `fivethreeone_bench_tm` | Live TM for calculator | Same |
-| `fivethreeone_deadlift_tm` | Live TM for calculator | Same |
-| `fivethreeone_press_tm` | Live TM for calculator | Same |
-| `fivethreeone_week` | Global week (1-4) | **Deprecated in favor of block's `current_week`**, but kept for backward compat |
+### Web Dashboard Frontend
 
-The live TMs in Settings continue to serve the calculator. When a block is active, advancing cycles auto-updates these Settings values. This preserves backward compatibility -- users who never create a block still have their TMs in Settings working as before.
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| HTML/CSS (vanilla) | -- | Dashboard structure and styling | No build step, no node_modules, no bundler. Served directly by shelf_static. |
+| Chart.js | 4.5.1 | Progress graphs, strength trends, volume charts | Most popular lightweight JS charting library. CDN-loadable via single script tag. Matches the visual style of FL Chart in the app (line charts, bar charts). |
+| Vanilla JS (ES6) | -- | Fetch API data, render chart updates | For a read-only dashboard with ~5 pages, a framework is overkill. fetch() + DOM manipulation covers it. |
 
-#### Migration Code Pattern
+**Why NOT a JS framework (React/Vue/Svelte):**
 
-```sql
--- v63 -> v64: Add fivethreeone_blocks table
-CREATE TABLE IF NOT EXISTS fivethreeone_blocks (
-  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  created INTEGER NOT NULL,
-  squat_tm REAL NOT NULL,
-  bench_tm REAL NOT NULL,
-  deadlift_tm REAL NOT NULL,
-  press_tm REAL NOT NULL,
-  unit TEXT NOT NULL,
-  current_cycle INTEGER NOT NULL DEFAULT 0,
-  current_week INTEGER NOT NULL DEFAULT 1,
-  is_active INTEGER NOT NULL DEFAULT 1,
-  completed INTEGER
-);
+1. **Build complexity.** Any JS framework requires Node.js, npm, a bundler (Vite/webpack), and a build step. This adds a Node.js stage to the Docker build and increases image size.
+2. **This is a read-only dashboard, not an app.** There are no forms, no interactive state management, no client-side routing needs. The server renders the data; JS just draws charts.
+3. **Self-hosted users.** The target audience runs Docker on a home server. Simpler = fewer things to break. A 200KB HTML/CSS/JS bundle is more maintainable than a Node.js build pipeline.
+
+**Why NOT Jaspr (Dart SSR framework):**
+
+Jaspr is a Dart web framework with SSR support, which would keep the entire stack in Dart. However:
+
+1. It adds significant complexity (component model, hydration, routing)
+2. It is relatively young with limited community adoption
+3. The dashboard has ~5 pages of static data display -- Jaspr's SSR capabilities are overkill
+
+**Why NOT server-side rendered HTML templates (Mustache/Liquid):**
+
+Template engines in Dart are viable but poorly maintained. `mustache_template` and `liquid_engine` have low adoption. For a small dashboard, building HTML strings in Dart handlers or serving static HTML that fetches JSON via API endpoints is simpler and more maintainable.
+
+**Recommended approach:** Static HTML files served by shelf_static, with JS that calls the server's JSON API endpoints and renders data using Chart.js. This gives a clean separation: the Dart server only serves JSON + static files, and the browser handles rendering.
+
+### Docker
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| `dart:stable` | 3.11.x | Build stage base image | Official Dart Docker image. AOT compiles to native executable. |
+| `scratch` | -- | Runtime stage base image | Minimal image (~10-15MB total). Contains only the compiled binary + bundled SQLite (from build hooks). |
+
+**Multi-stage build strategy:**
+
+```dockerfile
+# Stage 1: Build
+FROM dart:stable AS build
+WORKDIR /app
+COPY pubspec.* ./
+RUN dart pub get
+COPY . .
+RUN dart pub get --offline
+RUN dart build cli --target bin/server.dart -o output
+
+# Stage 2: Runtime
+FROM scratch
+COPY --from=build /runtime/ /
+COPY --from=build /app/output/bundle/ /app/
+COPY --from=build /app/web/ /app/web/
+EXPOSE 8080
+VOLUME /app/data
+CMD ["/app/bin/server"]
 ```
 
-This follows the project's established manual migration pattern (see `database.dart` lines 283-405 for existing examples). No Drift codegen migration -- raw SQL in the `onUpgrade` handler with `.catchError((e) {})` guard.
+**Critical note on `dart build cli` vs `dart compile exe`:** The sqlite3 v3 package uses Dart build hooks to bundle SQLite. Build hooks are NOT supported by `dart compile exe` -- you MUST use `dart build cli` instead. This is the modern Dart AOT compilation approach and is what the official Docker documentation recommends.
 
-**Backup/Import Compatibility:** Database imports work by copying the .sqlite file directly (see `import_data.dart` line 106). The migration handler runs on `onUpgrade`, so importing an older database (v63) into a v64 app will trigger the migration and create the new table. CSV export only covers `workouts` and `gym_sets` tables, so the new table does not affect CSV import/export.
+**Why NOT `dart:stable` as runtime (without scratch):** The full Dart SDK image is ~800MB. The scratch-based approach produces a ~10-15MB image. For a self-hosted server that sits on a home NAS, image size matters.
+
+**Volume mount:** `/app/data` stores uploaded backups and the server metadata database. This must be a Docker volume so data persists across container restarts.
+
+### Authentication
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| Custom Shelf middleware | -- | API key authentication | Single-user self-hosted app. API key stored as SHA-256 hash in server config. ~20 lines of middleware code. |
+| `crypto` (dart:convert) | built-in | SHA-256 hashing | Part of Dart SDK. No external package needed for hashing the API key. |
+
+**Why NOT JWT:**
+
+JWT is designed for stateless authentication in multi-server, multi-user systems. This is a single-user, single-server application. An API key is:
+
+1. Simpler to implement (string comparison vs. token signing/verification)
+2. Simpler for users to configure (copy-paste a key, not manage token expiration)
+3. Equally secure for the threat model (self-hosted, local network, single user)
+
+**Authentication flow:**
+
+1. User generates an API key during server setup (displayed once, stored as SHA-256 hash)
+2. App stores the API key in Settings table (new columns: `server_url`, `server_api_key`)
+3. App sends API key as `Authorization: Bearer <key>` header on every request
+4. Server middleware hashes incoming key and compares to stored hash
+5. Dashboard web UI: either no auth (local network assumption) or session cookie from a login page
+
+### App-Side (Client Changes)
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| `http` | 1.2.0 (already in pubspec) | HTTP client for backup push | Already a dependency. Supports `MultipartRequest` for file uploads. No new package needed. |
+
+**App-side changes needed (Settings table additions):**
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `server_url` | TEXT NULLABLE | URL of the self-hosted server |
+| `server_api_key` | TEXT NULLABLE | API key for server authentication |
+
+**Backup push flow:**
+
+1. User configures server URL + API key in app settings
+2. User taps "Push to Server" button (manual, not automatic)
+3. App calls `PRAGMA wal_checkpoint(TRUNCATE)` (existing pattern from auto_backup_service.dart)
+4. App reads `jackedlog.sqlite` file bytes
+5. App sends `POST /api/backup` with multipart file upload + Bearer token header
+6. Server stores file in `/app/data/backups/` with timestamped filename
+7. Server updates its metadata database with backup record
 
 ---
 
-### Drift Table Definition
+## Server Project Structure
 
-```dart
-// lib/database/fivethreeone_blocks.dart
-import 'package:drift/drift.dart';
-
-@DataClassName('FiveThreeOneBlock')
-class FiveThreeOneBlocks extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  DateTimeColumn get created => dateTime()();
-  RealColumn get squatTm => real()();
-  RealColumn get benchTm => real()();
-  RealColumn get deadliftTm => real()();
-  RealColumn get pressTm => real()();
-  TextColumn get unit => text()();
-  IntColumn get currentCycle => integer().withDefault(const Constant(0))();
-  IntColumn get currentWeek => integer().withDefault(const Constant(1))();
-  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
-  DateTimeColumn get completed => dateTime().nullable()();
-}
+```
+server/
+  bin/
+    server.dart          # Entry point
+  lib/
+    middleware/
+      auth.dart          # API key middleware
+      logging.dart       # Request logging
+    routes/
+      api.dart           # JSON API routes (backup, stats, exercises, graphs)
+      dashboard.dart     # Dashboard page routes (serve HTML)
+    services/
+      backup_service.dart    # Backup storage and management
+      stats_service.dart     # Query workout database for dashboard data
+    config.dart          # Server configuration (port, data dir, API key hash)
+  web/
+    index.html           # Dashboard entry point
+    css/
+      style.css          # Dashboard styles
+    js/
+      app.js             # Chart rendering, API calls
+      charts.js          # Chart.js configuration
+  test/
+    server_test.dart     # API endpoint tests
+  pubspec.yaml           # Server-only dependencies
+  Dockerfile
 ```
 
-Register in `database.dart`:
-```dart
-@DriftDatabase(tables: [
-  Plans,
-  GymSets,
-  Settings,
-  PlanExercises,
-  Metadata,
-  Workouts,
-  Notes,
-  BodyweightEntries,
-  FiveThreeOneBlocks,  // NEW
-])
+This is a **separate Dart project** within the monorepo, NOT part of the Flutter app's pubspec.yaml. The server has its own dependency tree and does not import Flutter.
+
+---
+
+## Supporting Libraries
+
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| `args` | ^2.6.0 | CLI argument parsing | Parse `--port`, `--data-dir`, `--config` flags on server startup |
+| `path` | ^1.8.3 | File path manipulation | Already used in main app. Needed for backup file path handling. |
+| `archive` | ^4.0.0 | ZIP compression (optional) | Only if server needs to serve zipped backup downloads. Evaluate later. |
+| `crypto` | built-in | SHA-256 for API key hashing | Part of `dart:convert`. No separate package. |
+
+---
+
+## Development Tools
+
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| `dart run bin/server.dart` | Local development server | Run from `server/` directory |
+| `dart test` | Server unit/integration tests | Test API endpoints with mock requests |
+| `dart build cli` | AOT compile for Docker | Produces native executable with bundled SQLite |
+| Docker Compose | Local dev with volume mounts | Simplifies development setup |
+
+---
+
+## Installation
+
+Server project `pubspec.yaml`:
+
+```yaml
+name: jackedlog_server
+description: Self-hosted companion server for JackedLog
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  shelf: ^1.4.2
+  shelf_router: ^1.1.4
+  shelf_static: ^1.1.3
+  sqlite3: ^3.1.5
+  args: ^2.6.0
+  path: ^1.8.3
+
+dev_dependencies:
+  test: ^1.25.0
+  http: ^1.2.0  # For integration testing API endpoints
 ```
-
-Then run `dart run build_runner build` to regenerate `database.g.dart`.
-
-**Confidence:** HIGH -- follows exact pattern of existing tables (Notes, Workouts, BodyweightEntries).
-
----
-
-### UI Components: No New Packages
-
-#### Timeline / Block Overview
-
-**Recommendation:** Custom widget using `Column` + `Row` + `Container` with Material 3 styling.
-
-**Why NOT a timeline package:**
-- The block structure is fixed (always 5 segments: L1, L2, Deload, Anchor, TM Test)
-- A generic timeline package adds dependency weight for a static 5-item layout
-- Custom styling matches app's Material 3 theme (colorScheme.primaryContainer, etc.)
-- KISS principle -- a `Row` of 5 styled containers with progress indication is simpler than learning a package API
-
-**Why NOT Flutter's built-in Stepper:**
-- Stepper is designed for form wizards with expandable content per step
-- It has a vertical/horizontal layout but imposes its own visual style (circles + connecting lines)
-- The 5/3/1 block overview needs a compact progress bar style, not a form stepper
-- Stepper also manages its own state (activeStep), which conflicts with our database-driven state
-
-**Implementation approach:**
-```dart
-// A horizontal bar showing 5 segments
-Row(
-  children: [
-    _CycleSegment(label: 'L1', status: _getStatus(0)),
-    _CycleSegment(label: 'L2', status: _getStatus(1)),
-    _CycleSegment(label: 'DL', status: _getStatus(2)),
-    _CycleSegment(label: 'AN', status: _getStatus(3)),
-    _CycleSegment(label: 'TM', status: _getStatus(4)),
-  ],
-)
-```
-
-Each segment uses `Container` with `BoxDecoration` -- completed = filled primary, active = primary outline + glow, future = surfaceContainerHighest. This is ~50 lines of widget code vs. adding a package dependency.
-
-**Confidence:** HIGH -- standard Flutter layout, no external API to learn or break.
-
-#### Calculator Enhancement
-
-The existing `FiveThreeOneCalculator` widget (562 lines) already handles week selection and set scheme display. Enhancements needed:
-
-1. **Cycle-awareness:** Read `current_cycle` from active block to determine set scheme variant (5's PRO for Leader, PR Sets for Anchor, Deload percentages, TM Test scheme)
-2. **Supplemental work display:** Add a section below the main sets showing supplemental work (BBB 5x10@60% for Leader, FSL 5x5 for Anchor)
-
-These are modifications to the existing widget, not new packages. The `_getWorkingSetScheme()` method (line 179) already returns a list of (percentage, reps, amrap) records -- it just needs to branch on cycle type in addition to week.
-
-**Confidence:** HIGH -- extending existing code path.
-
-#### State Management
-
-**Recommendation:** Extend existing Provider pattern with a new `FiveThreeOneState` ChangeNotifier, or integrate into existing `SettingsState`.
-
-**Option A: New ChangeNotifier (Recommended)**
-
-```dart
-class FiveThreeOneState extends ChangeNotifier {
-  FiveThreeOneBlock? activeBlock;
-  StreamSubscription? _subscription;
-
-  Future<void> init() async {
-    _subscription = (db.fiveThreeOneBlocks.select()
-      ..where((b) => b.isActive.equals(true))
-      ..limit(1))
-      .watchSingleOrNull()
-      .listen((block) {
-        activeBlock = block;
-        notifyListeners();
-      });
-  }
-}
-```
-
-Add to `MultiProvider` in `main.dart` alongside existing state providers.
-
-**Why a separate state class:**
-- SettingsState already handles 50+ settings fields. Adding block lifecycle management bloats it.
-- Block state has its own lifecycle (create, advance, complete) that doesn't map to settings updates.
-- Follows existing pattern: WorkoutState, PlanState, TimerState are all separate ChangeNotifiers.
-
-**Option B: Integrate into SettingsState (NOT recommended)**
-- Simpler (no new provider), but violates single responsibility
-- Settings is already a single-row table pattern; blocks are multi-row
-
-**Confidence:** HIGH -- mirrors WorkoutState pattern exactly.
-
----
-
-## What NOT to Add
-
-| Rejected Addition | Why Not |
-|-------------------|---------|
-| `timelines` package | Fixed 5-item layout doesn't justify a dependency. Custom Row+Container is simpler. |
-| `flutter_staggered_animations` | Animation on cycle transitions is nice-to-have but YAGNI for MVP. Flutter's built-in `AnimatedContainer` suffices if needed later. |
-| `step_progress_indicator` | Another package for what is a styled Row. |
-| Separate TM history table | TM progression is deterministic from block start TMs + cycle number. Can be calculated, not stored. |
-| `fivethreeone_cycles` junction table | Over-normalized. Cycle state is a single integer (0-4) on the block row. |
-| `fivethreeone_supplementals` config table | Supplemental schemes (BBB, FSL) are hardcoded per cycle type. They don't vary per user in this implementation. If user-configurable supplementals are added later, that's a separate feature. |
-| Any charting additions | Block progress is a 5-step bar, not a graph. `fl_chart` is overkill for this. |
-
----
-
-## Integration Points with Existing Stack
-
-### Drift Streams (Reactive Updates)
-
-The block table should use Drift's `.watch()` streams so the UI updates reactively when:
-- A new block is created
-- The user advances to the next week/cycle
-- A block is completed
-
-This matches the existing pattern in `SettingsState` (line 26: `db.settings.select()...watchSingleOrNull()`) and `gym_sets.dart` (line 222: `query.watch()`).
-
-### Provider (State Propagation)
-
-The new `FiveThreeOneState` provides:
-- `activeBlock` -- the current block (or null if no block exists)
-- Methods: `createBlock()`, `advanceWeek()`, `advanceCycle()`, `completeBlock()`
-
-Widgets access via `context.watch<FiveThreeOneState>()` or `context.read<FiveThreeOneState>()`.
-
-### Calculator Widget Integration
-
-The `FiveThreeOneCalculator` currently reads week from Settings (`setting.fivethreeoneWeek`). With blocks:
-1. Check if an active block exists via `FiveThreeOneState`
-2. If yes: use block's `currentCycle` and `currentWeek` to determine scheme
-3. If no: fall back to current behavior (Settings-based week)
-
-This preserves backward compatibility for users who don't use blocks.
-
-### Notes Page Entry Point
-
-The "5/3/1 Training Max" banner in `notes_page.dart` (line 462) currently opens `TrainingMaxEditor`. This should:
-1. If active block exists: navigate to block overview page
-2. If no block: show "Create Block" option alongside existing TM editor
-
-### Export/Import Considerations
-
-**CSV Export:** Currently exports `workouts` and `gym_sets` only. The `fivethreeone_blocks` table does NOT need CSV export -- it's configuration data, not workout data. Database export (.sqlite file) captures everything automatically.
-
-**Database Import:** Migration handler ensures the table is created when importing an older database. No changes needed to import logic.
-
-**Backward Compatibility:** Importing a v64 database into a v63 app would fail on the unknown table, but this is the existing behavior for any schema upgrade and is acceptable.
-
----
-
-## Installation / Build Commands
-
-No new packages. The only build step is regenerating Drift code after adding the new table definition:
 
 ```bash
-dart run build_runner build --delete-conflicting-outputs
+# From server/ directory
+dart pub get
 ```
 
-This updates `database.g.dart` with the new table's generated code.
+App-side additions (to existing `pubspec.yaml`): **None**. The `http` package (v1.2.0) is already a dependency and provides `MultipartRequest` for file uploads.
+
+---
+
+## Alternatives Considered
+
+| Category | Recommended | Alternative | Why Not Alternative |
+|----------|-------------|-------------|---------------------|
+| Server framework | Shelf 1.4.2 | dart_frog 1.2.6 | Extra abstraction layer, custom build step, community-maintained since Jul 2025. Shelf is simpler for 5 endpoints. |
+| Server framework | Shelf 1.4.2 | Serverpod | Full-stack framework with ORM, auth, real-time -- massive overkill for a read-only backup receiver. |
+| Server framework | Shelf 1.4.2 | shelf_plus 1.11.0 | Bundles WebSocket/hot-reload deps we don't need. Prefer explicit minimal deps. |
+| SQLite access | sqlite3 3.1.5 (raw) | Drift 2.31.0 | Would require duplicating 9 table definitions, build_runner codegen, schema sync. Read-only queries don't need ORM. |
+| Dashboard frontend | Vanilla HTML/JS + Chart.js | React/Vue/Svelte SPA | Adds Node.js build pipeline, increases Docker complexity, overkill for 5 read-only pages. |
+| Dashboard frontend | Vanilla HTML/JS + Chart.js | Jaspr (Dart SSR) | Young framework, steep learning curve for simple pages, overkill for the use case. |
+| Dashboard frontend | Vanilla HTML/JS + Chart.js | Flutter Web | Massive bundle size (~2MB+), poor SEO, slow initial load, overkill for static data display. |
+| Charting | Chart.js 4.5.1 (CDN) | D3.js | D3 is lower-level, requires more code for standard charts. Chart.js is batteries-included for line/bar/doughnut. |
+| Authentication | API key + Bearer header | JWT tokens | JWT adds token expiration, refresh flow, signing keys -- unnecessary for single-user self-hosted. |
+| Authentication | API key + Bearer header | OAuth2 | Designed for third-party authorization. No third parties in self-hosted single-user. |
+| Docker runtime | scratch | alpine | Alpine adds ~5MB but includes shell for debugging. Consider if troubleshooting in production is needed. |
+
+---
+
+## What NOT to Use
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| Drift ORM on server | Forces schema duplication, codegen, sync burden. Server only reads data. | Raw sqlite3 queries |
+| Flutter Web for dashboard | 2MB+ bundle, slow load, poor SEO, overkill for read-only data display | Vanilla HTML/JS + Chart.js |
+| dart_frog | Extra build step (`dart_frog build`), file-based routing overhead for 5 routes | Shelf directly |
+| JWT authentication | Over-engineered for single-user self-hosted | API key with Bearer header |
+| WebSocket / real-time sync | App is offline-first with manual push. No real-time requirement. | REST API with manual push |
+| Node.js in Docker | Any JS framework adds Node to the build, doubling image size | Static HTML/JS served by Dart |
+| sqlite3 v2.x | Requires system libsqlite3.so in Docker runtime image | sqlite3 v3.x (bundles SQLite via build hooks) |
+| `dart compile exe` | Does not support build hooks (needed by sqlite3 v3.x) | `dart build cli` |
+| Background sync / auto-push | Violates offline-first design, adds complexity (retry logic, conflict detection) | Manual backup push |
+| Multi-user auth / user accounts | Out of scope. Self-hosted = single user. | Single API key |
+
+---
+
+## Integration Points with Existing App
+
+### Backup Format Compatibility
+
+The app already produces `.sqlite` backup files via:
+
+1. **Manual export:** `ExportData` widget (lib/export_data.dart) -- calls `PRAGMA wal_checkpoint(TRUNCATE)` then copies `jackedlog.sqlite`
+2. **Auto-backup:** `AutoBackupService` (lib/backup/auto_backup_service.dart) -- same WAL checkpoint, copies to configured path
+
+The server receives the same `.sqlite` file. No format conversion needed. The server opens it read-only with `sqlite3.open(path, mode: OpenMode.readOnly)`.
+
+### Database Schema Awareness
+
+The server needs to handle multiple database versions (users may push backups from different app versions). The server should:
+
+1. Read the `PRAGMA user_version` to determine schema version
+2. Require minimum version 48 (when `workouts` table was added -- needed for dashboard)
+3. Gracefully handle missing columns/tables from newer versions (use `SELECT * FROM sqlite_master` to check table existence)
+
+### HTTP Client (App-Side)
+
+The app already depends on `http: ^1.2.0` (currently used only by Spotify integration). The backup push uses `MultipartRequest`:
+
+```dart
+final request = http.MultipartRequest('POST', Uri.parse('$serverUrl/api/backup'));
+request.headers['Authorization'] = 'Bearer $apiKey';
+request.files.add(await http.MultipartFile.fromPath('backup', dbFilePath));
+final response = await request.send();
+```
+
+No new dependencies needed.
+
+### Settings Table Changes (App-Side)
+
+New columns needed in the app's Settings table (migration v65 -> v66):
+
+```sql
+ALTER TABLE settings ADD COLUMN server_url TEXT;
+ALTER TABLE settings ADD COLUMN server_api_key TEXT;
+```
+
+These are nullable -- the server feature is entirely optional. If both are null, no server UI is shown.
 
 ---
 
 ## Sources
 
-**HIGH Confidence:**
-- Codebase analysis: `lib/database/database.dart` (migration patterns, schema version 63)
-- Codebase analysis: `lib/database/settings.dart` (existing 5/3/1 columns)
-- Codebase analysis: `lib/widgets/five_three_one_calculator.dart` (current calculator implementation)
-- Codebase analysis: `lib/settings/settings_state.dart` (Provider + Drift stream pattern)
-- Codebase analysis: `lib/import_data.dart` (database import mechanism)
-- Codebase analysis: `lib/export_data.dart` (CSV export scope)
-- Codebase analysis: `pubspec.lock` (Drift 2.30.0 actual installed version)
-- [Drift Tables Documentation](https://drift.simonbinder.eu/dart_api/tables/) -- foreign keys, column types
-- [Flutter Stepper class](https://api.flutter.dev/flutter/material/Stepper-class.html) -- evaluated and rejected
+**HIGH Confidence (official documentation, verified):**
 
-**MEDIUM Confidence:**
-- [Flutter timeline packages landscape](https://fluttergems.dev/timeline/) -- confirmed no compelling built-in alternative
+- [shelf 1.4.2 on pub.dev](https://pub.dev/packages/shelf) -- latest version, Dart team maintained
+- [shelf_router 1.1.4 on pub.dev](https://pub.dev/packages/shelf_router) -- latest version
+- [shelf_static 1.1.3 on pub.dev](https://pub.dev/packages/shelf_static) -- latest version
+- [sqlite3 3.1.5 on pub.dev](https://pub.dev/packages/sqlite3) -- latest version (published 3 days ago), build hooks for bundling
+- [Drift setup documentation](https://drift.simonbinder.eu/setup/) -- NativeDatabase for pure Dart, version 2.31.0
+- [Drift platform support](https://drift.simonbinder.eu/platforms/) -- confirms pure Dart server support
+- [Official Dart Docker image](https://hub.docker.com/_/dart) -- dart:stable 3.11.x, multi-stage build with scratch
+- [Dart Docker issue #171](https://github.com/dart-lang/dart-docker/issues/171) -- SQLite in scratch images (solved by sqlite3 v3 build hooks)
+- [Dart build hooks documentation](https://dart.dev/tools/hooks) -- build hooks run during `dart build`, not `dart compile exe`
+- [dart_frog 1.2.6 on pub.dev](https://pub.dev/packages/dart_frog) -- latest version, community-maintained
+- [Chart.js 4.5.1](https://www.chartjs.org/) -- current stable version
+- [http 1.2.0 MultipartRequest](https://pub.dev/documentation/http/latest/http/MultipartRequest-class.html) -- file upload API
+- Codebase: `lib/export_data.dart` -- existing backup file format (raw SQLite with WAL checkpoint)
+- Codebase: `lib/backup/auto_backup_service.dart` -- existing backup workflow
+- Codebase: `lib/database/database.dart` -- schema version 65, migration patterns
+- Codebase: `lib/database/gym_sets.dart` -- SQL query patterns for strength/cardio data
+- Codebase: `pubspec.yaml` -- existing http dependency at 1.2.0
+
+**MEDIUM Confidence (multiple sources agree):**
+
+- [sqlite3 v3 build hooks bundle SQLite](https://github.com/simolus3/sqlite3.dart/tree/master/sqlite3) -- bundles prebuilt SQLite for Linux x64/arm64
+- [dart_frog community transition](https://www.verygood.ventures/blog/dart-frog-has-found-a-new-pond) -- moved to dart-frog-dev org July 2025
+- [shelf_plus 1.11.0 on pub.dev](https://pub.dev/packages/shelf_plus) -- evaluated and rejected
+
+**LOW Confidence (needs validation during implementation):**
+
+- Whether `dart build cli` properly bundles sqlite3's native assets into the `scratch` Docker image -- the mechanism should work (build hooks produce code assets), but this specific combination needs testing in the first implementation phase
+- Whether the Dart SDK version in `dart:stable` Docker image (3.11.x) fully supports build hooks for AOT compilation -- build hooks were stabilized in Dart 3.10, so 3.11 should work, but verify
 
 ---
 
@@ -318,23 +375,20 @@ This updates `database.g.dart` with the new table's generated code.
 
 | Area | Confidence | Rationale |
 |------|------------|-----------|
-| Database schema design | HIGH | Follows exact patterns of existing tables (Workouts, Notes). Manual migration pattern established in 12+ prior migrations. |
-| No new packages needed | HIGH | All UI is standard Flutter Material 3 widgets. Block timeline is a fixed 5-item Row. |
-| Provider integration | HIGH | Mirrors existing WorkoutState/PlanState pattern exactly. |
-| Calculator enhancement | HIGH | Extending existing `_getWorkingSetScheme()` method with cycle branching. |
-| Export/import compatibility | HIGH | Verified: CSV only touches workouts/gym_sets; database import triggers migration handler. |
-| Supplemental work display | HIGH | Static data (BBB percentages, FSL percentages) rendered as additional set rows in existing calculator UI. |
+| Server framework (Shelf) | HIGH | Official Dart team package, stable API, well-documented, simple for this use case |
+| SQLite access (sqlite3 raw) | HIGH | Well-established package, v3.1.5 published days ago, build hooks eliminate Docker dependency issues |
+| Dashboard frontend (vanilla + Chart.js) | HIGH | Standard web technologies, zero build step, Chart.js is the most popular lightweight charting lib |
+| Docker packaging | MEDIUM | Standard multi-stage pattern works, but sqlite3 v3 build hooks + `dart build cli` + scratch combo needs first-run validation |
+| Authentication (API key) | HIGH | Trivially simple to implement, appropriate for single-user self-hosted |
+| App-side HTTP client | HIGH | `http` package already in deps, MultipartRequest is well-documented |
+| Schema compatibility | MEDIUM | Server reading arbitrary app database versions has edge cases -- needs careful `PRAGMA user_version` checking |
 
 ---
 
 ## Summary for Roadmap
 
-1. **Phase 1 (Foundation):** Create `fivethreeone_blocks` table + Drift definition + migration v63->v64. Create `FiveThreeOneState` provider. No UI yet -- just data layer.
+**Phase ordering implication:** The first phase should focus on the server skeleton (Shelf + Docker + API key auth + backup receive endpoint) without any dashboard. This validates the Docker build pipeline and sqlite3 v3 build hooks in a container before building UI on top.
 
-2. **Phase 2 (Block Overview):** Block overview page with timeline bar, create/advance/complete actions. Entry point from Notes page banner.
+The dashboard should come in a later phase after the API layer is proven, since Chart.js rendering is straightforward once the JSON API endpoints exist.
 
-3. **Phase 3 (Calculator Enhancement):** Make calculator cycle-aware (5's PRO vs PR Sets vs Deload vs TM Test). Add supplemental work section.
-
-4. **Phase 4 (Polish):** TM auto-progression on cycle advance, historical block viewing, edge cases (mid-block TM edits).
-
-All phases use existing stack. Zero new dependencies.
+App-side changes (Settings columns + server config UI + backup push button) can be developed in parallel with the server, since the interface contract (POST /api/backup with multipart file + Bearer token) is simple and stable.

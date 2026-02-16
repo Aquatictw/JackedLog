@@ -4,6 +4,17 @@
 
 A Flutter fitness tracking app for logging workouts, tracking personal records, and visualizing progress. Cross-platform (Android, iOS, Linux, macOS, Windows) with offline-first architecture using SQLite/Drift for persistence. Includes Spotify integration for workout music, full edit capability for completed workouts, customizable note ordering, and 5/3/1 Forever block programming with cycle-aware calculator.
 
+## Current Milestone: v1.3 Self-Hosted Web Companion
+
+**Goal:** Add an optional self-hosted Dart web server (Docker) that receives manual backup pushes from the app and provides a read-only web dashboard for viewing workout stats.
+
+**Target features:**
+- Dart backend server (Shelf/dart_frog) packaged as Docker container
+- API key authentication (single-user, self-hosted)
+- App-side server configuration (URL + token) with manual backup push
+- Web dashboard: read-only workout history, PRs, progress graphs, strength trends, volume, heatmap
+- Backup management: history, download, restore via web UI
+
 ## Core Value
 
 Users can efficiently log and track their workouts with minimal friction — every interaction should feel fast and intuitive.
@@ -50,10 +61,18 @@ Users can efficiently log and track their workouts with minimal friction — eve
 
 ### Active
 
-None — planning next milestone.
+- [ ] Dart web server with API key auth and backup receive endpoint
+- [ ] Docker container packaging for self-hosted deployment
+- [ ] App-side server settings (URL + API token configuration)
+- [ ] Manual backup push from app to server
+- [ ] Read-only web dashboard (workout history, PRs, progress graphs, trends, heatmap)
+- [ ] Web-based backup management (history, download, restore)
 
 ### Out of Scope
 
+- Cloud sync / third-party hosting — self-hosted only, no managed cloud service
+- Multi-user server — single-user self-hosted design
+- Auto background sync — manual backup push only, app stays offline-first
 - Cloud sync — offline-first design, backup system sufficient
 - Social features — personal tracking app
 - AI/ML workout recommendations — keep it simple
@@ -67,8 +86,9 @@ None — planning next milestone.
 ## Context
 
 Shipped v1.0 UI Enhancements, v1.1 Error Handling & Stability, and v1.2 5/3/1 Forever Block Programming.
-Tech stack: Flutter/Dart, Drift ORM (SQLite), Provider state management.
+App tech stack: Flutter/Dart, Drift ORM (SQLite), Provider state management.
 Database version: 65 (added start TM columns to fivethreeone_blocks).
+v1.3 introduces a new server component: Dart backend (Shelf/dart_frog) in Docker, communicating with the app via REST API with API key auth.
 
 5/3/1 implementation: Dedicated `fivethreeone_blocks` table with block lifecycle (create → advance → complete). Pure `schemes.dart` module for all percentage/rep data. `FiveThreeOneState` ChangeNotifier in Provider tree. Context-aware calculator shows correct scheme per cycle/week with supplemental work. Block overview page with vertical timeline. Notes page banner shows block position.
 
@@ -99,5 +119,10 @@ Database version: 65 (added start TM columns to fivethreeone_blocks).
 | pushReplacement for block completion | Prevents back-nav to stale overview | ✓ Good |
 | Pre-fill new block TMs from last completed | Smoother block-to-block workflow | ✓ Good |
 
+| Dart server (Shelf/dart_frog) for backend | Same language as app, shared understanding | — Pending |
+| Docker for deployment | Standard self-hosting, easy for users | — Pending |
+| API key auth (single-user) | Simplest secure auth for self-hosted single-user | — Pending |
+| Manual backup push (not auto-sync) | Keeps app offline-first, user controls when data leaves device | — Pending |
+
 ---
-*Last updated: 2026-02-15 after v1.2 milestone completion*
+*Last updated: 2026-02-15 after v1.3 milestone start*
