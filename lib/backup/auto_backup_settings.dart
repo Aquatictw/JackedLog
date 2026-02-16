@@ -12,6 +12,7 @@ import '../database/database.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
 import '../utils.dart';
+import '../server/backup_push_service.dart';
 import 'auto_backup_service.dart';
 
 class AutoBackupSettings extends StatefulWidget {
@@ -23,6 +24,7 @@ class AutoBackupSettings extends StatefulWidget {
 
 class _AutoBackupSettingsState extends State<AutoBackupSettings> {
   bool _isBackingUp = false;
+  bool _isPushing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -339,6 +341,71 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
                   ),
                 ),
               ],
+
+              // Server push section — visible when server URL is configured
+              if (settings.value.serverUrl != null &&
+                  settings.value.serverUrl!.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 16),
+
+                // Push to server header
+                Row(
+                  children: [
+                    Icon(
+                      Icons.cloud_upload_rounded,
+                      color: colorScheme.tertiary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Push to Server',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Push status display
+                _buildPushStatus(context, settings.value, colorScheme),
+
+                const SizedBox(height: 16),
+
+                // Progress bar (only during push)
+                if (_isPushing)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: LinearProgressIndicator(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+
+                // Push button
+                FilledButton.icon(
+                  onPressed: _isPushing ? null : _performPush,
+                  icon: _isPushing
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : const Icon(Icons.cloud_upload_rounded),
+                  label: Text(_isPushing ? 'Pushing...' : 'Push Backup'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -424,6 +491,107 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
         ),
       ],
     );
+  }
+
+  Widget _buildPushStatus(
+    BuildContext context,
+    Setting settings,
+    ColorScheme colorScheme,
+  ) {
+    final lastPushTime = settings.lastPushTime;
+    final lastPushStatus = settings.lastPushStatus;
+
+    IconData icon;
+    String statusText;
+    Color color;
+
+    if (lastPushTime == null) {
+      icon = Icons.cloud_off_rounded;
+      statusText = 'Never pushed';
+      color = colorScheme.outline;
+    } else if (lastPushStatus == 'failed') {
+      icon = Icons.error_outline_rounded;
+      statusText = 'Last push failed';
+      color = colorScheme.error;
+    } else {
+      icon = Icons.check_circle_outline_rounded;
+      statusText = 'Last pushed: ${timeago.format(lastPushTime)}';
+      color = colorScheme.primary;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Server Backup',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  statusText,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          Icon(icon, size: 16, color: color),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performPush() async {
+    final settings = context.read<SettingsState>();
+    final serverUrl = settings.value.serverUrl;
+    final apiKey = settings.value.serverApiKey;
+
+    if (serverUrl == null ||
+        serverUrl.isEmpty ||
+        apiKey == null ||
+        apiKey.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isPushing = true;
+    });
+
+    try {
+      await BackupPushService.pushBackup(serverUrl, apiKey);
+      if (mounted) {
+        await settings.init();
+      }
+    } catch (e) {
+      if (mounted) {
+        await settings.init();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPushing = false;
+        });
+      }
+    }
   }
 
   Future<void> _selectBackupFolder() async {
