@@ -95,7 +95,13 @@ Plans:
 4. Server queries workout history with pagination (20 per page) and workout detail with joined gym_sets data
 5. Server filters exercises by category and handles edge cases (hidden=0 filter, workout_id NULL, epoch timestamps)
 
-**Status:** Pending
+**Plans:** 2 plans
+
+Plans:
+- [x] 12-01-PLAN.md — DashboardService core: lifecycle, overview stats, workout history/detail
+- [x] 12-02-PLAN.md — Exercise queries: records, rep records, search/filter
+
+**Status:** Complete (2026-02-15)
 
 ---
 
@@ -151,7 +157,7 @@ Plans:
 |-------|------|--------------|--------|
 | 10 - Server Foundation | Server can receive, validate, and store backups in Docker | 11 | Complete |
 | 11 - App Integration | App can push backups to server | 4 | Complete |
-| 12 - Dashboard Query Layer | Server can query backups for analytics | 6 | Pending |
+| 12 - Dashboard Query Layer | Server can query backups for analytics | 6 | Complete |
 | 13 - Dashboard Frontend | Users can view stats via web dashboard | 6 | Pending |
 | 14 - Dashboard Differentiators | Dashboard shows 5/3/1 and bodyweight features | 3 | Pending |
 
@@ -159,4 +165,4 @@ Plans:
 
 ---
 
-*Last updated: 2026-02-15 — Phase 11 complete*
+*Last updated: 2026-02-15 — Phase 12 complete*

@@ -1,0 +1,424 @@
+import 'dart:io';
+
+import 'package:sqlite3/sqlite3.dart';
+
+/// Filename validation pattern for backup files.
+final _backupPattern = RegExp(r'^jackedlog_backup_\d{4}-\d{2}-\d{2}\.db$');
+
+/// Query layer for dashboard analytics.
+///
+/// Opens uploaded SQLite backup files in read-only mode and provides
+/// methods to extract workout statistics, history, and details.
+class DashboardService {
+  final String dataDir;
+  Database? _db;
+  String? _currentFile;
+
+  DashboardService(this.dataDir);
+
+  bool get isOpen => _db != null;
+  String? get currentFile => _currentFile;
+
+  /// Open the latest (or specified) backup file in read-only mode.
+  /// Returns false if no backup exists or schema version < 48.
+  bool open({String? filename}) {
+    close();
+
+    final filePath = filename != null
+        ? '$dataDir/$filename'
+        : _findLatestBackupPath();
+    if (filePath == null) return false;
+
+    try {
+      final db = sqlite3.open(filePath, mode: OpenMode.readOnly);
+      final versionResult = db.select('PRAGMA user_version');
+      final version = versionResult.isNotEmpty
+          ? versionResult.first.values.first as int
+          : 0;
+      if (version < 48) {
+        db.close();
+        return false;
+      }
+      _db = db;
+      _currentFile = filePath;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Close the current database handle.
+  void close() {
+    _db?.close();
+    _db = null;
+    _currentFile = null;
+  }
+
+  /// Get overview statistics for the dashboard.
+  ///
+  /// Returns a map with keys: workoutCount, totalVolume, currentStreak,
+  /// totalTimeSeconds, hasData. Supports period filtering (week/month/year/all).
+  Map<String, dynamic> getOverviewStats({String? period}) {
+    if (_db == null) {
+      return {
+        'workoutCount': 0,
+        'totalVolume': 0.0,
+        'currentStreak': 0,
+        'totalTimeSeconds': 0,
+        'hasData': false,
+      };
+    }
+
+    final startEpochSeconds = _periodToEpoch(period);
+
+    // Workout count
+    final countResult = _db!.select(
+      'SELECT COUNT(DISTINCT id) as workout_count FROM workouts WHERE start_time >= ?',
+      [startEpochSeconds],
+    );
+    final workoutCount = countResult.first['workout_count'] as int;
+
+    // Total volume
+    final volumeResult = _db!.select(
+      'SELECT COALESCE(SUM(weight * reps), 0) as total_volume FROM gym_sets WHERE created >= ? AND hidden = 0 AND cardio = 0',
+      [startEpochSeconds],
+    );
+    final totalVolume = (volumeResult.first['total_volume'] as num).toDouble();
+
+    // Training time
+    final timeResult = _db!.select(
+      'SELECT COALESCE(SUM(end_time - start_time), 0) as total_seconds FROM workouts WHERE start_time >= ? AND end_time IS NOT NULL',
+      [startEpochSeconds],
+    );
+    final totalSeconds = timeResult.first['total_seconds'] as int;
+
+    // Current streak
+    final streak = _calculateStreak();
+
+    return {
+      'workoutCount': workoutCount,
+      'totalVolume': totalVolume,
+      'currentStreak': streak,
+      'totalTimeSeconds': totalSeconds,
+      'hasData': true,
+    };
+  }
+
+  /// Get paginated workout history with aggregated stats per workout.
+  ///
+  /// Returns a map with keys: workouts (list), totalCount, page, pageSize.
+  /// Supports optional date range filtering via startEpoch/endEpoch (seconds).
+  Map<String, dynamic> getWorkoutHistory({
+    int page = 1,
+    int pageSize = 20,
+    int? startEpoch,
+    int? endEpoch,
+  }) {
+    if (_db == null) {
+      return {
+        'workouts': <Map<String, dynamic>>[],
+        'totalCount': 0,
+        'page': page,
+        'pageSize': pageSize,
+      };
+    }
+
+    // Build WHERE clause with optional date range
+    final whereParts = <String>['1=1'];
+    final whereParams = <Object>[];
+
+    if (startEpoch != null) {
+      whereParts.add('w.start_time >= ?');
+      whereParams.add(startEpoch);
+    }
+    if (endEpoch != null) {
+      whereParts.add('w.start_time <= ?');
+      whereParams.add(endEpoch);
+    }
+
+    final whereClause = 'WHERE ${whereParts.join(' AND ')}';
+
+    // Count query
+    final countResult = _db!.select(
+      'SELECT COUNT(DISTINCT w.id) as total FROM workouts w $whereClause',
+      whereParams,
+    );
+    final totalCount = countResult.first['total'] as int;
+
+    // Data query with aggregated stats
+    final offset = (page - 1) * pageSize;
+    final dataResult = _db!.select('''
+      SELECT w.id, w.start_time, w.end_time, w.name, w.notes,
+        COUNT(DISTINCT gs.name) as exercise_count,
+        COUNT(gs.id) as set_count,
+        COALESCE(SUM(gs.weight * gs.reps), 0) as total_volume
+      FROM workouts w
+      LEFT JOIN gym_sets gs ON w.id = gs.workout_id AND gs.hidden = 0 AND gs.sequence >= 0
+      $whereClause
+      GROUP BY w.id
+      ORDER BY w.start_time DESC
+      LIMIT ? OFFSET ?
+    ''', [...whereParams, pageSize, offset]);
+
+    final workouts = dataResult.map((row) => {
+      'id': row['id'],
+      'startTime': row['start_time'],
+      'endTime': row['end_time'],
+      'name': row['name'],
+      'notes': row['notes'],
+      'exerciseCount': row['exercise_count'],
+      'setCount': row['set_count'],
+      'totalVolume': row['total_volume'],
+    }).toList();
+
+    return {
+      'workouts': workouts,
+      'totalCount': totalCount,
+      'page': page,
+      'pageSize': pageSize,
+    };
+  }
+
+  /// Get workout detail with all non-hidden sets ordered by sequence.
+  ///
+  /// Returns a map with keys: workout (map or null), sets (list of maps).
+  Map<String, dynamic> getWorkoutDetail(int workoutId) {
+    if (_db == null) {
+      return {'workout': null, 'sets': <Map<String, dynamic>>[]};
+    }
+
+    // Workout metadata
+    final workoutResult = _db!.select(
+      'SELECT id, start_time, end_time, name, notes FROM workouts WHERE id = ?',
+      [workoutId],
+    );
+
+    if (workoutResult.isEmpty) {
+      return {'workout': null, 'sets': <Map<String, dynamic>>[]};
+    }
+
+    final w = workoutResult.first;
+    final workout = {
+      'id': w['id'],
+      'startTime': w['start_time'],
+      'endTime': w['end_time'],
+      'name': w['name'],
+      'notes': w['notes'],
+    };
+
+    // Sets ordered by sequence, then set_order/created
+    final setsResult = _db!.select('''
+      SELECT id, name, reps, weight, unit, created, category,
+        exercise_type, set_type, set_order, sequence
+      FROM gym_sets
+      WHERE workout_id = ? AND hidden = 0 AND sequence >= 0
+      ORDER BY sequence, COALESCE(set_order, created)
+    ''', [workoutId]);
+
+    final sets = setsResult.map((row) => {
+      'id': row['id'],
+      'name': row['name'],
+      'reps': row['reps'],
+      'weight': row['weight'],
+      'unit': row['unit'],
+      'created': row['created'],
+      'category': row['category'],
+      'exerciseType': row['exercise_type'],
+      'setType': row['set_type'],
+      'setOrder': row['set_order'],
+      'sequence': row['sequence'],
+    }).toList();
+
+    return {'workout': workout, 'sets': sets};
+  }
+
+  /// Get personal records for a specific exercise.
+  ///
+  /// Returns a map with keys: exerciseName, bestWeight, best1RM, bestVolume,
+  /// hasRecords. Uses Brzycki formula for 1RM estimation.
+  Map<String, dynamic> getExerciseRecords(String exerciseName) {
+    if (_db == null) {
+      return {
+        'exerciseName': exerciseName,
+        'bestWeight': null,
+        'best1RM': null,
+        'bestVolume': null,
+        'hasRecords': false,
+      };
+    }
+
+    final result = _db!.select('''
+      SELECT
+        MAX(weight) as best_weight,
+        MAX(CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps)
+            ELSE weight * (1.0278 - 0.0278 * reps) END) as best_1rm,
+        MAX(weight * reps) as best_volume
+      FROM gym_sets WHERE name = ? AND hidden = 0 AND reps > 0
+    ''', [exerciseName]);
+
+    final row = result.first;
+    final hasRecords = row['best_weight'] != null;
+
+    return {
+      'exerciseName': exerciseName,
+      'bestWeight': hasRecords ? (row['best_weight'] as num).toDouble() : null,
+      'best1RM': hasRecords ? (row['best_1rm'] as num).toDouble() : null,
+      'bestVolume':
+          hasRecords ? (row['best_volume'] as num).toDouble() : null,
+      'hasRecords': hasRecords,
+    };
+  }
+
+  /// Get best weight at each rep count (1-15) for a specific exercise.
+  ///
+  /// Returns a map with keys: exerciseName, records (list of maps with
+  /// repCount, maxWeight, created, unit, workoutId).
+  Map<String, dynamic> getRepRecords(String exerciseName) {
+    if (_db == null) {
+      return {'exerciseName': exerciseName, 'records': <Map<String, dynamic>>[]};
+    }
+
+    final result = _db!.select('''
+      SELECT CAST(reps AS INTEGER) as rep_count,
+        MAX(weight) as max_weight, created, unit, workout_id
+      FROM gym_sets
+      WHERE name = ? AND hidden = 0
+        AND reps BETWEEN 1 AND 15
+        AND reps = CAST(reps AS INTEGER)
+      GROUP BY CAST(reps AS INTEGER)
+      ORDER BY rep_count ASC
+    ''', [exerciseName]);
+
+    final records = result.map((row) => {
+      'repCount': row['rep_count'],
+      'maxWeight': row['max_weight'],
+      'created': row['created'],
+      'unit': row['unit'],
+      'workoutId': row['workout_id'],
+    }).toList();
+
+    return {'exerciseName': exerciseName, 'records': records};
+  }
+
+  /// Get all distinct non-null category names from exercises.
+  List<String> getCategories() {
+    if (_db == null) return [];
+
+    final result = _db!.select('''
+      SELECT DISTINCT category FROM gym_sets
+      WHERE category IS NOT NULL AND hidden = 0
+      ORDER BY category
+    ''');
+
+    return result.map((row) => row['category'] as String).toList();
+  }
+
+  /// Search exercises by name substring with optional category filter.
+  ///
+  /// Returns a map with keys: exercises (list of maps with name, category,
+  /// lastUsed, setCount, workoutCount), totalCount.
+  Map<String, dynamic> searchExercises({
+    String search = '',
+    String? category,
+  }) {
+    if (_db == null) {
+      return {
+        'exercises': <Map<String, dynamic>>[],
+        'totalCount': 0,
+      };
+    }
+
+    final categoryClause = category != null ? 'AND category = ?' : '';
+    final params = <Object>['%$search%'];
+    if (category != null) params.add(category);
+
+    final result = _db!.select('''
+      SELECT name, category, MAX(created) as last_used,
+        COUNT(*) as set_count, COUNT(DISTINCT workout_id) as workout_count
+      FROM gym_sets
+      WHERE hidden = 0
+        AND name LIKE ?
+        $categoryClause
+      GROUP BY name
+      ORDER BY workout_count DESC
+    ''', params);
+
+    final exercises = result.map((row) => {
+      'name': row['name'],
+      'category': row['category'],
+      'lastUsed': row['last_used'],
+      'setCount': row['set_count'],
+      'workoutCount': row['workout_count'],
+    }).toList();
+
+    return {
+      'exercises': exercises,
+      'totalCount': exercises.length,
+    };
+  }
+
+  // --- Private helpers ---
+
+  /// Convert a period string to epoch seconds for query filtering.
+  int _periodToEpoch(String? period) {
+    if (period == null || period == 'all') return 0;
+    final now = DateTime.now();
+    DateTime start;
+    switch (period) {
+      case 'week':
+        start = now.subtract(const Duration(days: 7));
+      case 'month':
+        start = DateTime(now.year, now.month - 1, now.day);
+      case 'year':
+        start = DateTime(now.year - 1, now.month, now.day);
+      default:
+        return 0;
+    }
+    return start.millisecondsSinceEpoch ~/ 1000;
+  }
+
+  /// Calculate current workout streak by walking backwards from today.
+  int _calculateStreak() {
+    if (_db == null) return 0;
+    int streak = 0;
+    final now = DateTime.now();
+    var checkDate = DateTime(now.year, now.month, now.day);
+
+    while (true) {
+      final dateStr = '${checkDate.year.toString().padLeft(4, '0')}-'
+          '${checkDate.month.toString().padLeft(2, '0')}-'
+          '${checkDate.day.toString().padLeft(2, '0')}';
+      final result = _db!.select(
+        "SELECT COUNT(*) as count FROM workouts WHERE DATE(start_time, 'unixepoch') = ?",
+        [dateStr],
+      );
+      if ((result.first['count'] as int) > 0) {
+        streak++;
+        checkDate = checkDate.subtract(const Duration(days: 1));
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
+
+  /// Find the path to the latest backup file in dataDir.
+  String? _findLatestBackupPath() {
+    final dir = Directory(dataDir);
+    if (!dir.existsSync()) return null;
+
+    final backups = dir
+        .listSync()
+        .whereType<File>()
+        .where((f) => _backupPattern.hasMatch(f.uri.pathSegments.last))
+        .toList();
+
+    if (backups.isEmpty) return null;
+
+    // Sort by filename descending (date is in the name: YYYY-MM-DD)
+    backups.sort((a, b) =>
+        b.uri.pathSegments.last.compareTo(a.uri.pathSegments.last));
+
+    return backups.first.path;
+  }
+}
