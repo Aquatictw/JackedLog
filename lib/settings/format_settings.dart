@@ -6,6 +6,7 @@ import 'package:timeago/timeago.dart' as timeago;
 
 import '../database/database.dart';
 import '../main.dart';
+import 'plan_settings.dart';
 import 'settings_state.dart';
 
 final List<String> long = [
@@ -169,21 +170,44 @@ List<Widget> getFormatSettings(String term, Setting settings) {
   ];
 }
 
-class FormatSettings extends StatelessWidget {
-  const FormatSettings({super.key});
+class PlansAndFormatsSettings extends StatefulWidget {
+  const PlansAndFormatsSettings({super.key});
+
+  @override
+  State<PlansAndFormatsSettings> createState() =>
+      _PlansAndFormatsSettingsState();
+}
+
+class _PlansAndFormatsSettingsState extends State<PlansAndFormatsSettings> {
+  late Setting settings = context.read<SettingsState>().value;
+
+  late final max = TextEditingController(text: settings.maxSets.toString());
+  late final warmup =
+      TextEditingController(text: settings.warmupSets?.toString());
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsState>();
+    settings = context.watch<SettingsState>().value;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('Formats'),
+        title: const Text('Plans & Formats'),
       ),
       body: ListView(
-        children: getFormatSettings('', settings.value),
+        children: [
+          ...getFormatSettings('', settings),
+          const Divider(),
+          ...getPlanSettings('', settings, max, warmup),
+        ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    max.dispose();
+    warmup.dispose();
+    super.dispose();
   }
 }

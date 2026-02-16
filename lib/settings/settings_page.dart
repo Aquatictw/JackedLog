@@ -149,19 +149,11 @@ class _SettingsPageState extends State<SettingsPage>
                         ),
                         ListTile(
                           leading: const Icon(Icons.format_bold),
-                          title: const Text('Formats'),
+                          title: const Text('Plans & Formats'),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => const FormatSettings(),
-                            ),
-                          ),
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.calendar_today),
-                          title: const Text('Plans'),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const PlanSettings(),
+                              builder: (context) =>
+                                  const PlansAndFormatsSettings(),
                             ),
                           ),
                         ),
@@ -180,15 +172,6 @@ class _SettingsPageState extends State<SettingsPage>
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const TimerSettings(),
-                            ),
-                          ),
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.fitness_center),
-                          title: const Text('Workouts'),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const WorkoutSettings(),
                             ),
                           ),
                         ),

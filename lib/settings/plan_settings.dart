@@ -1,12 +1,10 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../constants.dart';
 import '../database/database.dart';
 import '../main.dart';
 import '../utils.dart';
-import 'settings_state.dart';
 
 List<Widget> getPlanSettings(
   String term,
@@ -128,38 +126,4 @@ List<Widget> getPlanSettings(
         ),
       ),
   ];
-}
-
-class PlanSettings extends StatefulWidget {
-  const PlanSettings({super.key});
-
-  @override
-  State<PlanSettings> createState() => _PlanSettingsState();
-}
-
-class _PlanSettingsState extends State<PlanSettings> {
-  late Setting settings = context.read<SettingsState>().value;
-
-  late final max = TextEditingController(text: settings.maxSets.toString());
-
-  late final warmup =
-      TextEditingController(text: settings.warmupSets?.toString());
-
-  @override
-  Widget build(BuildContext context) {
-    settings = context.watch<SettingsState>().value;
-
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: const Text('Plans'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8),
-        child: ListView(
-          children: getPlanSettings('', settings, max, warmup),
-        ),
-      ),
-    );
-  }
 }
