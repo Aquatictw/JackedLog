@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-15)
 Phase: 14 of 14 (Dashboard Differentiators)
 Plan: 2 of 2 in current phase
 Status: Phase complete
-Last activity: 2026-02-16 — Completed quick task 011: Fix server sqlite3 missing in Docker
+Last activity: 2026-02-16 — Completed quick task 012: Clean up settings page
 
 Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2) | [██████████] 100% (v1.3)
 
@@ -100,11 +100,12 @@ None yet.
 | 009 | Fix push backup silent failure and status display | 2026-02-16 | b514c515 | [009-fix-push-backup-silent-failure](./quick/009-fix-push-backup-silent-failure/) |
 | 010 | Fix POST backup 400 error | 2026-02-16 | d7932696 | [010-fix-post-backup-400-error](./quick/010-fix-post-backup-400-error/) |
 | 011 | Fix server sqlite3 missing in Docker | 2026-02-16 | 19cf251c | [011-fix-server-sqlite3-missing-in-docker](./quick/011-fix-server-sqlite3-missing-in-docker/) |
+| 012 | Clean up settings page | 2026-02-16 | eca509c6 | [012-clean-up-settings-page](./quick/012-clean-up-settings-page/) |
 
 ## Session Continuity
 
 Last session: 2026-02-16
-Stopped at: Completed quick task 011 — Fix server sqlite3 missing in Docker
+Stopped at: Completed quick task 012 — Clean up settings page
 Resume file: None
 
 ---

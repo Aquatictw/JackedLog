@@ -1,11 +1,9 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../database/database.dart';
 import '../main.dart';
 import '../utils.dart';
-import 'settings_state.dart';
 
 List<Widget> getWorkoutSettings(
   BuildContext context,
@@ -151,42 +149,4 @@ List<Widget> getWorkoutSettings(
         ),
       ),
   ];
-}
-
-class WorkoutSettings extends StatefulWidget {
-  const WorkoutSettings({super.key});
-
-  @override
-  State<WorkoutSettings> createState() => _WorkoutSettingsState();
-}
-
-class _WorkoutSettingsState extends State<WorkoutSettings> {
-  late Setting settings = context.read<SettingsState>().value;
-
-  late final max = TextEditingController(text: settings.maxSets.toString());
-  late final warmup =
-      TextEditingController(text: settings.warmupSets?.toString());
-
-  @override
-  Widget build(BuildContext context) {
-    settings = context.watch<SettingsState>().value;
-
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: const Text('Workouts'),
-      ),
-      body: ListView(
-        children: getWorkoutSettings(context, '', settings),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-
-    max.dispose();
-    warmup.dispose();
-  }
 }
