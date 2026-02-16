@@ -146,15 +146,21 @@ Plans:
 **Requirements:**
 - DASH-11: 5/3/1 block history page with TM progression over time
 - DASH-12: Bodyweight trend chart
-- DASH-13: Workout frequency by weekday chart
+- DASH-13: Workout frequency by weekday chart — **DROPPED per user decision**
 
 **Success Criteria:**
 1. 5/3/1 block history page displays all completed blocks with start/end TMs for 4 lifts, visualizes TM progression over time
 2. Bodyweight trend chart shows weight entries over time with trendline
-3. Workout frequency by weekday bar chart shows distribution (Monday-Sunday)
+3. ~~Workout frequency by weekday bar chart shows distribution (Monday-Sunday)~~ — DROPPED
 4. All differentiator features are discoverable from dashboard navigation
 
-**Status:** Pending
+**Plans:** 2 plans
+
+Plans:
+- [x] 14-01-PLAN.md — 5/3/1 block history page with expandable cards and TM progression chart
+- [x] 14-02-PLAN.md — Bodyweight trend page with moving averages, period selector, and stats cards
+
+**Status:** Complete (2026-02-15)
 
 ---
 
@@ -166,10 +172,10 @@ Plans:
 | 11 - App Integration | App can push backups to server | 4 | Complete |
 | 12 - Dashboard Query Layer | Server can query backups for analytics | 6 | Complete |
 | 13 - Dashboard Frontend | Users can view stats via web dashboard | 6 | Complete |
-| 14 - Dashboard Differentiators | Dashboard shows 5/3/1 and bodyweight features | 3 | Pending |
+| 14 - Dashboard Differentiators | Dashboard shows 5/3/1 and bodyweight features | 3 | Complete |
 
 **Total:** 30/30 requirements mapped (100% coverage)
 
 ---
 
-*Last updated: 2026-02-15 — Phase 13 complete*
+*Last updated: 2026-02-15 — Phase 14 complete*

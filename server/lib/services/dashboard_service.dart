@@ -483,6 +483,122 @@ class DashboardService {
     return dailyBest.values.toList();
   }
 
+  /// Get completed 5/3/1 blocks with TM progression data.
+  ///
+  /// Returns a list of maps with keys: id, created, completed, squatTm,
+  /// benchTm, deadliftTm, pressTm, startSquatTm, startBenchTm,
+  /// startDeadliftTm, startPressTm, unit, currentCycle.
+  /// Returns empty list if table doesn't exist (old backups).
+  List<Map<String, dynamic>> getCompletedBlocks() {
+    if (_db == null) return [];
+
+    // Check table existence (old backups may not have this table)
+    final tableCheck = _db!.select(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='five_three_one_blocks'",
+    );
+    if (tableCheck.isEmpty) return [];
+
+    final result = _db!.select('''
+      SELECT id, created, completed,
+        squat_tm, bench_tm, deadlift_tm, press_tm,
+        COALESCE(start_squat_tm, squat_tm) as start_squat_tm,
+        COALESCE(start_bench_tm, bench_tm) as start_bench_tm,
+        COALESCE(start_deadlift_tm, deadlift_tm) as start_deadlift_tm,
+        COALESCE(start_press_tm, press_tm) as start_press_tm,
+        unit, current_cycle
+      FROM five_three_one_blocks
+      WHERE is_active = 0 AND completed IS NOT NULL
+      ORDER BY completed DESC
+    ''');
+
+    return result.map((row) => <String, dynamic>{
+      'id': row['id'],
+      'created': row['created'],
+      'completed': row['completed'],
+      'squatTm': (row['squat_tm'] as num).toDouble(),
+      'benchTm': (row['bench_tm'] as num).toDouble(),
+      'deadliftTm': (row['deadlift_tm'] as num).toDouble(),
+      'pressTm': (row['press_tm'] as num).toDouble(),
+      'startSquatTm': (row['start_squat_tm'] as num).toDouble(),
+      'startBenchTm': (row['start_bench_tm'] as num).toDouble(),
+      'startDeadliftTm': (row['start_deadlift_tm'] as num).toDouble(),
+      'startPressTm': (row['start_press_tm'] as num).toDouble(),
+      'unit': row['unit'] as String,
+      'currentCycle': row['current_cycle'] as int,
+    }).toList();
+  }
+
+  /// Get bodyweight entries with stats and moving averages.
+  ///
+  /// Returns a map with keys: entries, stats, ma3, ma7, ma14.
+  /// Returns empty result if table doesn't exist (old backups).
+  Map<String, dynamic> getBodyweightData({String? period}) {
+    final emptyResult = {
+      'entries': <Map<String, dynamic>>[],
+      'stats': <String, dynamic>{},
+      'ma3': <double?>[],
+      'ma7': <double?>[],
+      'ma14': <double?>[],
+    };
+
+    if (_db == null) return emptyResult;
+
+    // Check table existence (old backups may not have this table)
+    final tableCheck = _db!.select(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='bodyweight_entries'",
+    );
+    if (tableCheck.isEmpty) return emptyResult;
+
+    final startEpochSeconds = _periodToEpoch(period);
+
+    final result = _db!.select('''
+      SELECT id, weight, unit, date, notes
+      FROM bodyweight_entries
+      WHERE date >= ?
+      ORDER BY date ASC
+    ''', [startEpochSeconds]);
+
+    if (result.isEmpty) return emptyResult;
+
+    final entries = result.map((row) => <String, dynamic>{
+      'id': row['id'] as int,
+      'weight': (row['weight'] as num).toDouble(),
+      'unit': row['unit'] as String,
+      'date': row['date'] as int,
+      'notes': row['notes'],
+    }).toList();
+
+    // Calculate stats
+    final weights = entries.map((e) => e['weight'] as double).toList();
+    final current = weights.last;
+    final average = double.parse(
+      (weights.reduce((a, b) => a + b) / weights.length).toStringAsFixed(1),
+    );
+    final change = weights.length >= 2 ? weights.last - weights.first : null;
+    final lastUnit = entries.last['unit'] as String;
+
+    final stats = <String, dynamic>{
+      'current': current,
+      'average': average,
+      'change': change,
+      'entries': entries.length,
+      'unit': lastUnit,
+    };
+
+    // Compute moving averages
+    final ma3 = _calculateMovingAverage(entries, 3);
+    final ma7 = _calculateMovingAverage(entries, 7);
+    final ma14 = _calculateMovingAverage(entries, 14);
+
+    return {
+      'entries': entries,
+      'stats': stats,
+      'ma3': ma3,
+      'ma7': ma7,
+      'ma14': ma14,
+    };
+  }
+
   // --- Private helpers ---
 
   /// Convert a period string to epoch seconds for query filtering.
@@ -492,14 +608,17 @@ class DashboardService {
     DateTime start;
     switch (period) {
       case 'week':
+      case '7d':
         start = now.subtract(const Duration(days: 7));
       case 'month':
+      case '1m':
         start = DateTime(now.year, now.month - 1, now.day);
       case '3m':
         start = DateTime(now.year, now.month - 3, now.day);
       case '6m':
         start = DateTime(now.year, now.month - 6, now.day);
       case 'year':
+      case '1y':
         start = DateTime(now.year - 1, now.month, now.day);
       default:
         return 0;
@@ -530,6 +649,47 @@ class DashboardService {
       }
     }
     return streak;
+  }
+
+  /// Calculate moving average using a calendar-day trailing window.
+  ///
+  /// For each entry, averages all entries within the past [windowDays] days.
+  /// Ported from lib/utils/bodyweight_calculations.dart.
+  List<double?> _calculateMovingAverage(
+    List<Map<String, dynamic>> entries,
+    int windowDays,
+  ) {
+    if (entries.isEmpty) return [];
+
+    final result = <double?>[];
+    for (var i = 0; i < entries.length; i++) {
+      final currentEpoch = entries[i]['date'] as int;
+      final currentDate =
+          DateTime.fromMillisecondsSinceEpoch(currentEpoch * 1000);
+      final windowStart =
+          currentDate.subtract(Duration(days: windowDays - 1));
+
+      double sum = 0;
+      int count = 0;
+      for (var j = 0; j <= i; j++) {
+        final entryEpoch = entries[j]['date'] as int;
+        final entryDate =
+            DateTime.fromMillisecondsSinceEpoch(entryEpoch * 1000);
+        if (!entryDate.isBefore(windowStart) &&
+            !entryDate.isAfter(currentDate)) {
+          sum += entries[j]['weight'] as double;
+          count++;
+        }
+      }
+
+      if (count > 0) {
+        result.add(double.parse((sum / count).toStringAsFixed(1)));
+      } else {
+        result.add(null);
+      }
+    }
+
+    return result;
   }
 
   /// Find the path to the latest backup file in dataDir.
