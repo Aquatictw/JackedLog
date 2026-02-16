@@ -27,18 +27,19 @@ Future<Response> uploadBackupHandler(
         }
       }
     } else {
-      // Check for application/octet-stream (raw body)
-      final contentType = request.headers['content-type'] ?? '';
-      if (contentType.contains('application/octet-stream')) {
-        fileStream = request.read();
-      }
+      // Non-multipart: always try to read raw body regardless of content-type
+      fileStream = request.read();
     }
+
+    print(
+        'Upload attempt: content-type=${request.headers['content-type']}');
 
     if (fileStream == null) {
       return _jsonResponse(400, {'error': 'No file uploaded'});
     }
 
     final info = await backupService.storeBackup(fileStream);
+    print('Backup stored: ${info.filename} (v${info.dbVersion})');
     return _jsonResponse(
         200, {'filename': info.filename, 'dbVersion': info.dbVersion});
   } on FormatException catch (e) {

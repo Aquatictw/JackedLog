@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-15)
 Phase: 14 of 14 (Dashboard Differentiators)
 Plan: 2 of 2 in current phase
 Status: Phase complete
-Last activity: 2026-02-16 — Completed quick task 009: Fix push backup silent failure
+Last activity: 2026-02-16 — Completed quick task 010: Fix POST backup 400 error
 
 Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2) | [██████████] 100% (v1.3)
 
@@ -97,7 +97,8 @@ None yet.
 | 006 | Fix start TM columns migration self-heal | 2026-02-11 | 94de8641 | [006-fix-start-tm-columns-migration](./quick/006-fix-start-tm-columns-migration/) |
 | 007 | 5/3/1 UI fixes: block progress & calculator | 2026-02-11 | 583c9be4 | [007-531-ui-fixes-block-progress-calculator](./quick/007-531-ui-fixes-block-progress-calculator/) |
 | 008 | Squash 4 docs commits into feat: 06 | 2026-02-11 | 4b5839d3 | [008-squash-v12-docs-into-feat-06](./quick/008-squash-v12-docs-into-feat-06/) |
-| 009 | Fix push backup silent failure and status display | 2026-02-16 | pending | [009-fix-push-backup-silent-failure](./quick/009-fix-push-backup-silent-failure/) |
+| 009 | Fix push backup silent failure and status display | 2026-02-16 | b514c515 | [009-fix-push-backup-silent-failure](./quick/009-fix-push-backup-silent-failure/) |
+| 010 | Fix POST backup 400 error | 2026-02-16 | d7932696 | [010-fix-post-backup-400-error](./quick/010-fix-post-backup-400-error/) |
 
 ## Session Continuity
 
