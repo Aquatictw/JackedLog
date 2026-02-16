@@ -505,14 +505,16 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
     String statusText;
     Color color;
 
-    if (lastPushTime == null) {
+    if (lastPushStatus == 'failed') {
+      icon = Icons.error_outline_rounded;
+      statusText = lastPushTime != null
+          ? 'Push failed ${timeago.format(lastPushTime)}'
+          : 'Push failed';
+      color = colorScheme.error;
+    } else if (lastPushTime == null) {
       icon = Icons.cloud_off_rounded;
       statusText = 'Never pushed';
       color = colorScheme.outline;
-    } else if (lastPushStatus == 'failed') {
-      icon = Icons.error_outline_rounded;
-      statusText = 'Last push failed';
-      color = colorScheme.error;
     } else {
       icon = Icons.check_circle_outline_rounded;
       statusText = 'Last pushed: ${timeago.format(lastPushTime)}';
@@ -582,8 +584,10 @@ class _AutoBackupSettingsState extends State<AutoBackupSettings> {
         await settings.init();
       }
     } catch (e) {
+      print('Push backup failed: $e');
       if (mounted) {
         await settings.init();
+        toast('Push failed: ${e.toString().replaceFirst('Exception: ', '')}');
       }
     } finally {
       if (mounted) {

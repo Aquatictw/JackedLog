@@ -50,10 +50,11 @@ class BackupPushService {
             ),
           );
     } catch (e) {
-      // Failure: update settings with failed status, then rethrow
+      // Failure: update settings with failed status and time, then rethrow
       await db.settings.update().write(
-            const SettingsCompanion(
-              lastPushStatus: Value('failed'),
+            SettingsCompanion(
+              lastPushStatus: const Value('failed'),
+              lastPushTime: Value(DateTime.now()),
             ),
           );
       rethrow;
