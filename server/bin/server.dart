@@ -48,6 +48,10 @@ void main() async {
       (req) => historyPageHandler(req, dashboardService, config.apiKey));
   router.get('/dashboard/workout/<id>',
       (req, String id) => workoutDetailHandler(req, id, dashboardService, config.apiKey));
+  router.get('/dashboard/blocks',
+      (req) => blockHistoryPageHandler(req, dashboardService, config.apiKey));
+  router.get('/dashboard/bodyweight',
+      (req) => bodyweightPageHandler(req, dashboardService, config.apiKey));
 
   // Build middleware pipeline
   final handler = const Pipeline()

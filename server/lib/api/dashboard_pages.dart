@@ -159,6 +159,8 @@ $extraHead
     ${navItem('Overview', '/dashboard', '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>')}
     ${navItem('Exercises', '/dashboard/exercises', '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 4h2v8H2zM12 4h2v8h-2zM5 6h6v4H5z"/></svg>')}
     ${navItem('History', '/dashboard/history', '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 12.5a5.5 5.5 0 110-11 5.5 5.5 0 010 11zM8.5 4H7v5l4 2.4.75-1.2-3.25-1.95V4z"/></svg>')}
+    ${navItem('5/3/1 Blocks', '/dashboard/blocks', '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 1h10v2H3zm0 4h10v2H3zm0 4h10v2H3zm0 4h10v2H3z"/></svg>')}
+    ${navItem('Bodyweight', '/dashboard/bodyweight', '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M3 14c0-3 2-5 5-5s5 2 5 5z"/></svg>')}
     ${navItem('Backups', '/manage', '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h12v3H2zm0 5h12v3H2zm0 5h12v2H2z"/></svg>')}
   </nav>
 </div>
@@ -1294,6 +1296,523 @@ $exerciseSections''';
     activeNav: 'History',
     content: content,
     apiKey: apiKey,
+  );
+  return Response.ok(html, headers: {'content-type': 'text/html'});
+}
+
+/// Format epoch seconds to "MMM D, YYYY" date string.
+String _formatDate(int epochSeconds) {
+  final dt = DateTime.fromMillisecondsSinceEpoch(epochSeconds * 1000);
+  const months = [
+    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  return '${months[dt.month]} ${dt.day}, ${dt.year}';
+}
+
+/// 5/3/1 Blocks history page handler.
+Response blockHistoryPageHandler(
+  Request request,
+  DashboardService dashboardService,
+  String apiKey,
+) {
+  // Open dashboard DB if not open
+  if (!dashboardService.isOpen) {
+    dashboardService.open();
+  }
+
+  if (!dashboardService.isOpen) {
+    final html = dashboardShell(
+      title: '5/3/1 Blocks',
+      activeNav: '5/3/1 Blocks',
+      content: '''
+<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
+  <p style="font-size:1.2rem;margin-bottom:0.5rem">No backup data available</p>
+  <p>Upload a backup from the JackedLog app to see your 5/3/1 blocks.</p>
+  <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
+</div>''',
+      apiKey: apiKey,
+    );
+    return Response.ok(html, headers: {'content-type': 'text/html'});
+  }
+
+  final blocks = dashboardService.getCompletedBlocks();
+
+  if (blocks.isEmpty) {
+    final html = dashboardShell(
+      title: '5/3/1 Blocks',
+      activeNav: '5/3/1 Blocks',
+      content: '''
+<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
+  <p style="font-size:1.2rem;margin-bottom:0.5rem">No 5/3/1 data</p>
+  <p>Complete a 5/3/1 block in the app and push a backup to see your block history.</p>
+</div>''',
+      apiKey: apiKey,
+    );
+    return Response.ok(html, headers: {'content-type': 'text/html'});
+  }
+
+  // Cycle names from schemes.dart
+  const cycleNames = ['Leader 1', 'Leader 2', '7th Week Protocol', 'Anchor', '7th Week Protocol'];
+
+  // Build block cards
+  final cardsHtml = StringBuffer();
+  for (var i = 0; i < blocks.length; i++) {
+    final block = blocks[i];
+    final created = block['created'] as int;
+    final completed = block['completed'] as int;
+    final unit = block['unit'] as String;
+    final squatTm = block['squatTm'] as double;
+    final benchTm = block['benchTm'] as double;
+    final deadliftTm = block['deadliftTm'] as double;
+    final pressTm = block['pressTm'] as double;
+    final startSquatTm = block['startSquatTm'] as double;
+    final startBenchTm = block['startBenchTm'] as double;
+    final startDeadliftTm = block['startDeadliftTm'] as double;
+    final startPressTm = block['startPressTm'] as double;
+
+    final dateRange = '${_formatDate(created)} - ${_formatDate(completed)}';
+
+    // Delta helper
+    String deltaBadge(double start, double end) {
+      final delta = end - start;
+      if (delta > 0) {
+        return '<span style="display:inline-block;padding:0.1rem 0.4rem;background:rgba(34,197,94,0.15);color:#22C55E;border-radius:4px;font-size:0.75rem;font-weight:600">+${delta.toStringAsFixed(1)}</span>';
+      } else if (delta < 0) {
+        return '<span style="display:inline-block;padding:0.1rem 0.4rem;background:rgba(239,68,68,0.15);color:#EF4444;border-radius:4px;font-size:0.75rem;font-weight:600">${delta.toStringAsFixed(1)}</span>';
+      }
+      return '<span style="display:inline-block;padding:0.1rem 0.4rem;background:var(--surface-elevated);color:var(--text-muted);border-radius:4px;font-size:0.75rem;font-weight:600">0</span>';
+    }
+
+    // Lift detail card
+    String liftCard(String name, double start, double end) {
+      return '''
+<div style="background:var(--surface-elevated);border-radius:6px;padding:0.75rem">
+  <div style="font-weight:600;font-size:0.85rem;margin-bottom:0.35rem">$name</div>
+  <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.25rem">${start.toStringAsFixed(1)} &rarr; ${end.toStringAsFixed(1)} $unit</div>
+  ${deltaBadge(start, end)}
+</div>''';
+    }
+
+    // Cycle structure labels
+    final cycleBadges = StringBuffer();
+    for (var c = 0; c < cycleNames.length; c++) {
+      if (c > 0) {
+        cycleBadges.write('<span style="color:var(--text-muted);font-size:0.75rem">&rarr;</span>');
+      }
+      cycleBadges.write('<span style="display:inline-block;padding:0.15rem 0.5rem;background:var(--accent-dim);color:var(--accent);border-radius:999px;font-size:0.7rem">${cycleNames[c]}</span>');
+    }
+
+    cardsHtml.write('''
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:1rem;overflow:hidden">
+  <div onclick="toggleBlock($i)" style="padding:1rem 1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background 0.15s"
+    onmouseover="this.style.background='var(--surface-elevated)'" onmouseout="this.style.background='transparent'">
+    <div>
+      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem">$dateRange</div>
+      <div style="display:flex;gap:1.25rem;flex-wrap:wrap">
+        <div><span style="font-size:0.7rem;color:var(--text-muted);display:block">Squat</span><span style="font-weight:600;font-size:0.95rem">${squatTm.toStringAsFixed(1)}</span></div>
+        <div><span style="font-size:0.7rem;color:var(--text-muted);display:block">Bench</span><span style="font-weight:600;font-size:0.95rem">${benchTm.toStringAsFixed(1)}</span></div>
+        <div><span style="font-size:0.7rem;color:var(--text-muted);display:block">Deadlift</span><span style="font-weight:600;font-size:0.95rem">${deadliftTm.toStringAsFixed(1)}</span></div>
+        <div><span style="font-size:0.7rem;color:var(--text-muted);display:block">OHP</span><span style="font-weight:600;font-size:0.95rem">${pressTm.toStringAsFixed(1)}</span></div>
+      </div>
+    </div>
+    <span id="arrow-$i" style="font-size:1.2rem;color:var(--text-muted);transition:transform 0.2s">&#9660;</span>
+  </div>
+  <div id="detail-$i" style="display:none;padding:0 1.25rem 1.25rem;border-top:1px solid var(--border)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1rem;margin-bottom:1rem">
+      ${liftCard('Squat', startSquatTm, squatTm)}
+      ${liftCard('Bench', startBenchTm, benchTm)}
+      ${liftCard('Deadlift', startDeadliftTm, deadliftTm)}
+      ${liftCard('OHP', startPressTm, pressTm)}
+    </div>
+    <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center">$cycleBadges</div>
+  </div>
+</div>''');
+  }
+
+  // TM Progression Chart data
+  final chartBlocks = blocks.length > 10 ? blocks.sublist(0, 10) : blocks;
+  final chartReversed = chartBlocks.reversed.toList();
+  final chartLabels = List.generate(chartReversed.length, (i) => 'Block ${i + 1}');
+
+  final chartDataJson = jsonEncode({
+    'labels': chartLabels,
+    'squat': chartReversed.map((b) => b['squatTm']).toList(),
+    'bench': chartReversed.map((b) => b['benchTm']).toList(),
+    'deadlift': chartReversed.map((b) => b['deadliftTm']).toList(),
+    'press': chartReversed.map((b) => b['pressTm']).toList(),
+  });
+
+  final limitNote = blocks.length > 10
+      ? '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem">Showing last 10 blocks</p>'
+      : '';
+
+  final chartSection = '''
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-top:2rem">
+  <h3 style="margin:0 0 1rem;font-size:0.95rem;font-weight:600">TM Progression</h3>
+  <canvas id="tmChart"></canvas>
+  $limitNote
+</div>
+<script type="application/json" id="blocks-data">$chartDataJson</script>''';
+
+  final content = '''
+<h2 style="margin:0 0 1.5rem;font-size:1.25rem;font-weight:700">Completed Blocks</h2>
+$cardsHtml
+$chartSection''';
+
+  final extraHead = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>';
+
+  final extraScripts = '''
+<script>
+function toggleBlock(id) {
+  const detail = document.getElementById('detail-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  const isHidden = detail.style.display === 'none';
+  detail.style.display = isHidden ? 'block' : 'none';
+  arrow.style.transform = isHidden ? 'rotate(180deg)' : '';
+}
+
+(function() {
+  const data = JSON.parse(document.getElementById('blocks-data').textContent);
+  const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888';
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#333';
+
+  const ctx = document.getElementById('tmChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.labels,
+        datasets: [
+          { label: 'Squat', data: data.squat, backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 4 },
+          { label: 'Bench', data: data.bench, backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4 },
+          { label: 'Deadlift', data: data.deadlift, backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 4 },
+          { label: 'OHP', data: data.press, backgroundColor: 'rgba(249,115,22,0.7)', borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            labels: { color: textColor }
+          }
+        },
+        scales: {
+          x: { ticks: { color: textColor }, grid: { display: false } },
+          y: { beginAtZero: false, ticks: { color: textColor }, grid: { color: gridColor } }
+        }
+      }
+    });
+  }
+})();
+</script>''';
+
+  final html = dashboardShell(
+    title: '5/3/1 Blocks',
+    activeNav: '5/3/1 Blocks',
+    content: content,
+    apiKey: apiKey,
+    extraHead: extraHead,
+    extraScripts: extraScripts,
+  );
+  return Response.ok(html, headers: {'content-type': 'text/html'});
+}
+
+/// Bodyweight tracking page handler.
+Response bodyweightPageHandler(
+  Request request,
+  DashboardService dashboardService,
+  String apiKey,
+) {
+  // Open dashboard DB if not open
+  if (!dashboardService.isOpen) {
+    dashboardService.open();
+  }
+
+  if (!dashboardService.isOpen) {
+    final html = dashboardShell(
+      title: 'Bodyweight',
+      activeNav: 'Bodyweight',
+      content: '''
+<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
+  <p style="font-size:1.2rem;margin-bottom:0.5rem">No backup data available</p>
+  <p>Upload a backup from the JackedLog app to see your bodyweight data.</p>
+  <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
+</div>''',
+      apiKey: apiKey,
+    );
+    return Response.ok(html, headers: {'content-type': 'text/html'});
+  }
+
+  final period = request.url.queryParameters['period'] ?? 'all';
+  final data = dashboardService.getBodyweightData(
+    period: period == 'all' ? null : period,
+  );
+  final entries = data['entries'] as List<Map<String, dynamic>>;
+  final stats = data['stats'] as Map<String, dynamic>;
+
+  if (entries.isEmpty) {
+    final html = dashboardShell(
+      title: 'Bodyweight',
+      activeNav: 'Bodyweight',
+      content: '''
+<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
+  <p style="font-size:1.2rem;margin-bottom:0.5rem">No bodyweight data</p>
+  <p>Log bodyweight entries in the app and push a backup to see your tracking data.</p>
+</div>''',
+      apiKey: apiKey,
+    );
+    return Response.ok(html, headers: {'content-type': 'text/html'});
+  }
+
+  final ma3 = data['ma3'] as List<double?>;
+  final ma7 = data['ma7'] as List<double?>;
+  final ma14 = data['ma14'] as List<double?>;
+
+  // Period selector
+  const periods = [
+    ('7d', '7D'),
+    ('1m', '1M'),
+    ('3m', '3M'),
+    ('6m', '6M'),
+    ('1y', '1Y'),
+    ('all', 'All'),
+  ];
+  final periodButtons = StringBuffer();
+  for (final (value, label) in periods) {
+    final isActive = value == period;
+    final bg = isActive
+        ? 'background:var(--accent);color:#fff;'
+        : 'background:var(--surface);color:var(--text);';
+    periodButtons.write(
+        '<a href="/dashboard/bodyweight?key=$apiKey&period=$value"'
+        ' style="padding:0.4rem 0.75rem;border-radius:6px;text-decoration:none;font-size:0.8rem;border:1px solid var(--border);$bg">'
+        '$label</a>');
+  }
+  final periodSelector = '''
+<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem">$periodButtons</div>''';
+
+  // Stats cards
+  final unit = stats['unit'] as String;
+  final current = stats['current'] as double;
+  final average = stats['average'] as double;
+  final change = stats['change'] as double?;
+  final entryCount = stats['entries'] as int;
+
+  String changeStr;
+  if (change != null) {
+    final prefix = change >= 0 ? '+' : '';
+    changeStr = '$prefix${change.toStringAsFixed(1)} $unit';
+  } else {
+    changeStr = '--';
+  }
+
+  final cardsHtml = '''
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
+    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Current</div>
+    <div style="font-size:1.6rem;font-weight:700">${current.toStringAsFixed(1)} $unit</div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
+    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Average</div>
+    <div style="font-size:1.6rem;font-weight:700">${average.toStringAsFixed(1)} $unit</div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
+    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Change</div>
+    <div style="font-size:1.6rem;font-weight:700">$changeStr</div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
+    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Entries</div>
+    <div style="font-size:1.6rem;font-weight:700">$entryCount</div>
+  </div>
+</div>''';
+
+  // MA toggle buttons
+  final maToggles = '''
+<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+  <button id="ma-btn-1" onclick="toggleMA(1)" style="padding:0.4rem 0.75rem;border-radius:6px;font-size:0.8rem;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.15s">14-Day MA</button>
+  <button id="ma-btn-2" onclick="toggleMA(2)" style="padding:0.4rem 0.75rem;border-radius:6px;font-size:0.8rem;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.15s">7-Day MA</button>
+  <button id="ma-btn-3" onclick="toggleMA(3)" style="padding:0.4rem 0.75rem;border-radius:6px;font-size:0.8rem;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.15s">3-Day MA</button>
+</div>''';
+
+  // Chart data
+  final chartDates = <String>[];
+  final chartWeights = <double>[];
+  for (final entry in entries) {
+    final epoch = entry['date'] as int;
+    final dt = DateTime.fromMillisecondsSinceEpoch(epoch * 1000);
+    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    chartDates.add('${months[dt.month]} ${dt.day}');
+    chartWeights.add(entry['weight'] as double);
+  }
+
+  final chartDataJson = jsonEncode({
+    'dates': chartDates,
+    'weights': chartWeights,
+    'ma3': ma3,
+    'ma7': ma7,
+    'ma14': ma14,
+  });
+
+  final chartSection = '''
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:2rem">
+  <canvas id="bodyweightChart"></canvas>
+</div>
+<script type="application/json" id="bw-data">$chartDataJson</script>''';
+
+  // Entry history list (most recent first)
+  final historyEntries = entries.reversed.toList();
+  final historyHtml = StringBuffer();
+  historyHtml.write('<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">');
+  historyHtml.write('<h3 style="margin:0;padding:1rem 1.25rem;font-size:0.95rem;font-weight:600;border-bottom:1px solid var(--border)">Entry History</h3>');
+  historyHtml.write('<div style="max-height:400px;overflow-y:auto">');
+  for (final entry in historyEntries) {
+    final epoch = entry['date'] as int;
+    final weight = entry['weight'] as double;
+    final entryUnit = entry['unit'] as String;
+    final notes = entry['notes'] as String?;
+
+    final dateStr = _formatDate(epoch);
+
+    historyHtml.write('<div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem">');
+    historyHtml.write('<div>');
+    historyHtml.write('<span style="font-size:0.9rem;font-weight:500">${_escapeHtml(dateStr)}</span>');
+    if (notes != null && notes.isNotEmpty) {
+      historyHtml.write('<div style="font-size:0.8rem;color:var(--text-muted);font-style:italic;margin-top:0.15rem">${_escapeHtml(notes)}</div>');
+    }
+    historyHtml.write('</div>');
+    historyHtml.write('<span style="font-weight:600;font-size:0.9rem;white-space:nowrap">${weight.toStringAsFixed(1)} $entryUnit</span>');
+    historyHtml.write('</div>');
+  }
+  historyHtml.write('</div></div>');
+
+  final content = '''
+$periodSelector
+$cardsHtml
+$maToggles
+$chartSection
+$historyHtml''';
+
+  final extraHead = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>';
+
+  final extraScripts = '''
+<script>
+var bwChart;
+(function() {
+  const data = JSON.parse(document.getElementById('bw-data').textContent);
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#333';
+  const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888';
+
+  const ctx = document.getElementById('bodyweightChart');
+  if (ctx) {
+    bwChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.dates,
+        datasets: [
+          {
+            label: 'Bodyweight',
+            data: data.weights,
+            borderColor: '#7C3AED',
+            borderWidth: 3,
+            tension: 0.35,
+            pointRadius: 4,
+            pointBackgroundColor: '#7C3AED',
+            fill: 'origin',
+            backgroundColor: function(context) {
+              const chart = context.chart;
+              const {ctx, chartArea} = chart;
+              if (!chartArea) return 'rgba(124,58,237,0.1)';
+              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+              gradient.addColorStop(0, 'rgba(124,58,237,0.3)');
+              gradient.addColorStop(1, 'rgba(124,58,237,0.02)');
+              return gradient;
+            }
+          },
+          {
+            label: '14-Day MA',
+            data: data.ma14,
+            borderColor: '#06B6D4',
+            borderDash: [5, 5],
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false,
+            hidden: true,
+            spanGaps: true
+          },
+          {
+            label: '7-Day MA',
+            data: data.ma7,
+            borderColor: '#10B981',
+            borderDash: [5, 5],
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false,
+            hidden: true,
+            spanGaps: true
+          },
+          {
+            label: '3-Day MA',
+            data: data.ma3,
+            borderColor: '#F59E0B',
+            borderDash: [5, 5],
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false,
+            hidden: true,
+            spanGaps: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            ticks: { color: textColor, maxTicksLimit: 8 },
+            grid: { display: false }
+          },
+          y: {
+            ticks: { color: textColor },
+            grid: { color: gridColor }
+          }
+        }
+      }
+    });
+  }
+})();
+
+function toggleMA(datasetIndex) {
+  if (!bwChart) return;
+  const meta = bwChart.getDatasetMeta(datasetIndex);
+  const isHidden = !meta.hidden;
+  bwChart.setDatasetVisibility(datasetIndex, !isHidden);
+  bwChart.update();
+
+  const colors = { 1: '#06B6D4', 2: '#10B981', 3: '#F59E0B' };
+  const btn = document.getElementById('ma-btn-' + datasetIndex);
+  if (btn) {
+    if (!isHidden) {
+      btn.style.borderLeft = '3px solid ' + colors[datasetIndex];
+      btn.style.background = 'var(--surface-elevated)';
+    } else {
+      btn.style.borderLeft = '1px solid var(--border)';
+      btn.style.background = 'var(--surface)';
+    }
+  }
+}
+</script>''';
+
+  final html = dashboardShell(
+    title: 'Bodyweight',
+    activeNav: 'Bodyweight',
+    content: content,
+    apiKey: apiKey,
+    extraHead: extraHead,
+    extraScripts: extraScripts,
   );
   return Response.ok(html, headers: {'content-type': 'text/html'});
 }

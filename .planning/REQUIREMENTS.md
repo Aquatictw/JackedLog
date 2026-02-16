@@ -25,9 +25,9 @@
 - [x] **DASH-08**: Workout history list with pagination
 - [x] **DASH-09**: Workout detail view showing all sets/reps/weights
 - [x] **DASH-10**: Exercise search and category filter
-- [ ] **DASH-11**: 5/3/1 block history page with TM progression over time
-- [ ] **DASH-12**: Bodyweight trend chart
-- [ ] **DASH-13**: Workout frequency by weekday chart
+- [x] **DASH-11**: 5/3/1 block history page with TM progression over time
+- [x] **DASH-12**: Bodyweight trend chart
+- [x] ~~**DASH-13**: Workout frequency by weekday chart~~ — DROPPED per user decision
 - [x] **DASH-14**: Responsive layout (desktop sidebar, mobile hamburger menu)
 - [x] **DASH-15**: Dark/light theme toggle
 
@@ -97,9 +97,9 @@
 | DASH-05 | Phase 13 | 13-02 | Complete |
 | DASH-14 | Phase 13 | 13-01 | Complete |
 | DASH-15 | Phase 13 | 13-01 | Complete |
-| DASH-11 | Phase 14 | — | Pending |
-| DASH-12 | Phase 14 | — | Pending |
-| DASH-13 | Phase 14 | — | Pending |
+| DASH-11 | Phase 14 | 14-01 | Complete |
+| DASH-12 | Phase 14 | 14-02 | Complete |
+| DASH-13 | Phase 14 | — | Dropped |
 
 ---
 *30 requirements across 4 categories*
