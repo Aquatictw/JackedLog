@@ -452,6 +452,22 @@ class AppDatabase extends _$AppDatabase {
             'UPDATE five_three_one_blocks SET start_squat_tm = squat_tm, start_bench_tm = bench_tm, start_deadlift_tm = deadlift_tm, start_press_tm = press_tm',
           ).catchError((e) {});
         }
+
+        // from65To66: Add server backup push columns
+        if (from < 66 && to >= 66) {
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN server_url TEXT',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN server_api_key TEXT',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN last_push_time INTEGER',
+          ).catchError((e) {});
+          await m.database.customStatement(
+            'ALTER TABLE settings ADD COLUMN last_push_status TEXT',
+          ).catchError((e) {});
+        }
       },
       beforeOpen: (details) async {
         // Ensure bodyweight_entries table exists (safety check for migration issues)
@@ -479,5 +495,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 65;
+  int get schemaVersion => 66;
 }

@@ -10,6 +10,7 @@ import 'data_settings.dart';
 import 'format_settings.dart';
 import 'plan_settings.dart';
 import 'settings_state.dart';
+import '../server/server_settings_page.dart';
 import 'spotify_settings.dart';
 import 'tab_settings.dart';
 import 'timer_settings.dart';
@@ -133,6 +134,16 @@ class _SettingsPageState extends State<SettingsPage>
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const DataSettings(),
+                            ),
+                          ),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.cloud_upload),
+                          title: const Text('Backup Server'),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const ServerSettingsPage(),
                             ),
                           ),
                         ),

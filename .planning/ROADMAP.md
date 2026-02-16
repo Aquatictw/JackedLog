@@ -64,7 +64,13 @@ Plans:
 3. User can push backup to server with progress indicator, upload completes successfully
 4. Settings page shows last push timestamp and status (success/failed/never)
 
-**Status:** Pending
+**Plans:** 2 plans
+
+Plans:
+- [x] 11-01-PLAN.md — Database migration (v66) and server settings page with connection test
+- [x] 11-02-PLAN.md — Backup push service and push button with status display
+
+**Status:** Complete (2026-02-15)
 
 ---
 
@@ -144,7 +150,7 @@ Plans:
 | Phase | Goal | Requirements | Status |
 |-------|------|--------------|--------|
 | 10 - Server Foundation | Server can receive, validate, and store backups in Docker | 11 | Complete |
-| 11 - App Integration | App can push backups to server | 4 | Pending |
+| 11 - App Integration | App can push backups to server | 4 | Complete |
 | 12 - Dashboard Query Layer | Server can query backups for analytics | 6 | Pending |
 | 13 - Dashboard Frontend | Users can view stats via web dashboard | 6 | Pending |
 | 14 - Dashboard Differentiators | Dashboard shows 5/3/1 and bodyweight features | 3 | Pending |
@@ -153,4 +159,4 @@ Plans:
 
 ---
 
-*Last updated: 2026-02-15 — Phase 10 complete*
+*Last updated: 2026-02-15 — Phase 11 complete*

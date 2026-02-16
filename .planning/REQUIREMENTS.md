@@ -39,10 +39,10 @@
 
 ### App — Mobile Integration
 
-- [ ] **APP-01**: Server URL and API key settings fields (new Settings migration)
-- [ ] **APP-02**: Manual push backup button with upload progress indicator
-- [ ] **APP-03**: Connection test button with success/error feedback
-- [ ] **APP-04**: Last push timestamp and status display
+- [x] **APP-01**: Server URL and API key settings fields (new Settings migration)
+- [x] **APP-02**: Manual push backup button with upload progress indicator
+- [x] **APP-03**: Connection test button with success/error feedback
+- [x] **APP-04**: Last push timestamp and status display
 
 ## Future Requirements (Deferred)
 
@@ -81,10 +81,10 @@
 | DEPLOY-01 | Phase 10 | 10-03 | Complete |
 | DEPLOY-02 | Phase 10 | 10-03 | Complete |
 | DEPLOY-03 | Phase 10 | 10-03 | Complete |
-| APP-01 | Phase 11 | — | Pending |
-| APP-02 | Phase 11 | — | Pending |
-| APP-03 | Phase 11 | — | Pending |
-| APP-04 | Phase 11 | — | Pending |
+| APP-01 | Phase 11 | 11-01 | Complete |
+| APP-02 | Phase 11 | 11-02 | Complete |
+| APP-03 | Phase 11 | 11-01 | Complete |
+| APP-04 | Phase 11 | 11-02 | Complete |
 | DASH-01 | Phase 12 | — | Pending |
 | DASH-06 | Phase 12 | — | Pending |
 | DASH-07 | Phase 12 | — | Pending |

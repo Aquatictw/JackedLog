@@ -56,4 +56,9 @@ class Settings extends Table {
   TextColumn get spotifyAccessToken => text().nullable()();
   TextColumn get spotifyRefreshToken => text().nullable()();
   IntColumn get spotifyTokenExpiry => integer().nullable()();
+  // Server backup push settings
+  TextColumn get serverUrl => text().nullable()();
+  TextColumn get serverApiKey => text().nullable()();
+  DateTimeColumn get lastPushTime => dateTime().nullable()();
+  TextColumn get lastPushStatus => text().nullable()();
 }
