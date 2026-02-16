@@ -4,14 +4,14 @@
 
 ### Server — Backup & Infrastructure
 
-- [ ] **SERVER-01**: Server receives SQLite backup file via POST with integrity validation (PRAGMA quick_check)
-- [ ] **SERVER-02**: Server lists backup history with date, file size, and DB version
-- [ ] **SERVER-03**: User can download any historical backup file from server
-- [ ] **SERVER-04**: User can delete individual backups from server
-- [ ] **SERVER-05**: All API endpoints authenticated via Bearer token (API key)
-- [ ] **SERVER-06**: Health check endpoint returns server status (GET /api/health)
-- [ ] **SERVER-07**: Backup management page shows total storage usage
-- [ ] **SERVER-08**: Server auto-cleans old backups using retention policy (GFS strategy)
+- [x] **SERVER-01**: Server receives SQLite backup file via POST with integrity validation (PRAGMA quick_check)
+- [x] **SERVER-02**: Server lists backup history with date, file size, and DB version
+- [x] **SERVER-03**: User can download any historical backup file from server
+- [x] **SERVER-04**: User can delete individual backups from server
+- [x] **SERVER-05**: All API endpoints authenticated via Bearer token (API key)
+- [x] **SERVER-06**: Health check endpoint returns server status (GET /api/health)
+- [x] **SERVER-07**: Backup management page shows total storage usage
+- [x] **SERVER-08**: Server auto-cleans old backups using retention policy (GFS strategy)
 
 ### Dashboard — Web Visualizations
 
@@ -33,9 +33,9 @@
 
 ### Deploy — Docker & Infrastructure
 
-- [ ] **DEPLOY-01**: Multi-stage Docker image (<50MB) with AOT-compiled Dart binary
-- [ ] **DEPLOY-02**: docker-compose.yml with env var config (API_KEY, PORT, DATA_DIR, MAX_BACKUPS)
-- [ ] **DEPLOY-03**: Persistent volume for backup data surviving container restarts
+- [x] **DEPLOY-01**: Multi-stage Docker image (<50MB) with AOT-compiled Dart binary
+- [x] **DEPLOY-02**: docker-compose.yml with env var config (API_KEY, PORT, DATA_DIR, MAX_BACKUPS)
+- [x] **DEPLOY-03**: Persistent volume for backup data surviving container restarts
 
 ### App — Mobile Integration
 
@@ -70,17 +70,17 @@
 
 | REQ-ID | Phase | Plan | Status |
 |--------|-------|------|--------|
-| SERVER-01 | Phase 10 | — | Pending |
-| SERVER-02 | Phase 10 | — | Pending |
-| SERVER-03 | Phase 10 | — | Pending |
-| SERVER-04 | Phase 10 | — | Pending |
-| SERVER-05 | Phase 10 | — | Pending |
-| SERVER-06 | Phase 10 | — | Pending |
-| SERVER-07 | Phase 10 | — | Pending |
-| SERVER-08 | Phase 10 | — | Pending |
-| DEPLOY-01 | Phase 10 | — | Pending |
-| DEPLOY-02 | Phase 10 | — | Pending |
-| DEPLOY-03 | Phase 10 | — | Pending |
+| SERVER-01 | Phase 10 | 10-02 | Complete |
+| SERVER-02 | Phase 10 | 10-02 | Complete |
+| SERVER-03 | Phase 10 | 10-02 | Complete |
+| SERVER-04 | Phase 10 | 10-02 | Complete |
+| SERVER-05 | Phase 10 | 10-01 | Complete |
+| SERVER-06 | Phase 10 | 10-01 | Complete |
+| SERVER-07 | Phase 10 | 10-03 | Complete |
+| SERVER-08 | Phase 10 | 10-02 | Complete |
+| DEPLOY-01 | Phase 10 | 10-03 | Complete |
+| DEPLOY-02 | Phase 10 | 10-03 | Complete |
+| DEPLOY-03 | Phase 10 | 10-03 | Complete |
 | APP-01 | Phase 11 | — | Pending |
 | APP-02 | Phase 11 | — | Pending |
 | APP-03 | Phase 11 | — | Pending |
