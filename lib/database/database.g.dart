@@ -1698,6 +1698,30 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
   late final GeneratedColumn<int> spotifyTokenExpiry = GeneratedColumn<int>(
       'spotify_token_expiry', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _serverUrlMeta =
+      const VerificationMeta('serverUrl');
+  @override
+  late final GeneratedColumn<String> serverUrl = GeneratedColumn<String>(
+      'server_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _serverApiKeyMeta =
+      const VerificationMeta('serverApiKey');
+  @override
+  late final GeneratedColumn<String> serverApiKey = GeneratedColumn<String>(
+      'server_api_key', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _lastPushTimeMeta =
+      const VerificationMeta('lastPushTime');
+  @override
+  late final GeneratedColumn<DateTime> lastPushTime =
+      GeneratedColumn<DateTime>('last_push_time', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _lastPushStatusMeta =
+      const VerificationMeta('lastPushStatus');
+  @override
+  late final GeneratedColumn<String> lastPushStatus = GeneratedColumn<String>(
+      'last_push_status', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         alarmSound,
@@ -1742,7 +1766,11 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         lastBackupStatus,
         spotifyAccessToken,
         spotifyRefreshToken,
-        spotifyTokenExpiry
+        spotifyTokenExpiry,
+        serverUrl,
+        serverApiKey,
+        lastPushTime,
+        lastPushStatus
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2023,6 +2051,28 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           spotifyTokenExpiry.isAcceptableOrUnknown(
               data['spotify_token_expiry']!, _spotifyTokenExpiryMeta));
     }
+    if (data.containsKey('server_url')) {
+      context.handle(_serverUrlMeta,
+          serverUrl.isAcceptableOrUnknown(data['server_url']!, _serverUrlMeta));
+    }
+    if (data.containsKey('server_api_key')) {
+      context.handle(
+          _serverApiKeyMeta,
+          serverApiKey.isAcceptableOrUnknown(
+              data['server_api_key']!, _serverApiKeyMeta));
+    }
+    if (data.containsKey('last_push_time')) {
+      context.handle(
+          _lastPushTimeMeta,
+          lastPushTime.isAcceptableOrUnknown(
+              data['last_push_time']!, _lastPushTimeMeta));
+    }
+    if (data.containsKey('last_push_status')) {
+      context.handle(
+          _lastPushStatusMeta,
+          lastPushStatus.isAcceptableOrUnknown(
+              data['last_push_status']!, _lastPushStatusMeta));
+    }
     return context;
   }
 
@@ -2120,6 +2170,14 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           DriftSqlType.string, data['${effectivePrefix}spotify_refresh_token']),
       spotifyTokenExpiry: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}spotify_token_expiry']),
+      serverUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}server_url']),
+      serverApiKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}server_api_key']),
+      lastPushTime: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_push_time']),
+      lastPushStatus: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}last_push_status']),
     );
   }
 
@@ -2173,6 +2231,10 @@ class Setting extends DataClass implements Insertable<Setting> {
   final String? spotifyAccessToken;
   final String? spotifyRefreshToken;
   final int? spotifyTokenExpiry;
+  final String? serverUrl;
+  final String? serverApiKey;
+  final DateTime? lastPushTime;
+  final String? lastPushStatus;
   const Setting(
       {required this.alarmSound,
       required this.automaticBackups,
@@ -2216,7 +2278,11 @@ class Setting extends DataClass implements Insertable<Setting> {
       this.lastBackupStatus,
       this.spotifyAccessToken,
       this.spotifyRefreshToken,
-      this.spotifyTokenExpiry});
+      this.spotifyTokenExpiry,
+      this.serverUrl,
+      this.serverApiKey,
+      this.lastPushTime,
+      this.lastPushStatus});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2287,6 +2353,18 @@ class Setting extends DataClass implements Insertable<Setting> {
     }
     if (!nullToAbsent || spotifyTokenExpiry != null) {
       map['spotify_token_expiry'] = Variable<int>(spotifyTokenExpiry);
+    }
+    if (!nullToAbsent || serverUrl != null) {
+      map['server_url'] = Variable<String>(serverUrl);
+    }
+    if (!nullToAbsent || serverApiKey != null) {
+      map['server_api_key'] = Variable<String>(serverApiKey);
+    }
+    if (!nullToAbsent || lastPushTime != null) {
+      map['last_push_time'] = Variable<DateTime>(lastPushTime);
+    }
+    if (!nullToAbsent || lastPushStatus != null) {
+      map['last_push_status'] = Variable<String>(lastPushStatus);
     }
     return map;
   }
@@ -2360,6 +2438,18 @@ class Setting extends DataClass implements Insertable<Setting> {
       spotifyTokenExpiry: spotifyTokenExpiry == null && nullToAbsent
           ? const Value.absent()
           : Value(spotifyTokenExpiry),
+      serverUrl: serverUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUrl),
+      serverApiKey: serverApiKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverApiKey),
+      lastPushTime: lastPushTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastPushTime),
+      lastPushStatus: lastPushStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastPushStatus),
     );
   }
 
@@ -2418,6 +2508,10 @@ class Setting extends DataClass implements Insertable<Setting> {
       spotifyRefreshToken:
           serializer.fromJson<String?>(json['spotifyRefreshToken']),
       spotifyTokenExpiry: serializer.fromJson<int?>(json['spotifyTokenExpiry']),
+      serverUrl: serializer.fromJson<String?>(json['serverUrl']),
+      serverApiKey: serializer.fromJson<String?>(json['serverApiKey']),
+      lastPushTime: serializer.fromJson<DateTime?>(json['lastPushTime']),
+      lastPushStatus: serializer.fromJson<String?>(json['lastPushStatus']),
     );
   }
   @override
@@ -2468,6 +2562,10 @@ class Setting extends DataClass implements Insertable<Setting> {
       'spotifyAccessToken': serializer.toJson<String?>(spotifyAccessToken),
       'spotifyRefreshToken': serializer.toJson<String?>(spotifyRefreshToken),
       'spotifyTokenExpiry': serializer.toJson<int?>(spotifyTokenExpiry),
+      'serverUrl': serializer.toJson<String?>(serverUrl),
+      'serverApiKey': serializer.toJson<String?>(serverApiKey),
+      'lastPushTime': serializer.toJson<DateTime?>(lastPushTime),
+      'lastPushStatus': serializer.toJson<String?>(lastPushStatus),
     };
   }
 
@@ -2514,7 +2612,11 @@ class Setting extends DataClass implements Insertable<Setting> {
           Value<String?> lastBackupStatus = const Value.absent(),
           Value<String?> spotifyAccessToken = const Value.absent(),
           Value<String?> spotifyRefreshToken = const Value.absent(),
-          Value<int?> spotifyTokenExpiry = const Value.absent()}) =>
+          Value<int?> spotifyTokenExpiry = const Value.absent(),
+          Value<String?> serverUrl = const Value.absent(),
+          Value<String?> serverApiKey = const Value.absent(),
+          Value<DateTime?> lastPushTime = const Value.absent(),
+          Value<String?> lastPushStatus = const Value.absent()}) =>
       Setting(
         alarmSound: alarmSound ?? this.alarmSound,
         automaticBackups: automaticBackups ?? this.automaticBackups,
@@ -2579,6 +2681,13 @@ class Setting extends DataClass implements Insertable<Setting> {
         spotifyTokenExpiry: spotifyTokenExpiry.present
             ? spotifyTokenExpiry.value
             : this.spotifyTokenExpiry,
+        serverUrl: serverUrl.present ? serverUrl.value : this.serverUrl,
+        serverApiKey:
+            serverApiKey.present ? serverApiKey.value : this.serverApiKey,
+        lastPushTime:
+            lastPushTime.present ? lastPushTime.value : this.lastPushTime,
+        lastPushStatus:
+            lastPushStatus.present ? lastPushStatus.value : this.lastPushStatus,
       );
   Setting copyWithCompanion(SettingsCompanion data) {
     return Setting(
@@ -2687,6 +2796,16 @@ class Setting extends DataClass implements Insertable<Setting> {
       spotifyTokenExpiry: data.spotifyTokenExpiry.present
           ? data.spotifyTokenExpiry.value
           : this.spotifyTokenExpiry,
+      serverUrl: data.serverUrl.present ? data.serverUrl.value : this.serverUrl,
+      serverApiKey: data.serverApiKey.present
+          ? data.serverApiKey.value
+          : this.serverApiKey,
+      lastPushTime: data.lastPushTime.present
+          ? data.lastPushTime.value
+          : this.lastPushTime,
+      lastPushStatus: data.lastPushStatus.present
+          ? data.lastPushStatus.value
+          : this.lastPushStatus,
     );
   }
 
@@ -2735,7 +2854,11 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('lastBackupStatus: $lastBackupStatus, ')
           ..write('spotifyAccessToken: $spotifyAccessToken, ')
           ..write('spotifyRefreshToken: $spotifyRefreshToken, ')
-          ..write('spotifyTokenExpiry: $spotifyTokenExpiry')
+          ..write('spotifyTokenExpiry: $spotifyTokenExpiry, ')
+          ..write('serverUrl: $serverUrl, ')
+          ..write('serverApiKey: $serverApiKey, ')
+          ..write('lastPushTime: $lastPushTime, ')
+          ..write('lastPushStatus: $lastPushStatus')
           ..write(')'))
         .toString();
   }
@@ -2784,7 +2907,11 @@ class Setting extends DataClass implements Insertable<Setting> {
         lastBackupStatus,
         spotifyAccessToken,
         spotifyRefreshToken,
-        spotifyTokenExpiry
+        spotifyTokenExpiry,
+        serverUrl,
+        serverApiKey,
+        lastPushTime,
+        lastPushStatus
       ]);
   @override
   bool operator ==(Object other) =>
@@ -2832,7 +2959,11 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.lastBackupStatus == this.lastBackupStatus &&
           other.spotifyAccessToken == this.spotifyAccessToken &&
           other.spotifyRefreshToken == this.spotifyRefreshToken &&
-          other.spotifyTokenExpiry == this.spotifyTokenExpiry);
+          other.spotifyTokenExpiry == this.spotifyTokenExpiry &&
+          other.serverUrl == this.serverUrl &&
+          other.serverApiKey == this.serverApiKey &&
+          other.lastPushTime == this.lastPushTime &&
+          other.lastPushStatus == this.lastPushStatus);
 }
 
 class SettingsCompanion extends UpdateCompanion<Setting> {
@@ -2879,6 +3010,10 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<String?> spotifyAccessToken;
   final Value<String?> spotifyRefreshToken;
   final Value<int?> spotifyTokenExpiry;
+  final Value<String?> serverUrl;
+  final Value<String?> serverApiKey;
+  final Value<DateTime?> lastPushTime;
+  final Value<String?> lastPushStatus;
   const SettingsCompanion({
     this.alarmSound = const Value.absent(),
     this.automaticBackups = const Value.absent(),
@@ -2923,6 +3058,10 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.spotifyAccessToken = const Value.absent(),
     this.spotifyRefreshToken = const Value.absent(),
     this.spotifyTokenExpiry = const Value.absent(),
+    this.serverUrl = const Value.absent(),
+    this.serverApiKey = const Value.absent(),
+    this.lastPushTime = const Value.absent(),
+    this.lastPushStatus = const Value.absent(),
   });
   SettingsCompanion.insert({
     required String alarmSound,
@@ -2968,6 +3107,10 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.spotifyAccessToken = const Value.absent(),
     this.spotifyRefreshToken = const Value.absent(),
     this.spotifyTokenExpiry = const Value.absent(),
+    this.serverUrl = const Value.absent(),
+    this.serverApiKey = const Value.absent(),
+    this.lastPushTime = const Value.absent(),
+    this.lastPushStatus = const Value.absent(),
   })  : alarmSound = Value(alarmSound),
         cardioUnit = Value(cardioUnit),
         curveLines = Value(curveLines),
@@ -3026,6 +3169,10 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<String>? spotifyAccessToken,
     Expression<String>? spotifyRefreshToken,
     Expression<int>? spotifyTokenExpiry,
+    Expression<String>? serverUrl,
+    Expression<String>? serverApiKey,
+    Expression<DateTime>? lastPushTime,
+    Expression<String>? lastPushStatus,
   }) {
     return RawValuesInsertable({
       if (alarmSound != null) 'alarm_sound': alarmSound,
@@ -3081,6 +3228,10 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
         'spotify_refresh_token': spotifyRefreshToken,
       if (spotifyTokenExpiry != null)
         'spotify_token_expiry': spotifyTokenExpiry,
+      if (serverUrl != null) 'server_url': serverUrl,
+      if (serverApiKey != null) 'server_api_key': serverApiKey,
+      if (lastPushTime != null) 'last_push_time': lastPushTime,
+      if (lastPushStatus != null) 'last_push_status': lastPushStatus,
     });
   }
 
@@ -3127,7 +3278,11 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       Value<String?>? lastBackupStatus,
       Value<String?>? spotifyAccessToken,
       Value<String?>? spotifyRefreshToken,
-      Value<int?>? spotifyTokenExpiry}) {
+      Value<int?>? spotifyTokenExpiry,
+      Value<String?>? serverUrl,
+      Value<String?>? serverApiKey,
+      Value<DateTime?>? lastPushTime,
+      Value<String?>? lastPushStatus}) {
     return SettingsCompanion(
       alarmSound: alarmSound ?? this.alarmSound,
       automaticBackups: automaticBackups ?? this.automaticBackups,
@@ -3173,6 +3328,10 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       spotifyAccessToken: spotifyAccessToken ?? this.spotifyAccessToken,
       spotifyRefreshToken: spotifyRefreshToken ?? this.spotifyRefreshToken,
       spotifyTokenExpiry: spotifyTokenExpiry ?? this.spotifyTokenExpiry,
+      serverUrl: serverUrl ?? this.serverUrl,
+      serverApiKey: serverApiKey ?? this.serverApiKey,
+      lastPushTime: lastPushTime ?? this.lastPushTime,
+      lastPushStatus: lastPushStatus ?? this.lastPushStatus,
     );
   }
 
@@ -3314,6 +3473,18 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     if (spotifyTokenExpiry.present) {
       map['spotify_token_expiry'] = Variable<int>(spotifyTokenExpiry.value);
     }
+    if (serverUrl.present) {
+      map['server_url'] = Variable<String>(serverUrl.value);
+    }
+    if (serverApiKey.present) {
+      map['server_api_key'] = Variable<String>(serverApiKey.value);
+    }
+    if (lastPushTime.present) {
+      map['last_push_time'] = Variable<DateTime>(lastPushTime.value);
+    }
+    if (lastPushStatus.present) {
+      map['last_push_status'] = Variable<String>(lastPushStatus.value);
+    }
     return map;
   }
 
@@ -3362,7 +3533,11 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('lastBackupStatus: $lastBackupStatus, ')
           ..write('spotifyAccessToken: $spotifyAccessToken, ')
           ..write('spotifyRefreshToken: $spotifyRefreshToken, ')
-          ..write('spotifyTokenExpiry: $spotifyTokenExpiry')
+          ..write('spotifyTokenExpiry: $spotifyTokenExpiry, ')
+          ..write('serverUrl: $serverUrl, ')
+          ..write('serverApiKey: $serverApiKey, ')
+          ..write('lastPushTime: $lastPushTime, ')
+          ..write('lastPushStatus: $lastPushStatus')
           ..write(')'))
         .toString();
   }
