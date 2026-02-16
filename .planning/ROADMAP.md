@@ -35,7 +35,14 @@ Build a self-hosted Dart web server (Docker) that receives manual backup pushes 
 4. Health check endpoint (GET /api/health) returns JSON status with server version and uptime
 5. Docker container starts successfully, persists backup files across restarts, and produces <50MB final image
 
-**Status:** Pending
+**Plans:** 3 plans
+
+Plans:
+- [x] 10-01-PLAN.md — Server scaffolding, config, middleware, and health check endpoint
+- [x] 10-02-PLAN.md — SQLite validator, backup service, and backup API endpoints
+- [x] 10-03-PLAN.md — Management page and Docker deployment files
+
+**Status:** Complete (2026-02-15)
 
 ---
 
@@ -136,7 +143,7 @@ Build a self-hosted Dart web server (Docker) that receives manual backup pushes 
 
 | Phase | Goal | Requirements | Status |
 |-------|------|--------------|--------|
-| 10 - Server Foundation | Server can receive, validate, and store backups in Docker | 11 | Pending |
+| 10 - Server Foundation | Server can receive, validate, and store backups in Docker | 11 | Complete |
 | 11 - App Integration | App can push backups to server | 4 | Pending |
 | 12 - Dashboard Query Layer | Server can query backups for analytics | 6 | Pending |
 | 13 - Dashboard Frontend | Users can view stats via web dashboard | 6 | Pending |
@@ -146,4 +153,4 @@ Build a self-hosted Dart web server (Docker) that receives manual backup pushes 
 
 ---
 
-*Last updated: 2026-02-15*
+*Last updated: 2026-02-15 — Phase 10 complete*

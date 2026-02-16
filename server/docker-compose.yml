@@ -1,0 +1,15 @@
+services:
+  jackedlog-server:
+    build: .
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      - JACKED_API_KEY=${JACKED_API_KEY}
+      - PORT=8080
+      - DATA_DIR=/data
+    volumes:
+      - backup_data:/data
+    restart: unless-stopped
+
+volumes:
+  backup_data:
