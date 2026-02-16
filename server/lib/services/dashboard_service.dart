@@ -357,6 +357,132 @@ class DashboardService {
     };
   }
 
+  /// Get training days with set counts for heatmap display.
+  ///
+  /// Returns a map of date strings (YYYY-MM-DD) to set counts.
+  Map<String, int> getTrainingDays({String? period}) {
+    if (_db == null) return {};
+
+    final startEpochSeconds = _periodToEpoch(period);
+
+    final result = _db!.select('''
+      SELECT DATE(w.start_time, 'unixepoch') as workout_date,
+        COUNT(gs.id) as set_count
+      FROM workouts w
+      INNER JOIN gym_sets gs ON w.id = gs.workout_id
+      WHERE w.start_time >= ? AND gs.hidden = 0
+      GROUP BY workout_date
+      ORDER BY workout_date
+    ''', [startEpochSeconds]);
+
+    final map = <String, int>{};
+    for (final row in result) {
+      map[row['workout_date'] as String] = row['set_count'] as int;
+    }
+    return map;
+  }
+
+  /// Get total volume per muscle group for bar chart.
+  ///
+  /// Returns a list of maps with keys: muscle, volume.
+  List<Map<String, dynamic>> getMuscleGroupVolumes({String? period}) {
+    if (_db == null) return [];
+
+    final startEpochSeconds = _periodToEpoch(period);
+
+    final result = _db!.select('''
+      SELECT gs.category as muscle,
+        SUM(gs.weight * gs.reps) as total_volume
+      FROM gym_sets gs
+      WHERE gs.created >= ? AND gs.hidden = 0
+        AND gs.category IS NOT NULL AND gs.cardio = 0
+      GROUP BY gs.category
+      ORDER BY total_volume DESC
+    ''', [startEpochSeconds]);
+
+    return result.map((row) => <String, dynamic>{
+      'muscle': row['muscle'],
+      'volume': (row['total_volume'] as num).toDouble(),
+    }).toList();
+  }
+
+  /// Get set counts per muscle group for bar chart.
+  ///
+  /// Returns a list of maps with keys: muscle, sets.
+  List<Map<String, dynamic>> getMuscleGroupSetCounts({String? period}) {
+    if (_db == null) return [];
+
+    final startEpochSeconds = _periodToEpoch(period);
+
+    final result = _db!.select('''
+      SELECT gs.category as muscle,
+        COUNT(*) as set_count
+      FROM gym_sets gs
+      WHERE gs.created >= ? AND gs.hidden = 0
+        AND gs.category IS NOT NULL
+      GROUP BY gs.category
+      ORDER BY set_count DESC
+    ''', [startEpochSeconds]);
+
+    return result.map((row) => <String, dynamic>{
+      'muscle': row['muscle'],
+      'sets': row['set_count'] as int,
+    }).toList();
+  }
+
+  /// Get exercise progress over time for line chart.
+  ///
+  /// Returns a list of daily-best data points with keys: created, value,
+  /// weight, reps, unit. Metric can be 'bestWeight', 'oneRepMax', or 'volume'.
+  List<Map<String, dynamic>> getExerciseProgress(
+    String exerciseName, {
+    String metric = 'bestWeight',
+    String? period,
+  }) {
+    if (_db == null) return [];
+
+    final startEpochSeconds = _periodToEpoch(period);
+
+    String metricExpr;
+    switch (metric) {
+      case 'oneRepMax':
+        metricExpr =
+            'CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) '
+            'ELSE weight * (1.0278 - 0.0278 * reps) END';
+      case 'volume':
+        metricExpr = 'weight * reps';
+      default: // 'bestWeight'
+        metricExpr = 'weight';
+    }
+
+    final result = _db!.select('''
+      SELECT created, weight, reps, unit,
+        $metricExpr as metric_value,
+        DATE(created, 'unixepoch') as day
+      FROM gym_sets
+      WHERE name = ? AND hidden = 0 AND reps > 0
+        AND created >= ?
+      ORDER BY day, metric_value DESC
+    ''', [exerciseName, startEpochSeconds]);
+
+    // Group by day, take daily best
+    final dailyBest = <String, Map<String, dynamic>>{};
+    for (final row in result) {
+      final day = row['day'] as String;
+      if (!dailyBest.containsKey(day)) {
+        dailyBest[day] = {
+          'created': row['created'],
+          'value': (row['metric_value'] as num).toDouble(),
+          'weight': row['weight'] as num,
+          'reps': row['reps'] as num,
+          'unit': row['unit'] as String,
+        };
+      }
+    }
+
+    return dailyBest.values.toList();
+  }
+
   // --- Private helpers ---
 
   /// Convert a period string to epoch seconds for query filtering.
@@ -369,6 +495,10 @@ class DashboardService {
         start = now.subtract(const Duration(days: 7));
       case 'month':
         start = DateTime(now.year, now.month - 1, now.day);
+      case '3m':
+        start = DateTime(now.year, now.month - 3, now.day);
+      case '6m':
+        start = DateTime(now.year, now.month - 6, now.day);
       case 'year':
         start = DateTime(now.year - 1, now.month, now.day);
       default:

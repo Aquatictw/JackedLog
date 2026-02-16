@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-15)
 
 **Core value:** Users can efficiently log and track their workouts with minimal friction
-**Current focus:** Phase 12 complete — ready for Phase 13
+**Current focus:** Phase 13 complete — ready for Phase 14
 
 ## Current Position
 
-Phase: 12 of 14 (Dashboard Query Layer)
-Plan: 2 of 2 in current phase
+Phase: 13 of 14 (Dashboard Frontend)
+Plan: 3 of 3 in current phase
 Status: Phase complete
-Last activity: 2026-02-15 — Completed 12-02-PLAN.md (Exercise query methods)
+Last activity: 2026-02-15 — Completed phase 13 (Dashboard Frontend)
 
-Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2) | [████████░░] 80% (v1.3)
+Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2) | [█████████░] 90% (v1.3)
 
 ## Performance Metrics
 
@@ -34,9 +34,9 @@ Progress: [██████████] 100% (v1.0) | [███████�
 - Total execution time: 13 min
 
 **v1.3 Velocity (current):**
-- Total plans completed: 7
-- Average duration: 1.7 min
-- Total execution time: 12 min
+- Total plans completed: 10
+- Average duration: 1.9 min
+- Total execution time: 19 min
 
 **By Phase:**
 
@@ -54,6 +54,7 @@ Progress: [██████████] 100% (v1.0) | [███████�
 | 10-server-foundation | 3 | 7 min | 2.3 min |
 | 11-app-integration | 2 | 3 min | 1.5 min |
 | 12-dashboard-query-layer | 2 | 2 min | 1 min |
+| 13-dashboard-frontend | 3 | 7 min | 2.3 min |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - v1.3: db.close() for sqlite3 handle cleanup — Matches existing sqlite_validator.dart pattern
 - v1.3: Brzycki formula with negative weight branch for 1RM — Matches app's existing calculation
 - v1.3: Integer-only rep filtering for rep records — Excludes fractional reps from rep PR table
+- v1.3: Server-rendered HTML with inline CSS/JS — No build step, no framework, Chart.js via CDN
+- v1.3: CSS custom properties for dark/light theme — Runtime toggle via localStorage, no page reload
+- v1.3: Query parameter auth for dashboard routes — Same ?key= pattern as manage page
 
 ### Pending Todos
 
@@ -96,8 +100,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 12-02-PLAN.md — Phase 12 complete
+Stopped at: Completed phase 13 — Dashboard Frontend complete
 Resume file: None
 
 ---
-*Last updated: 2026-02-15 after 12-02 plan execution complete*
+*Last updated: 2026-02-15 after phase 13 execution complete*

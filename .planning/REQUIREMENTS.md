@@ -15,21 +15,21 @@
 
 ### Dashboard — Web Visualizations
 
-- [ ] **DASH-01**: Overview page shows stats cards (workout count, volume, streak, training time)
-- [ ] **DASH-02**: Training heatmap displays workout frequency over time
-- [ ] **DASH-03**: Muscle group volume bar chart (weight x reps by category)
-- [ ] **DASH-04**: Muscle group set count chart (sets by category)
-- [ ] **DASH-05**: Exercise progress charts (Best Weight, 1RM, Volume) with period selector
-- [ ] **DASH-06**: Personal records display per exercise
-- [ ] **DASH-07**: Rep records table (best weight at each rep count 1-15)
-- [ ] **DASH-08**: Workout history list with pagination
-- [ ] **DASH-09**: Workout detail view showing all sets/reps/weights
-- [ ] **DASH-10**: Exercise search and category filter
+- [x] **DASH-01**: Overview page shows stats cards (workout count, volume, streak, training time)
+- [x] **DASH-02**: Training heatmap displays workout frequency over time
+- [x] **DASH-03**: Muscle group volume bar chart (weight x reps by category)
+- [x] **DASH-04**: Muscle group set count chart (sets by category)
+- [x] **DASH-05**: Exercise progress charts (Best Weight, 1RM, Volume) with period selector
+- [x] **DASH-06**: Personal records display per exercise
+- [x] **DASH-07**: Rep records table (best weight at each rep count 1-15)
+- [x] **DASH-08**: Workout history list with pagination
+- [x] **DASH-09**: Workout detail view showing all sets/reps/weights
+- [x] **DASH-10**: Exercise search and category filter
 - [ ] **DASH-11**: 5/3/1 block history page with TM progression over time
 - [ ] **DASH-12**: Bodyweight trend chart
 - [ ] **DASH-13**: Workout frequency by weekday chart
-- [ ] **DASH-14**: Responsive layout (desktop sidebar, mobile hamburger menu)
-- [ ] **DASH-15**: Dark/light theme toggle
+- [x] **DASH-14**: Responsive layout (desktop sidebar, mobile hamburger menu)
+- [x] **DASH-15**: Dark/light theme toggle
 
 ### Deploy — Docker & Infrastructure
 
@@ -91,12 +91,12 @@
 | DASH-08 | Phase 12 | 12-01 | Complete |
 | DASH-09 | Phase 12 | 12-01 | Complete |
 | DASH-10 | Phase 12 | 12-02 | Complete |
-| DASH-02 | Phase 13 | — | Pending |
-| DASH-03 | Phase 13 | — | Pending |
-| DASH-04 | Phase 13 | — | Pending |
-| DASH-05 | Phase 13 | — | Pending |
-| DASH-14 | Phase 13 | — | Pending |
-| DASH-15 | Phase 13 | — | Pending |
+| DASH-02 | Phase 13 | 13-01 | Complete |
+| DASH-03 | Phase 13 | 13-01 | Complete |
+| DASH-04 | Phase 13 | 13-01 | Complete |
+| DASH-05 | Phase 13 | 13-02 | Complete |
+| DASH-14 | Phase 13 | 13-01 | Complete |
+| DASH-15 | Phase 13 | 13-01 | Complete |
 | DASH-11 | Phase 14 | — | Pending |
 | DASH-12 | Phase 14 | — | Pending |
 | DASH-13 | Phase 14 | — | Pending |

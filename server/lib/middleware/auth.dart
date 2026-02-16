@@ -8,6 +8,18 @@ Middleware authMiddleware(String apiKey) {
         return innerHandler(request);
       }
 
+      // Dashboard pages use query parameter auth
+      if (request.url.path.startsWith('dashboard')) {
+        final key = request.url.queryParameters['key'];
+        if (key != apiKey) {
+          return Response.forbidden(
+            '{"error": "Invalid API key"}',
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return innerHandler(request);
+      }
+
       // Manage page uses query parameter auth
       if (request.url.path == 'manage') {
         final key = request.url.queryParameters['key'];

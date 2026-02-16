@@ -126,7 +126,14 @@ Plans:
 4. Layout is responsive (desktop sidebar navigation, mobile hamburger menu) and theme toggle switches between dark/light
 5. All pages are server-rendered HTML with vanilla CSS/JS (no build step, no framework)
 
-**Status:** Pending
+**Plans:** 3 plans
+
+Plans:
+- [x] 13-01-PLAN.md — Query layer additions, routing/auth, layout shell, and overview page
+- [x] 13-02-PLAN.md — Exercise list and exercise detail pages
+- [x] 13-03-PLAN.md — History list and workout detail pages
+
+**Status:** Complete (2026-02-15)
 
 ---
 
@@ -158,11 +165,11 @@ Plans:
 | 10 - Server Foundation | Server can receive, validate, and store backups in Docker | 11 | Complete |
 | 11 - App Integration | App can push backups to server | 4 | Complete |
 | 12 - Dashboard Query Layer | Server can query backups for analytics | 6 | Complete |
-| 13 - Dashboard Frontend | Users can view stats via web dashboard | 6 | Pending |
+| 13 - Dashboard Frontend | Users can view stats via web dashboard | 6 | Complete |
 | 14 - Dashboard Differentiators | Dashboard shows 5/3/1 and bodyweight features | 3 | Pending |
 
 **Total:** 30/30 requirements mapped (100% coverage)
 
 ---
 
-*Last updated: 2026-02-15 — Phase 12 complete*
+*Last updated: 2026-02-15 — Phase 13 complete*
