@@ -10,7 +10,9 @@ import 'package:jackedlog_server/middleware/cors.dart';
 import 'package:jackedlog_server/api/health_api.dart';
 import 'package:jackedlog_server/api/backup_api.dart';
 import 'package:jackedlog_server/api/manage_page.dart';
+import 'package:jackedlog_server/api/dashboard_pages.dart';
 import 'package:jackedlog_server/services/backup_service.dart';
+import 'package:jackedlog_server/services/dashboard_service.dart';
 
 void main() async {
   final config = ServerConfig.fromEnvironment();
@@ -23,6 +25,7 @@ void main() async {
 
   // Initialize services
   final backupService = BackupService(config.dataDir);
+  final dashboardService = DashboardService(config.dataDir);
 
   // Configure routes
   final router = Router();
@@ -35,6 +38,16 @@ void main() async {
       (req, String filename) => deleteBackupHandler(req, filename, backupService));
   router.get('/manage',
       (req) => managePageHandler(req, backupService, config.apiKey));
+  router.get('/dashboard',
+      (req) => overviewPageHandler(req, dashboardService, backupService, config.apiKey));
+  router.get('/dashboard/exercises',
+      (req) => exercisesPageHandler(req, dashboardService, config.apiKey));
+  router.get('/dashboard/exercise/<name>',
+      (req, String name) => exerciseDetailHandler(req, name, dashboardService, config.apiKey));
+  router.get('/dashboard/history',
+      (req) => historyPageHandler(req, dashboardService, config.apiKey));
+  router.get('/dashboard/workout/<id>',
+      (req, String id) => workoutDetailHandler(req, id, dashboardService, config.apiKey));
 
   // Build middleware pipeline
   final handler = const Pipeline()
