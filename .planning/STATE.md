@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-15)
 Phase: 14 of 14 (Dashboard Differentiators)
 Plan: 2 of 2 in current phase
 Status: Phase complete
-Last activity: 2026-03-14 — Completed quick task 014: Add go-back-week and complete-week confirmation to 5/3/1 block
+Last activity: 2026-03-14 — Completed quick task 015: Make Go Back 1/3 and Complete Week 2/3 width
 
 Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2) | [██████████] 100% (v1.3)
 
@@ -103,12 +103,13 @@ None yet.
 | 012 | Clean up settings page | 2026-02-16 | eca509c6 | [012-clean-up-settings-page](./quick/012-clean-up-settings-page/) |
 | 013 | Remove old 5/3/1 calculator UI, keep only block mode | 2026-03-14 | 8b5ce973 | [13-remove-old-531-calculator-ui-keep-only-n](./quick/13-remove-old-531-calculator-ui-keep-only-n/) |
 | 014 | Add go-back-week and complete-week confirmation to 5/3/1 block | 2026-03-14 | 452fbe5d | [014-in-the-5-3-1-block-page-add-functionalit](./quick/014-in-the-5-3-1-block-page-add-functionalit/) |
+| 015 | Make Go Back 1/3 and Complete Week 2/3 width | 2026-03-14 | a796a745 | [15-make-go-back-1-3-and-complete-week-2-3-w](./quick/15-make-go-back-1-3-and-complete-week-2-3-w/) |
 
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed quick task 014 — Add go-back-week and complete-week confirmation to 5/3/1 block
+Stopped at: Completed quick task 015 — Make Go Back 1/3 and Complete Week 2/3 width
 Resume file: None
 
 ---
-*Last updated: 2026-03-14 after quick-014 complete*
+*Last updated: 2026-03-14 after quick-015 complete*
