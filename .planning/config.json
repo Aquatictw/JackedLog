@@ -1,6 +1,5 @@
 {
   "mode": "yolo",
-  "depth": "standard",
   "parallelization": true,
   "commit_docs": true,
   "model_profile": "quality",
@@ -19,5 +18,6 @@
     "ONE_COMMIT_PER_PHASE": "NEVER make multiple commits. Squash ALL work (research, planning, context, execution, fixes, docs) into ONE SINGLE commit at the END. Format: 'feat: NN description' or 'feat: quick-NNN description'. NO intermediate commits. NO docs commits. ONE COMMIT ONLY.",
     "violated_count": 1,
     "last_violation": "2026-02-02 quick-001"
-  }
+  },
+  "granularity": "standard"
 }

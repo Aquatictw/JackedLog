@@ -1150,9 +1150,9 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   Widget _buildStatsSection(List<GymSet> sets, double totalVolume,
       int exerciseCount, int recordCount,) {
     final colorScheme = Theme.of(context).colorScheme;
-    final duration = widget.workout.endTime != null
-        ? widget.workout.endTime!.difference(widget.workout.startTime)
-        : DateTime.now().difference(widget.workout.startTime);
+    final duration = currentWorkout.endTime != null
+        ? currentWorkout.endTime!.difference(currentWorkout.startTime)
+        : DateTime.now().difference(currentWorkout.startTime);
 
     final totalSets = sets.length;
 
@@ -1179,11 +1179,22 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               'sets',
             ),
             _buildStatDivider(),
-            _buildStatItem(
-              Icons.timer,
-              _formatDuration(duration),
-              'duration',
-            ),
+            if (_isEditMode && currentWorkout.endTime != null)
+              GestureDetector(
+                onTap: _editDuration,
+                child: _buildStatItem(
+                  Icons.timer,
+                  _formatDuration(duration),
+                  'duration',
+                  isHighlighted: true,
+                ),
+              )
+            else
+              _buildStatItem(
+                Icons.timer,
+                _formatDuration(duration),
+                'duration',
+              ),
             if (totalVolume > 0) ...[
               _buildStatDivider(),
               _buildStatItem(
@@ -2232,6 +2243,97 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         await _updateSelfie(pickedFile.path);
       }
     }
+  }
+
+  Future<void> _editDuration() async {
+    DateTime editStart = currentWorkout.startTime;
+    DateTime editEnd = currentWorkout.endTime!;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Duration'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Start Time'),
+                trailing: Text(DateFormat('HH:mm').format(editStart)),
+                onTap: () async {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.fromDateTime(editStart),
+                  );
+                  if (time != null) {
+                    setDialogState(() {
+                      editStart = DateTime(
+                        editStart.year,
+                        editStart.month,
+                        editStart.day,
+                        time.hour,
+                        time.minute,
+                      );
+                    });
+                  }
+                },
+              ),
+              ListTile(
+                title: const Text('End Time'),
+                trailing: Text(DateFormat('HH:mm').format(editEnd)),
+                onTap: () async {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.fromDateTime(editEnd),
+                  );
+                  if (time != null) {
+                    setDialogState(() {
+                      editEnd = DateTime(
+                        editEnd.year,
+                        editEnd.month,
+                        editEnd.day,
+                        time.hour,
+                        time.minute,
+                      );
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (editEnd.isBefore(editStart) ||
+                    editEnd.isAtSameMomentAs(editStart)) {
+                  toast('End time must be after start time');
+                  return;
+                }
+                Navigator.pop(context, true);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    ).then((saved) async {
+      if (saved == true) {
+        await (db.workouts.update()
+              ..where((w) => w.id.equals(widget.workout.id)))
+            .write(WorkoutsCompanion(
+          startTime: Value(editStart),
+          endTime: Value(editEnd),
+        ));
+        await _reloadWorkout();
+        setState(() {
+          _hasUnsavedChanges = true;
+        });
+      }
+    });
   }
 
   Future<void> _reloadWorkout() async {

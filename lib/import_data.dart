@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'database/database.dart';
+import 'fivethreeone/fivethreeone_state.dart';
 import 'main.dart';
 import 'settings/settings_state.dart';
 import 'utils.dart';
@@ -117,6 +118,9 @@ class ImportData extends StatelessWidget {
     if (!ctx.mounted) return result;
     final settingsState = ctx.read<SettingsState>();
     await settingsState.init();
+
+    if (!ctx.mounted) return result;
+    await ctx.read<FiveThreeOneState>().refresh();
 
     if (!ctx.mounted) return result;
     Navigator.of(ctx, rootNavigator: true)
