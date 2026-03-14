@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-15)
 Phase: 14 of 14 (Dashboard Differentiators)
 Plan: 2 of 2 in current phase
 Status: Phase complete
-Last activity: 2026-03-14 — Completed quick task 015: Make Go Back 1/3 and Complete Week 2/3 width
+Last activity: 2026-03-14 — Completed quick task 017: Pack 5/3/1 block data into sqlite database
 
 Progress: [██████████] 100% (v1.0) | [██████████] 100% (v1.1) | [██████████] 100% (v1.2) | [██████████] 100% (v1.3)
 
@@ -104,12 +104,14 @@ None yet.
 | 013 | Remove old 5/3/1 calculator UI, keep only block mode | 2026-03-14 | 8b5ce973 | [13-remove-old-531-calculator-ui-keep-only-n](./quick/13-remove-old-531-calculator-ui-keep-only-n/) |
 | 014 | Add go-back-week and complete-week confirmation to 5/3/1 block | 2026-03-14 | 452fbe5d | [014-in-the-5-3-1-block-page-add-functionalit](./quick/014-in-the-5-3-1-block-page-add-functionalit/) |
 | 015 | Make Go Back 1/3 and Complete Week 2/3 width | 2026-03-14 | a796a745 | [15-make-go-back-1-3-and-complete-week-2-3-w](./quick/15-make-go-back-1-3-and-complete-week-2-3-w/) |
+| 016 | Fix 5/3/1 block backup export/import and workout duration editing | 2026-03-14 | 4e9c5edd | [16-fix-531-block-and-training-max-backup-re](./quick/16-fix-531-block-and-training-max-backup-re/) |
+| 017 | Pack 5/3/1 block data into sqlite database | 2026-03-14 | 268cfcc7 | [17-pack-531-block-data-into-sqlite-database](./quick/17-pack-531-block-data-into-sqlite-database/) |
 
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed quick task 015 — Make Go Back 1/3 and Complete Week 2/3 width
+Stopped at: Completed quick task 017 — Pack 5/3/1 block data into sqlite database
 Resume file: None
 
 ---
-*Last updated: 2026-03-14 after quick-015 complete*
+*Last updated: 2026-03-14 after quick-017 complete*
