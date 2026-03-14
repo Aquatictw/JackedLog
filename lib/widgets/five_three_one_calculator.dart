@@ -1,16 +1,12 @@
-import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../database/database.dart';
 import '../fivethreeone/fivethreeone_state.dart';
 import '../fivethreeone/schemes.dart';
-import '../main.dart';
-import '../settings/settings_state.dart';
 
 /// 5/3/1 powerlifting calculator dialog
-/// Helps calculate weights for the 5/3/1 program based on Training Max
+/// Shows block-based layout from active FiveThreeOneBlock
 class FiveThreeOneCalculator extends StatefulWidget {
 
   const FiveThreeOneCalculator({
@@ -24,14 +20,13 @@ class FiveThreeOneCalculator extends StatefulWidget {
 
 class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
   late TextEditingController _tmController;
-  int _currentWeek = 1;
   double? _trainingMax;
   String _unit = 'kg';
 
-  // Block-aware state fields
-  bool _isBlockMode = false;
+  // Block state fields
   int _blockCycleType = 0;
   int _blockWeek = 1;
+  bool _hasActiveBlock = false;
 
   // Map exercise names to their settings field
   static const Map<String, String> exerciseMapping = {
@@ -46,72 +41,39 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
   void initState() {
     super.initState();
     _tmController = TextEditingController();
-    _loadSettings();
+    _loadBlockData();
   }
 
-  Future<void> _loadSettings() async {
+  void _loadBlockData() {
     final fiveThreeOneState = context.read<FiveThreeOneState>();
 
     if (fiveThreeOneState.hasActiveBlock) {
-      // Block mode: resolve data from active block
       final block = fiveThreeOneState.activeBlock!;
-      setState(() {
-        _isBlockMode = true;
-        _blockCycleType = block.currentCycle;
-        _blockWeek = block.currentWeek;
-        _unit = block.unit;
+      _hasActiveBlock = true;
+      _blockCycleType = block.currentCycle;
+      _blockWeek = block.currentWeek;
+      _unit = block.unit;
 
-        // Resolve TM from block fields
-        final exerciseKey = _getExerciseKey();
-        switch (exerciseKey) {
-          case 'squat':
-            _trainingMax = block.squatTm;
-            break;
-          case 'bench':
-            _trainingMax = block.benchTm;
-            break;
-          case 'deadlift':
-            _trainingMax = block.deadliftTm;
-            break;
-          case 'press':
-            _trainingMax = block.pressTm;
-            break;
-        }
+      // Resolve TM from block fields
+      final exerciseKey = _getExerciseKey();
+      switch (exerciseKey) {
+        case 'squat':
+          _trainingMax = block.squatTm;
+          break;
+        case 'bench':
+          _trainingMax = block.benchTm;
+          break;
+        case 'deadlift':
+          _trainingMax = block.deadliftTm;
+          break;
+        case 'press':
+          _trainingMax = block.pressTm;
+          break;
+      }
 
-        if (_trainingMax != null) {
-          _tmController.text = _trainingMax!.toStringAsFixed(1);
-        }
-      });
-    } else {
-      // Manual mode: existing settings-based code path
-      final settings = context.read<SettingsState>().value;
-      _unit = settings.strengthUnit;
-
-      final setting = await db.settings.select().getSingle();
-      setState(() {
-        _currentWeek = setting.fivethreeoneWeek;
-
-        // Load appropriate TM based on exercise
-        final exerciseKey = _getExerciseKey();
-        switch (exerciseKey) {
-          case 'squat':
-            _trainingMax = setting.fivethreeoneSquatTm;
-            break;
-          case 'bench':
-            _trainingMax = setting.fivethreeoneBenchTm;
-            break;
-          case 'deadlift':
-            _trainingMax = setting.fivethreeoneDeadliftTm;
-            break;
-          case 'press':
-            _trainingMax = setting.fivethreeonePressTm;
-            break;
-        }
-
-        if (_trainingMax != null) {
-          _tmController.text = _trainingMax!.toStringAsFixed(1);
-        }
-      });
+      if (_trainingMax != null) {
+        _tmController.text = _trainingMax!.toStringAsFixed(1);
+      }
     }
   }
 
@@ -122,51 +84,6 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
       }
     }
     return 'squat'; // Default fallback
-  }
-
-  Future<void> _saveTrainingMax() async {
-    final tm = double.tryParse(_tmController.text);
-    if (tm == null || tm <= 0) return;
-
-    final exerciseKey = _getExerciseKey();
-
-    // Update appropriate TM field
-    switch (exerciseKey) {
-      case 'squat':
-        await db.settings.update().write(
-              SettingsCompanion(
-                fivethreeoneSquatTm: Value(tm),
-              ),
-            );
-        break;
-      case 'bench':
-        await db.settings.update().write(
-              SettingsCompanion(
-                fivethreeoneBenchTm: Value(tm),
-              ),
-            );
-        break;
-      case 'deadlift':
-        await db.settings.update().write(
-              SettingsCompanion(
-                fivethreeoneDeadliftTm: Value(tm),
-              ),
-            );
-        break;
-      case 'press':
-        await db.settings.update().write(
-              SettingsCompanion(
-                fivethreeonePressTm: Value(tm),
-              ),
-            );
-        break;
-    }
-
-    setState(() {
-      _trainingMax = tm;
-    });
-
-    HapticFeedback.mediumImpact();
   }
 
   void _saveBlockTm() {
@@ -181,86 +98,6 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
     setState(() {
       _trainingMax = tm;
     });
-  }
-
-  Future<void> _updateWeek(int week) async {
-    await db.settings.update().write(
-          SettingsCompanion(
-            fivethreeoneWeek: Value(week),
-          ),
-        );
-
-    setState(() {
-      _currentWeek = week;
-    });
-
-    HapticFeedback.selectionClick();
-  }
-
-  Future<void> _progressCycle() async {
-    final tm = _trainingMax;
-    if (tm == null) return;
-
-    // Increment TM based on exercise type
-    final exerciseKey = _getExerciseKey();
-    double increment;
-
-    // Press exercises: +5 lb (2.5 kg), Lower body: +10 lb (5 kg)
-    if (exerciseKey == 'press' || exerciseKey == 'bench') {
-      increment = _unit == 'kg' ? 2.5 : 5.0;
-    } else {
-      increment = _unit == 'kg' ? 5.0 : 10.0;
-    }
-
-    final newTM = tm + increment;
-    _tmController.text = newTM.toStringAsFixed(1);
-    await _saveTrainingMax();
-
-    // Reset to week 1
-    await _updateWeek(1);
-
-    if (mounted) {
-      HapticFeedback.heavyImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Cycle complete! New TM: ${newTM.toStringAsFixed(1)} $_unit',
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
-  List<({double percentage, int reps, bool amrap})> _getWorkingSetScheme() {
-    switch (_currentWeek) {
-      case 1: // 5s week
-        return [
-          (percentage: 0.65, reps: 5, amrap: false),
-          (percentage: 0.75, reps: 5, amrap: false),
-          (percentage: 0.85, reps: 5, amrap: true),
-        ];
-      case 2: // 3s week
-        return [
-          (percentage: 0.70, reps: 3, amrap: false),
-          (percentage: 0.80, reps: 3, amrap: false),
-          (percentage: 0.90, reps: 3, amrap: true),
-        ];
-      case 3: // 5/3/1 week
-        return [
-          (percentage: 0.75, reps: 5, amrap: false),
-          (percentage: 0.85, reps: 3, amrap: false),
-          (percentage: 0.95, reps: 1, amrap: true),
-        ];
-      case 4: // Deload
-        return [
-          (percentage: 0.40, reps: 5, amrap: false),
-          (percentage: 0.50, reps: 5, amrap: false),
-          (percentage: 0.60, reps: 5, amrap: false),
-        ];
-      default:
-        return [];
-    }
   }
 
   double _calculateWeight(double percentage) {
@@ -281,24 +118,50 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final scheme = _isBlockMode
-        ? getMainScheme(cycleType: _blockCycleType, week: _blockWeek)
-        : _getWorkingSetScheme();
 
-    // weekName only used in manual mode
-    final weekName = !_isBlockMode
-        ? (_currentWeek == 4
-            ? 'Deload'
-            : _currentWeek == 3
-                ? '5/3/1'
-                : '${[5, 5, 3][_currentWeek - 1]}s Week')
-        : '';
+    // No active block: show informational message
+    if (!_hasActiveBlock) {
+      return Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.fitness_center,
+                size: 48,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No active 5/3/1 block',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Create a block from the 5/3/1 page to use the calculator',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
-    // Pre-compute supplemental data for block mode
-    final supplemental = _isBlockMode
-        ? getSupplementalScheme(
-            cycleType: _blockCycleType, week: _blockWeek)
-        : <SetScheme>[];
+    final scheme = getMainScheme(cycleType: _blockCycleType, week: _blockWeek);
+    final supplemental = getSupplementalScheme(
+        cycleType: _blockCycleType, week: _blockWeek);
 
     return Dialog(
       child: Container(
@@ -348,17 +211,16 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                                         .withValues(alpha: 0.7),
                                   ),
                             ),
-                            if (_isBlockMode)
-                              Text(
-                                '${cycleNames[_blockCycleType]} \u2014 Week $_blockWeek',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: colorScheme.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
+                            Text(
+                              '${cycleNames[_blockCycleType]} \u2014 Week $_blockWeek',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
                           ],
                         ),
                       ),
@@ -398,97 +260,23 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.monitor_weight_outlined),
                       ),
-                      onChanged: (_) {
-                        if (_isBlockMode) {
-                          _saveBlockTm();
-                        } else {
-                          _saveTrainingMax();
-                        }
-                      },
+                      onChanged: (_) => _saveBlockTm(),
                     ),
 
                     const SizedBox(height: 16),
 
-                    // Week Selector / Block position header
-                    if (_isBlockMode)
-                      Text(
-                        '${getDescriptiveLabel(_blockCycleType)} — Week $_blockWeek',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      )
-                    else
-                      SegmentedButton<int>(
-                        segments: const [
-                          ButtonSegment(
-                            value: 1,
-                            label: Text('W1'),
+                    // Block position header
+                    Text(
+                      '${getDescriptiveLabel(_blockCycleType)} — Week $_blockWeek',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                          ButtonSegment(
-                            value: 2,
-                            label: Text('W2'),
-                          ),
-                          ButtonSegment(
-                            value: 3,
-                            label: Text('W3'),
-                          ),
-                          ButtonSegment(
-                            value: 4,
-                            label: Text('W4'),
-                          ),
-                        ],
-                        selected: {_currentWeek},
-                        onSelectionChanged: (Set<int> newSelection) {
-                          _updateWeek(newSelection.first);
-                        },
-                        showSelectedIcon: false,
-                        style: ButtonStyle(
-                          padding: WidgetStateProperty.all(
-                            const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12,),
-                          ),
-                        ),
-                      ),
+                    ),
 
                     const SizedBox(height: 24),
 
                     // Working Sets
                     if (_trainingMax != null) ...[
-                      if (!_isBlockMode)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Week $_currentWeek: $weekName',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                            if (_currentWeek == 4)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.tertiaryContainer,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'Recovery',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: colorScheme.onTertiaryContainer,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      if (!_isBlockMode) const SizedBox(height: 12),
                       ...scheme.asMap().entries.map((entry) {
                         final index = entry.key;
                         final set = entry.value;
@@ -548,7 +336,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                          '×${set.reps}${set.amrap ? '+' : ''}',
+                                          '\u00d7${set.reps}${set.amrap ? '+' : ''}',
                                           style: Theme.of(context)
                                               .textTheme
                                               .titleMedium
@@ -560,7 +348,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                                       ],
                                     ),
                                     Text(
-                                      '${(set.percentage * 100).toInt()}% of TM${set.amrap ? ' · AMRAP' : ''}',
+                                      '${(set.percentage * 100).toInt()}% of TM${set.amrap ? ' \u00b7 AMRAP' : ''}',
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodySmall
@@ -578,8 +366,8 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                         );
                       }),
 
-                      // Supplemental section (block mode only)
-                      if (_isBlockMode && supplemental.isNotEmpty) ...[
+                      // Supplemental section
+                      if (supplemental.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         Divider(color: colorScheme.outlineVariant),
                         const SizedBox(height: 8),
@@ -604,9 +392,8 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                         }),
                       ],
 
-                      // TM Test feedback banner (block mode only)
-                      if (_isBlockMode &&
-                          _blockCycleType == cycleTmTest) ...[
+                      // TM Test feedback banner
+                      if (_blockCycleType == cycleTmTest) ...[
                         const SizedBox(height: 16),
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -634,17 +421,6 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                       ],
 
                       const SizedBox(height: 16),
-
-                      // Progress Cycle Button (manual mode only)
-                      if (!_isBlockMode && _currentWeek == 4)
-                        FilledButton.icon(
-                          onPressed: _progressCycle,
-                          icon: const Icon(Icons.upgrade),
-                          label: const Text('Complete Cycle & Increase TM'),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.all(16),
-                          ),
-                        ),
                     ] else
                       Container(
                         padding: const EdgeInsets.all(20),
