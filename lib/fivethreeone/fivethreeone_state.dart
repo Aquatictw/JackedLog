@@ -55,6 +55,13 @@ class FiveThreeOneState extends ChangeNotifier {
         cycleBumpsTm[block.currentCycle];
   }
 
+  /// Whether the user can go back a week (not at the very start)
+  bool get canGoBack {
+    if (_activeBlock == null) return false;
+    final block = _activeBlock!;
+    return block.currentCycle > 0 || block.currentWeek > 1;
+  }
+
   /// Whether the block has reached completion
   bool get isBlockComplete {
     if (_activeBlock == null) return false;
@@ -152,6 +159,37 @@ class FiveThreeOneState extends ChangeNotifier {
       companion = FiveThreeOneBlocksCompanion(
         isActive: const Value(false),
         completed: Value(DateTime.now()),
+      );
+    }
+
+    await (db.update(db.fiveThreeOneBlocks)
+          ..where((b) => b.id.equals(block.id)))
+        .write(companion);
+
+    await refresh();
+  }
+
+  /// Go back to the previous week (inverse of advanceWeek)
+  Future<void> goBackWeek() async {
+    if (_activeBlock == null) return;
+    final block = _activeBlock!;
+
+    // Already at the very start — nothing to undo
+    if (block.currentCycle == 0 && block.currentWeek == 1) return;
+
+    FiveThreeOneBlocksCompanion companion;
+
+    if (block.currentWeek > 1) {
+      // Move back within the same cycle
+      companion = FiveThreeOneBlocksCompanion(
+        currentWeek: Value(block.currentWeek - 1),
+      );
+    } else {
+      // At week 1 — move to last week of previous cycle
+      final prevCycle = block.currentCycle - 1;
+      companion = FiveThreeOneBlocksCompanion(
+        currentCycle: Value(prevCycle),
+        currentWeek: Value(cycleWeeks[prevCycle]),
       );
     }
 

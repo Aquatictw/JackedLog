@@ -437,65 +437,124 @@ class _CompleteWeekButton extends StatelessWidget {
     final isComplete = state.isBlockComplete;
     final label = isComplete ? 'Complete Block' : 'Complete Week';
 
-    return FilledButton.icon(
-      onPressed: () async {
-        final state = context.read<FiveThreeOneState>();
-        if (state.needsTmBump) {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Bump Training Max?'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                      'Squat: ${block.squatTm} \u2192 ${(block.squatTm + 4.5).toStringAsFixed(1)} ${block.unit}'),
-                  Text(
-                      'Bench: ${block.benchTm} \u2192 ${(block.benchTm + 2.2).toStringAsFixed(1)} ${block.unit}'),
-                  Text(
-                      'Deadlift: ${block.deadliftTm} \u2192 ${(block.deadliftTm + 4.5).toStringAsFixed(1)} ${block.unit}'),
-                  Text(
-                      'OHP: ${block.pressTm} \u2192 ${(block.pressTm + 2.2).toStringAsFixed(1)} ${block.unit}'),
+    return Column(
+      children: [
+        // Go Back button — only shown when not at the very start
+        if (state.canGoBack)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: TextButton.icon(
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Go Back'),
+                    content: const Text(
+                        'Go back to the previous week?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Confirm'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  await context.read<FiveThreeOneState>().goBackWeek();
+                }
+              },
+              icon: const Icon(Icons.undo),
+              label: const Text('Go Back'),
+            ),
+          ),
+        // Complete Week / Complete Block button with confirmation
+        FilledButton.icon(
+          onPressed: () async {
+            // Confirmation dialog before advancing
+            final proceed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: Text(label),
+                content: Text(isComplete
+                    ? 'Are you sure you want to complete this block?'
+                    : 'Are you sure you want to complete this week?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Confirm'),
+                  ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Skip'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Bump TMs'),
-                ),
-              ],
-            ),
-          );
-          if (confirmed == true) {
-            await state.bumpTms();
-          }
-        }
-
-        if (isComplete) {
-          // Capture block reference before advancing (which deactivates it)
-          final completedBlock = state.activeBlock!;
-          await state.advanceWeek();
-          if (context.mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => BlockSummaryPage(block: completedBlock),
-              ),
             );
-          }
-        } else {
-          await state.advanceWeek();
-        }
-      },
-      icon: Icon(isComplete ? Icons.check : Icons.arrow_forward),
-      label: Text(label),
-      style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-      ),
+            if (proceed != true) return;
+
+            final state = context.read<FiveThreeOneState>();
+            if (state.needsTmBump) {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Bump Training Max?'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                          'Squat: ${block.squatTm} \u2192 ${(block.squatTm + 4.5).toStringAsFixed(1)} ${block.unit}'),
+                      Text(
+                          'Bench: ${block.benchTm} \u2192 ${(block.benchTm + 2.2).toStringAsFixed(1)} ${block.unit}'),
+                      Text(
+                          'Deadlift: ${block.deadliftTm} \u2192 ${(block.deadliftTm + 4.5).toStringAsFixed(1)} ${block.unit}'),
+                      Text(
+                          'OHP: ${block.pressTm} \u2192 ${(block.pressTm + 2.2).toStringAsFixed(1)} ${block.unit}'),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Skip'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Bump TMs'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true) {
+                await state.bumpTms();
+              }
+            }
+
+            if (isComplete) {
+              // Capture block reference before advancing (which deactivates it)
+              final completedBlock = state.activeBlock!;
+              await state.advanceWeek();
+              if (context.mounted) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => BlockSummaryPage(block: completedBlock),
+                  ),
+                );
+              }
+            } else {
+              await state.advanceWeek();
+            }
+          },
+          icon: Icon(isComplete ? Icons.check : Icons.arrow_forward),
+          label: Text(label),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+          ),
+        ),
+      ],
     );
   }
 }
