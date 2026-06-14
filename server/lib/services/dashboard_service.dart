@@ -574,6 +574,58 @@ class DashboardService {
         .toList();
   }
 
+  /// Get the currently active 5/3/1 block, or null if none.
+  ///
+  /// Returns a map with keys: id, created, squatTm, benchTm, deadliftTm,
+  /// pressTm, startSquatTm, startBenchTm, startDeadliftTm, startPressTm, unit,
+  /// currentCycle, currentWeek. Returns null if the table is missing (old
+  /// backups) or no block is active.
+  Map<String, dynamic>? getActiveBlock() {
+    if (_db == null) return null;
+
+    final tableCheck = _db!.select(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='five_three_one_blocks'",
+    );
+    if (tableCheck.isEmpty) return null;
+
+    try {
+      final result = _db!.select('''
+        SELECT id, created,
+          squat_tm, bench_tm, deadlift_tm, press_tm,
+          COALESCE(start_squat_tm, squat_tm) as start_squat_tm,
+          COALESCE(start_bench_tm, bench_tm) as start_bench_tm,
+          COALESCE(start_deadlift_tm, deadlift_tm) as start_deadlift_tm,
+          COALESCE(start_press_tm, press_tm) as start_press_tm,
+          unit, current_cycle, current_week
+        FROM five_three_one_blocks
+        WHERE is_active = 1
+        ORDER BY created DESC
+        LIMIT 1
+      ''');
+
+      if (result.isEmpty) return null;
+      final row = result.first;
+      return <String, dynamic>{
+        'id': row['id'],
+        'created': row['created'],
+        'squatTm': (row['squat_tm'] as num).toDouble(),
+        'benchTm': (row['bench_tm'] as num).toDouble(),
+        'deadliftTm': (row['deadlift_tm'] as num).toDouble(),
+        'pressTm': (row['press_tm'] as num).toDouble(),
+        'startSquatTm': (row['start_squat_tm'] as num).toDouble(),
+        'startBenchTm': (row['start_bench_tm'] as num).toDouble(),
+        'startDeadliftTm': (row['start_deadlift_tm'] as num).toDouble(),
+        'startPressTm': (row['start_press_tm'] as num).toDouble(),
+        'unit': row['unit'] as String,
+        'currentCycle': row['current_cycle'] as int,
+        'currentWeek': row['current_week'] as int,
+      };
+    } catch (_) {
+      // Older schema may lack current_week / start_* columns.
+      return null;
+    }
+  }
+
   /// Get bodyweight entries with stats and moving averages.
   ///
   /// Returns a map with keys: entries, stats, ma3, ma7, ma14.
