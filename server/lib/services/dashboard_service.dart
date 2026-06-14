@@ -239,7 +239,7 @@ class DashboardService {
     // Sets ordered by sequence, then set_order/created
     final setsResult = _db!.select('''
       SELECT id, name, reps, weight, unit, created, category,
-        exercise_type, set_type, set_order, sequence
+        exercise_type, warmup, drop_set, set_order, sequence
       FROM gym_sets
       WHERE workout_id = ? AND hidden = 0 AND sequence >= 0
       ORDER BY sequence, COALESCE(set_order, created)
@@ -255,7 +255,8 @@ class DashboardService {
               'created': row['created'],
               'category': row['category'],
               'exerciseType': row['exercise_type'],
-              'setType': row['set_type'],
+              'warmup': row['warmup'] == 1,
+              'dropSet': row['drop_set'] == 1,
               'setOrder': row['set_order'],
               'sequence': row['sequence'],
             })
