@@ -49,7 +49,6 @@ fastlane/
 
 coverage/
 flexify-release-key.keystore
-/.github/
 /.vscode/
 /.claude/
 notes.md
