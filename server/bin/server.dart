@@ -32,26 +32,44 @@ void main() async {
   router.get('/api/health', healthHandler);
   router.post('/api/backup', (req) => uploadBackupHandler(req, backupService));
   router.get('/api/backups', (req) => listBackupsHandler(req, backupService));
-  router.get('/api/backup/<filename>',
-      (req, String filename) => downloadBackupHandler(req, filename, backupService));
-  router.delete('/api/backup/<filename>',
-      (req, String filename) => deleteBackupHandler(req, filename, backupService));
-  router.get('/manage',
-      (req) => managePageHandler(req, backupService, config.apiKey));
-  router.get('/dashboard',
-      (req) => overviewPageHandler(req, dashboardService, backupService, config.apiKey));
-  router.get('/dashboard/exercises',
-      (req) => exercisesPageHandler(req, dashboardService, config.apiKey));
-  router.get('/dashboard/exercise/<name>',
-      (req, String name) => exerciseDetailHandler(req, name, dashboardService, config.apiKey));
-  router.get('/dashboard/history',
-      (req) => historyPageHandler(req, dashboardService, config.apiKey));
-  router.get('/dashboard/workout/<id>',
-      (req, String id) => workoutDetailHandler(req, id, dashboardService, config.apiKey));
-  router.get('/dashboard/blocks',
-      (req) => blockHistoryPageHandler(req, dashboardService, config.apiKey));
-  router.get('/dashboard/bodyweight',
-      (req) => bodyweightPageHandler(req, dashboardService, config.apiKey));
+  router.get(
+      '/api/backup/<filename>',
+      (req, String filename) =>
+          downloadBackupHandler(req, filename, backupService));
+  router.delete(
+      '/api/backup/<filename>',
+      (req, String filename) =>
+          deleteBackupHandler(req, filename, backupService));
+  router.get(
+      '/manage', (req) => managePageHandler(req, backupService, config.apiKey));
+  router.get(
+      '/dashboard',
+      (req) => overviewPageHandler(
+          req, dashboardService, backupService, config.apiKey));
+  router.get(
+      '/dashboard/exercises',
+      (req) => exercisesPageHandler(
+          req, dashboardService, backupService, config.apiKey));
+  router.get(
+      '/dashboard/exercise/<name>',
+      (req, String name) => exerciseDetailHandler(
+          req, name, dashboardService, backupService, config.apiKey));
+  router.get(
+      '/dashboard/history',
+      (req) => historyPageHandler(
+          req, dashboardService, backupService, config.apiKey));
+  router.get(
+      '/dashboard/workout/<id>',
+      (req, String id) => workoutDetailHandler(
+          req, id, dashboardService, backupService, config.apiKey));
+  router.get(
+      '/dashboard/blocks',
+      (req) => blockHistoryPageHandler(
+          req, dashboardService, backupService, config.apiKey));
+  router.get(
+      '/dashboard/bodyweight',
+      (req) => bodyweightPageHandler(
+          req, dashboardService, backupService, config.apiKey));
 
   // Build middleware pipeline
   final handler = const Pipeline()

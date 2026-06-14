@@ -13,23 +13,46 @@ class DashboardService {
   final String dataDir;
   Database? _db;
   String? _currentFile;
+  DateTime? _currentModified;
+  int? _currentSize;
 
   DashboardService(this.dataDir);
 
   bool get isOpen => _db != null;
   String? get currentFile => _currentFile;
 
+  /// Keep the dashboard handle pointed at the requested backup.
+  ///
+  /// Same-day uploads replace the existing file in place, so checking only the
+  /// filename is not enough. Reopen when the path, mtime, or size changes.
+  bool ensureOpen({String? filename}) {
+    final filePath = _resolveBackupPath(filename);
+    if (filePath == null) {
+      close();
+      return false;
+    }
+
+    final stat = File(filePath).statSync();
+    if (_db != null &&
+        _currentFile == filePath &&
+        _currentModified == stat.modified &&
+        _currentSize == stat.size) {
+      return true;
+    }
+
+    return open(filename: filename);
+  }
+
   /// Open the latest (or specified) backup file in read-only mode.
   /// Returns false if no backup exists or schema version < 48.
   bool open({String? filename}) {
     close();
 
-    final filePath = filename != null
-        ? '$dataDir/$filename'
-        : _findLatestBackupPath();
+    final filePath = _resolveBackupPath(filename);
     if (filePath == null) return false;
 
     try {
+      final stat = File(filePath).statSync();
       final db = sqlite3.open(filePath, mode: OpenMode.readOnly);
       final versionResult = db.select('PRAGMA user_version');
       final version = versionResult.isNotEmpty
@@ -41,8 +64,11 @@ class DashboardService {
       }
       _db = db;
       _currentFile = filePath;
+      _currentModified = stat.modified;
+      _currentSize = stat.size;
       return true;
     } catch (e) {
+      close();
       return false;
     }
   }
@@ -52,6 +78,8 @@ class DashboardService {
     _db?.close();
     _db = null;
     _currentFile = null;
+    _currentModified = null;
+    _currentSize = null;
   }
 
   /// Get overview statistics for the dashboard.
@@ -160,16 +188,18 @@ class DashboardService {
       LIMIT ? OFFSET ?
     ''', [...whereParams, pageSize, offset]);
 
-    final workouts = dataResult.map((row) => {
-      'id': row['id'],
-      'startTime': row['start_time'],
-      'endTime': row['end_time'],
-      'name': row['name'],
-      'notes': row['notes'],
-      'exerciseCount': row['exercise_count'],
-      'setCount': row['set_count'],
-      'totalVolume': row['total_volume'],
-    }).toList();
+    final workouts = dataResult
+        .map((row) => {
+              'id': row['id'],
+              'startTime': row['start_time'],
+              'endTime': row['end_time'],
+              'name': row['name'],
+              'notes': row['notes'],
+              'exerciseCount': row['exercise_count'],
+              'setCount': row['set_count'],
+              'totalVolume': row['total_volume'],
+            })
+        .toList();
 
     return {
       'workouts': workouts,
@@ -215,19 +245,21 @@ class DashboardService {
       ORDER BY sequence, COALESCE(set_order, created)
     ''', [workoutId]);
 
-    final sets = setsResult.map((row) => {
-      'id': row['id'],
-      'name': row['name'],
-      'reps': row['reps'],
-      'weight': row['weight'],
-      'unit': row['unit'],
-      'created': row['created'],
-      'category': row['category'],
-      'exerciseType': row['exercise_type'],
-      'setType': row['set_type'],
-      'setOrder': row['set_order'],
-      'sequence': row['sequence'],
-    }).toList();
+    final sets = setsResult
+        .map((row) => {
+              'id': row['id'],
+              'name': row['name'],
+              'reps': row['reps'],
+              'weight': row['weight'],
+              'unit': row['unit'],
+              'created': row['created'],
+              'category': row['category'],
+              'exerciseType': row['exercise_type'],
+              'setType': row['set_type'],
+              'setOrder': row['set_order'],
+              'sequence': row['sequence'],
+            })
+        .toList();
 
     return {'workout': workout, 'sets': sets};
   }
@@ -263,8 +295,7 @@ class DashboardService {
       'exerciseName': exerciseName,
       'bestWeight': hasRecords ? (row['best_weight'] as num).toDouble() : null,
       'best1RM': hasRecords ? (row['best_1rm'] as num).toDouble() : null,
-      'bestVolume':
-          hasRecords ? (row['best_volume'] as num).toDouble() : null,
+      'bestVolume': hasRecords ? (row['best_volume'] as num).toDouble() : null,
       'hasRecords': hasRecords,
     };
   }
@@ -275,7 +306,10 @@ class DashboardService {
   /// repCount, maxWeight, created, unit, workoutId).
   Map<String, dynamic> getRepRecords(String exerciseName) {
     if (_db == null) {
-      return {'exerciseName': exerciseName, 'records': <Map<String, dynamic>>[]};
+      return {
+        'exerciseName': exerciseName,
+        'records': <Map<String, dynamic>>[]
+      };
     }
 
     final result = _db!.select('''
@@ -289,13 +323,15 @@ class DashboardService {
       ORDER BY rep_count ASC
     ''', [exerciseName]);
 
-    final records = result.map((row) => {
-      'repCount': row['rep_count'],
-      'maxWeight': row['max_weight'],
-      'created': row['created'],
-      'unit': row['unit'],
-      'workoutId': row['workout_id'],
-    }).toList();
+    final records = result
+        .map((row) => {
+              'repCount': row['rep_count'],
+              'maxWeight': row['max_weight'],
+              'created': row['created'],
+              'unit': row['unit'],
+              'workoutId': row['workout_id'],
+            })
+        .toList();
 
     return {'exerciseName': exerciseName, 'records': records};
   }
@@ -343,13 +379,15 @@ class DashboardService {
       ORDER BY workout_count DESC
     ''', params);
 
-    final exercises = result.map((row) => {
-      'name': row['name'],
-      'category': row['category'],
-      'lastUsed': row['last_used'],
-      'setCount': row['set_count'],
-      'workoutCount': row['workout_count'],
-    }).toList();
+    final exercises = result
+        .map((row) => {
+              'name': row['name'],
+              'category': row['category'],
+              'lastUsed': row['last_used'],
+              'setCount': row['set_count'],
+              'workoutCount': row['workout_count'],
+            })
+        .toList();
 
     return {
       'exercises': exercises,
@@ -400,10 +438,12 @@ class DashboardService {
       ORDER BY total_volume DESC
     ''', [startEpochSeconds]);
 
-    return result.map((row) => <String, dynamic>{
-      'muscle': row['muscle'],
-      'volume': (row['total_volume'] as num).toDouble(),
-    }).toList();
+    return result
+        .map((row) => <String, dynamic>{
+              'muscle': row['muscle'],
+              'volume': (row['total_volume'] as num).toDouble(),
+            })
+        .toList();
   }
 
   /// Get set counts per muscle group for bar chart.
@@ -424,10 +464,12 @@ class DashboardService {
       ORDER BY set_count DESC
     ''', [startEpochSeconds]);
 
-    return result.map((row) => <String, dynamic>{
-      'muscle': row['muscle'],
-      'sets': row['set_count'] as int,
-    }).toList();
+    return result
+        .map((row) => <String, dynamic>{
+              'muscle': row['muscle'],
+              'sets': row['set_count'] as int,
+            })
+        .toList();
   }
 
   /// Get exercise progress over time for line chart.
@@ -511,21 +553,23 @@ class DashboardService {
       ORDER BY completed DESC
     ''');
 
-    return result.map((row) => <String, dynamic>{
-      'id': row['id'],
-      'created': row['created'],
-      'completed': row['completed'],
-      'squatTm': (row['squat_tm'] as num).toDouble(),
-      'benchTm': (row['bench_tm'] as num).toDouble(),
-      'deadliftTm': (row['deadlift_tm'] as num).toDouble(),
-      'pressTm': (row['press_tm'] as num).toDouble(),
-      'startSquatTm': (row['start_squat_tm'] as num).toDouble(),
-      'startBenchTm': (row['start_bench_tm'] as num).toDouble(),
-      'startDeadliftTm': (row['start_deadlift_tm'] as num).toDouble(),
-      'startPressTm': (row['start_press_tm'] as num).toDouble(),
-      'unit': row['unit'] as String,
-      'currentCycle': row['current_cycle'] as int,
-    }).toList();
+    return result
+        .map((row) => <String, dynamic>{
+              'id': row['id'],
+              'created': row['created'],
+              'completed': row['completed'],
+              'squatTm': (row['squat_tm'] as num).toDouble(),
+              'benchTm': (row['bench_tm'] as num).toDouble(),
+              'deadliftTm': (row['deadlift_tm'] as num).toDouble(),
+              'pressTm': (row['press_tm'] as num).toDouble(),
+              'startSquatTm': (row['start_squat_tm'] as num).toDouble(),
+              'startBenchTm': (row['start_bench_tm'] as num).toDouble(),
+              'startDeadliftTm': (row['start_deadlift_tm'] as num).toDouble(),
+              'startPressTm': (row['start_press_tm'] as num).toDouble(),
+              'unit': row['unit'] as String,
+              'currentCycle': row['current_cycle'] as int,
+            })
+        .toList();
   }
 
   /// Get bodyweight entries with stats and moving averages.
@@ -551,8 +595,11 @@ class DashboardService {
 
     final startEpochSeconds = _periodToEpoch(period);
 
+    final notesSelect =
+        _hasColumn('bodyweight_entries', 'notes') ? 'notes' : 'NULL AS notes';
+
     final result = _db!.select('''
-      SELECT id, weight, unit, date, notes
+      SELECT id, weight, unit, date, $notesSelect
       FROM bodyweight_entries
       WHERE date >= ?
       ORDER BY date ASC
@@ -560,13 +607,15 @@ class DashboardService {
 
     if (result.isEmpty) return emptyResult;
 
-    final entries = result.map((row) => <String, dynamic>{
-      'id': row['id'] as int,
-      'weight': (row['weight'] as num).toDouble(),
-      'unit': row['unit'] as String,
-      'date': row['date'] as int,
-      'notes': row['notes'],
-    }).toList();
+    final entries = result
+        .map((row) => <String, dynamic>{
+              'id': row['id'] as int,
+              'weight': (row['weight'] as num).toDouble(),
+              'unit': row['unit'] as String,
+              'date': row['date'] as int,
+              'notes': row['notes'],
+            })
+        .toList();
 
     // Calculate stats
     final weights = entries.map((e) => e['weight'] as double).toList();
@@ -666,8 +715,7 @@ class DashboardService {
       final currentEpoch = entries[i]['date'] as int;
       final currentDate =
           DateTime.fromMillisecondsSinceEpoch(currentEpoch * 1000);
-      final windowStart =
-          currentDate.subtract(Duration(days: windowDays - 1));
+      final windowStart = currentDate.subtract(Duration(days: windowDays - 1));
 
       double sum = 0;
       int count = 0;
@@ -706,9 +754,27 @@ class DashboardService {
     if (backups.isEmpty) return null;
 
     // Sort by filename descending (date is in the name: YYYY-MM-DD)
-    backups.sort((a, b) =>
-        b.uri.pathSegments.last.compareTo(a.uri.pathSegments.last));
+    backups.sort(
+        (a, b) => b.uri.pathSegments.last.compareTo(a.uri.pathSegments.last));
 
     return backups.first.path;
+  }
+
+  String? _resolveBackupPath(String? filename) {
+    if (filename != null && filename.isNotEmpty) {
+      if (!_backupPattern.hasMatch(filename)) return null;
+
+      final file = File('$dataDir/$filename');
+      return file.existsSync() ? file.path : null;
+    }
+
+    return _findLatestBackupPath();
+  }
+
+  bool _hasColumn(String tableName, String columnName) {
+    if (_db == null) return false;
+
+    final result = _db!.select('PRAGMA table_info($tableName)');
+    return result.any((row) => row['name'] == columnName);
   }
 }
