@@ -14,15 +14,28 @@ String dashboardShell({
   required String activeNav,
   required String content,
   required String apiKey,
+  Request? request,
+  BackupService? backupService,
   String extraHead = '',
   String extraScripts = '',
 }) {
+  final selectedBackup = request != null ? _selectedBackup(request) : null;
+  final backups = backupService?.listBackups() ?? const <BackupInfo>[];
+  final currentPath = request != null ? '/${request.url.path}' : '/dashboard';
+  final queryParameters =
+      request?.url.queryParameters ?? const <String, String>{};
+  final savePicker = _buildSavePicker(
+    apiKey: apiKey,
+    currentPath: currentPath,
+    queryParameters: queryParameters,
+    backups: backups,
+    selectedBackup: selectedBackup,
+  );
+
   String navItem(String label, String path, String icon) {
     final isActive = label.toLowerCase() == activeNav.toLowerCase();
     final activeClass = isActive ? ' class="active"' : '';
-    final href = path.contains('?')
-        ? '$path&key=$apiKey'
-        : '$path?key=$apiKey';
+    final href = _dashboardHref(path, apiKey, selectedBackup);
     return '<a href="$href"$activeClass>$icon $label</a>';
   }
 
@@ -34,28 +47,39 @@ String dashboardShell({
 <title>$title - JackedLog</title>
 <style>
   :root {
-    --bg: #0f0f0f;
-    --surface: #1a1a1a;
-    --surface-elevated: #242424;
-    --text: #e0e0e0;
-    --text-muted: #888;
-    --accent: #7C3AED;
-    --accent-dim: rgba(124,58,237,0.2);
-    --accent-hover: #6D28D9;
-    --border: #333;
+    color-scheme: dark;
+    --bg: #090b10;
+    --surface: #11151d;
+    --surface-elevated: #171d27;
+    --surface-strong: #202838;
+    --text: #f3f6fb;
+    --text-muted: #97a3b6;
+    --accent: #8b5cf6;
+    --accent-dim: rgba(139,92,246,0.18);
+    --accent-hover: #7c3aed;
+    --teal: #14b8a6;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --border: rgba(148,163,184,0.18);
+    --shadow: 0 18px 50px rgba(0,0,0,0.25);
   }
   html.light {
-    --bg: #f5f5f5;
+    color-scheme: light;
+    --bg: #f6f8fb;
     --surface: #ffffff;
-    --surface-elevated: #f0f0f0;
-    --text: #1a1a1a;
-    --text-muted: #666;
-    --accent: #7C3AED;
-    --accent-dim: rgba(124,58,237,0.1);
-    --accent-hover: #6D28D9;
-    --border: #ddd;
+    --surface-elevated: #f1f5f9;
+    --surface-strong: #e8eef7;
+    --text: #111827;
+    --text-muted: #64748b;
+    --accent: #7c3aed;
+    --accent-dim: rgba(124,58,237,0.12);
+    --accent-hover: #6d28d9;
+    --border: rgba(15,23,42,0.12);
+    --shadow: 0 16px 40px rgba(15,23,42,0.08);
   }
   *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--bg); }
   body {
     background: var(--bg);
     color: var(--text);
@@ -68,7 +92,7 @@ String dashboardShell({
     left: 0;
     width: 240px;
     height: 100vh;
-    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) 92%, #000 8%);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -81,20 +105,27 @@ String dashboardShell({
     font-weight: 700;
     color: var(--accent);
     border-bottom: 1px solid var(--border);
+    letter-spacing: 0;
   }
   .sidebar nav { display: flex; flex-direction: column; padding: 0.5rem 0; flex: 1; }
   .sidebar nav a {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.6rem 1rem;
+    padding: 0.7rem 1rem;
     color: var(--text-muted);
     text-decoration: none;
     font-size: 0.9rem;
     transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
   }
   .sidebar nav a:hover { background: var(--surface-elevated); color: var(--text); }
-  .sidebar nav a.active { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .sidebar nav a.active {
+    background: var(--accent-dim);
+    color: var(--text);
+    border-left-color: var(--accent);
+    font-weight: 650;
+  }
   .main {
     margin-left: 240px;
     min-height: 100vh;
@@ -103,15 +134,18 @@ String dashboardShell({
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1.5rem;
+    gap: 1rem;
+    padding: 0.85rem 1.5rem;
     border-bottom: 1px solid var(--border);
-    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(14px);
     position: sticky;
     top: 0;
     z-index: 50;
   }
   .header h1 { font-size: 1.1rem; margin: 0; font-weight: 600; }
   .header-left { display: flex; align-items: center; gap: 0.75rem; }
+  .header-actions { display: flex; align-items: center; gap: 0.65rem; }
   .hamburger {
     display: none;
     background: none;
@@ -121,8 +155,30 @@ String dashboardShell({
     cursor: pointer;
     padding: 0.25rem;
   }
+  .save-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .save-picker label {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .save-picker select {
+    min-width: 210px;
+    max-width: 320px;
+    height: 36px;
+    padding: 0 2rem 0 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-elevated);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.85rem;
+  }
   .theme-toggle {
-    background: none;
+    background: var(--surface-elevated);
     border: 1px solid var(--border);
     color: var(--text);
     font-size: 1.1rem;
@@ -139,7 +195,215 @@ String dashboardShell({
     background: rgba(0,0,0,0.5);
     z-index: 90;
   }
-  .content { padding: 1.5rem; }
+  .content {
+    width: min(100%, 1480px);
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+  .empty-state {
+    color: var(--text-muted);
+    padding: 4rem 1rem;
+    text-align: center;
+  }
+  .empty-state p:first-child {
+    color: var(--text);
+    font-size: 1.15rem;
+    font-weight: 650;
+    margin-bottom: 0.5rem;
+  }
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .metric-card,
+  .panel,
+  .block-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+  }
+  .metric-card {
+    position: relative;
+    overflow: hidden;
+    min-height: 112px;
+    padding: 1.15rem;
+  }
+  .metric-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--metric-color, var(--accent));
+  }
+  .metric-label {
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .metric-value {
+    margin-top: 0.35rem;
+    font-size: 1.75rem;
+    font-weight: 760;
+    line-height: 1.1;
+  }
+  .metric-subtle {
+    margin-top: 0.45rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+  .panel { padding: 1.25rem; }
+  .panel + .panel { margin-top: 1.25rem; }
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+  .panel-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .panel-kicker {
+    margin: 0.2rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+  .segmented {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+  }
+  .segmented a,
+  .segmented button {
+    min-height: 34px;
+    padding: 0.42rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-elevated);
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.82rem;
+    text-decoration: none;
+  }
+  .segmented .active,
+  .segmented a.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0.16rem 0.55rem;
+    border-radius: 999px;
+    background: var(--accent-dim);
+    color: var(--text);
+    font-size: 0.75rem;
+    font-weight: 650;
+  }
+  .badge.good { background: rgba(34,197,94,0.16); color: var(--green); }
+  .badge.bad { background: rgba(239,68,68,0.16); color: var(--red); }
+  .muted { color: var(--text-muted); }
+  .block-list {
+    display: grid;
+    gap: 0.9rem;
+  }
+  .block-card {
+    overflow: hidden;
+  }
+  .block-summary {
+    width: 100%;
+    padding: 1rem 1.1rem;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) auto;
+    gap: 1rem;
+    text-align: left;
+  }
+  .block-summary:hover { background: var(--surface-elevated); }
+  .block-date {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin-top: 0.25rem;
+  }
+  .lift-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(90px, 1fr));
+    gap: 0.6rem;
+  }
+  .lift-mini {
+    min-width: 0;
+    padding: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-elevated);
+  }
+  .lift-mini span {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .lift-mini strong {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 1rem;
+  }
+  .block-detail {
+    display: none;
+    padding: 0 1.1rem 1.1rem;
+    border-top: 1px solid var(--border);
+  }
+  .block-detail.open { display: block; }
+  .block-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(130px, 1fr));
+    gap: 0.7rem;
+    margin: 1rem 0;
+  }
+  .block-progress {
+    padding: 0.8rem;
+    border-radius: 7px;
+    background: var(--surface-elevated);
+  }
+  .block-progress-name {
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+  }
+  .block-progress-values {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin-bottom: 0.45rem;
+  }
+  .cycle-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .cycle-arrow {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
 
   @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); }
@@ -147,6 +411,14 @@ String dashboardShell({
     .main { margin-left: 0; }
     .hamburger { display: block; }
     .overlay.show { display: block; }
+    .header { align-items: flex-start; flex-wrap: wrap; }
+    .header-actions { width: 100%; justify-content: space-between; }
+    .save-picker { flex: 1; }
+    .save-picker select { min-width: 0; width: 100%; }
+    .content { padding: 1rem; }
+    .block-summary { grid-template-columns: 1fr; }
+    .lift-grid,
+    .block-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 </style>
 $extraHead
@@ -170,7 +442,10 @@ $extraHead
       <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
       <h1>$title</h1>
     </div>
-    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">&#9790;</button>
+    <div class="header-actions">
+      $savePicker
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">&#9790;</button>
+    </div>
   </div>
   <div class="content">
     $content
@@ -201,6 +476,76 @@ $extraScripts
 </html>''';
 }
 
+String? _selectedBackup(Request request) {
+  final backup = request.url.queryParameters['backup'];
+  return backup != null && backup.isNotEmpty ? backup : null;
+}
+
+String _dashboardHref(
+  String path,
+  String apiKey,
+  String? selectedBackup, [
+  Map<String, String> params = const {},
+]) {
+  final query = <String, String>{
+    'key': apiKey,
+    if (selectedBackup != null) 'backup': selectedBackup,
+    ...params,
+  };
+  final queryString = query.entries
+      .map((entry) =>
+          '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}')
+      .join('&');
+  return '$path?$queryString';
+}
+
+String _backupHiddenInput(String? selectedBackup) {
+  if (selectedBackup == null) return '';
+  return '<input type="hidden" name="backup" value="${_escapeHtml(selectedBackup)}">';
+}
+
+String _buildSavePicker({
+  required String apiKey,
+  required String currentPath,
+  required Map<String, String> queryParameters,
+  required List<BackupInfo> backups,
+  required String? selectedBackup,
+}) {
+  if (backups.isEmpty) return '';
+
+  final hiddenInputs = StringBuffer()
+    ..write('<input type="hidden" name="key" value="${_escapeHtml(apiKey)}">');
+  for (final entry in queryParameters.entries) {
+    if (entry.key == 'key' || entry.key == 'backup') continue;
+    hiddenInputs.write(
+      '<input type="hidden" name="${_escapeHtml(entry.key)}" value="${_escapeHtml(entry.value)}">',
+    );
+  }
+
+  final options = StringBuffer();
+  options.write(
+    '<option value=""${selectedBackup == null ? ' selected' : ''}>Latest backup</option>',
+  );
+  for (final backup in backups) {
+    final selected = selectedBackup == backup.filename ? ' selected' : '';
+    final version = backup.dbVersion != null ? ' · v${backup.dbVersion}' : '';
+    final label =
+        '${backup.date.toIso8601String().substring(0, 10)} · ${_formatBytes(backup.sizeBytes)}$version';
+    options.write(
+      '<option value="${_escapeHtml(backup.filename)}"$selected>${_escapeHtml(label)}</option>',
+    );
+  }
+
+  return '''
+<form class="save-picker" method="GET" action="${_escapeHtml(currentPath)}">
+  $hiddenInputs
+  <label for="backup-select">Save</label>
+  <select id="backup-select" name="backup" onchange="this.form.submit()">
+    $options
+  </select>
+</form>''';
+}
+
 /// Format a number with thousands separators.
 String _formatNumber(num value) {
   if (value is double) {
@@ -225,6 +570,15 @@ String _formatDuration(int totalSeconds) {
   return '${minutes}m';
 }
 
+String _formatBytes(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+  if (bytes < 1024 * 1024 * 1024) {
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+  return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+}
+
 /// Dashboard overview page handler.
 Response overviewPageHandler(
   Request request,
@@ -232,12 +586,9 @@ Response overviewPageHandler(
   BackupService backupService,
   String apiKey,
 ) {
-  // Open dashboard DB if not open
-  if (!dashboardService.isOpen) {
-    dashboardService.open();
-  }
+  final selectedBackup = _selectedBackup(request);
 
-  if (!dashboardService.isOpen) {
+  if (!dashboardService.ensureOpen(filename: selectedBackup)) {
     final html = dashboardShell(
       title: 'Overview',
       activeNav: 'Overview',
@@ -248,6 +599,8 @@ Response overviewPageHandler(
   <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
+      request: request,
+      backupService: backupService,
     );
     return Response.ok(html, headers: {'content-type': 'text/html'});
   }
@@ -260,22 +613,26 @@ Response overviewPageHandler(
 
   // Build stats cards
   final cardsHtml = '''
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Workouts</div>
-    <div style="font-size:1.6rem;font-weight:700">${_formatNumber(stats['workoutCount'] as int)}</div>
+<div class="metric-grid">
+  <div class="metric-card" style="--metric-color:var(--accent)">
+    <div class="metric-label">Workouts</div>
+    <div class="metric-value">${_formatNumber(stats['workoutCount'] as int)}</div>
+    <div class="metric-subtle">Logged sessions</div>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Total Volume</div>
-    <div style="font-size:1.6rem;font-weight:700">${_formatNumber(stats['totalVolume'] as double)}</div>
+  <div class="metric-card" style="--metric-color:var(--teal)">
+    <div class="metric-label">Total Volume</div>
+    <div class="metric-value">${_formatNumber(stats['totalVolume'] as double)}</div>
+    <div class="metric-subtle">Strength work</div>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Streak</div>
-    <div style="font-size:1.6rem;font-weight:700">${stats['currentStreak']} days</div>
+  <div class="metric-card" style="--metric-color:var(--green)">
+    <div class="metric-label">Streak</div>
+    <div class="metric-value">${stats['currentStreak']} days</div>
+    <div class="metric-subtle">Current run</div>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Training Time</div>
-    <div style="font-size:1.6rem;font-weight:700">${_formatDuration(stats['totalTimeSeconds'] as int)}</div>
+  <div class="metric-card" style="--metric-color:var(--amber)">
+    <div class="metric-label">Training Time</div>
+    <div class="metric-value">${_formatDuration(stats['totalTimeSeconds'] as int)}</div>
+    <div class="metric-subtle">Logged duration</div>
   </div>
 </div>''';
 
@@ -283,32 +640,53 @@ Response overviewPageHandler(
   final heatmapSvg = _buildHeatmapSvg(trainingDays);
 
   // Build chart data
-  final volumeLabels = muscleVolumes.map((m) => "'${_escapeJs(m['muscle'] as String)}'").join(',');
-  final volumeData = muscleVolumes.map((m) => (m['volume'] as double).toStringAsFixed(1)).join(',');
-  final setsLabels = muscleSets.map((m) => "'${_escapeJs(m['muscle'] as String)}'").join(',');
+  final volumeLabels = muscleVolumes
+      .map((m) => "'${_escapeJs(m['muscle'] as String)}'")
+      .join(',');
+  final volumeData = muscleVolumes
+      .map((m) => (m['volume'] as double).toStringAsFixed(1))
+      .join(',');
+  final setsLabels =
+      muscleSets.map((m) => "'${_escapeJs(m['muscle'] as String)}'").join(',');
   final setsData = muscleSets.map((m) => m['sets'].toString()).join(',');
 
   final chartsHtml = '''
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:1.5rem;margin-top:2rem">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <h3 style="margin:0 0 1rem;font-size:0.95rem;font-weight:600">Volume by Muscle Group</h3>
+<div class="chart-grid">
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">Volume by Muscle Group</h3>
+        <p class="panel-kicker">Total lifted weight by category</p>
+      </div>
+    </div>
     <canvas id="volumeChart"></canvas>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <h3 style="margin:0 0 1rem;font-size:0.95rem;font-weight:600">Sets by Muscle Group</h3>
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">Sets by Muscle Group</h3>
+        <p class="panel-kicker">Training density by category</p>
+      </div>
+    </div>
     <canvas id="setsChart"></canvas>
   </div>
 </div>''';
 
   final content = '''
 $cardsHtml
-<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:1rem">
-  <h3 style="margin:0 0 1rem;font-size:0.95rem;font-weight:600">Training Activity</h3>
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Training Activity</h3>
+      <p class="panel-kicker">Set count across the past year</p>
+    </div>
+  </div>
   <div style="overflow-x:auto">$heatmapSvg</div>
 </div>
 $chartsHtml''';
 
-  final extraHead = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>';
+  final extraHead =
+      '<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>';
 
   final extraScripts = '''
 <script>
@@ -370,6 +748,8 @@ $chartsHtml''';
     activeNav: 'Overview',
     content: content,
     apiKey: apiKey,
+    request: request,
+    backupService: backupService,
     extraHead: extraHead,
     extraScripts: extraScripts,
   );
@@ -405,7 +785,8 @@ String _buildHeatmapSvg(Map<String, int> trainingDays) {
       final date = start.add(Duration(days: week * 7 + day));
       if (date.isAfter(today)) continue;
 
-      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final dateStr =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       final sets = trainingDays[dateStr] ?? 0;
       final x = week * cellTotal + 30;
       final y = day * cellTotal + 20;
@@ -428,14 +809,28 @@ String _buildHeatmapSvg(Map<String, int> trainingDays) {
         fill = 'var(--surface-elevated)';
       }
 
-      rects.write('<rect x="$x" y="$y" width="$cellSize" height="$cellSize" rx="2" fill="$fill">'
+      rects.write(
+          '<rect x="$x" y="$y" width="$cellSize" height="$cellSize" rx="2" fill="$fill">'
           '<title>$dateStr: $sets sets</title></rect>');
 
       // Month labels
       if (day == 0 && date.month != lastMonth) {
         lastMonth = date.month;
-        const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const months = [
+          '',
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec'
+        ];
         monthLabels.write(
             '<text x="$x" y="14" fill="var(--text-muted)" font-size="10">'
             '${months[date.month]}</text>');
@@ -449,9 +844,9 @@ String _buildHeatmapSvg(Map<String, int> trainingDays) {
   for (var i = 0; i < 7; i++) {
     if (dayLabels[i].isNotEmpty) {
       final y = i * cellTotal + 20 + 10;
-      dayLabelsSvg.write(
-          '<text x="0" y="$y" fill="var(--text-muted)" font-size="10">'
-          '${dayLabels[i]}</text>');
+      dayLabelsSvg
+          .write('<text x="0" y="$y" fill="var(--text-muted)" font-size="10">'
+              '${dayLabels[i]}</text>');
     }
   }
 
@@ -474,14 +869,12 @@ String _escapeHtml(String s) => s
 Response exercisesPageHandler(
   Request request,
   DashboardService dashboardService,
+  BackupService backupService,
   String apiKey,
 ) {
-  // Open dashboard DB if not open
-  if (!dashboardService.isOpen) {
-    dashboardService.open();
-  }
+  final selectedBackup = _selectedBackup(request);
 
-  if (!dashboardService.isOpen) {
+  if (!dashboardService.ensureOpen(filename: selectedBackup)) {
     final html = dashboardShell(
       title: 'Exercises',
       activeNav: 'Exercises',
@@ -492,14 +885,17 @@ Response exercisesPageHandler(
   <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
+      request: request,
+      backupService: backupService,
     );
     return Response.ok(html, headers: {'content-type': 'text/html'});
   }
 
   final search = request.url.queryParameters['search'] ?? '';
   final categoryParam = request.url.queryParameters['category'];
-  final category =
-      (categoryParam != null && categoryParam.isNotEmpty) ? categoryParam : null;
+  final category = (categoryParam != null && categoryParam.isNotEmpty)
+      ? categoryParam
+      : null;
 
   final categories = dashboardService.getCategories();
   final result = dashboardService.searchExercises(
@@ -510,8 +906,7 @@ Response exercisesPageHandler(
 
   // Build search/filter bar
   final categoryOptions = StringBuffer();
-  categoryOptions.write(
-      '<option value="">All Categories</option>');
+  categoryOptions.write('<option value="">All Categories</option>');
   for (final cat in categories) {
     final selected = (category == cat) ? ' selected' : '';
     categoryOptions.write(
@@ -521,6 +916,7 @@ Response exercisesPageHandler(
   final searchBar = '''
 <form method="GET" action="/dashboard/exercises" style="display:flex;gap:0.75rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center">
   <input type="hidden" name="key" value="$apiKey">
+  ${_backupHiddenInput(selectedBackup)}
   <input type="text" name="search" placeholder="Search exercises..." value="${_escapeHtml(search)}"
     style="flex:1;min-width:200px;padding:0.6rem 0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.9rem;outline:none">
   <select name="category" onchange="this.form.submit()"
@@ -554,7 +950,7 @@ $searchBar
       }
 
       cards.write('''
-<a href="/dashboard/exercise/${Uri.encodeComponent(name)}?key=$apiKey"
+<a href="${_dashboardHref('/dashboard/exercise/${Uri.encodeComponent(name)}', apiKey, selectedBackup)}"
   style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;text-decoration:none;color:inherit;display:block;transition:border-color 0.15s,transform 0.15s"
   onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'"
   onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
@@ -580,6 +976,8 @@ $searchBar
     activeNav: 'Exercises',
     content: content,
     apiKey: apiKey,
+    request: request,
+    backupService: backupService,
   );
   return Response.ok(html, headers: {'content-type': 'text/html'});
 }
@@ -589,16 +987,13 @@ Response exerciseDetailHandler(
   Request request,
   String name,
   DashboardService dashboardService,
+  BackupService backupService,
   String apiKey,
 ) {
   final exerciseName = Uri.decodeComponent(name);
+  final selectedBackup = _selectedBackup(request);
 
-  // Open dashboard DB if not open
-  if (!dashboardService.isOpen) {
-    dashboardService.open();
-  }
-
-  if (!dashboardService.isOpen) {
+  if (!dashboardService.ensureOpen(filename: selectedBackup)) {
     final html = dashboardShell(
       title: exerciseName,
       activeNav: 'Exercises',
@@ -609,6 +1004,8 @@ Response exerciseDetailHandler(
   <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
+      request: request,
+      backupService: backupService,
     );
     return Response.ok(html, headers: {'content-type': 'text/html'});
   }
@@ -656,7 +1053,7 @@ Response exerciseDetailHandler(
   // Breadcrumb
   final breadcrumb = '''
 <div style="margin-bottom:1.5rem;font-size:0.85rem">
-  <a href="/dashboard/exercises?key=$apiKey" style="color:var(--accent);text-decoration:none">Exercises</a>
+  <a href="${_dashboardHref('/dashboard/exercises', apiKey, selectedBackup)}" style="color:var(--accent);text-decoration:none">Exercises</a>
   <span style="color:var(--text-muted);margin:0 0.5rem">&gt;</span>
   <span style="color:var(--text)">${_escapeHtml(exerciseName)}</span>
 </div>''';
@@ -702,9 +1099,14 @@ Response exerciseDetailHandler(
   final periodButtons = StringBuffer();
   for (final (value, label) in periods) {
     final isActive = value == period;
-    final bg = isActive ? 'background:var(--accent);color:#fff;' : 'background:var(--surface);color:var(--text);';
+    final bg = isActive
+        ? 'background:var(--accent);color:#fff;'
+        : 'background:var(--surface);color:var(--text);';
     periodButtons.write(
-        '<a href="/dashboard/exercise/${Uri.encodeComponent(exerciseName)}?key=$apiKey&metric=$metric&period=$value"'
+        '<a href="${_dashboardHref('/dashboard/exercise/${Uri.encodeComponent(exerciseName)}', apiKey, selectedBackup, {
+          'metric': metric,
+          'period': value
+        })}"'
         ' style="padding:0.4rem 0.75rem;border-radius:6px;text-decoration:none;font-size:0.8rem;border:1px solid var(--border);$bg">'
         '$label</a>');
   }
@@ -720,9 +1122,14 @@ Response exerciseDetailHandler(
   final metricButtons = StringBuffer();
   for (final (value, label) in metrics) {
     final isActive = value == metric;
-    final bg = isActive ? 'background:var(--accent);color:#fff;' : 'background:var(--surface);color:var(--text);';
+    final bg = isActive
+        ? 'background:var(--accent);color:#fff;'
+        : 'background:var(--surface);color:var(--text);';
     metricButtons.write(
-        '<a href="/dashboard/exercise/${Uri.encodeComponent(exerciseName)}?key=$apiKey&metric=$value&period=$period"'
+        '<a href="${_dashboardHref('/dashboard/exercise/${Uri.encodeComponent(exerciseName)}', apiKey, selectedBackup, {
+          'metric': value,
+          'period': period
+        })}"'
         ' style="padding:0.4rem 0.75rem;border-radius:6px;text-decoration:none;font-size:0.8rem;border:1px solid var(--border);$bg">'
         '$label</a>');
   }
@@ -742,7 +1149,8 @@ Response exerciseDetailHandler(
       final epoch = p['created'] as int;
       final dt = DateTime.fromMillisecondsSinceEpoch(epoch * 1000);
       return {
-        'date': '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}',
+        'date':
+            '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}',
         'value': p['value'],
       };
     }).toList());
@@ -751,7 +1159,8 @@ Response exerciseDetailHandler(
       final epoch = t['created'] as int;
       final dt = DateTime.fromMillisecondsSinceEpoch(epoch * 1000);
       return {
-        'date': '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}',
+        'date':
+            '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}',
         'value': t['value'],
       };
     }).toList());
@@ -765,8 +1174,7 @@ Response exerciseDetailHandler(
   }
 
   // Rep records table
-  final repRecordsList =
-      repRecords['records'] as List<Map<String, dynamic>>;
+  final repRecordsList = repRecords['records'] as List<Map<String, dynamic>>;
   String repTable;
   if (repRecordsList.isEmpty) {
     repTable = '';
@@ -889,6 +1297,8 @@ $repTable''';
     activeNav: 'Exercises',
     content: content,
     apiKey: apiKey,
+    request: request,
+    backupService: backupService,
     extraHead: extraHead,
     extraScripts: extraScripts,
   );
@@ -907,14 +1317,12 @@ String _formatVolume(num value) {
 Response historyPageHandler(
   Request request,
   DashboardService dashboardService,
+  BackupService backupService,
   String apiKey,
 ) {
-  // Open dashboard DB if not open
-  if (!dashboardService.isOpen) {
-    dashboardService.open();
-  }
+  final selectedBackup = _selectedBackup(request);
 
-  if (!dashboardService.isOpen) {
+  if (!dashboardService.ensureOpen(filename: selectedBackup)) {
     final html = dashboardShell(
       title: 'History',
       activeNav: 'History',
@@ -925,6 +1333,8 @@ Response historyPageHandler(
   <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
+      request: request,
+      backupService: backupService,
     );
     return Response.ok(html, headers: {'content-type': 'text/html'});
   }
@@ -933,7 +1343,8 @@ Response historyPageHandler(
   final page = int.tryParse(pageParam) ?? 1;
   const pageSize = 20;
 
-  final result = dashboardService.getWorkoutHistory(page: page, pageSize: pageSize);
+  final result =
+      dashboardService.getWorkoutHistory(page: page, pageSize: pageSize);
   final workouts = result['workouts'] as List<Map<String, dynamic>>;
   final totalCount = result['totalCount'] as int;
 
@@ -945,8 +1356,21 @@ Response historyPageHandler(
   <p style="font-size:1.1rem">No workouts recorded</p>
 </div>''';
   } else {
-    const months = ['', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-        'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const months = [
+      '',
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC'
+    ];
 
     final cards = StringBuffer();
     for (final w in workouts) {
@@ -967,7 +1391,8 @@ Response historyPageHandler(
         final dt = DateTime.fromMillisecondsSinceEpoch(startTime * 1000);
         monthAbbr = months[dt.month];
         dayStr = dt.day.toString();
-        timeStr = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+        timeStr =
+            '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
         if (endTime != null && endTime > startTime) {
           final durationSecs = endTime - startTime;
@@ -978,7 +1403,7 @@ Response historyPageHandler(
       final volumeStr = _formatVolume(totalVolume);
 
       cards.write('''
-<a href="/dashboard/workout/$workoutId?key=$apiKey"
+<a href="${_dashboardHref('/dashboard/workout/$workoutId', apiKey, selectedBackup)}"
   style="display:flex;align-items:center;gap:1rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:0.75rem;text-decoration:none;color:inherit;transition:border-color 0.15s"
   onmouseover="this.style.borderColor='var(--accent)'"
   onmouseout="this.style.borderColor='var(--border)'">
@@ -1002,7 +1427,8 @@ Response historyPageHandler(
     final pagination = StringBuffer();
 
     if (totalPages > 1) {
-      pagination.write('<div style="display:flex;justify-content:center;gap:4px;margin-top:1.5rem">');
+      pagination.write(
+          '<div style="display:flex;justify-content:center;gap:4px;margin-top:1.5rem">');
 
       // Determine which pages to show
       final pagesToShow = <int>{};
@@ -1034,7 +1460,9 @@ Response historyPageHandler(
             ? 'background:var(--accent);color:#fff;'
             : 'background:var(--surface);color:var(--text);';
         pagination.write(
-            '<a href="/dashboard/history?key=$apiKey&page=$p"'
+            '<a href="${_dashboardHref('/dashboard/history', apiKey, selectedBackup, {
+              'page': '$p'
+            })}"'
             ' style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;text-decoration:none;font-size:0.85rem;border:1px solid var(--border);transition:background 0.15s;$bg"'
             '${!isActive ? ' onmouseover="this.style.background=\'var(--surface-elevated)\'" onmouseout="this.style.background=\'var(--surface)\'"' : ''}'
             '>$p</a>');
@@ -1052,6 +1480,8 @@ $pagination''';
     activeNav: 'History',
     content: content,
     apiKey: apiKey,
+    request: request,
+    backupService: backupService,
   );
   return Response.ok(html, headers: {'content-type': 'text/html'});
 }
@@ -1061,8 +1491,10 @@ Response workoutDetailHandler(
   Request request,
   String id,
   DashboardService dashboardService,
+  BackupService backupService,
   String apiKey,
 ) {
+  final selectedBackup = _selectedBackup(request);
   final workoutId = int.tryParse(id);
   if (workoutId == null) {
     final html = dashboardShell(
@@ -1071,20 +1503,16 @@ Response workoutDetailHandler(
       content: '''
 <div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
   <p style="font-size:1.2rem">Invalid workout ID</p>
-  <a href="/dashboard/history?key=$apiKey" style="color:var(--accent);text-decoration:none">Back to History</a>
+  <a href="${_dashboardHref('/dashboard/history', apiKey, selectedBackup)}" style="color:var(--accent);text-decoration:none">Back to History</a>
 </div>''',
       apiKey: apiKey,
+      request: request,
+      backupService: backupService,
     );
-    return Response(404,
-        body: html, headers: {'content-type': 'text/html'});
+    return Response(404, body: html, headers: {'content-type': 'text/html'});
   }
 
-  // Open dashboard DB if not open
-  if (!dashboardService.isOpen) {
-    dashboardService.open();
-  }
-
-  if (!dashboardService.isOpen) {
+  if (!dashboardService.ensureOpen(filename: selectedBackup)) {
     final html = dashboardShell(
       title: 'Workout Detail',
       activeNav: 'History',
@@ -1095,6 +1523,8 @@ Response workoutDetailHandler(
   <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
+      request: request,
+      backupService: backupService,
     );
     return Response.ok(html, headers: {'content-type': 'text/html'});
   }
@@ -1110,12 +1540,13 @@ Response workoutDetailHandler(
       content: '''
 <div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
   <p style="font-size:1.2rem;margin-bottom:0.5rem">Workout not found</p>
-  <a href="/dashboard/history?key=$apiKey" style="color:var(--accent);text-decoration:none">Back to History</a>
+  <a href="${_dashboardHref('/dashboard/history', apiKey, selectedBackup)}" style="color:var(--accent);text-decoration:none">Back to History</a>
 </div>''',
       apiKey: apiKey,
+      request: request,
+      backupService: backupService,
     );
-    return Response(404,
-        body: html, headers: {'content-type': 'text/html'});
+    return Response(404, body: html, headers: {'content-type': 'text/html'});
   }
 
   final workoutName = workout['name'] as String? ?? 'Workout';
@@ -1130,11 +1561,34 @@ Response workoutDetailHandler(
 
   if (startTime != null && startTime > 0) {
     final dt = DateTime.fromMillisecondsSinceEpoch(startTime * 1000);
-    const monthNames = ['', 'January', 'February', 'March', 'April', 'May',
-        'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    dateStr = '${dayNames[dt.weekday - 1]}, ${monthNames[dt.month]} ${dt.day}, ${dt.year}';
-    timeStr = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    const monthNames = [
+      '',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
+    const dayNames = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+    dateStr =
+        '${dayNames[dt.weekday - 1]}, ${monthNames[dt.month]} ${dt.day}, ${dt.year}';
+    timeStr =
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
     if (endTime != null && endTime > startTime) {
       durationStr = _formatDuration(endTime - startTime);
@@ -1144,21 +1598,24 @@ Response workoutDetailHandler(
   // Back link
   final backLink = '''
 <div style="margin-bottom:1.5rem;font-size:0.85rem">
-  <a href="/dashboard/history?key=$apiKey" style="color:var(--accent);text-decoration:none">&larr; History</a>
+  <a href="${_dashboardHref('/dashboard/history', apiKey, selectedBackup)}" style="color:var(--accent);text-decoration:none">&larr; History</a>
 </div>''';
 
   // Workout header
   final header = StringBuffer();
   header.write('<div style="margin-bottom:2rem">');
-  header.write('<h2 style="margin:0 0 0.25rem;font-size:1.5rem;font-weight:700">${_escapeHtml(workoutName)}</h2>');
+  header.write(
+      '<h2 style="margin:0 0 0.25rem;font-size:1.5rem;font-weight:700">${_escapeHtml(workoutName)}</h2>');
   if (dateStr.isNotEmpty) {
-    header.write('<div style="color:var(--text-muted);font-size:0.9rem">$dateStr');
+    header.write(
+        '<div style="color:var(--text-muted);font-size:0.9rem">$dateStr');
     if (timeStr.isNotEmpty) header.write(' at $timeStr');
     if (durationStr.isNotEmpty) header.write(' &middot; $durationStr');
     header.write('</div>');
   }
   if (notes != null && notes.isNotEmpty) {
-    header.write('<div style="color:var(--text-muted);font-style:italic;font-size:0.9rem;margin-top:0.5rem">${_escapeHtml(notes)}</div>');
+    header.write(
+        '<div style="color:var(--text-muted);font-style:italic;font-size:0.9rem;margin-top:0.5rem">${_escapeHtml(notes)}</div>');
   }
   header.write('</div>');
 
@@ -1237,22 +1694,30 @@ Response workoutDetailHandler(
         }
       }
 
-      sections.write('<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1.25rem">');
-      sections.write('<div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.5rem">');
-      sections.write('<span style="font-weight:600;font-size:0.95rem">${_escapeHtml(exerciseName)}</span>');
+      sections.write(
+          '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1.25rem">');
+      sections.write(
+          '<div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.5rem">');
+      sections.write(
+          '<span style="font-weight:600;font-size:0.95rem">${_escapeHtml(exerciseName)}</span>');
       if (category != null) {
-        sections.write('<span style="display:inline-block;padding:0.1rem 0.45rem;background:var(--accent-dim);color:var(--accent);border-radius:999px;font-size:0.7rem">${_escapeHtml(category)}</span>');
+        sections.write(
+            '<span style="display:inline-block;padding:0.1rem 0.45rem;background:var(--accent-dim);color:var(--accent);border-radius:999px;font-size:0.7rem">${_escapeHtml(category)}</span>');
       }
       sections.write('</div>');
 
       // Set table
       sections.write('<table style="width:100%;border-collapse:collapse">');
       sections.write('<thead><tr style="background:var(--surface-elevated)">');
-      sections.write('<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Set</th>');
-      sections.write('<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Weight</th>');
-      sections.write('<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Reps</th>');
+      sections.write(
+          '<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Set</th>');
+      sections.write(
+          '<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Weight</th>');
+      sections.write(
+          '<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Reps</th>');
       if (hasSetType) {
-        sections.write('<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Type</th>');
+        sections.write(
+            '<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Type</th>');
       }
       sections.write('</tr></thead><tbody>');
 
@@ -1265,16 +1730,22 @@ Response workoutDetailHandler(
         final isBest = i == bestIdx;
         final rowBg = isBest
             ? 'background:var(--accent-dim);'
-            : (i.isEven ? 'background:var(--surface);' : 'background:var(--surface-elevated);');
+            : (i.isEven
+                ? 'background:var(--surface);'
+                : 'background:var(--surface-elevated);');
         final fontWeight = isBest ? 'font-weight:600;' : '';
 
         sections.write('<tr style="$rowBg">');
-        sections.write('<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);$fontWeight">${i + 1}</td>');
-        sections.write('<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);$fontWeight">${_formatNumber(weight)} ${_escapeHtml(unit)}</td>');
-        sections.write('<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);$fontWeight">$reps</td>');
+        sections.write(
+            '<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);$fontWeight">${i + 1}</td>');
+        sections.write(
+            '<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);$fontWeight">${_formatNumber(weight)} ${_escapeHtml(unit)}</td>');
+        sections.write(
+            '<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);$fontWeight">$reps</td>');
         if (hasSetType) {
           final typeLabel = setType != 'normal' ? _escapeHtml(setType) : '';
-          sections.write('<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);font-size:0.8rem;color:var(--text-muted)">$typeLabel</td>');
+          sections.write(
+              '<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);font-size:0.8rem;color:var(--text-muted)">$typeLabel</td>');
         }
         sections.write('</tr>');
       }
@@ -1296,6 +1767,8 @@ $exerciseSections''';
     activeNav: 'History',
     content: content,
     apiKey: apiKey,
+    request: request,
+    backupService: backupService,
   );
   return Response.ok(html, headers: {'content-type': 'text/html'});
 }
@@ -1304,8 +1777,19 @@ $exerciseSections''';
 String _formatDate(int epochSeconds) {
   final dt = DateTime.fromMillisecondsSinceEpoch(epochSeconds * 1000);
   const months = [
-    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   return '${months[dt.month]} ${dt.day}, ${dt.year}';
 }
@@ -1314,14 +1798,12 @@ String _formatDate(int epochSeconds) {
 Response blockHistoryPageHandler(
   Request request,
   DashboardService dashboardService,
+  BackupService backupService,
   String apiKey,
 ) {
-  // Open dashboard DB if not open
-  if (!dashboardService.isOpen) {
-    dashboardService.open();
-  }
+  final selectedBackup = _selectedBackup(request);
 
-  if (!dashboardService.isOpen) {
+  if (!dashboardService.ensureOpen(filename: selectedBackup)) {
     final html = dashboardShell(
       title: '5/3/1 Blocks',
       activeNav: '5/3/1 Blocks',
@@ -1332,6 +1814,8 @@ Response blockHistoryPageHandler(
   <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
+      request: request,
+      backupService: backupService,
     );
     return Response.ok(html, headers: {'content-type': 'text/html'});
   }
@@ -1348,12 +1832,20 @@ Response blockHistoryPageHandler(
   <p>Complete a 5/3/1 block in the app and push a backup to see your block history.</p>
 </div>''',
       apiKey: apiKey,
+      request: request,
+      backupService: backupService,
     );
     return Response.ok(html, headers: {'content-type': 'text/html'});
   }
 
   // Cycle names from schemes.dart
-  const cycleNames = ['Leader 1', 'Leader 2', '7th Week Protocol', 'Anchor', '7th Week Protocol'];
+  const cycleNames = [
+    'Leader 1',
+    'Leader 2',
+    '7th Week Protocol',
+    'Anchor',
+    '7th Week Protocol'
+  ];
 
   // Build block cards
   final cardsHtml = StringBuffer();
@@ -1373,24 +1865,30 @@ Response blockHistoryPageHandler(
 
     final dateRange = '${_formatDate(created)} - ${_formatDate(completed)}';
 
-    // Delta helper
-    String deltaBadge(double start, double end) {
-      final delta = end - start;
+    String deltaBadge(double delta) {
       if (delta > 0) {
-        return '<span style="display:inline-block;padding:0.1rem 0.4rem;background:rgba(34,197,94,0.15);color:#22C55E;border-radius:4px;font-size:0.75rem;font-weight:600">+${delta.toStringAsFixed(1)}</span>';
+        return '<span class="badge good">+${delta.toStringAsFixed(1)}</span>';
       } else if (delta < 0) {
-        return '<span style="display:inline-block;padding:0.1rem 0.4rem;background:rgba(239,68,68,0.15);color:#EF4444;border-radius:4px;font-size:0.75rem;font-weight:600">${delta.toStringAsFixed(1)}</span>';
+        return '<span class="badge bad">${delta.toStringAsFixed(1)}</span>';
       }
-      return '<span style="display:inline-block;padding:0.1rem 0.4rem;background:var(--surface-elevated);color:var(--text-muted);border-radius:4px;font-size:0.75rem;font-weight:600">0</span>';
+      return '<span class="badge muted">0</span>';
     }
 
-    // Lift detail card
-    String liftCard(String name, double start, double end) {
+    String liftSummary(String name, double value) {
       return '''
-<div style="background:var(--surface-elevated);border-radius:6px;padding:0.75rem">
-  <div style="font-weight:600;font-size:0.85rem;margin-bottom:0.35rem">$name</div>
-  <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.25rem">${start.toStringAsFixed(1)} &rarr; ${end.toStringAsFixed(1)} $unit</div>
-  ${deltaBadge(start, end)}
+<div class="lift-mini">
+  <span>$name</span>
+  <strong>${value.toStringAsFixed(1)}</strong>
+</div>''';
+    }
+
+    String liftProgress(String name, double start, double end) {
+      final delta = end - start;
+      return '''
+<div class="block-progress">
+  <div class="block-progress-name">$name</div>
+  <div class="block-progress-values">${start.toStringAsFixed(1)} &rarr; ${end.toStringAsFixed(1)} $unit</div>
+  ${deltaBadge(delta)}
 </div>''';
     }
 
@@ -1398,34 +1896,43 @@ Response blockHistoryPageHandler(
     final cycleBadges = StringBuffer();
     for (var c = 0; c < cycleNames.length; c++) {
       if (c > 0) {
-        cycleBadges.write('<span style="color:var(--text-muted);font-size:0.75rem">&rarr;</span>');
+        cycleBadges.write('<span class="cycle-arrow">&rarr;</span>');
       }
-      cycleBadges.write('<span style="display:inline-block;padding:0.15rem 0.5rem;background:var(--accent-dim);color:var(--accent);border-radius:999px;font-size:0.7rem">${cycleNames[c]}</span>');
+      cycleBadges.write('<span class="badge">${cycleNames[c]}</span>');
     }
 
+    final totalDelta = (squatTm - startSquatTm) +
+        (benchTm - startBenchTm) +
+        (deadliftTm - startDeadliftTm) +
+        (pressTm - startPressTm);
+    final totalDeltaBadge = deltaBadge(totalDelta);
+
     cardsHtml.write('''
-<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:1rem;overflow:hidden">
-  <div onclick="toggleBlock($i)" style="padding:1rem 1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background 0.15s"
-    onmouseover="this.style.background='var(--surface-elevated)'" onmouseout="this.style.background='transparent'">
+<div class="block-card">
+  <button type="button" class="block-summary" onclick="toggleBlock($i)">
     <div>
-      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem">$dateRange</div>
-      <div style="display:flex;gap:1.25rem;flex-wrap:wrap">
-        <div><span style="font-size:0.7rem;color:var(--text-muted);display:block">Squat</span><span style="font-weight:600;font-size:0.95rem">${squatTm.toStringAsFixed(1)}</span></div>
-        <div><span style="font-size:0.7rem;color:var(--text-muted);display:block">Bench</span><span style="font-weight:600;font-size:0.95rem">${benchTm.toStringAsFixed(1)}</span></div>
-        <div><span style="font-size:0.7rem;color:var(--text-muted);display:block">Deadlift</span><span style="font-weight:600;font-size:0.95rem">${deadliftTm.toStringAsFixed(1)}</span></div>
-        <div><span style="font-size:0.7rem;color:var(--text-muted);display:block">OHP</span><span style="font-weight:600;font-size:0.95rem">${pressTm.toStringAsFixed(1)}</span></div>
+      <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+        <strong>Completed block</strong>
+        $totalDeltaBadge
+        <span id="arrow-$i" class="muted" style="transition:transform 0.2s">&#9660;</span>
       </div>
+      <div class="block-date">$dateRange</div>
     </div>
-    <span id="arrow-$i" style="font-size:1.2rem;color:var(--text-muted);transition:transform 0.2s">&#9660;</span>
-  </div>
-  <div id="detail-$i" style="display:none;padding:0 1.25rem 1.25rem;border-top:1px solid var(--border)">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1rem;margin-bottom:1rem">
-      ${liftCard('Squat', startSquatTm, squatTm)}
-      ${liftCard('Bench', startBenchTm, benchTm)}
-      ${liftCard('Deadlift', startDeadliftTm, deadliftTm)}
-      ${liftCard('OHP', startPressTm, pressTm)}
+    <div class="lift-grid">
+      ${liftSummary('Squat', squatTm)}
+      ${liftSummary('Bench', benchTm)}
+      ${liftSummary('Deadlift', deadliftTm)}
+      ${liftSummary('OHP', pressTm)}
     </div>
-    <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center">$cycleBadges</div>
+  </button>
+  <div id="detail-$i" class="block-detail">
+    <div class="block-detail-grid">
+      ${liftProgress('Squat', startSquatTm, squatTm)}
+      ${liftProgress('Bench', startBenchTm, benchTm)}
+      ${liftProgress('Deadlift', startDeadliftTm, deadliftTm)}
+      ${liftProgress('OHP', startPressTm, pressTm)}
+    </div>
+    <div class="cycle-row">$cycleBadges</div>
   </div>
 </div>''');
   }
@@ -1433,7 +1940,8 @@ Response blockHistoryPageHandler(
   // TM Progression Chart data
   final chartBlocks = blocks.length > 10 ? blocks.sublist(0, 10) : blocks;
   final chartReversed = chartBlocks.reversed.toList();
-  final chartLabels = List.generate(chartReversed.length, (i) => 'Block ${i + 1}');
+  final chartLabels =
+      List.generate(chartReversed.length, (i) => 'Block ${i + 1}');
 
   final chartDataJson = jsonEncode({
     'labels': chartLabels,
@@ -1448,27 +1956,38 @@ Response blockHistoryPageHandler(
       : '';
 
   final chartSection = '''
-<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-top:2rem">
-  <h3 style="margin:0 0 1rem;font-size:0.95rem;font-weight:600">TM Progression</h3>
+<div class="panel" style="margin-top:1.25rem">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">TM Progression</h3>
+      <p class="panel-kicker">Training max changes across completed blocks</p>
+    </div>
+  </div>
   <canvas id="tmChart"></canvas>
   $limitNote
 </div>
 <script type="application/json" id="blocks-data">$chartDataJson</script>''';
 
   final content = '''
-<h2 style="margin:0 0 1.5rem;font-size:1.25rem;font-weight:700">Completed Blocks</h2>
-$cardsHtml
+<div class="panel-header">
+  <div>
+    <h2 class="panel-title">Finished Blocks</h2>
+    <p class="panel-kicker">${blocks.length} completed 5/3/1 block${blocks.length == 1 ? '' : 's'}</p>
+  </div>
+</div>
+<div class="block-list">$cardsHtml</div>
 $chartSection''';
 
-  final extraHead = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>';
+  final extraHead =
+      '<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>';
 
   final extraScripts = '''
 <script>
 function toggleBlock(id) {
   const detail = document.getElementById('detail-' + id);
   const arrow = document.getElementById('arrow-' + id);
-  const isHidden = detail.style.display === 'none';
-  detail.style.display = isHidden ? 'block' : 'none';
+  const isHidden = !detail.classList.contains('open');
+  detail.classList.toggle('open', isHidden);
   arrow.style.transform = isHidden ? 'rotate(180deg)' : '';
 }
 
@@ -1480,14 +1999,14 @@ function toggleBlock(id) {
   const ctx = document.getElementById('tmChart');
   if (ctx) {
     new Chart(ctx, {
-      type: 'bar',
+      type: 'line',
       data: {
         labels: data.labels,
         datasets: [
-          { label: 'Squat', data: data.squat, backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 4 },
-          { label: 'Bench', data: data.bench, backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4 },
-          { label: 'Deadlift', data: data.deadlift, backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 4 },
-          { label: 'OHP', data: data.press, backgroundColor: 'rgba(249,115,22,0.7)', borderRadius: 4 }
+          { label: 'Squat', data: data.squat, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.12)', borderWidth: 3, tension: 0.28, pointRadius: 4 },
+          { label: 'Bench', data: data.bench, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.12)', borderWidth: 3, tension: 0.28, pointRadius: 4 },
+          { label: 'Deadlift', data: data.deadlift, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.12)', borderWidth: 3, tension: 0.28, pointRadius: 4 },
+          { label: 'OHP', data: data.press, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)', borderWidth: 3, tension: 0.28, pointRadius: 4 }
         ]
       },
       options: {
@@ -1513,6 +2032,8 @@ function toggleBlock(id) {
     activeNav: '5/3/1 Blocks',
     content: content,
     apiKey: apiKey,
+    request: request,
+    backupService: backupService,
     extraHead: extraHead,
     extraScripts: extraScripts,
   );
@@ -1523,14 +2044,12 @@ function toggleBlock(id) {
 Response bodyweightPageHandler(
   Request request,
   DashboardService dashboardService,
+  BackupService backupService,
   String apiKey,
 ) {
-  // Open dashboard DB if not open
-  if (!dashboardService.isOpen) {
-    dashboardService.open();
-  }
+  final selectedBackup = _selectedBackup(request);
 
-  if (!dashboardService.isOpen) {
+  if (!dashboardService.ensureOpen(filename: selectedBackup)) {
     final html = dashboardShell(
       title: 'Bodyweight',
       activeNav: 'Bodyweight',
@@ -1541,6 +2060,8 @@ Response bodyweightPageHandler(
   <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
+      request: request,
+      backupService: backupService,
     );
     return Response.ok(html, headers: {'content-type': 'text/html'});
   }
@@ -1562,6 +2083,8 @@ Response bodyweightPageHandler(
   <p>Log bodyweight entries in the app and push a backup to see your tracking data.</p>
 </div>''',
       apiKey: apiKey,
+      request: request,
+      backupService: backupService,
     );
     return Response.ok(html, headers: {'content-type': 'text/html'});
   }
@@ -1582,16 +2105,15 @@ Response bodyweightPageHandler(
   final periodButtons = StringBuffer();
   for (final (value, label) in periods) {
     final isActive = value == period;
-    final bg = isActive
-        ? 'background:var(--accent);color:#fff;'
-        : 'background:var(--surface);color:var(--text);';
     periodButtons.write(
-        '<a href="/dashboard/bodyweight?key=$apiKey&period=$value"'
-        ' style="padding:0.4rem 0.75rem;border-radius:6px;text-decoration:none;font-size:0.8rem;border:1px solid var(--border);$bg">'
+        '<a href="${_dashboardHref('/dashboard/bodyweight', apiKey, selectedBackup, {
+          'period': value
+        })}"'
+        ' class="${isActive ? 'active' : ''}">'
         '$label</a>');
   }
   final periodSelector = '''
-<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem">$periodButtons</div>''';
+<div class="segmented">$periodButtons</div>''';
 
   // Stats cards
   final unit = stats['unit'] as String;
@@ -1609,31 +2131,35 @@ Response bodyweightPageHandler(
   }
 
   final cardsHtml = '''
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Current</div>
-    <div style="font-size:1.6rem;font-weight:700">${current.toStringAsFixed(1)} $unit</div>
+<div class="metric-grid">
+  <div class="metric-card" style="--metric-color:var(--accent)">
+    <div class="metric-label">Current</div>
+    <div class="metric-value">${current.toStringAsFixed(1)} $unit</div>
+    <div class="metric-subtle">Latest entry</div>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Average</div>
-    <div style="font-size:1.6rem;font-weight:700">${average.toStringAsFixed(1)} $unit</div>
+  <div class="metric-card" style="--metric-color:var(--teal)">
+    <div class="metric-label">Average</div>
+    <div class="metric-value">${average.toStringAsFixed(1)} $unit</div>
+    <div class="metric-subtle">Selected range</div>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Change</div>
-    <div style="font-size:1.6rem;font-weight:700">$changeStr</div>
+  <div class="metric-card" style="--metric-color:${change != null && change < 0 ? 'var(--green)' : 'var(--amber)'}">
+    <div class="metric-label">Change</div>
+    <div class="metric-value">$changeStr</div>
+    <div class="metric-subtle">First to latest</div>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Entries</div>
-    <div style="font-size:1.6rem;font-weight:700">$entryCount</div>
+  <div class="metric-card" style="--metric-color:var(--green)">
+    <div class="metric-label">Entries</div>
+    <div class="metric-value">$entryCount</div>
+    <div class="metric-subtle">Measurements</div>
   </div>
 </div>''';
 
   // MA toggle buttons
   final maToggles = '''
-<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
-  <button id="ma-btn-1" onclick="toggleMA(1)" style="padding:0.4rem 0.75rem;border-radius:6px;font-size:0.8rem;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.15s">14-Day MA</button>
-  <button id="ma-btn-2" onclick="toggleMA(2)" style="padding:0.4rem 0.75rem;border-radius:6px;font-size:0.8rem;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.15s">7-Day MA</button>
-  <button id="ma-btn-3" onclick="toggleMA(3)" style="padding:0.4rem 0.75rem;border-radius:6px;font-size:0.8rem;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.15s">3-Day MA</button>
+<div class="segmented">
+  <button id="ma-btn-1" onclick="toggleMA(1)">14-Day MA</button>
+  <button id="ma-btn-2" onclick="toggleMA(2)">7-Day MA</button>
+  <button id="ma-btn-3" onclick="toggleMA(3)">3-Day MA</button>
 </div>''';
 
   // Chart data
@@ -1642,8 +2168,21 @@ Response bodyweightPageHandler(
   for (final entry in entries) {
     final epoch = entry['date'] as int;
     final dt = DateTime.fromMillisecondsSinceEpoch(epoch * 1000);
-    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     chartDates.add('${months[dt.month]} ${dt.day}');
     chartWeights.add(entry['weight'] as double);
   }
@@ -1657,7 +2196,13 @@ Response bodyweightPageHandler(
   });
 
   final chartSection = '''
-<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:2rem">
+<div class="panel" style="margin-bottom:1.25rem">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Bodyweight Trend</h3>
+      <p class="panel-kicker">Raw entries with optional moving averages</p>
+    </div>
+  </div>
   <canvas id="bodyweightChart"></canvas>
 </div>
 <script type="application/json" id="bw-data">$chartDataJson</script>''';
@@ -1665,8 +2210,9 @@ Response bodyweightPageHandler(
   // Entry history list (most recent first)
   final historyEntries = entries.reversed.toList();
   final historyHtml = StringBuffer();
-  historyHtml.write('<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">');
-  historyHtml.write('<h3 style="margin:0;padding:1rem 1.25rem;font-size:0.95rem;font-weight:600;border-bottom:1px solid var(--border)">Entry History</h3>');
+  historyHtml.write('<div class="panel" style="overflow:hidden;padding:0">');
+  historyHtml.write(
+      '<div class="panel-header" style="padding:1rem 1.25rem;margin:0;border-bottom:1px solid var(--border)"><div><h3 class="panel-title">Entry History</h3><p class="panel-kicker">Most recent first</p></div></div>');
   historyHtml.write('<div style="max-height:400px;overflow-y:auto">');
   for (final entry in historyEntries) {
     final epoch = entry['date'] as int;
@@ -1676,14 +2222,18 @@ Response bodyweightPageHandler(
 
     final dateStr = _formatDate(epoch);
 
-    historyHtml.write('<div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem">');
+    historyHtml.write(
+        '<div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem">');
     historyHtml.write('<div>');
-    historyHtml.write('<span style="font-size:0.9rem;font-weight:500">${_escapeHtml(dateStr)}</span>');
+    historyHtml.write(
+        '<span style="font-size:0.9rem;font-weight:500">${_escapeHtml(dateStr)}</span>');
     if (notes != null && notes.isNotEmpty) {
-      historyHtml.write('<div style="font-size:0.8rem;color:var(--text-muted);font-style:italic;margin-top:0.15rem">${_escapeHtml(notes)}</div>');
+      historyHtml.write(
+          '<div style="font-size:0.8rem;color:var(--text-muted);font-style:italic;margin-top:0.15rem">${_escapeHtml(notes)}</div>');
     }
     historyHtml.write('</div>');
-    historyHtml.write('<span style="font-weight:600;font-size:0.9rem;white-space:nowrap">${weight.toStringAsFixed(1)} $entryUnit</span>');
+    historyHtml.write(
+        '<span style="font-weight:600;font-size:0.9rem;white-space:nowrap">${weight.toStringAsFixed(1)} $entryUnit</span>');
     historyHtml.write('</div>');
   }
   historyHtml.write('</div></div>');
@@ -1695,7 +2245,8 @@ $maToggles
 $chartSection
 $historyHtml''';
 
-  final extraHead = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>';
+  final extraHead =
+      '<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>';
 
   final extraScripts = '''
 <script>
@@ -1795,13 +2346,8 @@ function toggleMA(datasetIndex) {
   const colors = { 1: '#06B6D4', 2: '#10B981', 3: '#F59E0B' };
   const btn = document.getElementById('ma-btn-' + datasetIndex);
   if (btn) {
-    if (!isHidden) {
-      btn.style.borderLeft = '3px solid ' + colors[datasetIndex];
-      btn.style.background = 'var(--surface-elevated)';
-    } else {
-      btn.style.borderLeft = '1px solid var(--border)';
-      btn.style.background = 'var(--surface)';
-    }
+    btn.classList.toggle('active', !isHidden);
+    btn.style.borderColor = !isHidden ? colors[datasetIndex] : '';
   }
 }
 </script>''';
@@ -1811,6 +2357,8 @@ function toggleMA(datasetIndex) {
     activeNav: 'Bodyweight',
     content: content,
     apiKey: apiKey,
+    request: request,
+    backupService: backupService,
     extraHead: extraHead,
     extraScripts: extraScripts,
   );
