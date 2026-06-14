@@ -2248,8 +2248,10 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   Future<void> _editDuration() async {
     DateTime editStart = currentWorkout.startTime;
     DateTime editEnd = currentWorkout.endTime!;
+    final dateFormat = DateFormat('yyyy MMM d');
+    final timeFormat = DateFormat('HH:mm');
 
-    await showDialog(
+    final saved = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -2258,8 +2260,27 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
+                leading: const Icon(Icons.calendar_today),
+                title: const Text('Start Date'),
+                trailing: Text(dateFormat.format(editStart)),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: editStart,
+                    firstDate: _datePickerFirstDate(editStart),
+                    lastDate: _datePickerLastDate(editStart),
+                  );
+                  if (date != null) {
+                    setDialogState(() {
+                      editStart = _withDate(editStart, date);
+                    });
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.schedule),
                 title: const Text('Start Time'),
-                trailing: Text(DateFormat('HH:mm').format(editStart)),
+                trailing: Text(timeFormat.format(editStart)),
                 onTap: () async {
                   final time = await showTimePicker(
                     context: context,
@@ -2267,20 +2288,33 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                   );
                   if (time != null) {
                     setDialogState(() {
-                      editStart = DateTime(
-                        editStart.year,
-                        editStart.month,
-                        editStart.day,
-                        time.hour,
-                        time.minute,
-                      );
+                      editStart = _withTime(editStart, time);
                     });
                   }
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.calendar_today),
+                title: const Text('End Date'),
+                trailing: Text(dateFormat.format(editEnd)),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: editEnd,
+                    firstDate: _datePickerFirstDate(editEnd),
+                    lastDate: _datePickerLastDate(editEnd),
+                  );
+                  if (date != null) {
+                    setDialogState(() {
+                      editEnd = _withDate(editEnd, date);
+                    });
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.schedule),
                 title: const Text('End Time'),
-                trailing: Text(DateFormat('HH:mm').format(editEnd)),
+                trailing: Text(timeFormat.format(editEnd)),
                 onTap: () async {
                   final time = await showTimePicker(
                     context: context,
@@ -2288,13 +2322,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                   );
                   if (time != null) {
                     setDialogState(() {
-                      editEnd = DateTime(
-                        editEnd.year,
-                        editEnd.month,
-                        editEnd.day,
-                        time.hour,
-                        time.minute,
-                      );
+                      editEnd = _withTime(editEnd, time);
                     });
                   }
                 },
@@ -2320,20 +2348,56 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           ],
         ),
       ),
-    ).then((saved) async {
-      if (saved == true) {
-        await (db.workouts.update()
-              ..where((w) => w.id.equals(widget.workout.id)))
-            .write(WorkoutsCompanion(
-          startTime: Value(editStart),
-          endTime: Value(editEnd),
-        ));
-        await _reloadWorkout();
-        setState(() {
-          _hasUnsavedChanges = true;
-        });
-      }
-    });
+    );
+
+    if (saved ?? false) {
+      await (db.workouts.update()
+            ..where((w) => w.id.equals(widget.workout.id)))
+          .write(WorkoutsCompanion(
+        startTime: Value(editStart),
+        endTime: Value(editEnd),
+      ),);
+      await _reloadWorkout();
+      setState(() {
+        _hasUnsavedChanges = true;
+      });
+    }
+  }
+
+  DateTime _withDate(DateTime original, DateTime date) {
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      original.hour,
+      original.minute,
+      original.second,
+      original.millisecond,
+      original.microsecond,
+    );
+  }
+
+  DateTime _withTime(DateTime original, TimeOfDay time) {
+    return DateTime(
+      original.year,
+      original.month,
+      original.day,
+      time.hour,
+      time.minute,
+      original.second,
+      original.millisecond,
+      original.microsecond,
+    );
+  }
+
+  DateTime _datePickerFirstDate(DateTime value) {
+    return DateTime(value.year - 10);
+  }
+
+  DateTime _datePickerLastDate(DateTime value) {
+    final today = DateTime.now();
+    final year = value.year > today.year ? value.year : today.year;
+    return DateTime(year + 1, 12, 31);
   }
 
   Future<void> _reloadWorkout() async {
