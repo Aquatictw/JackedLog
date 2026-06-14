@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../database/database.dart';
 import '../fivethreeone/fivethreeone_state.dart';
 import '../fivethreeone/schemes.dart';
 
@@ -23,10 +24,10 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
   double? _trainingMax;
   String _unit = 'kg';
 
-  // Block state fields
-  int _blockCycleType = 0;
-  int _blockWeek = 1;
-  bool _hasActiveBlock = false;
+  // Whether the editable TM field has been seeded from the active block.
+  // The block loads asynchronously, so seeding happens in build() the first
+  // time the block becomes available rather than once in initState().
+  bool _seeded = false;
 
   // Map exercise names to their settings field
   static const Map<String, String> exerciseMapping = {
@@ -41,39 +42,32 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
   void initState() {
     super.initState();
     _tmController = TextEditingController();
-    _loadBlockData();
   }
 
-  void _loadBlockData() {
-    final fiveThreeOneState = context.read<FiveThreeOneState>();
+  /// Seed the editable TM field from the active block. Runs once, the first
+  /// time the (asynchronously-loaded) block is available.
+  void _seedFromBlock(FiveThreeOneBlock block) {
+    _seeded = true;
+    _unit = block.unit;
 
-    if (fiveThreeOneState.hasActiveBlock) {
-      final block = fiveThreeOneState.activeBlock!;
-      _hasActiveBlock = true;
-      _blockCycleType = block.currentCycle;
-      _blockWeek = block.currentWeek;
-      _unit = block.unit;
+    // Resolve TM from block fields
+    switch (_getExerciseKey()) {
+      case 'squat':
+        _trainingMax = block.squatTm;
+        break;
+      case 'bench':
+        _trainingMax = block.benchTm;
+        break;
+      case 'deadlift':
+        _trainingMax = block.deadliftTm;
+        break;
+      case 'press':
+        _trainingMax = block.pressTm;
+        break;
+    }
 
-      // Resolve TM from block fields
-      final exerciseKey = _getExerciseKey();
-      switch (exerciseKey) {
-        case 'squat':
-          _trainingMax = block.squatTm;
-          break;
-        case 'bench':
-          _trainingMax = block.benchTm;
-          break;
-        case 'deadlift':
-          _trainingMax = block.deadliftTm;
-          break;
-        case 'press':
-          _trainingMax = block.pressTm;
-          break;
-      }
-
-      if (_trainingMax != null) {
-        _tmController.text = _trainingMax!.toStringAsFixed(1);
-      }
+    if (_trainingMax != null) {
+      _tmController.text = _trainingMax!.toStringAsFixed(1);
     }
   }
 
@@ -119,8 +113,12 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    // Watch the state so the dialog rebuilds when the block finishes loading
+    // (it loads asynchronously, so on first open it may not be ready yet).
+    final block = context.watch<FiveThreeOneState>().activeBlock;
+
     // No active block: show informational message
-    if (!_hasActiveBlock) {
+    if (block == null) {
       return Dialog(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 500),
@@ -159,9 +157,17 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
       );
     }
 
-    final scheme = getMainScheme(cycleType: _blockCycleType, week: _blockWeek);
+    // Seed the editable TM field once, now that the block is available.
+    if (!_seeded) {
+      _seedFromBlock(block);
+    }
+
+    final blockCycleType = block.currentCycle;
+    final blockWeek = block.currentWeek;
+
+    final scheme = getMainScheme(cycleType: blockCycleType, week: blockWeek);
     final supplemental = getSupplementalScheme(
-        cycleType: _blockCycleType, week: _blockWeek);
+        cycleType: blockCycleType, week: blockWeek);
 
     return Dialog(
       child: Container(
@@ -212,7 +218,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                                   ),
                             ),
                             Text(
-                              '${cycleNames[_blockCycleType]} \u2014 Week $_blockWeek',
+                              '${cycleNames[blockCycleType]} \u2014 Week $blockWeek',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
@@ -267,7 +273,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
 
                     // Block position header
                     Text(
-                      '${getDescriptiveLabel(_blockCycleType)} — Week $_blockWeek',
+                      '${getDescriptiveLabel(blockCycleType)} — Week $blockWeek',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -383,7 +389,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                           final weight = _calculateWeight(
                               supplemental.first.percentage);
                           final name =
-                              getSupplementalName(_blockCycleType);
+                              getSupplementalName(blockCycleType);
                           return Text(
                             '$name @ ${weight.toStringAsFixed(1)} $_unit',
                             style:
@@ -393,7 +399,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                       ],
 
                       // TM Test feedback banner
-                      if (_blockCycleType == cycleTmTest) ...[
+                      if (blockCycleType == cycleTmTest) ...[
                         const SizedBox(height: 16),
                         Container(
                           padding: const EdgeInsets.all(12),
