@@ -47,6 +47,10 @@ void main() {
 
     expect(service.ensureOpen(), isTrue);
     expect(service.getOverviewStats()['workoutCount'], 3);
+
+    final progress = service.getExerciseProgress('Squat');
+    expect(progress, hasLength(3));
+    expect(progress.last['workoutId'], 3);
   });
 }
 
@@ -76,6 +80,7 @@ void _writeBackup(
         name TEXT NOT NULL,
         weight REAL NOT NULL,
         reps REAL NOT NULL,
+        unit TEXT NOT NULL,
         created INTEGER NOT NULL,
         hidden INTEGER NOT NULL DEFAULT 0,
         cardio INTEGER NOT NULL DEFAULT 0,
@@ -99,15 +104,15 @@ void _writeBackup(
     );
     final insertSet = db.prepare('''
       INSERT INTO gym_sets (
-        name, weight, reps, created, hidden, cardio, category, workout_id,
+        name, weight, reps, unit, created, hidden, cardio, category, workout_id,
         sequence
-      ) VALUES (?, ?, ?, ?, 0, 0, ?, ?, 0)
+      ) VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, 0)
     ''');
     try {
       for (var i = 1; i <= workoutCount; i++) {
         final start = 1700000000 + i * 86400;
         insertWorkout.execute([start, start + 3600, 'Workout $i']);
-        insertSet.execute(['Squat', 100.0, 5.0, start, 'Legs', i]);
+        insertSet.execute(['Squat', 100.0, 5.0, 'kg', start, 'Legs', i]);
       }
     } finally {
       insertWorkout.dispose();
