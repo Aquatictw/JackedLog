@@ -1,5 +1,7 @@
 import 'package:shelf/shelf.dart';
 
+import '../version.dart';
+
 late DateTime _serverStartTime;
 
 void initHealthApi(DateTime startTime) {
@@ -9,7 +11,7 @@ void initHealthApi(DateTime startTime) {
 Response healthHandler(Request request) {
   final uptime = DateTime.now().difference(_serverStartTime).inSeconds;
   return Response.ok(
-    '{"status": "ok", "version": "1.0.0", "uptime": $uptime}',
+    '{"status": "ok", "version": "$serverVersion", "uptime": $uptime}',
     headers: {'content-type': 'application/json'},
   );
 }

@@ -1,6 +1,7 @@
 import 'package:shelf/shelf.dart';
 
 import '../services/backup_service.dart';
+import '../version.dart';
 
 Response managePageHandler(
     Request request, BackupService backupService, String apiKey) {
@@ -64,11 +65,31 @@ Response managePageHandler(
   .btn.dl:hover { background: #1565c0; }
   .btn.del { background: #c62828; color: #fff; margin-left: 0.3rem; }
   .btn.del:hover { background: #b71c1c; }
+  .update-panel {
+    border: 1px solid #333; border-radius: 8px; padding: 1rem;
+    margin-bottom: 1.5rem; background: #1a1a1a;
+    display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  }
+  .update-panel .ver { font-size: 0.9rem; color: #aaa; }
+  .update-panel .ver strong { color: #e0e0e0; }
+  .btn.upd { background: #2e7d32; color: #fff; }
+  .btn.upd:hover { background: #1b5e20; }
+  .btn:disabled { opacity: 0.6; cursor: default; }
+  #updateStatus { font-size: 0.85rem; margin-left: auto; }
+  #updateStatus.ok { color: #4caf50; }
+  #updateStatus.warn { color: #ffb74d; }
+  #updateStatus.err { color: #ef5350; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>JackedLog Backups</h1>
+  <div class="update-panel">
+    <div class="ver">Server version: <strong>v$serverVersion</strong></div>
+    <button class="btn upd" id="checkBtn" onclick="checkUpdate()">Check for updates</button>
+    <button class="btn upd" id="applyBtn" onclick="applyUpdate()" style="display:none">Update now</button>
+    <span id="updateStatus"></span>
+  </div>
   <div class="storage">Total storage: $totalFormatted</div>
   <table>
     <thead>
@@ -108,6 +129,52 @@ function deleteBackup(filename) {
   })
   .then(r => { if (!r.ok) throw new Error('Delete failed'); location.reload(); })
   .catch(e => alert(e.message));
+}
+
+function setStatus(msg, cls) {
+  const el = document.getElementById('updateStatus');
+  el.textContent = msg;
+  el.className = cls || '';
+}
+
+function short(sha) { return sha ? sha.substring(0, 7) : '?'; }
+
+function checkUpdate() {
+  const btn = document.getElementById('checkBtn');
+  btn.disabled = true;
+  setStatus('Checking…', '');
+  fetch('/api/update/check', { headers: { 'Authorization': 'Bearer ' + KEY } })
+    .then(r => r.json())
+    .then(d => {
+      if (d.updateAvailable) {
+        const n = (d.behindBy && d.behindBy > 0)
+          ? d.behindBy + ' new commit' + (d.behindBy === 1 ? '' : 's')
+          : 'New commits';
+        setStatus(n + ' on main (latest ' + short(d.latestCommit) + ')', 'warn');
+        document.getElementById('applyBtn').style.display = '';
+      } else if (d.error) {
+        setStatus(d.error, 'err');
+      } else {
+        setStatus('Up to date (' + short(d.currentCommit) + ')', 'ok');
+      }
+    })
+    .catch(e => setStatus(e.message, 'err'))
+    .finally(() => { btn.disabled = false; });
+}
+
+function applyUpdate() {
+  if (!confirm('Trigger an update of the server container?')) return;
+  const btn = document.getElementById('applyBtn');
+  btn.disabled = true;
+  setStatus('Requesting update…', '');
+  fetch('/api/update/apply', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + KEY }
+  })
+    .then(r => r.json())
+    .then(d => setStatus(d.message, d.triggered ? 'ok' : 'warn'))
+    .catch(e => setStatus(e.message, 'err'))
+    .finally(() => { btn.disabled = false; });
 }
 </script>
 </body>

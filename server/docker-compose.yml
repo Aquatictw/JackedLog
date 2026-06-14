@@ -1,15 +1,44 @@
 services:
   jackedlog-server:
-    build: .
-    ports:
-      - "${PORT:-8080}:8080"
+    image: ghcr.io/aquatictw/jackedlog-server:latest
     environment:
       - JACKED_API_KEY=${JACKED_API_KEY}
-      - PORT=8080
+      - PORT=9091
       - DATA_DIR=/data
+      # Lets the "Update now" button ask Watchtower to pull + recreate.
+      - WATCHTOWER_URL=http://watchtower:8080/v1/update
+      - WATCHTOWER_TOKEN=${WATCHTOWER_TOKEN}
     volumes:
       - backup_data:/data
+    networks:
+      - web_apps
+    labels:
+      # Only containers with this label are watched (see --label-enable below).
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    # --label-enable: only touch the server, not other containers on web_apps.
+    # --http-api-update + --http-api-periodic-polls: support both the button and
+    # an hourly auto-check that pulls a newer :latest image (pushed by CI).
+    command: >-
+      --label-enable
+      --cleanup
+      --interval 3600
+      --http-api-update
+      --http-api-periodic-polls
+    environment:
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - web_apps
     restart: unless-stopped
 
 volumes:
   backup_data:
+
+networks:
+  web_apps:
+    external: true
