@@ -2,87 +2,54 @@
 
 ## CRITICAL RULES - READ FIRST
 
-### DO NOT run any Flutter commands, ask user to run `flutter analyze` or manually test
 ### Always do manual migration
 ### If database version has been changed, and previous exported data from app can't be reimported, affirm me.
-### ONE COMMIT PER PHASE - Squash all commits (research, planning, context, execution, fixes) into a single `feat: XX phase-name` commit at the end of each phase. NO intermediate commits for docs, fixes, etc.
 
-## Core Development Philosophy
+## Agent skills
 
-### KISS (Keep It Simple, Stupid)
+### Issue tracker
 
-Simplicity should be a key goal in design. Choose straightforward solutions over complex ones whenever possible. Simple solutions are easier to understand, maintain, and debug.
+Issues and PRDs live as local markdown under `.planning/issues/`. See `docs/agents/issue-tracker.md`.
 
-### YAGNI (You Aren't Gonna Need It)
+### Triage labels
 
-Avoid building functionality on speculation. Implement features only when they are needed, not when you anticipate they might be useful in the future.
+Five canonical triage roles, each label string equals its name (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
 
-### Design Principles
+### Domain docs
 
-- **Open/Closed Principle**: Software entities should be open for extension but closed for modification.
-- **Single Responsibility**: Each function, class, and module should have one clear purpose.
-- **Fail Fast**: Check for potential errors early and raise exceptions immediately when issues occur.
+Single-context: `.planning/CONTEXT.md` + `.planning/docs/adr/`. See `docs/agents/domain.md`.
 
-## Code Search & Analysis Tools
-### Primary Tool: ripgrep (rg)
-Use `rg` (ripgrep) as your **PRIMARY and FIRST** tool for:
-- ANY code search or pattern matching
-- Finding function/class definitions
-- Locating method calls or usage patterns
-- Refactoring preparation
-- Code structure analysis
-- Fast, repository-wide searches using regex or literals
+### File routing
 
-### Secondary Tool: grep
-Use `grep` **ONLY** when:
-- `rg` is not available
-- Searching plain text, comments, or documentation
-- Searching non-code files (markdown, configs, etc.)
-- `rg` explicitly fails or is not applicable
+Before broad code search, read `.planning/FILE_MAP.md` and use the relevant feature slice to choose starting files. Use `.planning/CONTEXT.md` for product language and current status.
+## Shell rules
 
-**NEVER** use `grep` for searches without trying `rg` first.
+This repo is usually used from PowerShell on Windows.
 
-## Token Efficiency
+Prefer:
+- `pwsh` / PowerShell 7 for interactive agent sessions.
+- `rg --files` to list project files.
+- `rg -n "pattern" .` to search text.
+- `fd "name"` to find files by name.
+- `Get-ChildItem -Force` for directory listings.
+- `Get-ChildItem -Recurse -File` for recursive file listings.
+- `Get-Content -Raw -LiteralPath "path"` to read a whole file.
+- `Get-Content -LiteralPath "path" -TotalCount 200` to preview a file.
+- `Set-Location -LiteralPath "path"` to navigate safely.
+- `just <recipe>` for repeatable project commands.
 
-### Optimize Responses By
-- **Focused Context**: Only include relevant code sections
-- **Avoid Repetition**: Don't restate what I've already confirmed
-- **Summarize When Asked**: Always respond in a very concise and direct manner, providing only relevant information
-- Avoid **repeated or broad search commands** that may waste tokens
+Avoid Bash-only syntax in this repo's default shell:
+- `ls -la`
+- `cat <<EOF`
+- `grep`
+- `sed -n`
+- `rm -rf`
+- `/tmp/...`
+- `export FOO=bar`
+- Unix-style path assumptions.
 
-### Ask Before
-- **Large File Changes**: "Should I show the entire file or just the diff?"
-- **Multiple Approaches**: "Would you like me to explain alternatives or just go with the best option?"
-- **Deep Dives**: "Do you need detailed explanation or just the solution?"
+For file edits, prefer agent patch/edit tools over shell heredocs.
 
-## Git Conventions
-
-**Commit prefixes** (required):
-- `fix:` — bug fixes
-- `feat:` — new features
-- `docs:` — documentation changes
-
-## Prohibited Actions
-
-❌ **Never**:
-- Run Flutter commands without explicit permission
-- Modify database schema without impact analysis
-- Suggest complex solutions when simple ones exist
-- Add dependencies without discussing alternatives
-- Generate large amounts of boilerplate without asking first
-- Use commit messages without fix:/feat:/docs: prefix
-
-✅ **Always**:
-- Consider backward compatibility
-- Prefer Flutter/Dart built-ins over third-party packages when reasonable
-- Think about edge cases and error scenarios
-- Validate assumptions before implementing
-
-## Project Overview
-
-JackedLog is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, iOS, Linux, macOS, Windows).
-
-For detailed codebase documentation, see `.planning/codebase/`.
 
 ---
 
