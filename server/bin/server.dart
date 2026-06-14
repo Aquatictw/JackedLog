@@ -11,8 +11,10 @@ import 'package:jackedlog_server/api/health_api.dart';
 import 'package:jackedlog_server/api/backup_api.dart';
 import 'package:jackedlog_server/api/manage_page.dart';
 import 'package:jackedlog_server/api/dashboard_pages.dart';
+import 'package:jackedlog_server/api/update_api.dart';
 import 'package:jackedlog_server/services/backup_service.dart';
 import 'package:jackedlog_server/services/dashboard_service.dart';
+import 'package:jackedlog_server/version.dart';
 
 void main() async {
   final config = ServerConfig.fromEnvironment();
@@ -70,6 +72,8 @@ void main() async {
       '/dashboard/bodyweight',
       (req) => bodyweightPageHandler(
           req, dashboardService, backupService, config.apiKey));
+  router.get('/api/update/check', updateCheckHandler);
+  router.post('/api/update/apply', updateApplyHandler);
 
   // Build middleware pipeline
   final handler = const Pipeline()
@@ -80,7 +84,7 @@ void main() async {
 
   // Start server
   final server = await io.serve(handler, '0.0.0.0', config.port);
-  print('JackedLog Server v1.0.0');
+  print('JackedLog Server v$serverVersion');
   print('Listening on port ${server.port}');
   print('Data directory: ${config.dataDir}');
 }
