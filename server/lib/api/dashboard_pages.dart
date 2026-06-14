@@ -404,6 +404,78 @@ String dashboardShell({
     color: var(--text-muted);
     font-size: 0.75rem;
   }
+  .progress-track {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--surface-elevated);
+    overflow: hidden;
+    margin: 0.2rem 0 0.4rem;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+  .cycle-timeline {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.45rem;
+    margin-top: 1.1rem;
+  }
+  .cycle-step {
+    padding: 0.6rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-elevated);
+    text-align: center;
+  }
+  .cycle-step.done {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .cycle-step.current {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .cycle-step-name {
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+  .cycle-step-sub {
+    margin-top: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+  }
+  .cycle-step.current .cycle-step-sub {
+    color: var(--accent);
+    font-weight: 650;
+  }
+  .week-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.28rem;
+    margin-top: 0.45rem;
+  }
+  .week-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    opacity: 0.35;
+  }
+  .week-dot.done { background: var(--accent); opacity: 1; }
+  .week-dot.current {
+    background: var(--accent);
+    opacity: 1;
+    box-shadow: 0 0 0 2px var(--accent-dim);
+  }
+  .lift-delta { margin-top: 0.3rem; }
 
   @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); }
@@ -1886,16 +1958,17 @@ Response blockHistoryPageHandler(
     return Response.ok(html, headers: {'content-type': 'text/html'});
   }
 
+  final activeBlock = dashboardService.getActiveBlock();
   final blocks = dashboardService.getCompletedBlocks();
 
-  if (blocks.isEmpty) {
+  if (activeBlock == null && blocks.isEmpty) {
     final html = dashboardShell(
       title: '5/3/1 Blocks',
       activeNav: '5/3/1 Blocks',
       content: '''
 <div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
   <p style="font-size:1.2rem;margin-bottom:0.5rem">No 5/3/1 data</p>
-  <p>Complete a 5/3/1 block in the app and push a backup to see your block history.</p>
+  <p>Start a 5/3/1 block in the app and push a backup to see it here.</p>
 </div>''',
       apiKey: apiKey,
       request: request,
@@ -1912,6 +1985,101 @@ Response blockHistoryPageHandler(
     'Anchor',
     '7th Week Protocol'
   ];
+  // Weeks per cycle and main-work scheme labels (mirrors lib/.../schemes.dart).
+  const cycleWeeks = [3, 3, 1, 3, 1];
+  const schemeNames = ["5's PRO", "5's PRO", 'Deload', 'PR Sets', 'TM Test'];
+  const totalBlockWeeks = 11; // 3 + 3 + 1 + 3 + 1
+
+  String deltaBadge(double delta) {
+    if (delta > 0) {
+      return '<span class="badge good">+${delta.toStringAsFixed(1)}</span>';
+    } else if (delta < 0) {
+      return '<span class="badge bad">${delta.toStringAsFixed(1)}</span>';
+    }
+    return '<span class="badge muted">0</span>';
+  }
+
+  // --- Current block panel (top of page) ---
+  final currentSection = StringBuffer();
+  if (activeBlock == null) {
+    currentSection.write('''
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <h2 class="panel-title">Current Block</h2>
+      <p class="panel-kicker">No active block right now. Start one in the app.</p>
+    </div>
+  </div>
+</div>''');
+  } else {
+    final unit = activeBlock['unit'] as String;
+    final created = activeBlock['created'] as int;
+    final cc = (activeBlock['currentCycle'] as int).clamp(0, 4);
+    final cw = (activeBlock['currentWeek'] as int).clamp(1, cycleWeeks[cc]);
+
+    var weeksDone = 0;
+    for (var c = 0; c < cc; c++) {
+      weeksDone += cycleWeeks[c];
+    }
+    weeksDone += cw - 1;
+    final overallWeek = weeksDone + 1;
+    final pct = ((weeksDone / totalBlockWeeks) * 100).round();
+
+    // Cycle timeline (5 steps, current one shows week dots)
+    final timeline = StringBuffer();
+    for (var c = 0; c < cycleNames.length; c++) {
+      final stateClass = c < cc ? 'done' : (c == cc ? 'current' : '');
+      final dots = StringBuffer();
+      if (c == cc) {
+        for (var w = 1; w <= cycleWeeks[c]; w++) {
+          final wc = w < cw ? 'done' : (w == cw ? 'current' : '');
+          dots.write('<div class="week-dot $wc"></div>');
+        }
+      }
+      timeline.write('''
+<div class="cycle-step $stateClass">
+  <div class="cycle-step-name">${cycleNames[c]}</div>
+  <div class="cycle-step-sub">${schemeNames[c]}</div>
+  ${c == cc ? '<div class="week-dots">$dots</div>' : ''}
+</div>''');
+    }
+
+    String currentLift(String name, double start, double current) {
+      final delta = current - start;
+      final badge = delta != 0
+          ? '<div class="lift-delta">${deltaBadge(delta)}</div>'
+          : '';
+      return '''
+<div class="lift-mini">
+  <span>$name</span>
+  <strong>${current.toStringAsFixed(1)} $unit</strong>
+  $badge
+</div>''';
+    }
+
+    currentSection.write('''
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <h2 class="panel-title">Current Block</h2>
+      <p class="panel-kicker">${cycleNames[cc]} &middot; ${schemeNames[cc]} &mdash; Week $cw of ${cycleWeeks[cc]}</p>
+    </div>
+    <span class="badge">Week $overallWeek / $totalBlockWeeks</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" style="width:$pct%"></div></div>
+  <div class="progress-label">
+    <span>Started ${_formatDate(created)}</span>
+    <span>$pct% complete</span>
+  </div>
+  <div class="cycle-timeline">$timeline</div>
+  <div class="lift-grid" style="margin-top:1.1rem">
+    ${currentLift('Squat', activeBlock['startSquatTm'] as double, activeBlock['squatTm'] as double)}
+    ${currentLift('Bench', activeBlock['startBenchTm'] as double, activeBlock['benchTm'] as double)}
+    ${currentLift('Deadlift', activeBlock['startDeadliftTm'] as double, activeBlock['deadliftTm'] as double)}
+    ${currentLift('OHP', activeBlock['startPressTm'] as double, activeBlock['pressTm'] as double)}
+  </div>
+</div>''');
+  }
 
   // Build block cards
   final cardsHtml = StringBuffer();
@@ -1930,15 +2098,6 @@ Response blockHistoryPageHandler(
     final startPressTm = block['startPressTm'] as double;
 
     final dateRange = '${_formatDate(created)} - ${_formatDate(completed)}';
-
-    String deltaBadge(double delta) {
-      if (delta > 0) {
-        return '<span class="badge good">+${delta.toStringAsFixed(1)}</span>';
-      } else if (delta < 0) {
-        return '<span class="badge bad">${delta.toStringAsFixed(1)}</span>';
-      }
-      return '<span class="badge muted">0</span>';
-    }
 
     String liftSummary(String name, double value) {
       return '''
@@ -2003,30 +2162,37 @@ Response blockHistoryPageHandler(
 </div>''');
   }
 
-  // TM Progression Chart data
-  final chartBlocks = blocks.length > 10 ? blocks.sublist(0, 10) : blocks;
-  final chartReversed = chartBlocks.reversed.toList();
-  final chartLabels =
-      List.generate(chartReversed.length, (i) => 'Block ${i + 1}');
+  // TM progression chart + finished-blocks list (only when completed blocks
+  // exist). The chart is the long-term, block-to-block view so it sits under
+  // the current-block panel.
+  final hasBlocks = blocks.isNotEmpty;
+  var chartSection = '';
+  var finishedSection = '';
 
-  final chartDataJson = jsonEncode({
-    'labels': chartLabels,
-    'squat': chartReversed.map((b) => b['squatTm']).toList(),
-    'bench': chartReversed.map((b) => b['benchTm']).toList(),
-    'deadlift': chartReversed.map((b) => b['deadliftTm']).toList(),
-    'press': chartReversed.map((b) => b['pressTm']).toList(),
-  });
+  if (hasBlocks) {
+    final chartBlocks = blocks.length > 10 ? blocks.sublist(0, 10) : blocks;
+    final chartReversed = chartBlocks.reversed.toList();
+    final chartLabels =
+        List.generate(chartReversed.length, (i) => 'Block ${i + 1}');
 
-  final limitNote = blocks.length > 10
-      ? '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem">Showing last 10 blocks</p>'
-      : '';
+    final chartDataJson = jsonEncode({
+      'labels': chartLabels,
+      'squat': chartReversed.map((b) => b['squatTm']).toList(),
+      'bench': chartReversed.map((b) => b['benchTm']).toList(),
+      'deadlift': chartReversed.map((b) => b['deadliftTm']).toList(),
+      'press': chartReversed.map((b) => b['pressTm']).toList(),
+    });
 
-  final chartSection = '''
+    final limitNote = blocks.length > 10
+        ? '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem">Showing last 10 blocks</p>'
+        : '';
+
+    chartSection = '''
 <div class="panel" style="margin-top:1.25rem">
   <div class="panel-header">
     <div>
       <h3 class="panel-title">TM Progression</h3>
-      <p class="panel-kicker">Training max changes across completed blocks</p>
+      <p class="panel-kicker">Training max changes across completed blocks (long term)</p>
     </div>
   </div>
   <canvas id="tmChart"></canvas>
@@ -2034,29 +2200,28 @@ Response blockHistoryPageHandler(
 </div>
 <script type="application/json" id="blocks-data">$chartDataJson</script>''';
 
-  final content = '''
-<div class="panel-header">
+    finishedSection = '''
+<div class="panel-header" style="margin-top:1.25rem">
   <div>
     <h2 class="panel-title">Finished Blocks</h2>
     <p class="panel-kicker">${blocks.length} completed 5/3/1 block${blocks.length == 1 ? '' : 's'}</p>
   </div>
 </div>
-<div class="block-list">$cardsHtml</div>
-$chartSection''';
+<div class="block-list">$cardsHtml</div>''';
+  }
 
-  final extraHead =
-      '<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>';
+  // Order: current block progress, then long-term TM progression, then history.
+  final content = '''
+$currentSection
+$chartSection
+$finishedSection''';
 
-  final extraScripts = '''
-<script>
-function toggleBlock(id) {
-  const detail = document.getElementById('detail-' + id);
-  const arrow = document.getElementById('arrow-' + id);
-  const isHidden = !detail.classList.contains('open');
-  detail.classList.toggle('open', isHidden);
-  arrow.style.transform = isHidden ? 'rotate(180deg)' : '';
-}
+  final extraHead = hasBlocks
+      ? '<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>'
+      : '';
 
+  final chartScript = hasBlocks
+      ? '''
 (function() {
   const data = JSON.parse(document.getElementById('blocks-data').textContent);
   const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888';
@@ -2091,6 +2256,19 @@ function toggleBlock(id) {
     });
   }
 })();
+'''
+      : '';
+
+  final extraScripts = '''
+<script>
+function toggleBlock(id) {
+  const detail = document.getElementById('detail-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  const isHidden = !detail.classList.contains('open');
+  detail.classList.toggle('open', isHidden);
+  arrow.style.transform = isHidden ? 'rotate(180deg)' : '';
+}
+$chartScript
 </script>''';
 
   final html = dashboardShell(

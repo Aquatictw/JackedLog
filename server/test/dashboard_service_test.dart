@@ -52,12 +52,49 @@ void main() {
     expect(progress, hasLength(3));
     expect(progress.last['workoutId'], 3);
   });
+
+  test('returns the active 5/3/1 block with cycle/week position', () {
+    final backup = File('${tempDir.path}/jackedlog_backup_2026-06-14.db');
+    _writeBackup(backup, workoutCount: 1, includeBlocks: true);
+
+    expect(service.ensureOpen(), isTrue);
+
+    final active = service.getActiveBlock();
+    expect(active, isNotNull);
+    expect(active!['currentCycle'], 1);
+    expect(active['currentWeek'], 2);
+    expect(active['squatTm'], 142.5);
+    expect(active['startSquatTm'], 140.0);
+    expect(active['unit'], 'kg');
+
+    // Completed blocks query excludes the active one.
+    expect(service.getCompletedBlocks(), isEmpty);
+  });
+
+  test('returns null active block when none is active', () {
+    final backup = File('${tempDir.path}/jackedlog_backup_2026-06-14.db');
+    _writeBackup(backup, workoutCount: 1, includeBlocks: true, activeBlock: false);
+
+    expect(service.ensureOpen(), isTrue);
+    expect(service.getActiveBlock(), isNull);
+    expect(service.getCompletedBlocks(), hasLength(1));
+  });
+
+  test('returns null active block when blocks table is missing', () {
+    final backup = File('${tempDir.path}/jackedlog_backup_2026-06-14.db');
+    _writeBackup(backup, workoutCount: 1);
+
+    expect(service.ensureOpen(), isTrue);
+    expect(service.getActiveBlock(), isNull);
+  });
 }
 
 void _writeBackup(
   File file, {
   required int workoutCount,
   bool includeBodyweightNotes = true,
+  bool includeBlocks = false,
+  bool activeBlock = true,
 }) {
   final db = sqlite3.open(file.path);
   try {
@@ -128,6 +165,43 @@ void _writeBackup(
           ? [80.0, 'kg', 1700000000, 'morning']
           : [80.0, 'kg', 1700000000],
     );
+
+    if (includeBlocks) {
+      db.execute('''
+        CREATE TABLE five_three_one_blocks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          created INTEGER NOT NULL,
+          squat_tm REAL NOT NULL,
+          bench_tm REAL NOT NULL,
+          deadlift_tm REAL NOT NULL,
+          press_tm REAL NOT NULL,
+          start_squat_tm REAL,
+          start_bench_tm REAL,
+          start_deadlift_tm REAL,
+          start_press_tm REAL,
+          unit TEXT NOT NULL,
+          current_cycle INTEGER NOT NULL DEFAULT 0,
+          current_week INTEGER NOT NULL DEFAULT 1,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          completed INTEGER
+        )
+      ''');
+      db.execute('''
+        INSERT INTO five_three_one_blocks (
+          created, squat_tm, bench_tm, deadlift_tm, press_tm,
+          start_squat_tm, start_bench_tm, start_deadlift_tm, start_press_tm,
+          unit, current_cycle, current_week, is_active, completed
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ''', [
+        1700000000,
+        142.5, 102.5, 182.5, 62.5,
+        140.0, 100.0, 180.0, 60.0,
+        'kg',
+        1, 2,
+        activeBlock ? 1 : 0,
+        activeBlock ? null : 1700500000,
+      ]);
+    }
   } finally {
     db.dispose();
   }
