@@ -1822,11 +1822,10 @@ Response workoutDetailHandler(
         }
       }
 
-      // Check if any set has a non-normal set type
+      // Check if any set is a warmup or drop set
       var hasSetType = false;
       for (final s in exerciseSets) {
-        final st = s['setType'] as String?;
-        if (st != null && st.isNotEmpty && st != 'normal') {
+        if (s['warmup'] == true || s['dropSet'] == true) {
           hasSetType = true;
           break;
         }
@@ -1864,7 +1863,8 @@ Response workoutDetailHandler(
         final weight = (s['weight'] as num?)?.toDouble() ?? 0;
         final reps = (s['reps'] as num?)?.toInt() ?? 0;
         final unit = s['unit'] as String? ?? '';
-        final setType = s['setType'] as String? ?? 'normal';
+        final isWarmup = s['warmup'] == true;
+        final isDropSet = s['dropSet'] == true;
         final isBest = i == bestIdx;
         final rowBg = isBest
             ? 'background:var(--accent-dim);'
@@ -1881,9 +1881,9 @@ Response workoutDetailHandler(
         sections.write(
             '<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);$fontWeight">$reps</td>');
         if (hasSetType) {
-          final typeLabel = setType != 'normal' ? _escapeHtml(setType) : '';
+          final typeLabel = isWarmup ? 'Warmup' : (isDropSet ? 'Drop Set' : '');
           sections.write(
-              '<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);font-size:0.8rem;color:var(--text-muted)">$typeLabel</td>');
+              '<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);font-size:0.8rem;color:var(--text-muted)">${_escapeHtml(typeLabel)}</td>');
         }
         sections.write('</tr>');
       }

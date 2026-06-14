@@ -80,6 +80,43 @@ void main() {
     expect(service.getCompletedBlocks(), hasLength(1));
   });
 
+  test('returns workout detail with warmup and drop set flags', () {
+    final backup = File('${tempDir.path}/jackedlog_backup_2026-06-14.db');
+    _writeBackup(backup, workoutCount: 1);
+
+    final db = sqlite3.open(backup.path);
+    try {
+      db.execute('''
+        INSERT INTO gym_sets (
+          name, weight, reps, unit, created, hidden, cardio, category,
+          workout_id, sequence, exercise_type, set_order, warmup, drop_set
+        ) VALUES
+          ('Bench Press', 40.0, 8.0, 'kg', 1700086400, 0, 0, 'Chest', 1, 1, 'barbell', 1, 1, 0),
+          ('Bench Press', 100.0, 5.0, 'kg', 1700086400, 0, 0, 'Chest', 1, 1, 'barbell', 2, 0, 0),
+          ('Bench Press', 80.0, 8.0, 'kg', 1700086400, 0, 0, 'Chest', 1, 1, 'barbell', 3, 0, 1)
+      ''');
+    } finally {
+      db.dispose();
+    }
+
+    expect(service.ensureOpen(), isTrue);
+
+    final detail = service.getWorkoutDetail(1);
+    final sets = detail['sets'] as List<Map<String, dynamic>>;
+
+    // Seeded Squat set (sequence 0) plus the 3 Bench Press sets above.
+    expect(sets, hasLength(4));
+    expect(sets[0]['name'], 'Squat');
+    expect(sets[0]['warmup'], isFalse);
+    expect(sets[0]['dropSet'], isFalse);
+    expect(sets[1]['warmup'], isTrue);
+    expect(sets[1]['dropSet'], isFalse);
+    expect(sets[2]['warmup'], isFalse);
+    expect(sets[2]['dropSet'], isFalse);
+    expect(sets[3]['warmup'], isFalse);
+    expect(sets[3]['dropSet'], isTrue);
+  });
+
   test('returns null active block when blocks table is missing', () {
     final backup = File('${tempDir.path}/jackedlog_backup_2026-06-14.db');
     _writeBackup(backup, workoutCount: 1);
@@ -123,7 +160,11 @@ void _writeBackup(
         cardio INTEGER NOT NULL DEFAULT 0,
         category TEXT,
         workout_id INTEGER,
-        sequence INTEGER NOT NULL DEFAULT 0
+        sequence INTEGER NOT NULL DEFAULT 0,
+        exercise_type TEXT,
+        set_order INTEGER,
+        warmup INTEGER NOT NULL DEFAULT 0,
+        drop_set INTEGER NOT NULL DEFAULT 0
       )
     ''');
     db.execute('''
