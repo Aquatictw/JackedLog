@@ -475,7 +475,8 @@ class DashboardService {
   /// Get exercise progress over time for line chart.
   ///
   /// Returns a list of daily-best data points with keys: created, value,
-  /// weight, reps, unit. Metric can be 'bestWeight', 'oneRepMax', or 'volume'.
+  /// weight, reps, unit, workoutId. Metric can be 'bestWeight', 'oneRepMax',
+  /// or 'volume'.
   List<Map<String, dynamic>> getExerciseProgress(
     String exerciseName, {
     String metric = 'bestWeight',
@@ -498,7 +499,7 @@ class DashboardService {
     }
 
     final result = _db!.select('''
-      SELECT created, weight, reps, unit,
+      SELECT created, weight, reps, unit, workout_id,
         $metricExpr as metric_value,
         DATE(created, 'unixepoch') as day
       FROM gym_sets
@@ -518,6 +519,7 @@ class DashboardService {
           'weight': row['weight'] as num,
           'reps': row['reps'] as num,
           'unit': row['unit'] as String,
+          'workoutId': row['workout_id'],
         };
       }
     }

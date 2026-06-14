@@ -1135,6 +1135,11 @@ Response exerciseDetailHandler(
   }
   final metricSelector = '''
 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem">$metricButtons</div>''';
+  final metricLabel = switch (metric) {
+    'oneRepMax' => 'Est. 1RM',
+    'volume' => 'Volume',
+    _ => 'Best Weight',
+  };
 
   // Chart section
   String chartSection;
@@ -1148,10 +1153,22 @@ Response exerciseDetailHandler(
     final progressJson = jsonEncode(progress.map((p) {
       final epoch = p['created'] as int;
       final dt = DateTime.fromMillisecondsSinceEpoch(epoch * 1000);
+      final workoutId = p['workoutId'];
       return {
         'date':
             '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}',
         'value': p['value'],
+        'weight': p['weight'],
+        'reps': p['reps'],
+        'unit': p['unit'],
+        'workoutId': workoutId,
+        'workoutUrl': workoutId is int
+            ? _dashboardHref(
+                '/dashboard/workout/$workoutId',
+                apiKey,
+                selectedBackup,
+              )
+            : null,
       };
     }).toList());
 
@@ -1227,25 +1244,34 @@ $repTable''';
   const trendData = JSON.parse(document.getElementById('trend-data').textContent);
   const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#333';
   const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888';
+  const metricLabel = ${jsonEncode(metricLabel)};
 
   const labels = progressData.map(d => d.date);
   const values = progressData.map(d => d.value);
+  const formatValue = value => Number(value).toLocaleString(undefined, {
+    maximumFractionDigits: 2
+  });
 
   const datasets = [{
     label: 'Progress',
     data: values,
-    borderColor: '#7C3AED',
+    borderColor: '#8B5CF6',
     borderWidth: 3,
     tension: 0.35,
-    pointRadius: 0,
+    pointRadius: 4,
+    pointHoverRadius: 7,
+    pointHitRadius: 12,
+    pointBackgroundColor: '#8B5CF6',
+    pointBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#11151d',
+    pointBorderWidth: 2,
     fill: 'origin',
     backgroundColor: function(context) {
       const chart = context.chart;
       const {ctx, chartArea} = chart;
-      if (!chartArea) return 'rgba(124,58,237,0.1)';
+      if (!chartArea) return 'rgba(139,92,246,0.1)';
       const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-      gradient.addColorStop(0, 'rgba(124,58,237,0.3)');
-      gradient.addColorStop(1, 'rgba(124,58,237,0.02)');
+      gradient.addColorStop(0, 'rgba(139,92,246,0.3)');
+      gradient.addColorStop(1, 'rgba(139,92,246,0.02)');
       return gradient;
     }
   }];
@@ -1257,7 +1283,7 @@ $repTable''';
     datasets.push({
       label: 'Trend',
       data: trendValues,
-      borderColor: 'rgba(124,58,237,0.5)',
+      borderColor: 'rgba(139,92,246,0.5)',
       borderWidth: 2,
       borderDash: [5, 5],
       pointRadius: 0,
@@ -1274,7 +1300,47 @@ $repTable''';
       options: {
         responsive: true,
         maintainAspectRatio: true,
-        plugins: { legend: { display: false } },
+        interaction: {
+          mode: 'nearest',
+          intersect: true
+        },
+        onClick: function(event, elements) {
+          if (!elements.length || elements[0].datasetIndex !== 0) return;
+          const point = progressData[elements[0].index];
+          if (point && point.workoutUrl) {
+            window.location.href = point.workoutUrl;
+          }
+        },
+        onHover: function(event, elements) {
+          const point = elements.length && elements[0].datasetIndex === 0
+            ? progressData[elements[0].index]
+            : null;
+          event.native.target.style.cursor = point && point.workoutUrl
+            ? 'pointer'
+            : 'default';
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const point = progressData[context.dataIndex];
+                const unit = point.unit ? ' ' + point.unit : '';
+                return metricLabel + ': ' + formatValue(point.value) + unit;
+              },
+              afterLabel: function(context) {
+                const point = progressData[context.dataIndex];
+                const unit = point.unit ? ' ' + point.unit : '';
+                return 'Set: ' + formatValue(point.weight) + unit + ' x ' + formatValue(point.reps);
+              },
+              footer: function(items) {
+                if (!items.length) return '';
+                const point = progressData[items[0].dataIndex];
+                return point.workoutUrl ? 'Click to open workout' : '';
+              }
+            }
+          }
+        },
         scales: {
           x: {
             ticks: { color: textColor, maxTicksLimit: 10 },
