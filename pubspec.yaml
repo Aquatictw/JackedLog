@@ -7,7 +7,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.2
   drift: ^2.28.1
   sqlite3_flutter_libs: ^0.5.39
   path_provider: ^2.1.2
@@ -27,7 +26,6 @@ dependencies:
   package_info_plus: ^8.0.0
   url_launcher: ^6.2.6
   http: ^1.2.0
-  badges: ^3.1.2
   flutter_local_notifications: ^19.3.0
   timeago: ^3.2.2
   archive: ^4.0.0

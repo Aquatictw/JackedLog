@@ -8,6 +8,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../database/database.dart';
 import '../settings/settings_state.dart';
 import '../utils.dart';
+import '../utils/duration_format.dart';
 import 'edit_set_page.dart';
 
 class HistoryList extends StatefulWidget {
@@ -112,9 +113,7 @@ class _HistoryListState extends State<HistoryList> {
     final bool showDivider = previousGymSet != null &&
         !isSameDay(gymSet.created, previousGymSet.created);
 
-    final minutes = gymSet.duration.floor();
-    final seconds =
-        ((gymSet.duration * 60) % 60).floor().toString().padLeft(2, '0');
+    final duration = formatDurationMinutes(gymSet.duration);
     final distance = toString(gymSet.distance);
     final reps = toString(gymSet.reps);
     final weight = toString(gymSet.weight);
@@ -178,10 +177,10 @@ class _HistoryListState extends State<HistoryList> {
     String trailing = '$weight ${gymSet.unit} x $reps';
     if (gymSet.cardio &&
         (gymSet.unit == 'kg' || gymSet.unit == 'lb' || gymSet.unit == 'stone'))
-      trailing = '$weight ${gymSet.unit} / $minutes:$seconds $incline';
+      trailing = '$weight ${gymSet.unit} / $duration $incline';
     else if (gymSet.cardio &&
         (gymSet.unit == 'km' || gymSet.unit == 'mi' || gymSet.unit == 'kcal'))
-      trailing = '$distance ${gymSet.unit} / $minutes:$seconds $incline';
+      trailing = '$distance ${gymSet.unit} / $duration $incline';
 
     return Column(
       children: [

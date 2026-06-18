@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../constants.dart';
 import '../database/database.dart';
 import '../database/gym_sets.dart';
+import '../utils/duration_format.dart';
 import '../graph/cardio_page.dart';
 import '../graph/strength_page.dart';
 import '../main.dart';
@@ -1870,9 +1871,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       {bool isDropSet = false, Set<RecordType> records = const {},}) {
     final reps = toString(set.reps);
     final weight = toString(set.weight);
-    final minutes = set.duration.floor();
-    final seconds =
-        ((set.duration * 60) % 60).floor().toString().padLeft(2, '0');
+    final duration = formatDurationMinutes(set.duration);
     final distance = toString(set.distance);
     final colorScheme = Theme.of(context).colorScheme;
     final isWarmup = set.warmup;
@@ -1884,7 +1883,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       if (set.incline != null && set.incline! > 0) {
         incline = ' @ ${set.incline}%';
       }
-      subtitle = '$distance ${set.unit} / $minutes:$seconds$incline';
+      subtitle = '$distance ${set.unit} / $duration$incline';
     } else {
       subtitle = '$weight ${set.unit} x $reps';
     }
