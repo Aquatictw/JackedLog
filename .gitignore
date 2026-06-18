@@ -24,6 +24,8 @@ migrate_working_dir/
 # Flutter/Dart/Pub related
 **/doc/api/
 **/.cxx/
+**/.dart_tool/
+**/build/
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -62,3 +64,6 @@ docs/
 /flutter/
 
 test/generated_migrations/
+
+# Local server/runtime data
+/server/data/

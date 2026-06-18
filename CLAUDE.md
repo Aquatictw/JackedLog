@@ -21,7 +21,7 @@ Single-context: `.planning/CONTEXT.md` + `.planning/docs/adr/`. See `docs/agents
 
 ### File routing
 
-Before broad code search, read `.planning/FILE_MAP.md` and use the relevant feature slice to choose starting files. Use `.planning/CONTEXT.md` for product language and current status.
+Before broad code search, use `.planning/CONTEXT.md` for product language and current status to choose starting files.
 ## Shell rules
 
 This repo is usually used from PowerShell on Windows.

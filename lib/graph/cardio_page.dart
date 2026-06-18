@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../constants.dart';
 import '../database/database.dart';
 import '../database/gym_sets.dart';
+import '../utils/duration_format.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
 import '../widgets/bodypart_tag.dart';
@@ -344,10 +345,7 @@ class _CardioPageState extends State<CardioPage> {
       case CardioMetric.pace:
         return '${row.value.toStringAsFixed(2)} ${row.unit}/min';
       case CardioMetric.duration:
-        final minutes = row.value.floor();
-        final seconds =
-            ((row.value * 60) % 60).floor().toString().padLeft(2, '0');
-        return '$minutes:$seconds';
+        return formatDurationMinutes(row.value);
       case CardioMetric.distance:
         return '${row.value.toStringAsFixed(2)} ${row.unit}';
       case CardioMetric.incline:

@@ -7,6 +7,7 @@ import 'package:timeago/timeago.dart' as timeago;
 
 import '../settings/settings_state.dart';
 import '../utils.dart';
+import '../utils/duration_format.dart';
 import 'edit_set_page.dart';
 import 'history_page.dart';
 
@@ -91,11 +92,7 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
         shape: const Border.symmetric(),
         children: history.gymSets.map(
           (gymSet) {
-            final minutes = gymSet.duration.floor();
-            final seconds = ((gymSet.duration * 60) % 60)
-                .floor()
-                .toString()
-                .padLeft(2, '0');
+            final duration = formatDurationMinutes(gymSet.duration);
             final distance = toString(gymSet.distance);
             final reps = toString(gymSet.reps);
             final weight = toString(gymSet.weight);
@@ -199,7 +196,7 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
                   Expanded(
                     child: Text(
                       gymSet.cardio
-                          ? '$distance ${gymSet.unit} / $minutes:$seconds $incline'
+                          ? '$distance ${gymSet.unit} / $duration $incline'
                           : '$weight ${gymSet.unit} x $reps',
                       style: (isWarmup || isDropSet)
                           ? TextStyle(color: colorScheme.onSurfaceVariant)
