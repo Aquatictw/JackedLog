@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Deploy the server to prod: push main -> wait for the GHCR image build ->
+# ask Watchtower (via the server's update API) to pull it -> verify the new
+# commit is live. Safe for agents to run unattended.
+set -euo pipefail
+source "$(dirname "$0")/prod-lib.sh"
+
+branch="$(git branch --show-current)"
+if [[ "$branch" != "main" ]]; then
+  echo "Deploys build from main; you are on '$branch'." >&2
+  exit 1
+fi
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "Worktree has uncommitted changes. Commit or stash before deploying." >&2
+  git status --short >&2
+  exit 1
+fi
+
+git push origin main
+sha="$(git rev-parse HEAD)"
+echo "Pushed $sha"
+
+# Wait for the "Build server image" workflow run for this sha.
+if command -v gh >/dev/null 2>&1; then
+  echo "Waiting for the image build workflow..."
+  run_id=""
+  for _ in $(seq 1 30); do
+    run_id="$(gh run list --workflow server-image.yml --commit "$sha" --json databaseId --jq '.[0].databaseId' 2>/dev/null || true)"
+    [[ -n "$run_id" ]] && break
+    sleep 5
+  done
+  if [[ -n "$run_id" ]]; then
+    gh run watch "$run_id" --exit-status
+  else
+    echo "No workflow run found for $sha (server/ unchanged?). Continuing." >&2
+  fi
+else
+  echo "gh CLI not found; sleeping 3 minutes for CI instead." >&2
+  sleep 180
+fi
+
+echo "Triggering container update..."
+api POST /api/update/apply
+echo
+
+echo "Waiting for the new commit to be live..."
+for _ in $(seq 1 36); do
+  sleep 10
+  current="$(api GET /api/update/check | sed -n 's/.*"currentCommit": *"\([0-9a-f]*\)".*/\1/p' || true)"
+  if [[ "$current" == "$sha" ]]; then
+    echo "Deployed: server is running $sha"
+    api GET /api/health
+    echo
+    exit 0
+  fi
+done
+
+echo "Timed out waiting for the server to report $sha. Check ./scripts/prod-status." >&2
+exit 1

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Show prod server health, version, and whether main has newer commits.
+set -euo pipefail
+source "$(dirname "$0")/prod-lib.sh"
+
+echo "Server: $JACKED_URL"
+echo
+echo "Health:"
+api GET /api/health
+echo
+echo
+echo "Update check:"
+api GET /api/update/check
+echo
+
+if [[ -n "${JACKED_SSH_HOST:-}" ]]; then
+  echo
+  echo "Containers on $JACKED_SSH_HOST:"
+  ssh "$JACKED_SSH_HOST" "docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'" || true
+fi

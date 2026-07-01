@@ -22,6 +22,22 @@ Single-context: `.planning/CONTEXT.md` + `.planning/docs/adr/`. See `docs/agents
 ### File routing
 
 Before broad code search, use `.planning/CONTEXT.md` for product language and current status to choose starting files.
+
+## Server deploys (agents may run these)
+
+The self-hosted server (`server/`) deploys via GHCR + Watchtower: push to `main`
+→ GitHub Actions builds the image → Watchtower pulls it. Agent-friendly scripts
+in `scripts/` automate the loop:
+
+- `./scripts/prod-deploy` — push main, wait for the image build, trigger the
+  container update, verify the new commit is live. Requires a clean worktree.
+- `./scripts/prod-status` — health, running commit, pending updates.
+- `./scripts/prod-logs [-f] [lines]` / `./scripts/prod-restart` — need SSH.
+
+Config lives in `scripts/prod.env` (copy from `scripts/prod.env.example`).
+**`prod.env` is gitignored and must never be committed — this repo is public.**
+Never hardcode the server URL, API key, or SSH host anywhere tracked by git.
+
 ## Shell rules
 
 This repo is usually used from PowerShell on Windows.

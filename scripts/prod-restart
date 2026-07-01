@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Restart the prod server container over SSH (no image pull; use prod-deploy
+# for updates).
+set -euo pipefail
+source "$(dirname "$0")/prod-lib.sh"
+require_ssh
+
+compose_dir="${JACKED_COMPOSE_DIR:-/opt/jackedlog}"
+ssh "$JACKED_SSH_HOST" \
+  "cd '$compose_dir' && docker compose restart jackedlog-server && docker compose ps jackedlog-server"
