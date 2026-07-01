@@ -55,7 +55,11 @@ flexify-release-key.keystore
 /.claude/
 notes.md
 task_plan.md
-docs/
+.local-tools/
+/dist/
+docs/*
+!docs/agents/
+!docs/agents/**
 
 # Spotify credentials (use spotify_config.dart.template to create)
 /lib/spotify/spotify_config.dart
@@ -67,3 +71,6 @@ test/generated_migrations/
 
 # Local server/runtime data
 /server/data/
+
+# Prod server details (public repo — never commit; see scripts/prod.env.example)
+/scripts/prod.env

@@ -1,4 +1,4 @@
-# JackedLog - Claude Code Context
+# JackedLog - Agent Context
 
 ## CRITICAL RULES - READ FIRST
 
@@ -65,7 +65,6 @@ Avoid Bash-only syntax in this repo's default shell:
 - Unix-style path assumptions.
 
 For file edits, prefer agent patch/edit tools over shell heredocs.
-
 
 ---
 

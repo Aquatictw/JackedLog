@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Tail the prod server container logs over SSH. Usage: prod-logs [-f] [lines]
+set -euo pipefail
+source "$(dirname "$0")/prod-lib.sh"
+require_ssh
+
+follow=""
+lines=200
+if [[ "${1:-}" == "-f" || "${1:-}" == "--follow" ]]; then
+  follow="-f"
+  shift
+fi
+if [[ $# -gt 0 ]]; then
+  lines="$1"
+fi
+
+compose_dir="${JACKED_COMPOSE_DIR:-/opt/jackedlog}"
+exec ssh ${follow:+-t} "$JACKED_SSH_HOST" \
+  "cd '$compose_dir' && docker compose logs jackedlog-server --tail '$lines' $follow"
