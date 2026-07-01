@@ -36,7 +36,7 @@ String dashboardShell({
     final isActive = label.toLowerCase() == activeNav.toLowerCase();
     final activeClass = isActive ? ' class="active"' : '';
     final href = _dashboardHref(path, apiKey, selectedBackup);
-    return '<a href="$href"$activeClass>$icon $label</a>';
+    return '<a href="$href"$activeClass><span class="nav-icon">$icon</span> $label</a>';
   }
 
   return '''<!DOCTYPE html>
@@ -44,55 +44,68 @@ String dashboardShell({
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
 <title>$title - JackedLog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: dark;
-    --bg: #090b10;
-    --surface: #11151d;
-    --surface-elevated: #171d27;
-    --surface-strong: #202838;
+    --bg: #0a0c12;
+    --surface: #12161f;
+    --surface-elevated: #1a2029;
+    --surface-strong: #222b3a;
     --text: #f3f6fb;
     --text-muted: #97a3b6;
     --accent: #8b5cf6;
-    --accent-dim: rgba(139,92,246,0.18);
+    --accent-2: #22d3ee;
+    --accent-dim: rgba(139,92,246,0.16);
     --accent-hover: #7c3aed;
     --teal: #14b8a6;
     --green: #22c55e;
     --amber: #f59e0b;
     --red: #ef4444;
-    --border: rgba(148,163,184,0.18);
-    --shadow: 0 18px 50px rgba(0,0,0,0.25);
+    --border: rgba(148,163,184,0.14);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px rgba(0,0,0,0.18);
+    --radius: 12px;
   }
   html.light {
     color-scheme: light;
-    --bg: #f6f8fb;
+    --bg: #f4f6fa;
     --surface: #ffffff;
     --surface-elevated: #f1f5f9;
     --surface-strong: #e8eef7;
     --text: #111827;
     --text-muted: #64748b;
     --accent: #7c3aed;
-    --accent-dim: rgba(124,58,237,0.12);
+    --accent-2: #0891b2;
+    --accent-dim: rgba(124,58,237,0.10);
     --accent-hover: #6d28d9;
-    --border: rgba(15,23,42,0.12);
-    --shadow: 0 16px 40px rgba(15,23,42,0.08);
+    --border: rgba(15,23,42,0.10);
+    --shadow: 0 1px 2px rgba(15,23,42,0.06), 0 10px 28px rgba(15,23,42,0.06);
   }
   *, *::before, *::after { box-sizing: border-box; }
   html { background: var(--bg); }
   body {
-    background: var(--bg);
+    background:
+      radial-gradient(1100px 600px at 85% -10%, var(--accent-dim), transparent 60%),
+      var(--bg);
+    background-attachment: fixed;
     color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "tnum";
+    letter-spacing: -0.011em;
     margin: 0;
   }
+  a { color: var(--accent); }
   .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     width: 240px;
     height: 100vh;
-    background: color-mix(in srgb, var(--surface) 92%, #000 8%);
+    background: color-mix(in srgb, var(--surface) 88%, #000 12%);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -100,32 +113,38 @@ String dashboardShell({
     transition: transform 0.2s ease;
   }
   .sidebar .logo {
-    padding: 1.25rem 1rem;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--accent);
+    padding: 1.35rem 1.25rem;
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(120deg, #a78bfa, var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
     border-bottom: 1px solid var(--border);
-    letter-spacing: 0;
   }
-  .sidebar nav { display: flex; flex-direction: column; padding: 0.5rem 0; flex: 1; }
+  .sidebar nav { display: flex; flex-direction: column; gap: 2px; padding: 0.75rem 0.6rem; flex: 1; }
   .sidebar nav a {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.7rem 1rem;
+    gap: 0.6rem;
+    padding: 0.62rem 0.75rem;
     color: var(--text-muted);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
+    font-weight: 500;
+    border-radius: 9px;
     transition: background 0.15s, color 0.15s;
-    border-left: 3px solid transparent;
   }
+  .sidebar nav a .nav-icon { display: inline-flex; opacity: 0.75; }
   .sidebar nav a:hover { background: var(--surface-elevated); color: var(--text); }
   .sidebar nav a.active {
     background: var(--accent-dim);
     color: var(--text);
-    border-left-color: var(--accent);
     font-weight: 650;
+    box-shadow: inset 3px 0 0 var(--accent);
   }
+  .sidebar nav a.active .nav-icon { color: var(--accent); opacity: 1; }
   .main {
     margin-left: 240px;
     min-height: 100vh;
@@ -222,7 +241,7 @@ String dashboardShell({
   .block-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius);
     box-shadow: var(--shadow);
   }
   .metric-card {
@@ -230,24 +249,28 @@ String dashboardShell({
     overflow: hidden;
     min-height: 112px;
     padding: 1.15rem;
+    transition: transform 0.15s, border-color 0.15s;
   }
+  .metric-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--metric-color, var(--accent)) 45%, var(--border)); }
   .metric-card::before {
     content: "";
     position: absolute;
     inset: 0 0 auto 0;
     height: 3px;
-    background: var(--metric-color, var(--accent));
+    background: linear-gradient(90deg, var(--metric-color, var(--accent)), transparent 90%);
   }
   .metric-label {
     color: var(--text-muted);
-    font-size: 0.76rem;
+    font-size: 0.74rem;
     font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   .metric-value {
     margin-top: 0.35rem;
-    font-size: 1.75rem;
-    font-weight: 760;
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
     line-height: 1.1;
   }
   .metric-subtle {
@@ -477,6 +500,196 @@ String dashboardShell({
   }
   .lift-delta { margin-top: 0.3rem; }
 
+  /* Shared page building blocks */
+  .crumb { margin-bottom: 1.25rem; font-size: 0.85rem; }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .crumb .sep { color: var(--text-muted); margin: 0 0.5rem; }
+  .toolbar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .input, .select {
+    height: 42px;
+    padding: 0 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.9rem;
+    outline: none;
+  }
+  .input:focus, .select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+  .input { flex: 1; min-width: 200px; }
+  .select { cursor: pointer; }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .ex-card {
+    display: block;
+    padding: 1.15rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .ex-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .ex-card .ex-name { font-weight: 650; font-size: 0.98rem; margin-bottom: 0.5rem; color: var(--text); }
+  .ex-card .ex-meta { display: flex; gap: 1rem; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; }
+  .ex-card .ex-last { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem; }
+  .chip {
+    display: inline-block;
+    padding: 0.16rem 0.55rem;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .chip.neutral { background: var(--surface-elevated); color: var(--text-muted); }
+  .workout-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 0.7rem;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .workout-row:hover { border-color: var(--accent); transform: translateX(2px); }
+  .date-badge { min-width: 52px; text-align: center; }
+  .date-badge .month {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+  }
+  .date-badge .day { font-size: 1.45rem; font-weight: 800; line-height: 1.15; }
+  .row-main { flex: 1; min-width: 0; }
+  .row-title {
+    font-weight: 650;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .row-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.1rem; }
+  .row-chips { display: flex; gap: 0.5rem; flex-shrink: 0; }
+  .pagination { display: flex; justify-content: center; gap: 4px; margin-top: 1.5rem; }
+  .page-link, .page-gap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+  }
+  .page-link {
+    text-decoration: none;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    transition: background 0.15s;
+  }
+  .page-link:hover { background: var(--surface-elevated); }
+  .page-link.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .page-gap { color: var(--text-muted); }
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .table-card .table-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 1rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 650;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .data-table th {
+    padding: 0.55rem 1.25rem;
+    text-align: left;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 650;
+    background: var(--surface-elevated);
+  }
+  .data-table td { padding: 0.6rem 1.25rem; border-top: 1px solid var(--border); }
+  .data-table tr.best td { background: var(--accent-dim); font-weight: 650; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 36px;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface-elevated);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: filter 0.15s, background 0.15s;
+  }
+  .btn:hover { background: var(--surface-strong); }
+  .btn:disabled { opacity: 0.55; cursor: default; }
+  .btn.primary {
+    background: linear-gradient(120deg, var(--accent), var(--accent-hover));
+    border-color: transparent;
+    color: #fff;
+  }
+  .btn.primary:hover { filter: brightness(1.1); background: linear-gradient(120deg, var(--accent), var(--accent-hover)); }
+  .btn.danger { background: rgba(239,68,68,0.14); border-color: rgba(239,68,68,0.3); color: var(--red); }
+  .btn.danger:hover { background: rgba(239,68,68,0.24); }
+  .status-text { font-size: 0.85rem; }
+  .status-text.ok { color: var(--green); }
+  .status-text.warn { color: var(--amber); }
+  .status-text.err { color: var(--red); }
+  .scroll-list { max-height: 400px; overflow-y: auto; }
+  .list-row {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .list-row .note { font-size: 0.8rem; color: var(--text-muted); font-style: italic; margin-top: 0.15rem; }
+  .list-row .value { font-weight: 650; font-size: 0.9rem; white-space: nowrap; }
+  .page-head { margin-bottom: 1.5rem; }
+  .page-head h2 { margin: 0 0 0.25rem; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+  .page-head .meta { color: var(--text-muted); font-size: 0.9rem; }
+  .page-head .notes { color: var(--text-muted); font-style: italic; font-size: 0.9rem; margin-top: 0.5rem; }
+
   @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.open { transform: translateX(0); }
@@ -553,6 +766,7 @@ String? _selectedBackup(Request request) {
   return backup != null && backup.isNotEmpty ? backup : null;
 }
 
+// Auth lives in an HttpOnly cookie, so links never carry the API key.
 String _dashboardHref(
   String path,
   String apiKey,
@@ -560,10 +774,10 @@ String _dashboardHref(
   Map<String, String> params = const {},
 ]) {
   final query = <String, String>{
-    'key': apiKey,
     if (selectedBackup != null) 'backup': selectedBackup,
     ...params,
   };
+  if (query.isEmpty) return path;
   final queryString = query.entries
       .map((entry) =>
           '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}')
@@ -585,8 +799,7 @@ String _buildSavePicker({
 }) {
   if (backups.isEmpty) return '';
 
-  final hiddenInputs = StringBuffer()
-    ..write('<input type="hidden" name="key" value="${_escapeHtml(apiKey)}">');
+  final hiddenInputs = StringBuffer();
   for (final entry in queryParameters.entries) {
     if (entry.key == 'key' || entry.key == 'backup') continue;
     hiddenInputs.write(
@@ -665,10 +878,10 @@ Response overviewPageHandler(
       title: 'Overview',
       activeNav: 'Overview',
       content: '''
-<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
-  <p style="font-size:1.2rem;margin-bottom:0.5rem">No backup data available</p>
+<div class="empty-state">
+  <p>No backup data available</p>
   <p>Upload a backup from the JackedLog app to see your dashboard.</p>
-  <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
+  <a href="/manage">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
       request: request,
@@ -927,7 +1140,7 @@ String _buildHeatmapSvg(Map<String, int> trainingDays) {
 }
 
 /// Escape a string for use in JavaScript string literals.
-String _escapeJs(String s) => s.replaceAll("'", "\\'").replaceAll('\\', '\\\\');
+String _escapeJs(String s) => s.replaceAll('\\', '\\\\').replaceAll("'", "\\'");
 
 /// Escape a string for safe use in HTML content and attributes.
 String _escapeHtml(String s) => s
@@ -951,10 +1164,10 @@ Response exercisesPageHandler(
       title: 'Exercises',
       activeNav: 'Exercises',
       content: '''
-<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
-  <p style="font-size:1.2rem;margin-bottom:0.5rem">No backup data available</p>
+<div class="empty-state">
+  <p>No backup data available</p>
   <p>Upload a backup from the JackedLog app to see your exercises.</p>
-  <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
+  <a href="/manage">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
       request: request,
@@ -986,13 +1199,10 @@ Response exercisesPageHandler(
   }
 
   final searchBar = '''
-<form method="GET" action="/dashboard/exercises" style="display:flex;gap:0.75rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center">
-  <input type="hidden" name="key" value="$apiKey">
+<form method="GET" action="/dashboard/exercises" class="toolbar">
   ${_backupHiddenInput(selectedBackup)}
-  <input type="text" name="search" placeholder="Search exercises..." value="${_escapeHtml(search)}"
-    style="flex:1;min-width:200px;padding:0.6rem 0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.9rem;outline:none">
-  <select name="category" onchange="this.form.submit()"
-    style="padding:0.6rem 0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.9rem;outline:none;cursor:pointer">
+  <input class="input" type="text" name="search" placeholder="Search exercises..." value="${_escapeHtml(search)}">
+  <select class="select" name="category" onchange="this.form.submit()">
     $categoryOptions
   </select>
 </form>''';
@@ -1002,7 +1212,7 @@ Response exercisesPageHandler(
   if (exercises.isEmpty) {
     content = '''
 $searchBar
-<div style="text-align:center;padding:3rem 1rem;color:var(--text-muted)">
+<div class="empty-state">
   <p style="font-size:1.1rem">No exercises found</p>
 </div>''';
   } else {
@@ -1022,23 +1232,20 @@ $searchBar
       }
 
       cards.write('''
-<a href="${_dashboardHref('/dashboard/exercise/${Uri.encodeComponent(name)}', apiKey, selectedBackup)}"
-  style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;text-decoration:none;color:inherit;display:block;transition:border-color 0.15s,transform 0.15s"
-  onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'"
-  onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-  <div style="font-weight:600;font-size:1rem;margin-bottom:0.5rem;color:var(--text)">${_escapeHtml(name)}</div>
-  ${cat.isNotEmpty ? '<span style="display:inline-block;padding:0.15rem 0.5rem;background:var(--accent-dim);color:var(--accent);border-radius:999px;font-size:0.75rem;margin-bottom:0.5rem">${_escapeHtml(cat)}</span>' : ''}
-  <div style="display:flex;gap:1rem;font-size:0.8rem;color:var(--text-muted);margin-bottom:0.25rem">
+<a class="ex-card" href="${_dashboardHref('/dashboard/exercise/${Uri.encodeComponent(name)}', apiKey, selectedBackup)}">
+  <div class="ex-name">${_escapeHtml(name)}</div>
+  ${cat.isNotEmpty ? '<span class="chip">${_escapeHtml(cat)}</span>' : ''}
+  <div class="ex-meta">
     <span>$workoutCount workouts</span>
     <span>$setCount sets</span>
   </div>
-  ${lastUsedStr.isNotEmpty ? '<div style="font-size:0.75rem;color:var(--text-muted)">Last: $lastUsedStr</div>' : ''}
+  ${lastUsedStr.isNotEmpty ? '<div class="ex-last">Last: $lastUsedStr</div>' : ''}
 </a>''');
     }
 
     content = '''
 $searchBar
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem">
+<div class="card-grid">
   $cards
 </div>''';
   }
@@ -1070,10 +1277,10 @@ Response exerciseDetailHandler(
       title: exerciseName,
       activeNav: 'Exercises',
       content: '''
-<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
-  <p style="font-size:1.2rem;margin-bottom:0.5rem">No backup data available</p>
+<div class="empty-state">
+  <p>No backup data available</p>
   <p>Upload a backup from the JackedLog app to see exercise details.</p>
-  <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
+  <a href="/manage">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
       request: request,
@@ -1124,10 +1331,10 @@ Response exerciseDetailHandler(
 
   // Breadcrumb
   final breadcrumb = '''
-<div style="margin-bottom:1.5rem;font-size:0.85rem">
-  <a href="${_dashboardHref('/dashboard/exercises', apiKey, selectedBackup)}" style="color:var(--accent);text-decoration:none">Exercises</a>
-  <span style="color:var(--text-muted);margin:0 0.5rem">&gt;</span>
-  <span style="color:var(--text)">${_escapeHtml(exerciseName)}</span>
+<div class="crumb">
+  <a href="${_dashboardHref('/dashboard/exercises', apiKey, selectedBackup)}">Exercises</a>
+  <span class="sep">/</span>
+  <span>${_escapeHtml(exerciseName)}</span>
 </div>''';
 
   // Personal records cards
@@ -1138,23 +1345,26 @@ Response exerciseDetailHandler(
     final best1RM = records['best1RM'] as double;
     final bestVolume = records['bestVolume'] as double;
     prCards = '''
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Best Weight</div>
-    <div style="font-size:1.6rem;font-weight:700">${_formatNumber(bestWeight)}</div>
+<div class="metric-grid">
+  <div class="metric-card" style="--metric-color:var(--accent)">
+    <div class="metric-label">Best Weight</div>
+    <div class="metric-value">${_formatNumber(bestWeight)}</div>
+    <div class="metric-subtle">Heaviest set</div>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Estimated 1RM</div>
-    <div style="font-size:1.6rem;font-weight:700">${_formatNumber(best1RM)}</div>
+  <div class="metric-card" style="--metric-color:var(--teal)">
+    <div class="metric-label">Estimated 1RM</div>
+    <div class="metric-value">${_formatNumber(best1RM)}</div>
+    <div class="metric-subtle">Epley formula</div>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem">
-    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.25rem">Best Volume</div>
-    <div style="font-size:1.6rem;font-weight:700">${_formatNumber(bestVolume)}</div>
+  <div class="metric-card" style="--metric-color:var(--amber)">
+    <div class="metric-label">Best Volume</div>
+    <div class="metric-value">${_formatNumber(bestVolume)}</div>
+    <div class="metric-subtle">Single-set volume</div>
   </div>
 </div>''';
   } else {
     prCards = '''
-<div style="text-align:center;padding:2rem 1rem;color:var(--text-muted);margin-bottom:2rem">
+<div class="empty-state">
   <p>No records found for this exercise.</p>
 </div>''';
   }
@@ -1171,19 +1381,16 @@ Response exerciseDetailHandler(
   final periodButtons = StringBuffer();
   for (final (value, label) in periods) {
     final isActive = value == period;
-    final bg = isActive
-        ? 'background:var(--accent);color:#fff;'
-        : 'background:var(--surface);color:var(--text);';
     periodButtons.write(
         '<a href="${_dashboardHref('/dashboard/exercise/${Uri.encodeComponent(exerciseName)}', apiKey, selectedBackup, {
           'metric': metric,
           'period': value
         })}"'
-        ' style="padding:0.4rem 0.75rem;border-radius:6px;text-decoration:none;font-size:0.8rem;border:1px solid var(--border);$bg">'
+        '${isActive ? ' class="active"' : ''}>'
         '$label</a>');
   }
   final periodSelector = '''
-<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem">$periodButtons</div>''';
+<div class="segmented" style="margin-bottom:0.75rem">$periodButtons</div>''';
 
   // Metric selector
   const metrics = [
@@ -1194,19 +1401,16 @@ Response exerciseDetailHandler(
   final metricButtons = StringBuffer();
   for (final (value, label) in metrics) {
     final isActive = value == metric;
-    final bg = isActive
-        ? 'background:var(--accent);color:#fff;'
-        : 'background:var(--surface);color:var(--text);';
     metricButtons.write(
         '<a href="${_dashboardHref('/dashboard/exercise/${Uri.encodeComponent(exerciseName)}', apiKey, selectedBackup, {
           'metric': value,
           'period': period
         })}"'
-        ' style="padding:0.4rem 0.75rem;border-radius:6px;text-decoration:none;font-size:0.8rem;border:1px solid var(--border);$bg">'
+        '${isActive ? ' class="active"' : ''}>'
         '$label</a>');
   }
   final metricSelector = '''
-<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem">$metricButtons</div>''';
+<div class="segmented" style="margin-bottom:1.5rem">$metricButtons</div>''';
   final metricLabel = switch (metric) {
     'oneRepMax' => 'Est. 1RM',
     'volume' => 'Volume',
@@ -1217,8 +1421,8 @@ Response exerciseDetailHandler(
   String chartSection;
   if (progress.isEmpty) {
     chartSection = '''
-<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2rem;text-align:center;color:var(--text-muted);margin-bottom:2rem">
-  <p>No data for this period</p>
+<div class="panel" style="margin-bottom:2rem">
+  <p class="muted" style="text-align:center;margin:1rem 0">No data for this period</p>
 </div>''';
   } else {
     // Prepare chart data as JSON
@@ -1255,7 +1459,7 @@ Response exerciseDetailHandler(
     }).toList());
 
     chartSection = '''
-<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:2rem">
+<div class="panel" style="margin-bottom:2rem">
   <canvas id="progressChart"></canvas>
 </div>
 <script type="application/json" id="progress-data">$progressJson</script>
@@ -1275,21 +1479,17 @@ Response exerciseDetailHandler(
       final unit = rec['unit'] ?? '';
       rows.write('''
 <tr>
-  <td style="padding:0.6rem 1rem;border-bottom:1px solid var(--border)">${_formatNumber(reps as num)}</td>
-  <td style="padding:0.6rem 1rem;border-bottom:1px solid var(--border)">${_formatNumber(weight as num)}</td>
-  <td style="padding:0.6rem 1rem;border-bottom:1px solid var(--border)">${_escapeHtml(unit.toString())}</td>
+  <td>${_formatNumber(reps as num)}</td>
+  <td>${_formatNumber(weight as num)}</td>
+  <td>${_escapeHtml(unit.toString())}</td>
 </tr>''');
     }
     repTable = '''
-<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
-  <h3 style="margin:0;padding:1rem 1.25rem;font-size:0.95rem;font-weight:600;border-bottom:1px solid var(--border)">Rep Records</h3>
-  <table style="width:100%;border-collapse:collapse">
+<div class="table-card">
+  <h3 class="table-title">Rep Records</h3>
+  <table class="data-table">
     <thead>
-      <tr style="background:var(--surface-elevated)">
-        <th style="padding:0.6rem 1rem;text-align:left;font-size:0.8rem;color:var(--text-muted);font-weight:600">Reps</th>
-        <th style="padding:0.6rem 1rem;text-align:left;font-size:0.8rem;color:var(--text-muted);font-weight:600">Best Weight</th>
-        <th style="padding:0.6rem 1rem;text-align:left;font-size:0.8rem;color:var(--text-muted);font-weight:600">Unit</th>
-      </tr>
+      <tr><th>Reps</th><th>Best Weight</th><th>Unit</th></tr>
     </thead>
     <tbody>$rows</tbody>
   </table>
@@ -1465,10 +1665,10 @@ Response historyPageHandler(
       title: 'History',
       activeNav: 'History',
       content: '''
-<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
-  <p style="font-size:1.2rem;margin-bottom:0.5rem">No backup data available</p>
+<div class="empty-state">
+  <p>No backup data available</p>
   <p>Upload a backup from the JackedLog app to see your workout history.</p>
-  <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
+  <a href="/manage">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
       request: request,
@@ -1490,7 +1690,7 @@ Response historyPageHandler(
 
   if (workouts.isEmpty && page == 1) {
     content = '''
-<div style="text-align:center;padding:3rem 1rem;color:var(--text-muted)">
+<div class="empty-state">
   <p style="font-size:1.1rem">No workouts recorded</p>
 </div>''';
   } else {
@@ -1541,21 +1741,18 @@ Response historyPageHandler(
       final volumeStr = _formatVolume(totalVolume);
 
       cards.write('''
-<a href="${_dashboardHref('/dashboard/workout/$workoutId', apiKey, selectedBackup)}"
-  style="display:flex;align-items:center;gap:1rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:0.75rem;text-decoration:none;color:inherit;transition:border-color 0.15s"
-  onmouseover="this.style.borderColor='var(--accent)'"
-  onmouseout="this.style.borderColor='var(--border)'">
-  <div style="min-width:48px;text-align:center">
-    <div style="font-size:0.7rem;font-weight:600;color:var(--accent);letter-spacing:0.05em">$monthAbbr</div>
-    <div style="font-size:1.5rem;font-weight:700;line-height:1.2">$dayStr</div>
+<a class="workout-row" href="${_dashboardHref('/dashboard/workout/$workoutId', apiKey, selectedBackup)}">
+  <div class="date-badge">
+    <div class="month">$monthAbbr</div>
+    <div class="day">$dayStr</div>
   </div>
-  <div style="flex:1;min-width:0">
-    <div style="font-weight:600;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escapeHtml(name)}</div>
-    <div style="font-size:0.8rem;color:var(--text-muted)">$timeStr${durationStr.isNotEmpty ? ' &middot; $durationStr' : ''}</div>
+  <div class="row-main">
+    <div class="row-title">${_escapeHtml(name)}</div>
+    <div class="row-sub">$timeStr${durationStr.isNotEmpty ? ' &middot; $durationStr' : ''}</div>
   </div>
-  <div style="display:flex;gap:0.5rem;flex-shrink:0">
-    <span style="display:inline-block;padding:0.2rem 0.6rem;background:var(--accent-dim);color:var(--accent);border-radius:999px;font-size:0.75rem;white-space:nowrap">$setCount sets</span>
-    <span style="display:inline-block;padding:0.2rem 0.6rem;background:var(--surface-elevated);color:var(--text-muted);border-radius:999px;font-size:0.75rem;white-space:nowrap">$volumeStr</span>
+  <div class="row-chips">
+    <span class="chip">$setCount sets</span>
+    <span class="chip neutral">$volumeStr</span>
   </div>
 </a>''');
     }
@@ -1565,8 +1762,7 @@ Response historyPageHandler(
     final pagination = StringBuffer();
 
     if (totalPages > 1) {
-      pagination.write(
-          '<div style="display:flex;justify-content:center;gap:4px;margin-top:1.5rem">');
+      pagination.write('<div class="pagination">');
 
       // Determine which pages to show
       final pagesToShow = <int>{};
@@ -1589,21 +1785,14 @@ Response historyPageHandler(
 
         // Insert ellipsis if gap
         if (i > 0 && p > sortedPages[i - 1] + 1) {
-          pagination.write(
-              '<span style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;color:var(--text-muted);font-size:0.85rem">&hellip;</span>');
+          pagination.write('<span class="page-gap">&hellip;</span>');
         }
 
         final isActive = p == page;
-        final bg = isActive
-            ? 'background:var(--accent);color:#fff;'
-            : 'background:var(--surface);color:var(--text);';
         pagination.write(
-            '<a href="${_dashboardHref('/dashboard/history', apiKey, selectedBackup, {
+            '<a class="page-link${isActive ? ' active' : ''}" href="${_dashboardHref('/dashboard/history', apiKey, selectedBackup, {
               'page': '$p'
-            })}"'
-            ' style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;text-decoration:none;font-size:0.85rem;border:1px solid var(--border);transition:background 0.15s;$bg"'
-            '${!isActive ? ' onmouseover="this.style.background=\'var(--surface-elevated)\'" onmouseout="this.style.background=\'var(--surface)\'"' : ''}'
-            '>$p</a>');
+            })}">$p</a>');
       }
       pagination.write('</div>');
     }
@@ -1639,7 +1828,7 @@ Response workoutDetailHandler(
       title: 'Not Found',
       activeNav: 'History',
       content: '''
-<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
+<div class="empty-state">
   <p style="font-size:1.2rem">Invalid workout ID</p>
   <a href="${_dashboardHref('/dashboard/history', apiKey, selectedBackup)}" style="color:var(--accent);text-decoration:none">Back to History</a>
 </div>''',
@@ -1655,10 +1844,10 @@ Response workoutDetailHandler(
       title: 'Workout Detail',
       activeNav: 'History',
       content: '''
-<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
-  <p style="font-size:1.2rem;margin-bottom:0.5rem">No backup data available</p>
+<div class="empty-state">
+  <p>No backup data available</p>
   <p>Upload a backup from the JackedLog app to see workout details.</p>
-  <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
+  <a href="/manage">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
       request: request,
@@ -1676,8 +1865,8 @@ Response workoutDetailHandler(
       title: 'Workout Not Found',
       activeNav: 'History',
       content: '''
-<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
-  <p style="font-size:1.2rem;margin-bottom:0.5rem">Workout not found</p>
+<div class="empty-state">
+  <p>Workout not found</p>
   <a href="${_dashboardHref('/dashboard/history', apiKey, selectedBackup)}" style="color:var(--accent);text-decoration:none">Back to History</a>
 </div>''',
       apiKey: apiKey,
@@ -1735,25 +1924,22 @@ Response workoutDetailHandler(
 
   // Back link
   final backLink = '''
-<div style="margin-bottom:1.5rem;font-size:0.85rem">
-  <a href="${_dashboardHref('/dashboard/history', apiKey, selectedBackup)}" style="color:var(--accent);text-decoration:none">&larr; History</a>
+<div class="crumb">
+  <a href="${_dashboardHref('/dashboard/history', apiKey, selectedBackup)}">&larr; History</a>
 </div>''';
 
   // Workout header
   final header = StringBuffer();
-  header.write('<div style="margin-bottom:2rem">');
-  header.write(
-      '<h2 style="margin:0 0 0.25rem;font-size:1.5rem;font-weight:700">${_escapeHtml(workoutName)}</h2>');
+  header.write('<div class="page-head">');
+  header.write('<h2>${_escapeHtml(workoutName)}</h2>');
   if (dateStr.isNotEmpty) {
-    header.write(
-        '<div style="color:var(--text-muted);font-size:0.9rem">$dateStr');
+    header.write('<div class="meta">$dateStr');
     if (timeStr.isNotEmpty) header.write(' at $timeStr');
     if (durationStr.isNotEmpty) header.write(' &middot; $durationStr');
     header.write('</div>');
   }
   if (notes != null && notes.isNotEmpty) {
-    header.write(
-        '<div style="color:var(--text-muted);font-style:italic;font-size:0.9rem;margin-top:0.5rem">${_escapeHtml(notes)}</div>');
+    header.write('<div class="notes">${_escapeHtml(notes)}</div>');
   }
   header.write('</div>');
 
@@ -1769,18 +1955,18 @@ Response workoutDetailHandler(
 
   // Stats row
   final statsRow = '''
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:2rem">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center">
-    <div style="color:var(--text-muted);font-size:0.75rem;margin-bottom:0.25rem">Exercises</div>
-    <div style="font-size:1.4rem;font-weight:700">${exerciseNames.length}</div>
+<div class="metric-grid">
+  <div class="metric-card" style="--metric-color:var(--accent)">
+    <div class="metric-label">Exercises</div>
+    <div class="metric-value">${exerciseNames.length}</div>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center">
-    <div style="color:var(--text-muted);font-size:0.75rem;margin-bottom:0.25rem">Sets</div>
-    <div style="font-size:1.4rem;font-weight:700">${sets.length}</div>
+  <div class="metric-card" style="--metric-color:var(--teal)">
+    <div class="metric-label">Sets</div>
+    <div class="metric-value">${sets.length}</div>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center">
-    <div style="color:var(--text-muted);font-size:0.75rem;margin-bottom:0.25rem">Volume</div>
-    <div style="font-size:1.4rem;font-weight:700">${_formatVolume(totalVolume)}</div>
+  <div class="metric-card" style="--metric-color:var(--amber)">
+    <div class="metric-label">Volume</div>
+    <div class="metric-value">${_formatVolume(totalVolume)}</div>
   </div>
 </div>''';
 
@@ -1788,7 +1974,7 @@ Response workoutDetailHandler(
   String exerciseSections;
   if (sets.isEmpty) {
     exerciseSections = '''
-<div style="text-align:center;padding:2rem 1rem;color:var(--text-muted)">
+<div class="empty-state">
   <p>No sets recorded for this workout.</p>
 </div>''';
   } else {
@@ -1831,31 +2017,17 @@ Response workoutDetailHandler(
         }
       }
 
-      sections.write(
-          '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1.25rem">');
-      sections.write(
-          '<div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.5rem">');
-      sections.write(
-          '<span style="font-weight:600;font-size:0.95rem">${_escapeHtml(exerciseName)}</span>');
+      sections.write('<div class="table-card">');
+      sections.write('<h3 class="table-title">${_escapeHtml(exerciseName)}');
       if (category != null) {
-        sections.write(
-            '<span style="display:inline-block;padding:0.1rem 0.45rem;background:var(--accent-dim);color:var(--accent);border-radius:999px;font-size:0.7rem">${_escapeHtml(category)}</span>');
+        sections.write(' <span class="chip">${_escapeHtml(category)}</span>');
       }
-      sections.write('</div>');
+      sections.write('</h3>');
 
       // Set table
-      sections.write('<table style="width:100%;border-collapse:collapse">');
-      sections.write('<thead><tr style="background:var(--surface-elevated)">');
-      sections.write(
-          '<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Set</th>');
-      sections.write(
-          '<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Weight</th>');
-      sections.write(
-          '<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Reps</th>');
-      if (hasSetType) {
-        sections.write(
-            '<th style="padding:0.5rem 1rem;text-align:left;font-size:0.75rem;color:var(--text-muted);font-weight:600">Type</th>');
-      }
+      sections.write('<table class="data-table">');
+      sections.write('<thead><tr><th>Set</th><th>Weight</th><th>Reps</th>');
+      if (hasSetType) sections.write('<th>Type</th>');
       sections.write('</tr></thead><tbody>');
 
       for (var i = 0; i < exerciseSets.length; i++) {
@@ -1866,24 +2038,15 @@ Response workoutDetailHandler(
         final isWarmup = s['warmup'] == true;
         final isDropSet = s['dropSet'] == true;
         final isBest = i == bestIdx;
-        final rowBg = isBest
-            ? 'background:var(--accent-dim);'
-            : (i.isEven
-                ? 'background:var(--surface);'
-                : 'background:var(--surface-elevated);');
-        final fontWeight = isBest ? 'font-weight:600;' : '';
 
-        sections.write('<tr style="$rowBg">');
-        sections.write(
-            '<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);$fontWeight">${i + 1}</td>');
-        sections.write(
-            '<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);$fontWeight">${_formatNumber(weight)} ${_escapeHtml(unit)}</td>');
-        sections.write(
-            '<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);$fontWeight">$reps</td>');
+        sections.write('<tr${isBest ? ' class="best"' : ''}>');
+        sections.write('<td>${i + 1}</td>');
+        sections
+            .write('<td>${_formatNumber(weight)} ${_escapeHtml(unit)}</td>');
+        sections.write('<td>$reps</td>');
         if (hasSetType) {
           final typeLabel = isWarmup ? 'Warmup' : (isDropSet ? 'Drop Set' : '');
-          sections.write(
-              '<td style="padding:0.5rem 1rem;border-bottom:1px solid var(--border);font-size:0.8rem;color:var(--text-muted)">${_escapeHtml(typeLabel)}</td>');
+          sections.write('<td class="muted">${_escapeHtml(typeLabel)}</td>');
         }
         sections.write('</tr>');
       }
@@ -1946,10 +2109,10 @@ Response blockHistoryPageHandler(
       title: '5/3/1 Blocks',
       activeNav: '5/3/1 Blocks',
       content: '''
-<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
-  <p style="font-size:1.2rem;margin-bottom:0.5rem">No backup data available</p>
+<div class="empty-state">
+  <p>No backup data available</p>
   <p>Upload a backup from the JackedLog app to see your 5/3/1 blocks.</p>
-  <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
+  <a href="/manage">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
       request: request,
@@ -1966,8 +2129,8 @@ Response blockHistoryPageHandler(
       title: '5/3/1 Blocks',
       activeNav: '5/3/1 Blocks',
       content: '''
-<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
-  <p style="font-size:1.2rem;margin-bottom:0.5rem">No 5/3/1 data</p>
+<div class="empty-state">
+  <p>No 5/3/1 data</p>
   <p>Start a 5/3/1 block in the app and push a backup to see it here.</p>
 </div>''',
       apiKey: apiKey,
@@ -2298,10 +2461,10 @@ Response bodyweightPageHandler(
       title: 'Bodyweight',
       activeNav: 'Bodyweight',
       content: '''
-<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
-  <p style="font-size:1.2rem;margin-bottom:0.5rem">No backup data available</p>
+<div class="empty-state">
+  <p>No backup data available</p>
   <p>Upload a backup from the JackedLog app to see your bodyweight data.</p>
-  <a href="/manage?key=$apiKey" style="color:var(--accent)">Go to Backup Management</a>
+  <a href="/manage">Go to Backup Management</a>
 </div>''',
       apiKey: apiKey,
       request: request,
@@ -2322,8 +2485,8 @@ Response bodyweightPageHandler(
       title: 'Bodyweight',
       activeNav: 'Bodyweight',
       content: '''
-<div style="text-align:center;padding:4rem 1rem;color:var(--text-muted)">
-  <p style="font-size:1.2rem;margin-bottom:0.5rem">No bodyweight data</p>
+<div class="empty-state">
+  <p>No bodyweight data</p>
   <p>Log bodyweight entries in the app and push a backup to see your tracking data.</p>
 </div>''',
       apiKey: apiKey,
@@ -2454,10 +2617,9 @@ Response bodyweightPageHandler(
   // Entry history list (most recent first)
   final historyEntries = entries.reversed.toList();
   final historyHtml = StringBuffer();
-  historyHtml.write('<div class="panel" style="overflow:hidden;padding:0">');
-  historyHtml.write(
-      '<div class="panel-header" style="padding:1rem 1.25rem;margin:0;border-bottom:1px solid var(--border)"><div><h3 class="panel-title">Entry History</h3><p class="panel-kicker">Most recent first</p></div></div>');
-  historyHtml.write('<div style="max-height:400px;overflow-y:auto">');
+  historyHtml.write('<div class="table-card">');
+  historyHtml.write('<h3 class="table-title">Entry History</h3>');
+  historyHtml.write('<div class="scroll-list">');
   for (final entry in historyEntries) {
     final epoch = entry['date'] as int;
     final weight = entry['weight'] as double;
@@ -2466,18 +2628,14 @@ Response bodyweightPageHandler(
 
     final dateStr = _formatDate(epoch);
 
-    historyHtml.write(
-        '<div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem">');
-    historyHtml.write('<div>');
-    historyHtml.write(
-        '<span style="font-size:0.9rem;font-weight:500">${_escapeHtml(dateStr)}</span>');
+    historyHtml.write('<div class="list-row">');
+    historyHtml.write('<div><span>${_escapeHtml(dateStr)}</span>');
     if (notes != null && notes.isNotEmpty) {
-      historyHtml.write(
-          '<div style="font-size:0.8rem;color:var(--text-muted);font-style:italic;margin-top:0.15rem">${_escapeHtml(notes)}</div>');
+      historyHtml.write('<div class="note">${_escapeHtml(notes)}</div>');
     }
     historyHtml.write('</div>');
     historyHtml.write(
-        '<span style="font-weight:600;font-size:0.9rem;white-space:nowrap">${weight.toStringAsFixed(1)} $entryUnit</span>');
+        '<span class="value">${weight.toStringAsFixed(1)} $entryUnit</span>');
     historyHtml.write('</div>');
   }
   historyHtml.write('</div></div>');
