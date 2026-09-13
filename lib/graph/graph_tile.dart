@@ -5,14 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import '../cardio/cardio_analytics.dart';
+import '../cardio/cardio_progress_page.dart';
 import '../constants.dart';
 import '../database/gym_sets.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import '../utils.dart';
-import 'cardio_page.dart';
 import 'strength_page.dart';
 
 // Trend: 1 = improving, 0 = flat, -1 = declining, null = no signal (cardio or
@@ -68,22 +67,10 @@ Future<void> openExerciseGraph(
   required TabController tabCtrl,
 }) async {
   if (cardio) {
-    final data = await CardioAnalytics(db).getData(
-      target: unit,
-      name: name,
-      period: Period.months3,
-    );
-    if (!context.mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CardioPage(
-          tabCtrl: tabCtrl,
-          name: name,
-          unit: unit,
-          data: data,
-        ),
-      ),
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(
+          builder: (_) =>
+              CardioProgressPage(database: db, unit: unit, name: name),),
     );
     return;
   }

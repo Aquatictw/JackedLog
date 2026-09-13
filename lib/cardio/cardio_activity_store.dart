@@ -16,6 +16,12 @@ void validateCardioActivity(CardioActivity activity) {
       throw ArgumentError.value(field.value, field.key, 'Must not be empty');
     }
   }
+  final offset = activity.startUtcOffsetMinutes;
+  if (offset != null &&
+      (activity.startedAt == null || offset < -840 || offset > 840)) {
+    throw ArgumentError(
+        'Source offset requires a start time and must be within 14 hours of UTC',);
+  }
   final legacyId = activity.legacyGymSetId;
   if (legacyId != null) {
     if (activity.id != 'legacy-bout:$legacyId' || activity.source != 'legacy') {
@@ -134,6 +140,7 @@ class CardioActivityStore {
           sport: Value(activity.sport),
           environment: Value(activity.environment),
           startedAt: Value(activity.startedAt),
+          startUtcOffsetMinutes: Value(activity.startUtcOffsetMinutes),
           endedAt: Value(activity.endedAt),
           durationBasis: Value(activity.durationBasis),
         ),

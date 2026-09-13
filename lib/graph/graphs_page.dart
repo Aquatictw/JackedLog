@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../animated_fab.dart';
+import '../cardio/cardio_progress_page.dart';
 import '../database/database.dart';
 import '../database/gym_sets.dart';
 import '../graphs_filters.dart';
@@ -113,6 +114,19 @@ class GraphsPageState extends State<GraphsPage>
               ),
         actions: [
           if (selected.isEmpty) ...[
+            _circleAppBarButton(
+              context,
+              icon: Icons.directions_run,
+              tooltip: 'Cardio progress',
+              onPressed: () => Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CardioProgressPage(
+                    database: db,
+                    unit: context.read<SettingsState>().value.cardioUnit,
+                  ),
+                ),
+              ),
+            ),
             _circleAppBarButton(
               context,
               icon: Icons.timer,

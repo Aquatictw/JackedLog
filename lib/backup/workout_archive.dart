@@ -355,6 +355,7 @@ class WorkoutArchive {
               sport: Value(activity.sport),
               environment: Value(activity.environment),
               startedAt: Value(activity.startedAt),
+              startUtcOffsetMinutes: Value(activity.startUtcOffsetMinutes),
               endedAt: Value(activity.endedAt),
               durationBasis: Value(activity.durationBasis),
               source: Value(activity.source),

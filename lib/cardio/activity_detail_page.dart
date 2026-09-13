@@ -160,15 +160,11 @@ class ActivityDetailPage extends StatelessWidget {
                                       ),
                                       title: Text(
                                         DateFormat.yMMMd().add_jm().format(
-                                              (activity.startedAt ??
-                                                      activity.recordedAt)
-                                                  .toLocal(),
+                                              activityDisplayDate(activity),
                                             ),
                                       ),
                                       subtitle: Text(
-                                        activity.startedAt == null
-                                            ? 'Recording date · start time unknown'
-                                            : 'Start time',
+                                        activityDateLabel(activity),
                                       ),
                                     ),
                                     ListTile(
@@ -318,6 +314,7 @@ class _ActivityEditorPageState extends State<ActivityEditorPage> {
       widget.activity?.recordedAt ??
       DateTime.now();
   bool _saving = false;
+  bool _dateChanged = false;
   String? _error;
 
   String _number(double? value, double factor) =>
@@ -343,10 +340,12 @@ class _ActivityEditorPageState extends State<ActivityEditorPage> {
     if (_saving) return;
     // ListView can dispose off-screen form fields; validate their controllers too.
     final invalid = _name.text.trim().isEmpty ||
-        _measurement(_distance.text) != null || _measurement(_duration.text) != null;
+        _measurement(_distance.text) != null ||
+        _measurement(_duration.text) != null;
     final visibleFieldsValid = _form.currentState!.validate();
     if (invalid || !visibleFieldsValid) {
-      setState(() => _error = 'Enter a name and valid non-negative measurements, or leave unknown measurements blank.');
+      setState(() => _error =
+          'Enter a name and valid non-negative measurements, or leave unknown measurements blank.',);
       return;
     }
     setState(() {
@@ -365,6 +364,7 @@ class _ActivityEditorPageState extends State<ActivityEditorPage> {
             environment: _environment,
             recordedAt: DateTime.now(),
             startedAt: _date,
+            startUtcOffsetMinutes: _date.timeZoneOffset.inMinutes,
             durationBasis: _basis,
             warmup: false,
             source: 'manual',
@@ -378,6 +378,13 @@ class _ActivityEditorPageState extends State<ActivityEditorPage> {
               : activity.recordedAt,
           startedAt: drift.Value(
             previous != null && previous.startedAt == null ? null : _date,
+          ),
+          startUtcOffsetMinutes: drift.Value(
+            activity.startedAt == null
+                ? null
+                : _dateChanged
+                    ? _date.timeZoneOffset.inMinutes
+                    : activity.startUtcOffsetMinutes,
           ),
           endedAt: drift.Value(
             previous?.endedAt == null
@@ -468,11 +475,13 @@ class _ActivityEditorPageState extends State<ActivityEditorPage> {
       context: context,
       initialTime: TimeOfDay.fromDateTime(_date),
     );
-    if (time != null && mounted)
+    if (time != null && mounted) {
+      _dateChanged = true;
       setState(
         () => _date =
             DateTime(date.year, date.month, date.day, time.hour, time.minute),
       );
+    }
   }
 
   InputDecoration _input(String label, {String? suffix}) => InputDecoration(
@@ -493,8 +502,9 @@ class _ActivityEditorPageState extends State<ActivityEditorPage> {
         title: Text(widget.activity == null ? 'Log cardio' : 'Edit cardio'),
         actions: [
           TextButton(
-              onPressed: _saving ? null : _save,
-              child: Text(_saving ? 'Saving…' : 'Save'),),
+            onPressed: _saving ? null : _save,
+            child: Text(_saving ? 'Saving…' : 'Save'),
+          ),
         ],
       ),
       body: Form(
