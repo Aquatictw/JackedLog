@@ -8,9 +8,9 @@ strength or cardio workouts.
 
 **External gate:** Actual watch model/firmware and physical Android testing; Companion SDK licensing if that becomes the selected transport.
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] First verify compatible Bluetooth HR broadcast on the actual watch, including simultaneous watch activity recording. If unsuitable, evaluate licensed Companion SDK compatibility; choose and document one production adapter and supported device configuration.
 - [ ] Pair/select a source, handle required permissions and attach it to the active workout. The local workflow does not depend on cloud account connection unless the selected transport requires it.

@@ -7,9 +7,9 @@ coverage and last update after consenting to Garmin health access.
 
 **External gate:** Approved Health API HR entitlement and payload contract.
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] Reuse the durable owner/account inbox and phone cursor for verified health changes while keeping daily health normalization independent from cardio activities and workout samples.
 - [ ] Retain provider day, offset/time zone, sample timestamps, revision, provenance and availability. Apply late/replayed changes idempotently without creating a second day.

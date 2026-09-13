@@ -6,9 +6,9 @@ and detail navigation alongside workouts without fabricating a strength set.
 
 **Blocked by:** None (can start immediately).
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] Create, edit and delete an independent run offline through the existing recorded activity store; unit preferences convert at the boundary while canonical values remain metres/seconds.
 - [ ] Show distance, duration, actual pace when supported and source on an activity detail screen. Missing distance or ambiguous time basis has an explicit state, never an invented pace.

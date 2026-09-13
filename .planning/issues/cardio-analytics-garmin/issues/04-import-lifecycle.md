@@ -8,9 +8,9 @@ with visible progress and retry/cancel behavior.
 
 **External gate:** Approved revision, deletion and historical-delivery contracts and limits.
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] Apply supported provider corrections using revision ordering; duplicate, reordered and overlapping live/backfill deliveries converge on one effective activity.
 - [ ] Store explicit user overrides separately from provider evidence. Editing distance, duration or notes remains effective after later provider refreshes, with a visible option to reset an override.

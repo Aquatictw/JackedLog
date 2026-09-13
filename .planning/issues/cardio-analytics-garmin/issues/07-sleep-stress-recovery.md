@@ -7,9 +7,9 @@ stress and available Body Battery, plus recent trends and explicit coverage.
 
 **External gate:** Approved sleep/stress/Body Battery fields and any additional metric entitlements.
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] Normalize supported sleep intervals, stress summaries and available recovery context into source-specific daily records using the existing health sync path.
 - [ ] Keep sleep start/end and provider sleep-day assignment across midnight, travel and DST. Corrected episodes replace their source revision without adding another night's sleep.

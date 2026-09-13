@@ -7,9 +7,9 @@ splits and evidence-backed fixed-distance best efforts with accurate pause handl
 
 **External gate:** Authorized detailed Garmin recordings and anonymized FIT fixtures covering pauses/laps.
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] Import the authorized timeline/lap evidence needed for distance and elapsed time; preserve device laps separately from derived distance splits and source revision.
 - [ ] Show kilometre/mile splits with a labelled partial final split. Keep elapsed, timer and moving time distinct; indicate summary-only or insufficient evidence rather than fabricating splits.

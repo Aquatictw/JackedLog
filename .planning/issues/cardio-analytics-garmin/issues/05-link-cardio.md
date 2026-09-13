@@ -6,9 +6,9 @@ and totals without losing either source.
 
 **Blocked by:** 04 — Keep imports current and recover older runs.
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] Suggest candidates using compatible sport, source time overlap and measurements; timestamp proximity alone never merges activities. Ambiguous or unknown legacy times remain explicit.
 - [ ] Confirm a link with a preview of effective distance/time and preserved manual notes/overrides. Keep stable local identities and original provider evidence with a single counting relationship.
