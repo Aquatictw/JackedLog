@@ -70,7 +70,7 @@ void main() {
   });
 
   group('Consolidated Migration Tests', () {
-    test('verifies only 8 strategic schema versions exist', () {
+    test('verifies only 9 strategic schema versions exist', () {
       final schemaDir = Directory('drift_schemas/db');
       final schemaFiles = schemaDir
           .listSync()
@@ -81,9 +81,9 @@ void main() {
 
       expect(
         schemaFiles.length,
-        equals(8),
-        reason: 'Should have exactly 8 schema files '
-            '(v31, v48, v52, v57, v61, v67, v71, v72)',
+        equals(9),
+        reason: 'Should have exactly 9 schema files '
+            '(v31, v48, v52, v57, v61, v67, v71, v72, v73)',
       );
     });
 
@@ -100,8 +100,8 @@ void main() {
 
       expect(
         version,
-        equals(72),
-        reason: 'Fresh install should create v72 schema',
+        equals(73),
+        reason: 'Fresh install should create v73 schema',
       );
 
       // Verify all tables exist
@@ -122,6 +122,7 @@ void main() {
       expect(tables, contains('notes'));
       expect(tables, contains('bodyweight_entries'));
       expect(tables, contains('chat_messages'));
+      expect(tables, contains('cardio_activities'));
 
       await db.close();
     });

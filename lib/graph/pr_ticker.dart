@@ -2,13 +2,11 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import '../database/database.dart';
-import '../database/query_helpers.dart';
 import '../main.dart';
 import '../records/records_service.dart';
 import '../theme/tokens.dart';
-import '../utils/duration_format.dart';
 import '../utils.dart' as utils;
+import '../utils/duration_format.dart';
 import 'graph_tile.dart';
 
 /// A single "PR achieved" event, ready for display in the ticker.
@@ -67,21 +65,9 @@ class _RecentPrTickerState extends State<RecentPrTicker> {
           ..orderBy([(s) => OrderingTerm.desc(s.created)]))
         .get();
 
-    // Cardio record detection needs the full history for each exercise.
-    // Batch once per exercise rather than issuing a history query per bout.
-    final cardioSetsByExercise = <String, List<GymSet>>{};
-    for (final set in recentSets.where((s) => s.cardio)) {
-      cardioSetsByExercise.putIfAbsent(set.name, () => []).add(set);
-    }
-    final cardioRecords = <int, Set<RecordType>>{};
-    for (final entry in cardioSetsByExercise.entries) {
-      cardioRecords.addAll(
-        await QueryHelpers.batchLoadSetRecords(
-          exerciseName: entry.key,
-          sets: entry.value,
-        ),
-      );
-    }
+    final cardioRecords = await getBatchSetRecords(
+      recentSets.where((set) => set.cardio).toList(),
+    );
 
     final events = <_PrEvent>[];
     for (final set in recentSets) {

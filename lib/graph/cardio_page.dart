@@ -6,15 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../cardio/cardio_analytics.dart';
 import '../constants.dart';
 import '../database/database.dart';
-import '../database/gym_sets.dart';
-import '../utils/cardio_format.dart';
-import '../utils/duration_format.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
 import '../theme/components.dart';
 import '../theme/tokens.dart';
+import '../utils/cardio_format.dart';
+import '../utils/duration_format.dart';
 import '../widgets/bodypart_tag.dart';
 import '../workouts/workout_detail_page.dart';
 import 'cardio_data.dart';
@@ -35,7 +35,7 @@ class CardioPage extends StatefulWidget {
   final TabController? tabCtrl;
 
   @override
-  _CardioPageState createState() => _CardioPageState();
+  State<CardioPage> createState() => _CardioPageState();
 }
 
 class _CardioPageState extends State<CardioPage> {
@@ -49,15 +49,14 @@ class _CardioPageState extends State<CardioPage> {
   CardioRecords? records;
   String? brandName;
   String? category;
+  int _dataRequest = 0;
 
   @override
   void initState() {
     super.initState();
     widget.tabCtrl?.addListener(_onTabChanged);
-    setData();
     _loadRecords();
-    _loadBrandName();
-    _loadCategory();
+    _loadMetadata();
   }
 
   @override
@@ -77,7 +76,7 @@ class _CardioPageState extends State<CardioPage> {
   }
 
   Future<void> _loadRecords() async {
-    final cardioRecords = await getCardioRecords(
+    final cardioRecords = await CardioAnalytics(db).getRecords(
       name: widget.name,
       targetUnit: target,
     );
@@ -86,7 +85,7 @@ class _CardioPageState extends State<CardioPage> {
     }
   }
 
-  Future<void> _loadBrandName() async {
+  Future<void> _loadMetadata() async {
     final result = await (db.gymSets.select()
           ..where((tbl) => tbl.name.equals(widget.name))
           ..orderBy([
@@ -100,23 +99,6 @@ class _CardioPageState extends State<CardioPage> {
     if (mounted) {
       setState(() {
         brandName = result?.brandName;
-      });
-    }
-  }
-
-  Future<void> _loadCategory() async {
-    final result = await (db.gymSets.select()
-          ..where((tbl) => tbl.name.equals(widget.name))
-          ..orderBy([
-            (u) => drift.OrderingTerm(
-                  expression: u.created,
-                  mode: drift.OrderingMode.desc,
-                ),
-          ])
-          ..limit(1))
-        .getSingleOrNull();
-    if (mounted) {
-      setState(() {
         category = result?.category ?? 'Cardio';
       });
     }
@@ -703,18 +685,10 @@ class _CardioPageState extends State<CardioPage> {
     if (index >= data.length) return;
     final row = data[index];
 
-    final GymSet? gymSet = await (db.gymSets.select()
-          ..where(
-            (tbl) =>
-                tbl.created.equals(row.created) & tbl.name.equals(widget.name),
-          )
-          ..limit(1))
-        .getSingleOrNull();
-
-    if (!mounted || gymSet == null || gymSet.workoutId == null) return;
+    if (row.workoutId == null) return;
 
     final workout = await (db.workouts.select()
-          ..where((w) => w.id.equals(gymSet.workoutId!)))
+          ..where((w) => w.id.equals(row.workoutId!)))
         .getSingleOrNull();
 
     if (!mounted || workout == null) return;
@@ -731,14 +705,16 @@ class _CardioPageState extends State<CardioPage> {
   }
 
   Future<void> setData() async {
-    final cardio = await getCardioData(
+    if (!mounted) return;
+    final request = ++_dataRequest;
+    final cardio = await CardioAnalytics(db).getData(
       period: period,
       metric: metric,
       name: widget.name,
       target: target,
     );
 
-    if (!mounted) return;
+    if (!mounted || request != _dataRequest) return;
     setState(() {
       data = cardio;
       selectedIndex = null;

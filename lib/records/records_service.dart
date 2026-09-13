@@ -128,39 +128,125 @@ double calculateCardioSpeed(double distance, double durationMinutes) {
   return distance / durationMinutes * 60;
 }
 
-Set<RecordType> calculateCardioRecords(GymSet set, Iterable<GymSet> otherSets) {
-  final records = <RecordType>{};
-  final others = otherSets.where((s) => s.cardio);
+// Cardio comparisons use kilometres, regardless of the bout's display unit.
+double _distanceInKm(double distance, String unit) =>
+    distance * _kmPerUnit(unit);
 
-  if (others.isEmpty) {
-    records
-      ..add(RecordType.bestDuration)
-      ..add(RecordType.bestDistance)
-      ..add(RecordType.bestIncline);
-    if (set.duration > 0) records.add(RecordType.bestSpeed);
-    return records;
-  }
+double _kmPerUnit(String unit) => switch (unit) {
+      'mi' => 1.609344,
+      'm' => 0.001,
+      _ => 1.0,
+    };
 
-  var bestDuration = 0.0;
-  var bestDistance = 0.0;
-  var bestSpeed = 0.0;
-  var bestIncline = 0;
-  for (final other in others) {
-    if (other.duration > bestDuration) bestDuration = other.duration;
-    if (other.distance > bestDistance) bestDistance = other.distance;
-    final speed = calculateCardioSpeed(other.distance, other.duration);
-    if (speed > bestSpeed) bestSpeed = speed;
-    if ((other.incline ?? 0) > bestIncline) {
-      bestIncline = other.incline ?? 0;
+/// Tracks the best and runner-up so excluding a candidate is constant time.
+/// A tied maximum becomes its own runner-up: neither tied set beats the other.
+class _MetricBest {
+  double value = 0;
+  double runnerUp = 0;
+  int? holderId;
+
+  void add(int id, double candidate) {
+    if (candidate > value) {
+      runnerUp = value;
+      value = candidate;
+      holderId = id;
+    } else if (candidate > runnerUp) {
+      runnerUp = candidate;
     }
   }
 
-  if (set.duration > bestDuration) records.add(RecordType.bestDuration);
-  if (set.distance > bestDistance) records.add(RecordType.bestDistance);
-  if (calculateCardioSpeed(set.distance, set.duration) > bestSpeed) {
-    records.add(RecordType.bestSpeed);
+  double excluding(int? id) => id != null && id == holderId ? runnerUp : value;
+}
+
+Map<RecordType, double> _recordValues(GymSet set) {
+  if (set.cardio) {
+    final distance = _distanceInKm(set.distance, set.unit);
+    return {
+      RecordType.bestDuration: set.duration,
+      RecordType.bestDistance: distance,
+      RecordType.bestSpeed: calculateCardioSpeed(distance, set.duration),
+      RecordType.bestIncline: (set.incline ?? 0).toDouble(),
+    };
   }
-  if ((set.incline ?? 0) > bestIncline) records.add(RecordType.bestIncline);
+  return {
+    RecordType.bestWeight: set.weight,
+    RecordType.best1RM: calculate1RM(set.weight, set.reps),
+    RecordType.bestVolume: calculateVolume(set.weight, set.reps),
+  };
+}
+
+class _ExerciseRecords {
+  int count = 0;
+  final bests = <RecordType, _MetricBest>{};
+
+  void add(GymSet set) {
+    count++;
+    for (final entry in _recordValues(set).entries) {
+      (bests[entry.key] ??= _MetricBest()).add(set.id, entry.value);
+    }
+  }
+
+  Set<RecordType> forSet(GymSet set, {required bool excludeSelf}) {
+    if (set.hidden || set.warmup) return {};
+    if (set.cardio && count - (excludeSelf ? 1 : 0) == 0) {
+      return {
+        RecordType.bestDuration,
+        RecordType.bestDistance,
+        RecordType.bestIncline,
+        if (set.duration > 0) RecordType.bestSpeed,
+      };
+    }
+    return {
+      for (final entry in _recordValues(set).entries)
+        if (entry.value >
+            (bests[entry.key]?.excluding(excludeSelf ? set.id : null) ?? 0))
+          entry.key,
+    };
+  }
+}
+
+Set<RecordType> calculateCardioRecords(GymSet set, Iterable<GymSet> otherSets) {
+  final summary = _ExerciseRecords();
+  for (final other in otherSets) {
+    if (other.cardio && !other.hidden && !other.warmup) summary.add(other);
+  }
+  return summary.forSet(set, excludeSelf: false);
+}
+
+/// Current records for the supplied sets, using strict comparisons with all
+/// other eligible sets of the same exercise and type. Unlike the workout feed's
+/// strength badges, ties do not nominate an earliest holder here.
+///
+/// History is read once per bounded chunk and summarized once, so evaluating
+/// many bouts costs O(history + candidates), rather than rescanning each time.
+Future<Map<int, Set<RecordType>>> getBatchSetRecords(List<GymSet> sets) async {
+  final records = {for (final set in sets) set.id: <RecordType>{}};
+  final eligible = sets.where((set) => !set.hidden && !set.warmup).toList();
+  if (eligible.isEmpty) return records;
+
+  final names = eligible.map((set) => set.name).toSet().toList();
+  final candidateIds = eligible.map((set) => set.id).toSet();
+  final includedIds = <int>{};
+  final summaries = <(String, bool), _ExerciseRecords>{};
+  for (var start = 0; start < names.length; start += 400) {
+    final chunk = names.sublist(start, min(start + 400, names.length));
+    final history = await (db.gymSets.select()
+          ..where(
+            (s) =>
+                s.name.isIn(chunk) &
+                s.hidden.equals(false) &
+                s.warmup.equals(false),
+          ))
+        .get();
+    for (final set in history) {
+      (summaries[(set.name, set.cardio)] ??= _ExerciseRecords()).add(set);
+      if (candidateIds.contains(set.id)) includedIds.add(set.id);
+    }
+  }
+  for (final set in eligible) {
+    records[set.id] = (summaries[(set.name, set.cardio)] ?? _ExerciseRecords())
+        .forSet(set, excludeSelf: includedIds.contains(set.id));
+  }
   return records;
 }
 
@@ -183,8 +269,8 @@ Future<List<RecordAchievement>> checkForRecords({
     final bestQuery = '''
       SELECT
         MAX(duration) as best_duration,
-        MAX(distance) as best_distance,
-        MAX(CASE WHEN duration > 0 THEN distance / duration * 60 ELSE NULL END) as best_speed,
+        MAX(distance * CASE unit WHEN 'mi' THEN 1.609344 WHEN 'm' THEN 0.001 ELSE 1 END) as best_distance,
+        MAX(CASE WHEN duration > 0 THEN distance * CASE unit WHEN 'mi' THEN 1.609344 WHEN 'm' THEN 0.001 ELSE 1 END / duration * 60 ELSE NULL END) as best_speed,
         MAX(incline) as best_incline
       FROM gym_sets
       WHERE name = ?
@@ -207,8 +293,14 @@ Future<List<RecordAchievement>> checkForRecords({
         .getSingleOrNull();
 
     final previousBestDuration = result?.read<double?>('best_duration');
-    final previousBestDistance = result?.read<double?>('best_distance');
-    final previousBestSpeed = result?.read<double?>('best_speed');
+    final previousBestDistanceKm = result?.read<double?>('best_distance');
+    final previousBestSpeedKm = result?.read<double?>('best_speed');
+    final previousBestDistance = previousBestDistanceKm == null
+        ? null
+        : previousBestDistanceKm / _kmPerUnit(unit);
+    final previousBestSpeed = previousBestSpeedKm == null
+        ? null
+        : previousBestSpeedKm / _kmPerUnit(unit);
     final previousBestIncline = result?.read<int?>('best_incline');
     final isFirst = previousBestDuration == null &&
         previousBestDistance == null &&
@@ -613,36 +705,12 @@ Future<Map<int, Map<int, Set<RecordType>>>> getBatchWorkoutRecords(
         ))
       .get();
 
-  final cardioExerciseNames =
-      cardioWorkoutSets.map((s) => s.name).toSet().toList();
-  if (cardioExerciseNames.isNotEmpty) {
-    // One query for every cardio exercise on the page, not one per name.
-    final cardioHistory = await (db.gymSets.select()
-          ..where(
-            (s) =>
-                s.name.isIn(cardioExerciseNames) &
-                s.hidden.equals(false) &
-                s.warmup.equals(false) &
-                s.cardio.equals(true),
-          ))
-        .get();
-
-    final historyByName = <String, List<GymSet>>{};
-    for (final set in cardioHistory) {
-      (historyByName[set.name] ??= []).add(set);
-    }
-
-    for (final set in cardioWorkoutSets) {
-      if (set.workoutId == null) continue;
-      final recordTypes = calculateCardioRecords(
-        set,
-        (historyByName[set.name] ?? const <GymSet>[])
-            .where((other) => other.id != set.id),
-      );
-      if (recordTypes.isNotEmpty) {
-        (workoutRecords[set.workoutId!] ??= <int, Set<RecordType>>{})[set.id] =
-            recordTypes;
-      }
+  final cardioRecords = await getBatchSetRecords(cardioWorkoutSets);
+  for (final set in cardioWorkoutSets) {
+    final types = cardioRecords[set.id];
+    if (set.workoutId != null && types != null && types.isNotEmpty) {
+      (workoutRecords[set.workoutId!] ??= <int, Set<RecordType>>{})[set.id] =
+          types;
     }
   }
 

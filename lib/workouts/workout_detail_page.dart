@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../cardio/cardio_analytics.dart';
 import '../constants.dart';
 import '../database/database.dart';
 import '../database/gym_sets.dart';
@@ -2309,7 +2310,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     if (exerciseData == null || !parentContext.mounted) return;
 
     if (exerciseData.cardio) {
-      final data = await getCardioData(
+      final data = await CardioAnalytics(db).getData(
         target: exerciseData.unit,
         name: exerciseName,
         period: Period.months3,

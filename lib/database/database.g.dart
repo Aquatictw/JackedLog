@@ -6869,6 +6869,786 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
   }
 }
 
+class $CardioActivitiesTable extends CardioActivities
+    with TableInfo<$CardioActivitiesTable, CardioActivity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CardioActivitiesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _legacyGymSetIdMeta =
+      const VerificationMeta('legacyGymSetId');
+  @override
+  late final GeneratedColumn<int> legacyGymSetId = GeneratedColumn<int>(
+      'legacy_gym_set_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+  static const VerificationMeta _workoutIdMeta =
+      const VerificationMeta('workoutId');
+  @override
+  late final GeneratedColumn<int> workoutId = GeneratedColumn<int>(
+      'workout_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sportMeta = const VerificationMeta('sport');
+  @override
+  late final GeneratedColumn<String> sport = GeneratedColumn<String>(
+      'sport', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('other'));
+  static const VerificationMeta _environmentMeta =
+      const VerificationMeta('environment');
+  @override
+  late final GeneratedColumn<String> environment = GeneratedColumn<String>(
+      'environment', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('unspecified'));
+  static const VerificationMeta _recordedAtMeta =
+      const VerificationMeta('recordedAt');
+  @override
+  late final GeneratedColumn<DateTime> recordedAt = GeneratedColumn<DateTime>(
+      'recorded_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _startedAtMeta =
+      const VerificationMeta('startedAt');
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+      'started_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _endedAtMeta =
+      const VerificationMeta('endedAt');
+  @override
+  late final GeneratedColumn<DateTime> endedAt = GeneratedColumn<DateTime>(
+      'ended_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _distanceMetersMeta =
+      const VerificationMeta('distanceMeters');
+  @override
+  late final GeneratedColumn<double> distanceMeters = GeneratedColumn<double>(
+      'distance_meters', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _durationSecondsMeta =
+      const VerificationMeta('durationSeconds');
+  @override
+  late final GeneratedColumn<double> durationSeconds = GeneratedColumn<double>(
+      'duration_seconds', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _durationBasisMeta =
+      const VerificationMeta('durationBasis');
+  @override
+  late final GeneratedColumn<String> durationBasis = GeneratedColumn<String>(
+      'duration_basis', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('unspecified'));
+  static const VerificationMeta _inclinePercentMeta =
+      const VerificationMeta('inclinePercent');
+  @override
+  late final GeneratedColumn<double> inclinePercent = GeneratedColumn<double>(
+      'incline_percent', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _warmupMeta = const VerificationMeta('warmup');
+  @override
+  late final GeneratedColumn<bool> warmup = GeneratedColumn<bool>(
+      'warmup', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("warmup" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('manual'));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        legacyGymSetId,
+        workoutId,
+        name,
+        sport,
+        environment,
+        recordedAt,
+        startedAt,
+        endedAt,
+        distanceMeters,
+        durationSeconds,
+        durationBasis,
+        inclinePercent,
+        warmup,
+        notes,
+        source
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cardio_activities';
+  @override
+  VerificationContext validateIntegrity(Insertable<CardioActivity> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('legacy_gym_set_id')) {
+      context.handle(
+          _legacyGymSetIdMeta,
+          legacyGymSetId.isAcceptableOrUnknown(
+              data['legacy_gym_set_id']!, _legacyGymSetIdMeta));
+    }
+    if (data.containsKey('workout_id')) {
+      context.handle(_workoutIdMeta,
+          workoutId.isAcceptableOrUnknown(data['workout_id']!, _workoutIdMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('sport')) {
+      context.handle(
+          _sportMeta, sport.isAcceptableOrUnknown(data['sport']!, _sportMeta));
+    }
+    if (data.containsKey('environment')) {
+      context.handle(
+          _environmentMeta,
+          environment.isAcceptableOrUnknown(
+              data['environment']!, _environmentMeta));
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+          _recordedAtMeta,
+          recordedAt.isAcceptableOrUnknown(
+              data['recorded_at']!, _recordedAtMeta));
+    } else if (isInserting) {
+      context.missing(_recordedAtMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(_startedAtMeta,
+          startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta));
+    }
+    if (data.containsKey('ended_at')) {
+      context.handle(_endedAtMeta,
+          endedAt.isAcceptableOrUnknown(data['ended_at']!, _endedAtMeta));
+    }
+    if (data.containsKey('distance_meters')) {
+      context.handle(
+          _distanceMetersMeta,
+          distanceMeters.isAcceptableOrUnknown(
+              data['distance_meters']!, _distanceMetersMeta));
+    }
+    if (data.containsKey('duration_seconds')) {
+      context.handle(
+          _durationSecondsMeta,
+          durationSeconds.isAcceptableOrUnknown(
+              data['duration_seconds']!, _durationSecondsMeta));
+    }
+    if (data.containsKey('duration_basis')) {
+      context.handle(
+          _durationBasisMeta,
+          durationBasis.isAcceptableOrUnknown(
+              data['duration_basis']!, _durationBasisMeta));
+    }
+    if (data.containsKey('incline_percent')) {
+      context.handle(
+          _inclinePercentMeta,
+          inclinePercent.isAcceptableOrUnknown(
+              data['incline_percent']!, _inclinePercentMeta));
+    }
+    if (data.containsKey('warmup')) {
+      context.handle(_warmupMeta,
+          warmup.isAcceptableOrUnknown(data['warmup']!, _warmupMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CardioActivity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CardioActivity(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      legacyGymSetId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}legacy_gym_set_id']),
+      workoutId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}workout_id']),
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      sport: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sport'])!,
+      environment: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}environment'])!,
+      recordedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}recorded_at'])!,
+      startedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}started_at']),
+      endedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}ended_at']),
+      distanceMeters: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}distance_meters']),
+      durationSeconds: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}duration_seconds']),
+      durationBasis: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}duration_basis'])!,
+      inclinePercent: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}incline_percent']),
+      warmup: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}warmup'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
+    );
+  }
+
+  @override
+  $CardioActivitiesTable createAlias(String alias) {
+    return $CardioActivitiesTable(attachedDatabase, alias);
+  }
+}
+
+class CardioActivity extends DataClass implements Insertable<CardioActivity> {
+  final String id;
+  final int? legacyGymSetId;
+  final int? workoutId;
+  final String name;
+  final String sport;
+  final String environment;
+  final DateTime recordedAt;
+  final DateTime? startedAt;
+  final DateTime? endedAt;
+  final double? distanceMeters;
+  final double? durationSeconds;
+  final String durationBasis;
+  final double? inclinePercent;
+  final bool warmup;
+  final String? notes;
+  final String source;
+  const CardioActivity(
+      {required this.id,
+      this.legacyGymSetId,
+      this.workoutId,
+      required this.name,
+      required this.sport,
+      required this.environment,
+      required this.recordedAt,
+      this.startedAt,
+      this.endedAt,
+      this.distanceMeters,
+      this.durationSeconds,
+      required this.durationBasis,
+      this.inclinePercent,
+      required this.warmup,
+      this.notes,
+      required this.source});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || legacyGymSetId != null) {
+      map['legacy_gym_set_id'] = Variable<int>(legacyGymSetId);
+    }
+    if (!nullToAbsent || workoutId != null) {
+      map['workout_id'] = Variable<int>(workoutId);
+    }
+    map['name'] = Variable<String>(name);
+    map['sport'] = Variable<String>(sport);
+    map['environment'] = Variable<String>(environment);
+    map['recorded_at'] = Variable<DateTime>(recordedAt);
+    if (!nullToAbsent || startedAt != null) {
+      map['started_at'] = Variable<DateTime>(startedAt);
+    }
+    if (!nullToAbsent || endedAt != null) {
+      map['ended_at'] = Variable<DateTime>(endedAt);
+    }
+    if (!nullToAbsent || distanceMeters != null) {
+      map['distance_meters'] = Variable<double>(distanceMeters);
+    }
+    if (!nullToAbsent || durationSeconds != null) {
+      map['duration_seconds'] = Variable<double>(durationSeconds);
+    }
+    map['duration_basis'] = Variable<String>(durationBasis);
+    if (!nullToAbsent || inclinePercent != null) {
+      map['incline_percent'] = Variable<double>(inclinePercent);
+    }
+    map['warmup'] = Variable<bool>(warmup);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['source'] = Variable<String>(source);
+    return map;
+  }
+
+  CardioActivitiesCompanion toCompanion(bool nullToAbsent) {
+    return CardioActivitiesCompanion(
+      id: Value(id),
+      legacyGymSetId: legacyGymSetId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(legacyGymSetId),
+      workoutId: workoutId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(workoutId),
+      name: Value(name),
+      sport: Value(sport),
+      environment: Value(environment),
+      recordedAt: Value(recordedAt),
+      startedAt: startedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startedAt),
+      endedAt: endedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endedAt),
+      distanceMeters: distanceMeters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(distanceMeters),
+      durationSeconds: durationSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationSeconds),
+      durationBasis: Value(durationBasis),
+      inclinePercent: inclinePercent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inclinePercent),
+      warmup: Value(warmup),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      source: Value(source),
+    );
+  }
+
+  factory CardioActivity.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CardioActivity(
+      id: serializer.fromJson<String>(json['id']),
+      legacyGymSetId: serializer.fromJson<int?>(json['legacyGymSetId']),
+      workoutId: serializer.fromJson<int?>(json['workoutId']),
+      name: serializer.fromJson<String>(json['name']),
+      sport: serializer.fromJson<String>(json['sport']),
+      environment: serializer.fromJson<String>(json['environment']),
+      recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
+      startedAt: serializer.fromJson<DateTime?>(json['startedAt']),
+      endedAt: serializer.fromJson<DateTime?>(json['endedAt']),
+      distanceMeters: serializer.fromJson<double?>(json['distanceMeters']),
+      durationSeconds: serializer.fromJson<double?>(json['durationSeconds']),
+      durationBasis: serializer.fromJson<String>(json['durationBasis']),
+      inclinePercent: serializer.fromJson<double?>(json['inclinePercent']),
+      warmup: serializer.fromJson<bool>(json['warmup']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      source: serializer.fromJson<String>(json['source']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'legacyGymSetId': serializer.toJson<int?>(legacyGymSetId),
+      'workoutId': serializer.toJson<int?>(workoutId),
+      'name': serializer.toJson<String>(name),
+      'sport': serializer.toJson<String>(sport),
+      'environment': serializer.toJson<String>(environment),
+      'recordedAt': serializer.toJson<DateTime>(recordedAt),
+      'startedAt': serializer.toJson<DateTime?>(startedAt),
+      'endedAt': serializer.toJson<DateTime?>(endedAt),
+      'distanceMeters': serializer.toJson<double?>(distanceMeters),
+      'durationSeconds': serializer.toJson<double?>(durationSeconds),
+      'durationBasis': serializer.toJson<String>(durationBasis),
+      'inclinePercent': serializer.toJson<double?>(inclinePercent),
+      'warmup': serializer.toJson<bool>(warmup),
+      'notes': serializer.toJson<String?>(notes),
+      'source': serializer.toJson<String>(source),
+    };
+  }
+
+  CardioActivity copyWith(
+          {String? id,
+          Value<int?> legacyGymSetId = const Value.absent(),
+          Value<int?> workoutId = const Value.absent(),
+          String? name,
+          String? sport,
+          String? environment,
+          DateTime? recordedAt,
+          Value<DateTime?> startedAt = const Value.absent(),
+          Value<DateTime?> endedAt = const Value.absent(),
+          Value<double?> distanceMeters = const Value.absent(),
+          Value<double?> durationSeconds = const Value.absent(),
+          String? durationBasis,
+          Value<double?> inclinePercent = const Value.absent(),
+          bool? warmup,
+          Value<String?> notes = const Value.absent(),
+          String? source}) =>
+      CardioActivity(
+        id: id ?? this.id,
+        legacyGymSetId:
+            legacyGymSetId.present ? legacyGymSetId.value : this.legacyGymSetId,
+        workoutId: workoutId.present ? workoutId.value : this.workoutId,
+        name: name ?? this.name,
+        sport: sport ?? this.sport,
+        environment: environment ?? this.environment,
+        recordedAt: recordedAt ?? this.recordedAt,
+        startedAt: startedAt.present ? startedAt.value : this.startedAt,
+        endedAt: endedAt.present ? endedAt.value : this.endedAt,
+        distanceMeters:
+            distanceMeters.present ? distanceMeters.value : this.distanceMeters,
+        durationSeconds: durationSeconds.present
+            ? durationSeconds.value
+            : this.durationSeconds,
+        durationBasis: durationBasis ?? this.durationBasis,
+        inclinePercent:
+            inclinePercent.present ? inclinePercent.value : this.inclinePercent,
+        warmup: warmup ?? this.warmup,
+        notes: notes.present ? notes.value : this.notes,
+        source: source ?? this.source,
+      );
+  CardioActivity copyWithCompanion(CardioActivitiesCompanion data) {
+    return CardioActivity(
+      id: data.id.present ? data.id.value : this.id,
+      legacyGymSetId: data.legacyGymSetId.present
+          ? data.legacyGymSetId.value
+          : this.legacyGymSetId,
+      workoutId: data.workoutId.present ? data.workoutId.value : this.workoutId,
+      name: data.name.present ? data.name.value : this.name,
+      sport: data.sport.present ? data.sport.value : this.sport,
+      environment:
+          data.environment.present ? data.environment.value : this.environment,
+      recordedAt:
+          data.recordedAt.present ? data.recordedAt.value : this.recordedAt,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
+      distanceMeters: data.distanceMeters.present
+          ? data.distanceMeters.value
+          : this.distanceMeters,
+      durationSeconds: data.durationSeconds.present
+          ? data.durationSeconds.value
+          : this.durationSeconds,
+      durationBasis: data.durationBasis.present
+          ? data.durationBasis.value
+          : this.durationBasis,
+      inclinePercent: data.inclinePercent.present
+          ? data.inclinePercent.value
+          : this.inclinePercent,
+      warmup: data.warmup.present ? data.warmup.value : this.warmup,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      source: data.source.present ? data.source.value : this.source,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CardioActivity(')
+          ..write('id: $id, ')
+          ..write('legacyGymSetId: $legacyGymSetId, ')
+          ..write('workoutId: $workoutId, ')
+          ..write('name: $name, ')
+          ..write('sport: $sport, ')
+          ..write('environment: $environment, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('distanceMeters: $distanceMeters, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('durationBasis: $durationBasis, ')
+          ..write('inclinePercent: $inclinePercent, ')
+          ..write('warmup: $warmup, ')
+          ..write('notes: $notes, ')
+          ..write('source: $source')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      legacyGymSetId,
+      workoutId,
+      name,
+      sport,
+      environment,
+      recordedAt,
+      startedAt,
+      endedAt,
+      distanceMeters,
+      durationSeconds,
+      durationBasis,
+      inclinePercent,
+      warmup,
+      notes,
+      source);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CardioActivity &&
+          other.id == this.id &&
+          other.legacyGymSetId == this.legacyGymSetId &&
+          other.workoutId == this.workoutId &&
+          other.name == this.name &&
+          other.sport == this.sport &&
+          other.environment == this.environment &&
+          other.recordedAt == this.recordedAt &&
+          other.startedAt == this.startedAt &&
+          other.endedAt == this.endedAt &&
+          other.distanceMeters == this.distanceMeters &&
+          other.durationSeconds == this.durationSeconds &&
+          other.durationBasis == this.durationBasis &&
+          other.inclinePercent == this.inclinePercent &&
+          other.warmup == this.warmup &&
+          other.notes == this.notes &&
+          other.source == this.source);
+}
+
+class CardioActivitiesCompanion extends UpdateCompanion<CardioActivity> {
+  final Value<String> id;
+  final Value<int?> legacyGymSetId;
+  final Value<int?> workoutId;
+  final Value<String> name;
+  final Value<String> sport;
+  final Value<String> environment;
+  final Value<DateTime> recordedAt;
+  final Value<DateTime?> startedAt;
+  final Value<DateTime?> endedAt;
+  final Value<double?> distanceMeters;
+  final Value<double?> durationSeconds;
+  final Value<String> durationBasis;
+  final Value<double?> inclinePercent;
+  final Value<bool> warmup;
+  final Value<String?> notes;
+  final Value<String> source;
+  final Value<int> rowid;
+  const CardioActivitiesCompanion({
+    this.id = const Value.absent(),
+    this.legacyGymSetId = const Value.absent(),
+    this.workoutId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.sport = const Value.absent(),
+    this.environment = const Value.absent(),
+    this.recordedAt = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.endedAt = const Value.absent(),
+    this.distanceMeters = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.durationBasis = const Value.absent(),
+    this.inclinePercent = const Value.absent(),
+    this.warmup = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.source = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CardioActivitiesCompanion.insert({
+    required String id,
+    this.legacyGymSetId = const Value.absent(),
+    this.workoutId = const Value.absent(),
+    required String name,
+    this.sport = const Value.absent(),
+    this.environment = const Value.absent(),
+    required DateTime recordedAt,
+    this.startedAt = const Value.absent(),
+    this.endedAt = const Value.absent(),
+    this.distanceMeters = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.durationBasis = const Value.absent(),
+    this.inclinePercent = const Value.absent(),
+    this.warmup = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.source = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        name = Value(name),
+        recordedAt = Value(recordedAt);
+  static Insertable<CardioActivity> custom({
+    Expression<String>? id,
+    Expression<int>? legacyGymSetId,
+    Expression<int>? workoutId,
+    Expression<String>? name,
+    Expression<String>? sport,
+    Expression<String>? environment,
+    Expression<DateTime>? recordedAt,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? endedAt,
+    Expression<double>? distanceMeters,
+    Expression<double>? durationSeconds,
+    Expression<String>? durationBasis,
+    Expression<double>? inclinePercent,
+    Expression<bool>? warmup,
+    Expression<String>? notes,
+    Expression<String>? source,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (legacyGymSetId != null) 'legacy_gym_set_id': legacyGymSetId,
+      if (workoutId != null) 'workout_id': workoutId,
+      if (name != null) 'name': name,
+      if (sport != null) 'sport': sport,
+      if (environment != null) 'environment': environment,
+      if (recordedAt != null) 'recorded_at': recordedAt,
+      if (startedAt != null) 'started_at': startedAt,
+      if (endedAt != null) 'ended_at': endedAt,
+      if (distanceMeters != null) 'distance_meters': distanceMeters,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (durationBasis != null) 'duration_basis': durationBasis,
+      if (inclinePercent != null) 'incline_percent': inclinePercent,
+      if (warmup != null) 'warmup': warmup,
+      if (notes != null) 'notes': notes,
+      if (source != null) 'source': source,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CardioActivitiesCompanion copyWith(
+      {Value<String>? id,
+      Value<int?>? legacyGymSetId,
+      Value<int?>? workoutId,
+      Value<String>? name,
+      Value<String>? sport,
+      Value<String>? environment,
+      Value<DateTime>? recordedAt,
+      Value<DateTime?>? startedAt,
+      Value<DateTime?>? endedAt,
+      Value<double?>? distanceMeters,
+      Value<double?>? durationSeconds,
+      Value<String>? durationBasis,
+      Value<double?>? inclinePercent,
+      Value<bool>? warmup,
+      Value<String?>? notes,
+      Value<String>? source,
+      Value<int>? rowid}) {
+    return CardioActivitiesCompanion(
+      id: id ?? this.id,
+      legacyGymSetId: legacyGymSetId ?? this.legacyGymSetId,
+      workoutId: workoutId ?? this.workoutId,
+      name: name ?? this.name,
+      sport: sport ?? this.sport,
+      environment: environment ?? this.environment,
+      recordedAt: recordedAt ?? this.recordedAt,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
+      distanceMeters: distanceMeters ?? this.distanceMeters,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      durationBasis: durationBasis ?? this.durationBasis,
+      inclinePercent: inclinePercent ?? this.inclinePercent,
+      warmup: warmup ?? this.warmup,
+      notes: notes ?? this.notes,
+      source: source ?? this.source,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (legacyGymSetId.present) {
+      map['legacy_gym_set_id'] = Variable<int>(legacyGymSetId.value);
+    }
+    if (workoutId.present) {
+      map['workout_id'] = Variable<int>(workoutId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (sport.present) {
+      map['sport'] = Variable<String>(sport.value);
+    }
+    if (environment.present) {
+      map['environment'] = Variable<String>(environment.value);
+    }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<DateTime>(recordedAt.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (endedAt.present) {
+      map['ended_at'] = Variable<DateTime>(endedAt.value);
+    }
+    if (distanceMeters.present) {
+      map['distance_meters'] = Variable<double>(distanceMeters.value);
+    }
+    if (durationSeconds.present) {
+      map['duration_seconds'] = Variable<double>(durationSeconds.value);
+    }
+    if (durationBasis.present) {
+      map['duration_basis'] = Variable<String>(durationBasis.value);
+    }
+    if (inclinePercent.present) {
+      map['incline_percent'] = Variable<double>(inclinePercent.value);
+    }
+    if (warmup.present) {
+      map['warmup'] = Variable<bool>(warmup.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CardioActivitiesCompanion(')
+          ..write('id: $id, ')
+          ..write('legacyGymSetId: $legacyGymSetId, ')
+          ..write('workoutId: $workoutId, ')
+          ..write('name: $name, ')
+          ..write('sport: $sport, ')
+          ..write('environment: $environment, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('distanceMeters: $distanceMeters, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('durationBasis: $durationBasis, ')
+          ..write('inclinePercent: $inclinePercent, ')
+          ..write('warmup: $warmup, ')
+          ..write('notes: $notes, ')
+          ..write('source: $source, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6885,6 +7665,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ChatThreadsTable chatThreads = $ChatThreadsTable(this);
   late final $FiveThreeOneBlocksTable fiveThreeOneBlocks =
       $FiveThreeOneBlocksTable(this);
+  late final $CardioActivitiesTable cardioActivities =
+      $CardioActivitiesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6900,7 +7682,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         bodyweightEntries,
         chatMessages,
         chatThreads,
-        fiveThreeOneBlocks
+        fiveThreeOneBlocks,
+        cardioActivities
       ];
 }
 
@@ -10348,6 +11131,354 @@ typedef $$FiveThreeOneBlocksTableProcessedTableManager = ProcessedTableManager<
     ),
     FiveThreeOneBlock,
     PrefetchHooks Function()>;
+typedef $$CardioActivitiesTableCreateCompanionBuilder
+    = CardioActivitiesCompanion Function({
+  required String id,
+  Value<int?> legacyGymSetId,
+  Value<int?> workoutId,
+  required String name,
+  Value<String> sport,
+  Value<String> environment,
+  required DateTime recordedAt,
+  Value<DateTime?> startedAt,
+  Value<DateTime?> endedAt,
+  Value<double?> distanceMeters,
+  Value<double?> durationSeconds,
+  Value<String> durationBasis,
+  Value<double?> inclinePercent,
+  Value<bool> warmup,
+  Value<String?> notes,
+  Value<String> source,
+  Value<int> rowid,
+});
+typedef $$CardioActivitiesTableUpdateCompanionBuilder
+    = CardioActivitiesCompanion Function({
+  Value<String> id,
+  Value<int?> legacyGymSetId,
+  Value<int?> workoutId,
+  Value<String> name,
+  Value<String> sport,
+  Value<String> environment,
+  Value<DateTime> recordedAt,
+  Value<DateTime?> startedAt,
+  Value<DateTime?> endedAt,
+  Value<double?> distanceMeters,
+  Value<double?> durationSeconds,
+  Value<String> durationBasis,
+  Value<double?> inclinePercent,
+  Value<bool> warmup,
+  Value<String?> notes,
+  Value<String> source,
+  Value<int> rowid,
+});
+
+class $$CardioActivitiesTableFilterComposer
+    extends Composer<_$AppDatabase, $CardioActivitiesTable> {
+  $$CardioActivitiesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get legacyGymSetId => $composableBuilder(
+      column: $table.legacyGymSetId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get workoutId => $composableBuilder(
+      column: $table.workoutId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sport => $composableBuilder(
+      column: $table.sport, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get environment => $composableBuilder(
+      column: $table.environment, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get recordedAt => $composableBuilder(
+      column: $table.recordedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+      column: $table.startedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get endedAt => $composableBuilder(
+      column: $table.endedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get distanceMeters => $composableBuilder(
+      column: $table.distanceMeters,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get durationBasis => $composableBuilder(
+      column: $table.durationBasis, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get inclinePercent => $composableBuilder(
+      column: $table.inclinePercent,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get warmup => $composableBuilder(
+      column: $table.warmup, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnFilters(column));
+}
+
+class $$CardioActivitiesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CardioActivitiesTable> {
+  $$CardioActivitiesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get legacyGymSetId => $composableBuilder(
+      column: $table.legacyGymSetId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get workoutId => $composableBuilder(
+      column: $table.workoutId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sport => $composableBuilder(
+      column: $table.sport, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get environment => $composableBuilder(
+      column: $table.environment, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get recordedAt => $composableBuilder(
+      column: $table.recordedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+      column: $table.startedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get endedAt => $composableBuilder(
+      column: $table.endedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get distanceMeters => $composableBuilder(
+      column: $table.distanceMeters,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get durationBasis => $composableBuilder(
+      column: $table.durationBasis,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get inclinePercent => $composableBuilder(
+      column: $table.inclinePercent,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get warmup => $composableBuilder(
+      column: $table.warmup, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnOrderings(column));
+}
+
+class $$CardioActivitiesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CardioActivitiesTable> {
+  $$CardioActivitiesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get legacyGymSetId => $composableBuilder(
+      column: $table.legacyGymSetId, builder: (column) => column);
+
+  GeneratedColumn<int> get workoutId =>
+      $composableBuilder(column: $table.workoutId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get sport =>
+      $composableBuilder(column: $table.sport, builder: (column) => column);
+
+  GeneratedColumn<String> get environment => $composableBuilder(
+      column: $table.environment, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get recordedAt => $composableBuilder(
+      column: $table.recordedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endedAt =>
+      $composableBuilder(column: $table.endedAt, builder: (column) => column);
+
+  GeneratedColumn<double> get distanceMeters => $composableBuilder(
+      column: $table.distanceMeters, builder: (column) => column);
+
+  GeneratedColumn<double> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds, builder: (column) => column);
+
+  GeneratedColumn<String> get durationBasis => $composableBuilder(
+      column: $table.durationBasis, builder: (column) => column);
+
+  GeneratedColumn<double> get inclinePercent => $composableBuilder(
+      column: $table.inclinePercent, builder: (column) => column);
+
+  GeneratedColumn<bool> get warmup =>
+      $composableBuilder(column: $table.warmup, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+}
+
+class $$CardioActivitiesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CardioActivitiesTable,
+    CardioActivity,
+    $$CardioActivitiesTableFilterComposer,
+    $$CardioActivitiesTableOrderingComposer,
+    $$CardioActivitiesTableAnnotationComposer,
+    $$CardioActivitiesTableCreateCompanionBuilder,
+    $$CardioActivitiesTableUpdateCompanionBuilder,
+    (
+      CardioActivity,
+      BaseReferences<_$AppDatabase, $CardioActivitiesTable, CardioActivity>
+    ),
+    CardioActivity,
+    PrefetchHooks Function()> {
+  $$CardioActivitiesTableTableManager(
+      _$AppDatabase db, $CardioActivitiesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CardioActivitiesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CardioActivitiesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CardioActivitiesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<int?> legacyGymSetId = const Value.absent(),
+            Value<int?> workoutId = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> sport = const Value.absent(),
+            Value<String> environment = const Value.absent(),
+            Value<DateTime> recordedAt = const Value.absent(),
+            Value<DateTime?> startedAt = const Value.absent(),
+            Value<DateTime?> endedAt = const Value.absent(),
+            Value<double?> distanceMeters = const Value.absent(),
+            Value<double?> durationSeconds = const Value.absent(),
+            Value<String> durationBasis = const Value.absent(),
+            Value<double?> inclinePercent = const Value.absent(),
+            Value<bool> warmup = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CardioActivitiesCompanion(
+            id: id,
+            legacyGymSetId: legacyGymSetId,
+            workoutId: workoutId,
+            name: name,
+            sport: sport,
+            environment: environment,
+            recordedAt: recordedAt,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            distanceMeters: distanceMeters,
+            durationSeconds: durationSeconds,
+            durationBasis: durationBasis,
+            inclinePercent: inclinePercent,
+            warmup: warmup,
+            notes: notes,
+            source: source,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            Value<int?> legacyGymSetId = const Value.absent(),
+            Value<int?> workoutId = const Value.absent(),
+            required String name,
+            Value<String> sport = const Value.absent(),
+            Value<String> environment = const Value.absent(),
+            required DateTime recordedAt,
+            Value<DateTime?> startedAt = const Value.absent(),
+            Value<DateTime?> endedAt = const Value.absent(),
+            Value<double?> distanceMeters = const Value.absent(),
+            Value<double?> durationSeconds = const Value.absent(),
+            Value<String> durationBasis = const Value.absent(),
+            Value<double?> inclinePercent = const Value.absent(),
+            Value<bool> warmup = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CardioActivitiesCompanion.insert(
+            id: id,
+            legacyGymSetId: legacyGymSetId,
+            workoutId: workoutId,
+            name: name,
+            sport: sport,
+            environment: environment,
+            recordedAt: recordedAt,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            distanceMeters: distanceMeters,
+            durationSeconds: durationSeconds,
+            durationBasis: durationBasis,
+            inclinePercent: inclinePercent,
+            warmup: warmup,
+            notes: notes,
+            source: source,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$CardioActivitiesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $CardioActivitiesTable,
+    CardioActivity,
+    $$CardioActivitiesTableFilterComposer,
+    $$CardioActivitiesTableOrderingComposer,
+    $$CardioActivitiesTableAnnotationComposer,
+    $$CardioActivitiesTableCreateCompanionBuilder,
+    $$CardioActivitiesTableUpdateCompanionBuilder,
+    (
+      CardioActivity,
+      BaseReferences<_$AppDatabase, $CardioActivitiesTable, CardioActivity>
+    ),
+    CardioActivity,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10374,4 +11505,6 @@ class $AppDatabaseManager {
       $$ChatThreadsTableTableManager(_db, _db.chatThreads);
   $$FiveThreeOneBlocksTableTableManager get fiveThreeOneBlocks =>
       $$FiveThreeOneBlocksTableTableManager(_db, _db.fiveThreeOneBlocks);
+  $$CardioActivitiesTableTableManager get cardioActivities =>
+      $$CardioActivitiesTableTableManager(_db, _db.cardioActivities);
 }

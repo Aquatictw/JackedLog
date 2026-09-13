@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../cardio/cardio_analytics.dart';
 import '../constants.dart';
 import '../database/database.dart';
 import '../database/gym_sets.dart';
@@ -170,10 +171,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
 
     if (existingSets.isNotEmpty) {
       // Batch-load all records at once instead of per-set queries
-      final allRecords = await QueryHelpers.batchLoadSetRecords(
-        exerciseName: widget.exercise.exercise,
-        sets: existingSets,
-      );
+      final allRecords = await getBatchSetRecords(existingSets);
 
       // Load existing sets from database (resuming workout)
       final loadedSets = <SetData>[];
@@ -533,7 +531,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     if (exerciseData == null || !parentContext.mounted) return;
 
     if (exerciseData.cardio) {
-      final data = await getCardioData(
+      final data = await CardioAnalytics(db).getData(
         target: exerciseData.unit,
         name: widget.exercise.exercise,
         period: Period.months3,
