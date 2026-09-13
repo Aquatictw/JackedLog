@@ -8,9 +8,9 @@ without double-counting the workout.
 
 **External gate:** Approved final recording HR evidence, including supported non-run workouts where available.
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] Obtain authorized final HR evidence through the established durable import path and preserve it separately from provisional live samples. This ticket owns final-HR parsing; laps support is not a prerequisite.
 - [ ] Offer explicit candidate links to a recorded cardio activity or a lifting workout. Do not automatically merge ambiguous time overlaps or turn a lifting workout into a run.

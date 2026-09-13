@@ -8,9 +8,9 @@ AI coach configuration and delivers durable connection changes to the phone.
 
 **External gate:** Approved Garmin program credentials/contracts and an HTTPS callback deployment. Do not invent portal-only endpoints or scopes.
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] Deliver the approved OAuth 2.0 flow with state validation and the approved redirect/PKCE requirements. Show denied, expired, reconnect-required and unavailable-program states.
 - [ ] Bind one Garmin account to an authenticated installation/owner; do not use the existing shared application key as provider identity. Reject cross-owner access to credentials, connection state and cursors.

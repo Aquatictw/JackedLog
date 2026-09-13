@@ -5,9 +5,9 @@ cardio minutes and consistency using standalone and legacy recorded activities.
 
 **Blocked by:** 01 — Recorded cardio history and manual entry.
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] Show running pace in minutes/km or minutes/mile and cycling speed with explicit sport/environment/time-basis filters. Rename the legacy speed-valued pace selection so its meaning is unambiguous.
 - [ ] Aggregate pace as total paired duration divided by total paired distance within the selected compatible group: 1 km/5 min plus 4 km/24 min displays 5:48 min/km, not the arithmetic average of activity paces.

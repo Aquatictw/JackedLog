@@ -5,9 +5,9 @@ timeline, observed average and configured zone durations with gaps shown explici
 
 **Blocked by:** 08 — Show live HR during an active workout.
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] Persist source-labelled provisional samples tied to the active workout and, where applicable, its recorded cardio activity. A lifting workout does not acquire a fabricated run.
 - [ ] Buffer and commit samples in batches with lifecycle flush/recovery. Store source time when available and document receive-time fallback; process interruption leaves an explicit unobserved gap.

@@ -7,9 +7,9 @@ that run automatically in JackedLog history and detail, including offline catch-
 
 **External gate:** Approved Activity API deliveries and anonymized example recordings.
 
-**Status:** needs-info
+**Status:** ready-for-agent
 
-Review draft; becomes ready-for-agent after breakdown approval. Parent: Garmin-connected cardio and health.
+Parent: [Garmin-connected cardio and health](../PRD.md).
 
 - [ ] Receive verified activity notifications into the durable owner/account inbox, acknowledge only persisted work and retry authorized downloads after transient failures or server restart.
 - [ ] Normalize approved run/walk sport mappings, timestamps, canonical measurements and distinct available time bases into standalone recorded activities. Preserve unavailable values and unsupported sports explicitly.
