@@ -1,10 +1,15 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../cardio/activity_detail_page.dart';
+import '../cardio/activity_history.dart';
+import '../cardio/activity_presentation.dart';
 import '../database/database.dart';
 import '../main.dart';
 import '../records/records_service.dart';
+import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import '../widgets/depth_ember_reveal.dart';
 import '../widgets/history_heatmap_header.dart';
@@ -17,6 +22,7 @@ class WorkoutWithSets {
     required this.exerciseCount,
     required this.exerciseNames,
     this.totalVolume = 0,
+    this.cardioCount = 0,
     this.recordCount = 0,
     this.muscleGroups = const [],
     this.dominantGroup = MuscleGroup.other,
@@ -24,6 +30,7 @@ class WorkoutWithSets {
   });
   final Workout workout;
   final int setCount;
+  final int cardioCount;
   final int exerciseCount;
   final List<String> exerciseNames;
   final double totalVolume;
@@ -37,6 +44,13 @@ class WorkoutWithSets {
 
   /// Exercise name -> record types it achieved in this workout.
   final Map<String, Set<RecordType>> prTypesByExercise;
+}
+
+class _HistoryItem {
+  const _HistoryItem(this.entry, {this.workout, this.activity});
+  final ActivityHistoryEntry entry;
+  final WorkoutWithSets? workout;
+  final CardioActivity? activity;
 }
 
 class WorkoutsList extends StatefulWidget {
@@ -70,7 +84,7 @@ class _WorkoutsListState extends State<WorkoutsList> {
   // Built once and only rebuilt when the query inputs change, so unrelated
   // setState/pagination rebuilds don't reset StreamBuilder to a spinner and
   // re-run the whole pipeline.
-  late Stream<List<WorkoutWithSets>> _stream;
+  late Stream<List<_HistoryItem>> _stream;
 
   @override
   void initState() {
@@ -112,25 +126,33 @@ class _WorkoutsListState extends State<WorkoutsList> {
     }
   }
 
-  Stream<List<WorkoutWithSets>> _getWorkoutsStream() {
-    var query = db.workouts.select()
-      ..orderBy([
-        (w) => OrderingTerm(expression: w.startTime, mode: OrderingMode.desc),
-      ])
-      ..limit(widget.limit);
-
-    if (widget.startDate != null) {
-      query = query
-        ..where((w) => w.startTime.isBiggerOrEqualValue(widget.startDate!));
-    }
-    if (widget.endDate != null) {
-      query = query
-        ..where((w) => w.startTime.isSmallerOrEqualValue(widget.endDate!));
-    }
-
-    return query.watch().asyncMap((workouts) async {
+  Stream<List<_HistoryItem>> _getWorkoutsStream() {
+    return ActivityHistory(db)
+        .query(
+          limit: widget.limit,
+          search: widget.search,
+          start: widget.startDate,
+          end: widget.endDate,
+        )
+        .watch()
+        .asyncMap((entries) async {
       final List<WorkoutWithSets> result = [];
-      final workoutIds = workouts.map((w) => w.id).toList();
+      final workoutIds = entries
+          .where((e) => e.kind == HistoryKind.workout)
+          .map((e) => int.parse(e.id))
+          .toList();
+      final workouts = await (db.select(db.workouts)
+            ..where((w) => w.id.isIn(workoutIds)))
+          .get();
+      final activityIds = entries
+          .where((e) => e.kind == HistoryKind.activity)
+          .map((e) => e.id)
+          .toList();
+      final activities = await (db.select(db.cardioActivities)
+            ..where(
+              (a) => a.id.isIn(activityIds) | a.workoutId.isIn(workoutIds),
+            ))
+          .get();
 
       // One query for every visible workout's sets, grouped in memory — was an
       // N+1 loop (a sets query per workout) that stalled first paint for
@@ -156,29 +178,18 @@ class _WorkoutsListState extends State<WorkoutsList> {
       for (final workout in workouts) {
         final sets = setsByWorkout[workout.id] ?? const [];
 
-        // Filter by search term if provided
-        if (widget.search.isNotEmpty) {
-          final searchLower = widget.search.toLowerCase();
-          final nameMatches =
-              workout.name?.toLowerCase().contains(searchLower) ?? false;
-          final exerciseMatches = sets.any(
-            (s) => s.name.toLowerCase().contains(searchLower),
-          );
-          if (!nameMatches && !exerciseMatches) continue;
-        }
-
         final exerciseNames = sets.map((s) => s.name).toSet().toList();
-        final totalVolume = sets.fold<double>(
-          0,
-          (sum, s) => sum + (s.weight * s.reps),
-        );
+        final totalVolume = sets.where((s) => !s.cardio).fold<double>(
+              0,
+              (sum, s) => sum + (s.weight * s.reps),
+            );
 
         // Distinct Push/Pull/Legs groups, ordered Push → Pull → Legs → Other.
         // Tally distinct exercises per group (not sets) to pick the dominant
         // category — 3 leg exercises should beat 2 pull exercises regardless of
         // how many sets each had.
         final groupExercises = <MuscleGroup, Set<String>>{};
-        for (final s in sets) {
+        for (final s in sets.where((s) => !s.cardio)) {
           final g = muscleGroupOf(s.category, s.name);
           (groupExercises[g] ??= <String>{}).add(s.name);
         }
@@ -215,7 +226,9 @@ class _WorkoutsListState extends State<WorkoutsList> {
         result.add(
           WorkoutWithSets(
             workout: workout,
-            setCount: sets.length,
+            setCount: sets.where((s) => !s.cardio).length,
+            cardioCount:
+                activities.where((a) => a.workoutId == workout.id).length,
             exerciseCount: exerciseNames.length,
             exerciseNames: exerciseNames,
             totalVolume: totalVolume,
@@ -227,15 +240,27 @@ class _WorkoutsListState extends State<WorkoutsList> {
         );
       }
 
-      return result;
+      final byWorkout = {for (final w in result) w.workout.id: w};
+      final byActivity = {for (final a in activities) a.id: a};
+      return [
+        for (final e in entries)
+          if (e.kind == HistoryKind.workout &&
+              byWorkout[int.parse(e.id)] != null)
+            _HistoryItem(e, workout: byWorkout[int.parse(e.id)])
+          else if (e.kind == HistoryKind.activity && byActivity[e.id] != null)
+            _HistoryItem(e, activity: byActivity[e.id]),
+      ];
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<WorkoutWithSets>>(
+    return StreamBuilder<List<_HistoryItem>>(
       stream: _stream,
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Center(child: Text('Unable to load history'));
+        }
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -252,7 +277,7 @@ class _WorkoutsListState extends State<WorkoutsList> {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(space16),
-              child: Text('No workouts found'),
+              child: Text('No activities or workouts found'),
             ),
           );
         }
@@ -263,16 +288,46 @@ class _WorkoutsListState extends State<WorkoutsList> {
 
         String? lastBucket;
         for (final w in workouts) {
-          final bucket = _weekBucket(w.workout.startTime);
+          final bucket = _weekBucket(w.entry.date);
           if (bucket != lastBucket) {
             rows.add(_Divider(label: bucket));
             lastBucket = bucket;
           }
           rows.add(
-            _WorkoutCard(
-              workoutWithSets: w,
-              selected: widget.selected,
-              onSelect: widget.onSelect,
+            KeyedSubtree(
+              key: ValueKey(w.entry.key),
+              child: w.workout != null
+                  ? _WorkoutCard(
+                      workoutWithSets: w.workout!,
+                      selected: widget.selected,
+                      onSelect: widget.onSelect,
+                    )
+                  : Card(
+                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: ListTile(
+                        leading: const Icon(Icons.directions_run),
+                        title: Text(w.activity!.name),
+                        subtitle: Text(
+                          '${activitySummary(w.activity!, context.read<SettingsState>().value.cardioUnit)}\n${w.activity!.source} · ${w.activity!.startedAt == null ? 'Recorded' : 'Started'} ${DateFormat.yMMMd().add_jm().format(w.entry.date)}',
+                        ),
+                        isThreeLine: true,
+                        onTap: selecting
+                            ? null
+                            : () =>
+                                Navigator.of(context, rootNavigator: true).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => ActivityDetailPage(
+                                      database: db,
+                                      id: w.activity!.id,
+                                      unit: context
+                                          .read<SettingsState>()
+                                          .value
+                                          .cardioUnit,
+                                    ),
+                                  ),
+                                ),
+                      ),
+                    ),
             ),
           );
         }
@@ -285,7 +340,7 @@ class _WorkoutsListState extends State<WorkoutsList> {
           ),
           itemCount: rows.length,
           itemBuilder: (context, index) =>
-              RevealBlock(index: index, child: rows[index]),
+              RevealBlock(key: rows[index].key, index: index, child: rows[index]),
         );
       },
     );
@@ -709,7 +764,7 @@ class _StatStrip extends StatelessWidget {
           _sep(context),
           _stat(context, '${data.setCount}', 'Sets'),
           _sep(context),
-          _stat(context, '${data.exerciseCount}', 'Exercises'),
+          _stat(context, '${data.cardioCount}', 'Activities'),
           _sep(context),
           _stat(
             context,

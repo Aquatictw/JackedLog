@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../app_search.dart';
+import '../cardio/activity_detail_page.dart';
+import '../cardio/activity_history.dart';
 import '../database/database.dart';
 import '../filters.dart';
 import '../main.dart';
@@ -94,6 +96,26 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
+      floatingActionButton:
+          historyView == HistoryView.workouts && selectedWorkouts.isEmpty
+              ? Padding(
+                  padding: EdgeInsets.only(bottom: bottomBarClearance(context)),
+                  child: FloatingActionButton.extended(
+                    heroTag: 'log-cardio',
+                    icon: const Icon(Icons.directions_run),
+                    label: const Text('Log cardio'),
+                    onPressed: () =>
+                        Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ActivityEditorPage(
+                          database: db,
+                          unit: context.read<SettingsState>().value.cardioUnit,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : null,
       body: material.Column(
         children: [
           if (historyView == HistoryView.workouts) ...[
@@ -133,18 +155,21 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
                 await db.workouts.deleteWhere((tbl) => tbl.id.isIn(copy));
               },
               onSelect: () async {
-                // Get all workout IDs currently visible
-                final workouts = await (db.workouts.select()
-                      ..orderBy([
-                        (w) => OrderingTerm(
-                              expression: w.startTime,
-                              mode: OrderingMode.desc,
-                            ),
-                      ])
-                      ..limit(limit))
+                final entries = await ActivityHistory(db)
+                    .query(
+                      limit: limit,
+                      search: search,
+                      start: startDate,
+                      end: endDate,
+                    )
                     .get();
+                if (!mounted) return;
                 setState(() {
-                  selectedWorkouts.addAll(workouts.map((w) => w.id));
+                  selectedWorkouts.addAll(
+                    entries
+                        .where((e) => e.kind == HistoryKind.workout)
+                        .map((e) => int.parse(e.id)),
+                  );
                 });
               },
               onEdit: () {},

@@ -59,11 +59,13 @@ class CardioAnalytics {
     );
     final table = database.cardioActivities;
     final created = table.recordedAt.min();
+    final identity = table.id.min();
+    final count = table.id.count();
     const day = CustomExpression<String>(
       "DATE(recorded_at, 'unixepoch', 'localtime')",
     );
     final query = database.selectOnly(table)
-      ..addColumns([value, created, table.workoutId])
+      ..addColumns([value, created, table.workoutId, identity, count])
       ..where(table.name.equals(name))
       ..groupBy([day])
       ..orderBy([OrderingTerm(expression: day)]);
@@ -79,7 +81,8 @@ class CardioAnalytics {
             created: row.read(created)!.toLocal(),
             value: measurement,
             unit: target,
-            workoutId: row.read(table.workoutId),
+            workoutId: row.read(count) == 1 ? row.read(table.workoutId) : null,
+            activityId: row.read(count) == 1 ? row.read(identity) : null,
           ),
     ];
   }

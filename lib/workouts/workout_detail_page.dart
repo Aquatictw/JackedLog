@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../cardio/cardio_analytics.dart';
+import '../cardio/activity_list_page.dart';
 import '../constants.dart';
 import '../database/database.dart';
 import '../database/gym_sets.dart';
@@ -840,6 +841,19 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                             )
                           : null,
                   actions: [
+                    IconButton(
+                      tooltip: 'Recorded cardio',
+                      icon: const Icon(Icons.directions_run),
+                      onPressed: () => Navigator.of(context, rootNavigator: true).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => ActivityListPage(
+                            database: db,
+                            unit: context.read<SettingsState>().value.cardioUnit,
+                            workoutId: currentWorkout.id,
+                          ),
+                        ),
+                      ),
+                    ),
                     if (_isReorderMode) ...[
                       // Done button in reorder mode
                       TextButton.icon(

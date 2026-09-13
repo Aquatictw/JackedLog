@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../cardio/activity_detail_page.dart';
+import '../cardio/activity_list_page.dart';
 import '../cardio/cardio_analytics.dart';
 import '../constants.dart';
 import '../database/database.dart';
@@ -685,19 +687,23 @@ class _CardioPageState extends State<CardioPage> {
     if (index >= data.length) return;
     final row = data[index];
 
-    if (row.workoutId == null) return;
-
-    final workout = await (db.workouts.select()
-          ..where((w) => w.id.equals(row.workoutId!)))
-        .getSingleOrNull();
-
-    if (!mounted || workout == null) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WorkoutDetailPage(workout: workout),
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(
+        builder: (_) => row.activityId != null
+            ? ActivityDetailPage(
+                database: db,
+                id: row.activityId!,
+                unit: target,
+              )
+            : ActivityListPage(
+                database: db,
+                unit: target,
+                name: widget.name,
+                day: row.created,
+              ),
       ),
     );
+    if (!mounted) return;
     Timer(kThemeAnimationDuration, () {
       setData();
       _loadRecords();
