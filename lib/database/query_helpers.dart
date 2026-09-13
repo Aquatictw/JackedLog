@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart';
 
 import '../main.dart';
-import '../records/records_service.dart';
 import 'database.dart';
 
 /// Helper class for complex database queries to optimize performance
@@ -114,97 +113,6 @@ class QueryHelpers {
       supersetPosition: supersetPosition,
       supersetIndex: supersetIndex,
     );
-  }
-
-  /// Batch-loads record information for multiple sets at once.
-  ///
-  /// This replaces the N+1 query problem where each set calls getSetRecords()
-  /// individually. Instead, we load all records for an exercise in one query.
-  static Future<Map<int, Set<RecordType>>> batchLoadSetRecords({
-    required String exerciseName,
-    required List<GymSet> sets,
-  }) async {
-    if (sets.isEmpty) return {};
-
-    final records = <int, Set<RecordType>>{};
-
-    // Get all historical sets for this exercise to compare against
-    final allSetsForExercise = await (db.gymSets.select()
-          ..where(
-            (tbl) =>
-                tbl.name.equals(exerciseName) &
-                tbl.hidden.equals(false) &
-                tbl.warmup.equals(false),
-          )
-          ..orderBy([
-            (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
-          ]))
-        .get();
-
-    // For each set, determine records by comparing against historical data
-    for (final set in sets) {
-      if (set.hidden || set.warmup) {
-        records[set.id] = {};
-        continue;
-      }
-
-      final recordTypes = <RecordType>{};
-
-      // Get all sets except this one for comparison
-      final otherSets = allSetsForExercise.where((s) => s.id != set.id);
-
-      if (set.cardio) {
-        records[set.id] = calculateCardioRecords(set, otherSets);
-        continue;
-      }
-
-      if (otherSets.isEmpty) {
-        // No other sets exist - this must be a record
-        if (set.weight > 0) recordTypes.add(RecordType.bestWeight);
-        final set1RM = calculate1RM(set.weight, set.reps);
-        if (set1RM > 0) recordTypes.add(RecordType.best1RM);
-        final setVolume = calculateVolume(set.weight, set.reps);
-        if (setVolume > 0) recordTypes.add(RecordType.bestVolume);
-      } else {
-        // Find best values from other sets
-        double bestWeight = 0;
-        double best1RM = 0;
-        double bestVolume = 0;
-
-        for (final other in otherSets) {
-          if (other.weight > bestWeight) {
-            bestWeight = other.weight;
-          }
-          final other1RM = calculate1RM(other.weight, other.reps);
-          if (other1RM > best1RM) {
-            best1RM = other1RM;
-          }
-          final otherVolume = calculateVolume(other.weight, other.reps);
-          if (otherVolume > bestVolume) {
-            bestVolume = otherVolume;
-          }
-        }
-
-        // Check if this set beats the best of all OTHER sets
-        if (set.weight > bestWeight) {
-          recordTypes.add(RecordType.bestWeight);
-        }
-
-        final set1RM = calculate1RM(set.weight, set.reps);
-        if (set1RM > best1RM) {
-          recordTypes.add(RecordType.best1RM);
-        }
-
-        final setVolume = calculateVolume(set.weight, set.reps);
-        if (setVolume > bestVolume) {
-          recordTypes.add(RecordType.bestVolume);
-        }
-      }
-
-      records[set.id] = recordTypes;
-    }
-
-    return records;
   }
 
   /// Loads all data needed to resume a workout in a single optimized query.

@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 
 import '../constants.dart';
 import 'bodyweight_entries.dart';
+import 'cardio_activities.dart';
+import 'cardio_migration.dart';
 import 'chat_messages.dart';
 import 'chat_threads.dart';
 import 'database_connection_native.dart';
@@ -34,6 +36,7 @@ LazyDatabase openConnection() {
     ChatMessages,
     ChatThreads,
     FiveThreeOneBlocks,
+    CardioActivities,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -44,6 +47,7 @@ class AppDatabase extends _$AppDatabase {
     return MigrationStrategy(
       onCreate: (Migrator m) async {
         await m.createAll();
+        await installCardioLegacyAdapter(this);
         await m.createIndex(
           Index(
             'GymSets',
@@ -776,6 +780,9 @@ class AppDatabase extends _$AppDatabase {
                 .catchError((e) {});
           }
         }
+        if (from < 73 && to >= 73) {
+          await migrateRecordedCardio(this);
+        }
       },
       beforeOpen: (details) async {
         // Ensure bodyweight_entries table exists (safety check for migration issues)
@@ -804,5 +811,22 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 72;
+  int get schemaVersion => 73;
+
+  // Drift cannot infer the effects of hand-written SQLite triggers.
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => StreamQueryUpdateRules([
+        ...super.streamUpdateRules.rules,
+        const WritePropagation(
+          on: TableUpdateQuery.onTableName('gym_sets'),
+          result: [TableUpdate('cardio_activities')],
+        ),
+        const WritePropagation(
+          on: TableUpdateQuery.onTableName(
+            'workouts',
+            limitUpdateKind: UpdateKind.delete,
+          ),
+          result: [TableUpdate('cardio_activities', kind: UpdateKind.update)],
+        ),
+      ]);
 }

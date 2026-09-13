@@ -59,7 +59,7 @@ If you change the database schema, regenerate the Drift code:
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-Migrations are written by hand (schema version 66) — see `lib/database/database.dart`.
+Migrations are written by hand (schema version 73) — see `lib/database/database.dart`.
 
 ### Regenerating README screenshots
 

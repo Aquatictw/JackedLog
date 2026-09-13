@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../cardio/cardio_analytics.dart';
 import '../constants.dart';
 import '../database/gym_sets.dart';
 import '../main.dart';
@@ -67,7 +68,7 @@ Future<void> openExerciseGraph(
   required TabController tabCtrl,
 }) async {
   if (cardio) {
-    final data = await getCardioData(
+    final data = await CardioAnalytics(db).getData(
       target: unit,
       name: name,
       period: Period.months3,
