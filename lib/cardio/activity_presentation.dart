@@ -3,6 +3,22 @@ import '../database/database.dart';
 double cardioUnitMeters(String unit) => unit == 'mi' ? 1609.344 : 1000;
 String cardioDisplayUnit(String unit) => unit == 'mi' ? 'mi' : 'km';
 
+DateTime activityDisplayDate(CardioActivity activity) {
+  if (activity.startedAt == null) return activity.recordedAt.toUtc();
+  final offset = activity.startUtcOffsetMinutes;
+  return offset == null ? activity.startedAt!.toLocal()
+      : activity.startedAt!.toUtc().add(Duration(minutes: offset));
+}
+
+String activityDateLabel(CardioActivity activity) {
+  if (activity.startedAt == null) return 'Recording date (UTC) · start time unknown';
+  final offset = activity.startUtcOffsetMinutes;
+  if (offset == null) return 'Start time · device time zone';
+  final hours = (offset.abs() ~/ 60).toString().padLeft(2, '0');
+  final minutes = (offset.abs() % 60).toString().padLeft(2, '0');
+  return 'Start time · UTC${offset < 0 ? '-' : '+'}$hours:$minutes';
+}
+
 String activityPace(CardioActivity activity, String unit) {
   final distance = activity.distanceMeters;
   final duration = activity.durationSeconds;

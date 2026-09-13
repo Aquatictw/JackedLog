@@ -15,6 +15,9 @@ class CardioActivities extends Table {
       text().withDefault(const Constant('unspecified'))();
   DateTimeColumn get recordedAt => dateTime()();
   DateTimeColumn get startedAt => dateTime().nullable()();
+
+  /// Offset at the actual source start, never guessed for migrated records.
+  IntColumn get startUtcOffsetMinutes => integer().nullable()();
   DateTimeColumn get endedAt => dateTime().nullable()();
   RealColumn get distanceMeters => real().nullable()();
   RealColumn get durationSeconds => real().nullable()();

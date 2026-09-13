@@ -34,6 +34,11 @@ This file records the project's domain language, product context, and current ar
 - Schema 73 introduces recorded cardio, migrates completed bouts without altering
   their raw rows, and preserves old ZIP imports plus new activity metadata in
   versioned backups. See [ADR 0001](docs/adr/0001-recorded-cardio.md).
+- Schema 74 adds optional source UTC offset metadata without changing legacy raw
+  rows or breaking old archives. Default cardio progress uses weekly volume and
+  paired weighted pace with explicit sport/environment/time-basis filters.
+  Source-local start days are retained when known; otherwise recording UTC days
+  are labelled explicitly. Manual standalone activities appear in mixed history.
 - Lap/sample storage, heart-rate analytics and Garmin integration remain proposed.
   Cloud activity import, all-day health context and live workout sensors are
   separate capabilities; no Garmin connection is implemented yet.

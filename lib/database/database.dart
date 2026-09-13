@@ -783,6 +783,9 @@ class AppDatabase extends _$AppDatabase {
         if (from < 73 && to >= 73) {
           await migrateRecordedCardio(this);
         }
+        if (from < 74 && to >= 74) {
+          await customStatement('ALTER TABLE cardio_activities ADD COLUMN start_utc_offset_minutes INTEGER NULL');
+        }
       },
       beforeOpen: (details) async {
         // Ensure bodyweight_entries table exists (safety check for migration issues)
@@ -811,7 +814,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 73;
+  int get schemaVersion => 74;
 
   // Drift cannot infer the effects of hand-written SQLite triggers.
   @override

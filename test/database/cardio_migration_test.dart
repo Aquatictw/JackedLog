@@ -40,12 +40,20 @@ class _UpgradeOnlyDatabase extends AppDatabase {
 }
 
 void main() {
-  test('v72 migration matches the v73 schema snapshot', () async {
+  test('v73 gains nullable source offset without guessing old time zones', () async {
+    final verifier = SchemaVerifier(GeneratedHelper());
+    final connection = await verifier.startAt(73);
+    final db = _UpgradeOnlyDatabase(connection.executor);
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 74);
+  });
+
+  test('v72 migration matches the v74 schema snapshot', () async {
     final verifier = SchemaVerifier(GeneratedHelper());
     final connection = await verifier.startAt(72);
     final db = _UpgradeOnlyDatabase(connection.executor);
     addTearDown(db.close);
-    await verifier.migrateAndValidate(db, 73);
+    await verifier.migrateAndValidate(db, 74);
   });
 
   test('v72 file migration preserves rows and normalizes recorded bouts',
@@ -136,7 +144,7 @@ void main() {
     expect(
       (await migrated.customSelect('PRAGMA user_version').getSingle())
           .read<int>('user_version'),
-      73,
+      74,
     );
     await migrated.close();
   });

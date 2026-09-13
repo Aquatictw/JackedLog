@@ -6926,6 +6926,12 @@ class $CardioActivitiesTable extends CardioActivities
   late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
       'started_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _startUtcOffsetMinutesMeta =
+      const VerificationMeta('startUtcOffsetMinutes');
+  @override
+  late final GeneratedColumn<int> startUtcOffsetMinutes = GeneratedColumn<int>(
+      'start_utc_offset_minutes', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _endedAtMeta =
       const VerificationMeta('endedAt');
   @override
@@ -6989,6 +6995,7 @@ class $CardioActivitiesTable extends CardioActivities
         environment,
         recordedAt,
         startedAt,
+        startUtcOffsetMinutes,
         endedAt,
         distanceMeters,
         durationSeconds,
@@ -7050,6 +7057,12 @@ class $CardioActivitiesTable extends CardioActivities
     if (data.containsKey('started_at')) {
       context.handle(_startedAtMeta,
           startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta));
+    }
+    if (data.containsKey('start_utc_offset_minutes')) {
+      context.handle(
+          _startUtcOffsetMinutesMeta,
+          startUtcOffsetMinutes.isAcceptableOrUnknown(
+              data['start_utc_offset_minutes']!, _startUtcOffsetMinutesMeta));
     }
     if (data.containsKey('ended_at')) {
       context.handle(_endedAtMeta,
@@ -7116,6 +7129,8 @@ class $CardioActivitiesTable extends CardioActivities
           .read(DriftSqlType.dateTime, data['${effectivePrefix}recorded_at'])!,
       startedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}started_at']),
+      startUtcOffsetMinutes: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}start_utc_offset_minutes']),
       endedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}ended_at']),
       distanceMeters: attachedDatabase.typeMapping
@@ -7150,6 +7165,9 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
   final String environment;
   final DateTime recordedAt;
   final DateTime? startedAt;
+
+  /// Offset at the actual source start, never guessed for migrated records.
+  final int? startUtcOffsetMinutes;
   final DateTime? endedAt;
   final double? distanceMeters;
   final double? durationSeconds;
@@ -7167,6 +7185,7 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
       required this.environment,
       required this.recordedAt,
       this.startedAt,
+      this.startUtcOffsetMinutes,
       this.endedAt,
       this.distanceMeters,
       this.durationSeconds,
@@ -7191,6 +7210,9 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
     map['recorded_at'] = Variable<DateTime>(recordedAt);
     if (!nullToAbsent || startedAt != null) {
       map['started_at'] = Variable<DateTime>(startedAt);
+    }
+    if (!nullToAbsent || startUtcOffsetMinutes != null) {
+      map['start_utc_offset_minutes'] = Variable<int>(startUtcOffsetMinutes);
     }
     if (!nullToAbsent || endedAt != null) {
       map['ended_at'] = Variable<DateTime>(endedAt);
@@ -7229,6 +7251,9 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
       startedAt: startedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(startedAt),
+      startUtcOffsetMinutes: startUtcOffsetMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startUtcOffsetMinutes),
       endedAt: endedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(endedAt),
@@ -7261,6 +7286,8 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
       environment: serializer.fromJson<String>(json['environment']),
       recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
       startedAt: serializer.fromJson<DateTime?>(json['startedAt']),
+      startUtcOffsetMinutes:
+          serializer.fromJson<int?>(json['startUtcOffsetMinutes']),
       endedAt: serializer.fromJson<DateTime?>(json['endedAt']),
       distanceMeters: serializer.fromJson<double?>(json['distanceMeters']),
       durationSeconds: serializer.fromJson<double?>(json['durationSeconds']),
@@ -7283,6 +7310,7 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
       'environment': serializer.toJson<String>(environment),
       'recordedAt': serializer.toJson<DateTime>(recordedAt),
       'startedAt': serializer.toJson<DateTime?>(startedAt),
+      'startUtcOffsetMinutes': serializer.toJson<int?>(startUtcOffsetMinutes),
       'endedAt': serializer.toJson<DateTime?>(endedAt),
       'distanceMeters': serializer.toJson<double?>(distanceMeters),
       'durationSeconds': serializer.toJson<double?>(durationSeconds),
@@ -7303,6 +7331,7 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
           String? environment,
           DateTime? recordedAt,
           Value<DateTime?> startedAt = const Value.absent(),
+          Value<int?> startUtcOffsetMinutes = const Value.absent(),
           Value<DateTime?> endedAt = const Value.absent(),
           Value<double?> distanceMeters = const Value.absent(),
           Value<double?> durationSeconds = const Value.absent(),
@@ -7321,6 +7350,9 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
         environment: environment ?? this.environment,
         recordedAt: recordedAt ?? this.recordedAt,
         startedAt: startedAt.present ? startedAt.value : this.startedAt,
+        startUtcOffsetMinutes: startUtcOffsetMinutes.present
+            ? startUtcOffsetMinutes.value
+            : this.startUtcOffsetMinutes,
         endedAt: endedAt.present ? endedAt.value : this.endedAt,
         distanceMeters:
             distanceMeters.present ? distanceMeters.value : this.distanceMeters,
@@ -7348,6 +7380,9 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
       recordedAt:
           data.recordedAt.present ? data.recordedAt.value : this.recordedAt,
       startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      startUtcOffsetMinutes: data.startUtcOffsetMinutes.present
+          ? data.startUtcOffsetMinutes.value
+          : this.startUtcOffsetMinutes,
       endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
       distanceMeters: data.distanceMeters.present
           ? data.distanceMeters.value
@@ -7378,6 +7413,7 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
           ..write('environment: $environment, ')
           ..write('recordedAt: $recordedAt, ')
           ..write('startedAt: $startedAt, ')
+          ..write('startUtcOffsetMinutes: $startUtcOffsetMinutes, ')
           ..write('endedAt: $endedAt, ')
           ..write('distanceMeters: $distanceMeters, ')
           ..write('durationSeconds: $durationSeconds, ')
@@ -7400,6 +7436,7 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
       environment,
       recordedAt,
       startedAt,
+      startUtcOffsetMinutes,
       endedAt,
       distanceMeters,
       durationSeconds,
@@ -7420,6 +7457,7 @@ class CardioActivity extends DataClass implements Insertable<CardioActivity> {
           other.environment == this.environment &&
           other.recordedAt == this.recordedAt &&
           other.startedAt == this.startedAt &&
+          other.startUtcOffsetMinutes == this.startUtcOffsetMinutes &&
           other.endedAt == this.endedAt &&
           other.distanceMeters == this.distanceMeters &&
           other.durationSeconds == this.durationSeconds &&
@@ -7439,6 +7477,7 @@ class CardioActivitiesCompanion extends UpdateCompanion<CardioActivity> {
   final Value<String> environment;
   final Value<DateTime> recordedAt;
   final Value<DateTime?> startedAt;
+  final Value<int?> startUtcOffsetMinutes;
   final Value<DateTime?> endedAt;
   final Value<double?> distanceMeters;
   final Value<double?> durationSeconds;
@@ -7457,6 +7496,7 @@ class CardioActivitiesCompanion extends UpdateCompanion<CardioActivity> {
     this.environment = const Value.absent(),
     this.recordedAt = const Value.absent(),
     this.startedAt = const Value.absent(),
+    this.startUtcOffsetMinutes = const Value.absent(),
     this.endedAt = const Value.absent(),
     this.distanceMeters = const Value.absent(),
     this.durationSeconds = const Value.absent(),
@@ -7476,6 +7516,7 @@ class CardioActivitiesCompanion extends UpdateCompanion<CardioActivity> {
     this.environment = const Value.absent(),
     required DateTime recordedAt,
     this.startedAt = const Value.absent(),
+    this.startUtcOffsetMinutes = const Value.absent(),
     this.endedAt = const Value.absent(),
     this.distanceMeters = const Value.absent(),
     this.durationSeconds = const Value.absent(),
@@ -7497,6 +7538,7 @@ class CardioActivitiesCompanion extends UpdateCompanion<CardioActivity> {
     Expression<String>? environment,
     Expression<DateTime>? recordedAt,
     Expression<DateTime>? startedAt,
+    Expression<int>? startUtcOffsetMinutes,
     Expression<DateTime>? endedAt,
     Expression<double>? distanceMeters,
     Expression<double>? durationSeconds,
@@ -7516,6 +7558,8 @@ class CardioActivitiesCompanion extends UpdateCompanion<CardioActivity> {
       if (environment != null) 'environment': environment,
       if (recordedAt != null) 'recorded_at': recordedAt,
       if (startedAt != null) 'started_at': startedAt,
+      if (startUtcOffsetMinutes != null)
+        'start_utc_offset_minutes': startUtcOffsetMinutes,
       if (endedAt != null) 'ended_at': endedAt,
       if (distanceMeters != null) 'distance_meters': distanceMeters,
       if (durationSeconds != null) 'duration_seconds': durationSeconds,
@@ -7537,6 +7581,7 @@ class CardioActivitiesCompanion extends UpdateCompanion<CardioActivity> {
       Value<String>? environment,
       Value<DateTime>? recordedAt,
       Value<DateTime?>? startedAt,
+      Value<int?>? startUtcOffsetMinutes,
       Value<DateTime?>? endedAt,
       Value<double?>? distanceMeters,
       Value<double?>? durationSeconds,
@@ -7555,6 +7600,8 @@ class CardioActivitiesCompanion extends UpdateCompanion<CardioActivity> {
       environment: environment ?? this.environment,
       recordedAt: recordedAt ?? this.recordedAt,
       startedAt: startedAt ?? this.startedAt,
+      startUtcOffsetMinutes:
+          startUtcOffsetMinutes ?? this.startUtcOffsetMinutes,
       endedAt: endedAt ?? this.endedAt,
       distanceMeters: distanceMeters ?? this.distanceMeters,
       durationSeconds: durationSeconds ?? this.durationSeconds,
@@ -7593,6 +7640,10 @@ class CardioActivitiesCompanion extends UpdateCompanion<CardioActivity> {
     }
     if (startedAt.present) {
       map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (startUtcOffsetMinutes.present) {
+      map['start_utc_offset_minutes'] =
+          Variable<int>(startUtcOffsetMinutes.value);
     }
     if (endedAt.present) {
       map['ended_at'] = Variable<DateTime>(endedAt.value);
@@ -7635,6 +7686,7 @@ class CardioActivitiesCompanion extends UpdateCompanion<CardioActivity> {
           ..write('environment: $environment, ')
           ..write('recordedAt: $recordedAt, ')
           ..write('startedAt: $startedAt, ')
+          ..write('startUtcOffsetMinutes: $startUtcOffsetMinutes, ')
           ..write('endedAt: $endedAt, ')
           ..write('distanceMeters: $distanceMeters, ')
           ..write('durationSeconds: $durationSeconds, ')
@@ -11141,6 +11193,7 @@ typedef $$CardioActivitiesTableCreateCompanionBuilder
   Value<String> environment,
   required DateTime recordedAt,
   Value<DateTime?> startedAt,
+  Value<int?> startUtcOffsetMinutes,
   Value<DateTime?> endedAt,
   Value<double?> distanceMeters,
   Value<double?> durationSeconds,
@@ -11161,6 +11214,7 @@ typedef $$CardioActivitiesTableUpdateCompanionBuilder
   Value<String> environment,
   Value<DateTime> recordedAt,
   Value<DateTime?> startedAt,
+  Value<int?> startUtcOffsetMinutes,
   Value<DateTime?> endedAt,
   Value<double?> distanceMeters,
   Value<double?> durationSeconds,
@@ -11205,6 +11259,10 @@ class $$CardioActivitiesTableFilterComposer
 
   ColumnFilters<DateTime> get startedAt => $composableBuilder(
       column: $table.startedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get startUtcOffsetMinutes => $composableBuilder(
+      column: $table.startUtcOffsetMinutes,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get endedAt => $composableBuilder(
       column: $table.endedAt, builder: (column) => ColumnFilters(column));
@@ -11268,6 +11326,10 @@ class $$CardioActivitiesTableOrderingComposer
   ColumnOrderings<DateTime> get startedAt => $composableBuilder(
       column: $table.startedAt, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get startUtcOffsetMinutes => $composableBuilder(
+      column: $table.startUtcOffsetMinutes,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get endedAt => $composableBuilder(
       column: $table.endedAt, builder: (column) => ColumnOrderings(column));
 
@@ -11330,6 +11392,9 @@ class $$CardioActivitiesTableAnnotationComposer
   GeneratedColumn<DateTime> get startedAt =>
       $composableBuilder(column: $table.startedAt, builder: (column) => column);
 
+  GeneratedColumn<int> get startUtcOffsetMinutes => $composableBuilder(
+      column: $table.startUtcOffsetMinutes, builder: (column) => column);
+
   GeneratedColumn<DateTime> get endedAt =>
       $composableBuilder(column: $table.endedAt, builder: (column) => column);
 
@@ -11390,6 +11455,7 @@ class $$CardioActivitiesTableTableManager extends RootTableManager<
             Value<String> environment = const Value.absent(),
             Value<DateTime> recordedAt = const Value.absent(),
             Value<DateTime?> startedAt = const Value.absent(),
+            Value<int?> startUtcOffsetMinutes = const Value.absent(),
             Value<DateTime?> endedAt = const Value.absent(),
             Value<double?> distanceMeters = const Value.absent(),
             Value<double?> durationSeconds = const Value.absent(),
@@ -11409,6 +11475,7 @@ class $$CardioActivitiesTableTableManager extends RootTableManager<
             environment: environment,
             recordedAt: recordedAt,
             startedAt: startedAt,
+            startUtcOffsetMinutes: startUtcOffsetMinutes,
             endedAt: endedAt,
             distanceMeters: distanceMeters,
             durationSeconds: durationSeconds,
@@ -11428,6 +11495,7 @@ class $$CardioActivitiesTableTableManager extends RootTableManager<
             Value<String> environment = const Value.absent(),
             required DateTime recordedAt,
             Value<DateTime?> startedAt = const Value.absent(),
+            Value<int?> startUtcOffsetMinutes = const Value.absent(),
             Value<DateTime?> endedAt = const Value.absent(),
             Value<double?> distanceMeters = const Value.absent(),
             Value<double?> durationSeconds = const Value.absent(),
@@ -11447,6 +11515,7 @@ class $$CardioActivitiesTableTableManager extends RootTableManager<
             environment: environment,
             recordedAt: recordedAt,
             startedAt: startedAt,
+            startUtcOffsetMinutes: startUtcOffsetMinutes,
             endedAt: endedAt,
             distanceMeters: distanceMeters,
             durationSeconds: durationSeconds,
