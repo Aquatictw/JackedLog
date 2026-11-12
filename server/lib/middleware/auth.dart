@@ -21,7 +21,10 @@ String _setCookieHeader(String apiKey) =>
     'SameSite=Strict; Max-Age=31536000';
 
 bool _isBrowserPage(String path) =>
-    path == 'manage' || path == 'login' || path.startsWith('dashboard');
+    path.isEmpty ||
+    path == 'manage' ||
+    path == 'login' ||
+    path.startsWith('dashboard');
 
 String _loginPage({bool failed = false, String from = '/dashboard'}) {
   final error =
@@ -184,6 +187,11 @@ Middleware authMiddleware(String apiKey) {
       }
 
       // Unauthenticated browser page: send to login instead of raw JSON.
+      // The bare root has no page of its own, so login falls back to the
+      // dashboard rather than carrying the root URL (and its query) along.
+      if (path.isEmpty) {
+        return Response.found('/login');
+      }
       if (_isBrowserPage(path)) {
         final target = request.url.query.isEmpty
             ? '/$path'

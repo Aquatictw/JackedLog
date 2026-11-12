@@ -36,6 +36,7 @@ void main() async {
 
   // Configure routes
   final router = Router();
+  router.get('/', (req) => Response.found('/dashboard'));
   router.get('/api/health', healthHandler);
   router.post('/api/chat', (req) => chatHandler(req, config, knowledgeService));
   router.post('/api/backup', (req) => uploadBackupHandler(req, backupService));
